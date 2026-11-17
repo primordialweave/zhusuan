@@ -8,22 +8,24 @@ import type { Project, Payment } from './project'
 
 // 仪表盘核心统计数据
 export interface DashboardStats {
-  total_amount: number   // 总合同金额
-  paid_amount: number    // 已回款金额
+  total_amount: number // 总合同金额
+  paid_amount: number // 已回款金额
   pending_amount: number // 待回款金额
   overdue_amount: number // 逾期金额
-  total_trend: number    // 总金额环比增长率
-  paid_trend: number     // 回款环比增长率
-  pending_trend: number  // 待回款环比增长率
-  overdue_trend: number  // 逾期环比增长率
-  avg_collection_days: number       // 平均回款周期
+  total_trend: number // 总金额环比增长率
+  paid_trend: number // 回款环比增长率
+  pending_trend: number // 待回款环比增长率
+  overdue_trend: number // 逾期环比增长率
+  avg_collection_days: number // 平均回款周期
   avg_collection_days_trend: number // 回款周期环比变化
 }
 
 // 收入趋势图表数据
 export interface IncomeTrend {
-  labels: string[]          // X轴标签 (日期)
-  actual_values: number[]   // 实际收入
+  start_date?: string // 实际查询的日期范围
+  end_date?: string
+  labels: string[] // X轴标签 (日期)
+  actual_values: number[] // 实际收入
   expected_values: number[] // 预计收入
 }
 

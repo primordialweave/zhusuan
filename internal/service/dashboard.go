@@ -203,55 +203,27 @@ func (s *DashboardService) GetStats(userID int64, period string) (*dto.Stats, er
 //   - *dto.IncomeTrend: 包含 Labels (X轴), ActualValues (实际收入), ExpectedValues (预计收入)
 //   - error: 错误信息
 func (s *DashboardService) GetIncomeTrend(userID int64, period string) (*dto.IncomeTrend, error) {
-	now := time.Now()
-	var startDate, endDate string
-	var interval string     // 聚合粒度: "day" 或 "month"
-	var loopStart time.Time // 循环起始点（用于生成完整的时间轴标签）
-	var days, months int    // 循环次数
-
-	// 原始注释保留及说明:
-	// Default to year (monthly view) if not specified or "year"
-	// However, original design was "Month" (6 months).
-	// Let's redefine based on UI:
-	// "week": Past 7 days (Daily) -> 过去7天，按日展示
-	// "month": Past 30 days (Daily) -> 过去30天，按日展示
-	// "quarter": Past 3 (or 12 weeks) -> 过去3个月，按月展示
-	// "year": Past 12 months (Monthly) -> 过去一年，按月展示
-
-	switch period {
-	case "week":
-		days = 7
-		interval = "day"
-		loopStart = now.AddDate(0, 0, -days+1)
-		startDate = loopStart.Format("2006-01-02")
-		endDate = now.Format("2006-01-02") + " 23:59:59"
-	case "month":
-		days = 30
-		interval = "day"
-		loopStart = now.AddDate(0, 0, -days+1)
-		startDate = loopStart.Format("2006-01-02")
-		endDate = now.Format("2006-01-02") + " 23:59:59"
-	case "quarter":
-		months = 3
+	periodDays := map[string]int{"week": 7, "month": 30, "quarter": 90, "year": 365}
+	days, valid := periodDays[period]
+	if !valid {
+		period, days = "month", 30
+	}
+	// Metrics and charts must query the same rolling period, including partial months.
+	periodRange := utils.GetPeriodRange(period, 0)
+	startDate, endDate := periodRange.StartDate, periodRange.EndDate
+	loopStart, err := time.ParseInLocation("2006-01-02", startDate, time.Local)
+	if err != nil {
+		return nil, fmt.Errorf("parse income trend start: %w", err)
+	}
+	loopEnd, err := time.ParseInLocation("2006-01-02 15:04:05", endDate, time.Local)
+	if err != nil {
+		return nil, fmt.Errorf("parse income trend end: %w", err)
+	}
+	interval, months := "day", 0
+	if period == "quarter" || period == "year" {
 		interval = "month"
-		// 起始于 N-1 个月前的当月1号
-		loopStart = time.Date(now.Year(), now.Month(), 1, 0, 0, 0, 0, now.Location()).AddDate(0, -months+1, 0)
-		startDate = loopStart.Format("2006-01-02")
-		endDate = now.Format("2006-01-02") + " 23:59:59"
-	case "year":
-		months = 12
-		interval = "month"
-		loopStart = time.Date(now.Year(), now.Month(), 1, 0, 0, 0, 0, now.Location()).AddDate(0, -months+1, 0)
-		startDate = loopStart.Format("2006-01-02")
-		endDate = now.Format("2006-01-02") + " 23:59:59"
-	default:
-		// 默认策略: 同 "month" 之前的逻辑，或是 6个月。
-		// 这里保留其为 "半年视图(6个月)" 作为 fallback
-		months = 6
-		interval = "month"
-		loopStart = time.Date(now.Year(), now.Month(), 1, 0, 0, 0, 0, now.Location()).AddDate(0, -months+1, 0)
-		startDate = loopStart.Format("2006-01-02")
-		endDate = now.Format("2006-01-02") + " 23:59:59"
+		months = (loopEnd.Year()-loopStart.Year())*12 + int(loopEnd.Month()-loopStart.Month()) + 1
+		loopStart = time.Date(loopStart.Year(), loopStart.Month(), 1, 0, 0, 0, 0, loopStart.Location())
 	}
 
 	// 从数据库查询聚合好的收入数据（Map形式）
@@ -279,8 +251,8 @@ func (s *DashboardService) GetIncomeTrend(userID int64, period string) (*dto.Inc
 		count := months
 		for i := 0; i < count; i++ {
 			date := loopStart.AddDate(0, i, 0)
-			key := date.Format("2006-01")             // 数据库返回的Key格式
-			label := fmt.Sprintf("%d月", date.Month()) // 前端展示: "1月", "2月"...
+			key := date.Format("2006-01")   // 数据库返回的Key格式
+			label := date.Format("2006-01") // Keep years visible across a rolling year boundary.
 
 			labels = append(labels, label)
 			actualValues = append(actualValues, actual[key])
@@ -289,6 +261,8 @@ func (s *DashboardService) GetIncomeTrend(userID int64, period string) (*dto.Inc
 	}
 
 	return &dto.IncomeTrend{
+		StartDate:      startDate,
+		EndDate:        periodRange.EndDate[:10],
 		Labels:         labels,
 		ActualValues:   actualValues,
 		ExpectedValues: expectedValues,

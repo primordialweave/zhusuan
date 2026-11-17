@@ -10,6 +10,7 @@ import (
 	"github.com/FruitsAI/Orange/internal/constants"
 	"github.com/FruitsAI/Orange/internal/database"
 	"github.com/FruitsAI/Orange/internal/models"
+	"github.com/FruitsAI/Orange/internal/pkg/utils"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 )
@@ -219,6 +220,49 @@ func TestDashboardService_GetIncomeTrend(t *testing.T) {
 		assert.NotEmpty(t, trend.Labels)
 		assert.Len(t, trend.Labels, 7) // 7天
 	})
+}
+
+func TestDashboardService_TrendMatchesMetricPeriodBoundaries(t *testing.T) {
+	setupDashboardTestDB(t)
+	for _, period := range []string{"quarter", "year"} {
+		t.Run(period, func(t *testing.T) {
+			userID := createTestDataForDashboard(t)
+			db := database.GetDB()
+			require.NoError(t, db.Where("user_id = ?", userID).Delete(&models.Payment{}).Error)
+			window := utils.GetPeriodRange(period, 0)
+			start, err := time.ParseInLocation("2006-01-02", window.StartDate, time.Local)
+			require.NoError(t, err)
+			end, err := time.ParseInLocation("2006-01-02", window.EndDate[:10], time.Local)
+			require.NoError(t, err)
+			payments := []models.Payment{
+				{UserID: userID, ProjectID: 1, Stage: "outside-before", Amount: 200, Status: constants.PaymentStatusPending, PlanDate: start.AddDate(0, 0, -1)},
+				{UserID: userID, ProjectID: 1, Stage: "first-day", Amount: 100, Status: constants.PaymentStatusPending, PlanDate: start},
+				{UserID: userID, ProjectID: 1, Stage: "last-day", Amount: 300, Status: constants.PaymentStatusPending, PlanDate: end},
+				{UserID: userID, ProjectID: 1, Stage: "received", Amount: 50, Status: constants.PaymentStatusConfirmed, PlanDate: start, ActualDate: &start},
+				{UserID: userID, ProjectID: 1, Stage: "outside-after", Amount: 400, Status: constants.PaymentStatusPending, PlanDate: end.AddDate(0, 0, 1)},
+			}
+			require.NoError(t, db.Create(&payments).Error)
+			invalidateDashboardCache(userID)
+			svc := NewDashboardService()
+			stats, err := svc.GetStats(userID, period)
+			require.NoError(t, err)
+			trend, err := svc.GetIncomeTrend(userID, period)
+			require.NoError(t, err)
+			var planned, received float64
+			for i := range trend.Labels {
+				planned += trend.ExpectedValues[i]
+				received += trend.ActualValues[i]
+			}
+			assert.Equal(t, 450.0, planned)
+			assert.Equal(t, 50.0, received)
+			assert.Equal(t, stats.TotalAmount, planned)
+			assert.Equal(t, stats.PaidAmount, received)
+			assert.Equal(t, window.StartDate, trend.StartDate)
+			assert.Equal(t, window.EndDate[:10], trend.EndDate)
+			assert.Equal(t, start.Format("2006-01"), trend.Labels[0])
+			assert.Equal(t, end.Format("2006-01"), trend.Labels[len(trend.Labels)-1])
+		})
+	}
 }
 
 // TestDashboardService_GetRecentProjects 测试最近项目

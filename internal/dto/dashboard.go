@@ -16,6 +16,8 @@ type Stats struct {
 
 // IncomeTrend 收入趋势
 type IncomeTrend struct {
+	StartDate      string    `json:"start_date"`
+	EndDate        string    `json:"end_date"`
 	Labels         []string  `json:"labels"`
 	ActualValues   []float64 `json:"actual_values"`
 	ExpectedValues []float64 `json:"expected_values"`
