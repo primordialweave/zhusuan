@@ -86,23 +86,29 @@ describe('ProjectsView design system migration', () => {
     expect(container.querySelector('.ods-table')).toBeInTheDocument()
     expect(container.querySelector('.ods-progress')).toBeInTheDocument()
     expect(container.querySelector('.ods-chip')).toBeInTheDocument()
-    expect(screen.getByRole('tablist', { name: '项目状态筛选' })).toHaveAttribute(
-      'data-variant',
-      'accent',
+    expect(container.querySelector('.ods-table')).toHaveAttribute('data-variant', 'plain')
+    expect(screen.getByRole('button', { name: '项目状态筛选' })).toHaveTextContent('全部状态')
+    expect(screen.queryByRole('tablist')).not.toBeInTheDocument()
+    expect(container.querySelector('.ods-summary-metric')).not.toBeInTheDocument()
+    expect(container.querySelector('[data-slot="eyebrow"]')).not.toBeInTheDocument()
+    expect(screen.getByText('查看合同与收款进度')).toBeInTheDocument()
+    expect(screen.getAllByRole('columnheader').map((column) => column.textContent)).toEqual([
+      '项目名称',
+      '客户',
+      '截止日期',
+      '合同金额',
+      '已收款',
+      '收款进度',
+      '状态',
+      '操作',
+    ])
+    expect(screen.getByRole('cell', { name: '橙子科技' })).toBeInTheDocument()
+    expect(screen.getByText('¥20,000 / ¥100,000')).toBeInTheDocument()
+    expect(screen.getByRole('progressbar', { name: '星轨项目 收款进度' })).toHaveAttribute(
+      'aria-valuetext',
+      '20%',
     )
-    expect(screen.getByRole('tab', { name: '全部项目' })).toHaveAttribute('aria-selected', 'true')
-    const panels = container.querySelectorAll('.project-filter-tabs__panel')
-    expect(panels).toHaveLength(6)
-    expect([...panels].filter((panel) => !panel.hasAttribute('hidden'))).toHaveLength(1)
-    expect(
-      [...panels]
-        .filter((panel) => panel.hasAttribute('hidden'))
-        .every((panel) => panel.childElementCount === 0),
-    ).toBe(true)
-    expect(container.querySelector('.ods-pagination-bar')).toHaveAttribute(
-      'data-layout',
-      'centered',
-    )
+    expect(container.querySelector('.ods-pagination-bar')).toHaveAttribute('data-layout', 'split')
     expect(screen.getByRole('button', { name: '每页条数' })).toHaveAttribute(
       'data-width',
       'content',
@@ -135,7 +141,15 @@ describe('ProjectsView design system migration', () => {
     render(<ProjectsView />, { initialEntries: ['/projects'] })
 
     await waitFor(() => expect(screen.getByText('星轨项目')).toBeInTheDocument())
-    await user.click(screen.getByRole('button', { name: '星轨项目：删除项目' }))
+    await user.click(screen.getByRole('button', { name: '星轨项目：项目操作' }))
+    expect(screen.getAllByRole('menuitem').map((item) => item.textContent)).toEqual([
+      '编辑项目',
+      '添加收款',
+      '导出项目',
+      '归档项目',
+      '删除项目',
+    ])
+    await user.click(screen.getByRole('menuitem', { name: '删除项目' }))
 
     expect(screen.getByRole('alertdialog')).toBeInTheDocument()
     expect(screen.getByText('删除项目？')).toBeInTheDocument()
@@ -152,12 +166,12 @@ describe('ProjectsView design system migration', () => {
       { initialEntries: ['/projects'] },
     )
 
-    const deleteButton = await screen.findByRole('button', { name: '星轨项目：删除项目' })
-    deleteButton.focus()
+    const menuButton = await screen.findByRole('button', { name: '星轨项目：项目操作' })
+    menuButton.focus()
     await user.keyboard('{Enter}')
 
     expect(screen.getByLabelText('当前位置')).toHaveTextContent('/projects')
-    expect(screen.getByRole('alertdialog')).toBeInTheDocument()
+    expect(screen.getByRole('menu', { name: '星轨项目 的操作' })).toBeInTheDocument()
   })
 
   it('ignores a deferred rejection from an older list request', async () => {
@@ -172,8 +186,12 @@ describe('ProjectsView design system migration', () => {
     render(<ProjectsView />, { initialEntries: ['/projects'] })
     await waitFor(() => expect(projectApi.list).toHaveBeenCalledTimes(1))
 
-    await user.click(screen.getByRole('tab', { name: '进行中' }))
+    await user.click(screen.getByRole('button', { name: '项目状态筛选' }))
+    await user.click(screen.getByRole('option', { name: '进行中' }))
     await waitFor(() => expect(projectApi.list).toHaveBeenCalledTimes(2))
+    expect(projectApi.list).toHaveBeenLastCalledWith(
+      expect.objectContaining({ page: 1, status: 'active' }),
+    )
 
     await act(async () => {
       firstRequest.reject(new Error('旧请求失败'))
@@ -228,9 +246,7 @@ describe('ProjectsView design system migration', () => {
     render(<ProjectsView />, { initialEntries: ['/projects'] })
 
     expect(await screen.findByRole('alert')).toHaveTextContent('项目列表加载失败')
-    expect(screen.getAllByText('暂不可用')).toHaveLength(3)
-    expect(screen.queryByText('0 个')).not.toBeInTheDocument()
-    expect(screen.queryByText('暂无项目数据')).not.toBeInTheDocument()
+    expect(screen.queryByText('还没有项目')).not.toBeInTheDocument()
     expect(toastError).toHaveBeenCalledOnce()
 
     await user.click(screen.getByRole('button', { name: '重试项目列表' }))
@@ -238,5 +254,53 @@ describe('ProjectsView design system migration', () => {
     expect(await screen.findByText('星轨项目')).toBeInTheDocument()
     expect(projectApi.list).toHaveBeenCalledTimes(2)
     expect(screen.queryByRole('alert')).not.toBeInTheDocument()
+  })
+
+  it('offers the next step that fits an empty ledger', async () => {
+    const user = userEvent.setup()
+    vi.mocked(projectApi.list).mockResolvedValue({
+      data: { data: { list: [], page: 1, page_size: 10, total: 0, total_pages: 0 } },
+    } as never)
+
+    render(<ProjectsView />, { initialEntries: ['/projects'] })
+
+    expect(await screen.findByText('还没有项目')).toBeInTheDocument()
+    expect(screen.getAllByRole('link', { name: /新建项目/ })).toHaveLength(2)
+
+    await user.click(screen.getByRole('button', { name: '项目状态筛选' }))
+    await user.click(screen.getByRole('option', { name: '已归档' }))
+
+    expect(await screen.findByText('没有符合条件的项目')).toBeInTheDocument()
+    await user.click(screen.getByRole('button', { name: '清除筛选' }))
+
+    expect(await screen.findByText('还没有项目')).toBeInTheDocument()
+    expect(screen.getByRole('button', { name: '项目状态筛选' })).toHaveTextContent('全部状态')
+  })
+
+  it('shows the real percentage and a dash when there is no contract amount', async () => {
+    vi.mocked(projectApi.list).mockResolvedValue({
+      data: {
+        data: {
+          list: [
+            { ...project, id: 1, name: '超收项目', received_amount: 150, total_amount: 100 },
+            { ...project, id: 2, name: '无合同额项目', received_amount: 0, total_amount: 0 },
+          ],
+          page: 1,
+          page_size: 10,
+          total: 2,
+          total_pages: 1,
+        },
+      },
+    } as never)
+
+    render(<ProjectsView />, { initialEntries: ['/projects'] })
+
+    const overpaid = await screen.findByRole('progressbar', { name: '超收项目 收款进度' })
+    expect(overpaid).toHaveAttribute('aria-valuenow', '100')
+    expect(overpaid).toHaveAttribute('aria-valuetext', '150%')
+    expect(screen.getByRole('progressbar', { name: '无合同额项目 收款进度' })).toHaveAttribute(
+      'aria-valuetext',
+      '—',
+    )
   })
 })

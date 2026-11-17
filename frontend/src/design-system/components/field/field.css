@@ -1,5 +1,7 @@
 .ods-field {
   display: grid;
+  /* One column no wider than the field, so a long select value truncates instead of spilling. */
+  grid-template-columns: minmax(0, 1fr);
   /* Rows must not stretch when a sibling grid cell is taller (e.g. a field with an error). */
   align-content: start;
   gap: var(--ods-space-2);

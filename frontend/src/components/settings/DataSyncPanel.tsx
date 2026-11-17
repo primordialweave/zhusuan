@@ -3,7 +3,6 @@ import { syncApi, type SyncConfig, type SyncResult, type TableCompareResult } fr
 import { useConfirm } from '@/composables/useConfirm'
 import { useToastStore } from '@/composables/useToast'
 import {
-  Alert,
   Button,
   Card,
   Chip,
@@ -186,190 +185,150 @@ export default function DataSyncPanel() {
 
   return (
     <div className="data-sync-panel">
-      <div className="settings-panel-header">
-        <SectionHeader
-          actions={
-            step !== 'config' ? (
-              <Button onClick={() => setStep('config')} variant="secondary">
-                <i className="ri-settings-3-line" />
-                <span>修改配置</span>
-              </Button>
-            ) : null
-          }
-          description="将本地 SQLite 数据同步到云端 PostgreSQL 或 MySQL 数据库"
-          icon={<i className="ri-cloud-line" />}
-          iconTone="info"
-          size="lg"
-          title="数据同步"
-        />
-
-        <div className="sync-stats">
-          <Card.Root className="sync-stat-item" gap="sm" orientation="horizontal" padding="sm">
-            <Surface className="sync-stat-icon" padding="none" radius="control" tone="info">
-              <i className="ri-database-2-line" />
-            </Surface>
-            <div className="sync-stat-info">
-              <span className="sync-stat-value">{compareResults.length}</span>
-              <span className="sync-stat-label">数据表</span>
+      {step !== 'config' ? (
+        <div className="settings-toolbar">
+          <dl className="settings-stats">
+            <div>
+              <dt>数据表</dt>
+              <dd>{compareResults.length}</dd>
             </div>
-          </Card.Root>
-          <Card.Root className="sync-stat-item" gap="sm" orientation="horizontal" padding="sm">
-            <Surface className="sync-stat-icon" padding="none" radius="control" tone="warning">
-              <i className="ri-exchange-line" />
-            </Surface>
-            <div className="sync-stat-info">
-              <span className="sync-stat-value">{diffCount}</span>
-              <span className="sync-stat-label">待同步</span>
+            <div>
+              <dt>待同步</dt>
+              <dd>{diffCount}</dd>
             </div>
-          </Card.Root>
-          <Card.Root className="sync-stat-item" gap="sm" orientation="horizontal" padding="sm">
-            <Surface className="sync-stat-icon" padding="none" radius="control" tone="success">
-              <i className="ri-check-double-line" />
-            </Surface>
-            <div className="sync-stat-info">
-              <span className="sync-stat-value">{syncedCount}</span>
-              <span className="sync-stat-label">已同步</span>
+            <div>
+              <dt>已同步</dt>
+              <dd>{syncedCount}</dd>
             </div>
-          </Card.Root>
+          </dl>
+          <div className="settings-toolbar__actions">
+            <Button onClick={() => setStep('config')} variant="secondary">
+              <i aria-hidden="true" className="ri-settings-3-line" />
+              <span>修改配置</span>
+            </Button>
+          </div>
         </div>
-      </div>
+      ) : null}
 
       {step === 'config' ? (
-        <div className="sync-content">
-          <Alert icon={<i className="ri-information-line" />} title="单向云端同步" tone="info">
-            将本地 SQLite 数据单向同步到云端 PostgreSQL 或 MySQL
-            数据库。此操作适合数据备份或多端数据汇总。
-          </Alert>
+        <div className="sync-config">
+          <p className="settings-note">
+            本地 SQLite 数据单向同步到云端 PostgreSQL 或 MySQL，适合备份和多端汇总。
+          </p>
 
-          <Card.Root gap="lg" padding="lg">
-            <Card.Header>
-              <SectionHeader
-                density="compact"
-                headingLevel={3}
-                icon={<i className="ri-server-line" />}
-                iconTone="info"
-                title="数据库连接配置"
+          <FormSection>
+            <RadioGroup
+              aria-label="数据库类型"
+              columns={2}
+              onValueChange={handleDbTypeChange}
+              value={cloudConfig.db_type}
+            >
+              <RadioGroup.Legend>数据库类型</RadioGroup.Legend>
+              {dbTypeOptions.map((option) => (
+                <Radio key={option.value} value={option.value} variant="card">
+                  <span className="sync-db-option-content">
+                    <i className={option.icon} />
+                    <span>{option.label}</span>
+                  </span>
+                </Radio>
+              ))}
+            </RadioGroup>
+
+            <Field.Root>
+              <Field.Label>
+                <i className="ri-global-line" />
+                主机地址 (Host)
+              </Field.Label>
+              <Input
+                onChange={(event) => updateConfig({ host: event.target.value })}
+                placeholder="例如: aws-0-ap-northeast-1.pooler.supabase.com"
+                type="text"
+                value={cloudConfig.host}
               />
-            </Card.Header>
+            </Field.Root>
 
-            <Card.Content>
-              <FormSection>
-                <RadioGroup
-                  aria-label="数据库类型"
-                  columns={2}
-                  onValueChange={handleDbTypeChange}
-                  value={cloudConfig.db_type}
-                >
-                  <RadioGroup.Legend>数据库类型</RadioGroup.Legend>
-                  {dbTypeOptions.map((option) => (
-                    <Radio key={option.value} value={option.value} variant="card">
-                      <span className="sync-db-option-content">
-                        <i className={option.icon} />
-                        <span>{option.label}</span>
-                      </span>
-                    </Radio>
-                  ))}
-                </RadioGroup>
+            <FormGrid columns={2}>
+              <Field.Root>
+                <Field.Label>
+                  <i className="ri-hashtag" />
+                  端口 (Port)
+                </Field.Label>
+                <Input
+                  onChange={(event) => updateConfig({ port: Number(event.target.value) })}
+                  type="number"
+                  value={cloudConfig.port}
+                />
+              </Field.Root>
+              <Field.Root>
+                <Field.Label>
+                  <i className="ri-database-2-line" />
+                  数据库名 (Database)
+                </Field.Label>
+                <Input
+                  onChange={(event) => updateConfig({ db_name: event.target.value })}
+                  placeholder="例如: postgres"
+                  type="text"
+                  value={cloudConfig.db_name}
+                />
+              </Field.Root>
+            </FormGrid>
 
-                <Field.Root>
-                  <Field.Label>
-                    <i className="ri-global-line" />
-                    主机地址 (Host)
-                  </Field.Label>
-                  <Input
-                    onChange={(event) => updateConfig({ host: event.target.value })}
-                    placeholder="例如: aws-0-ap-northeast-1.pooler.supabase.com"
-                    type="text"
-                    value={cloudConfig.host}
-                  />
-                </Field.Root>
+            <FormGrid columns={2}>
+              <Field.Root>
+                <Field.Label>
+                  <i className="ri-user-line" />
+                  用户名 (User)
+                </Field.Label>
+                <Input
+                  onChange={(event) => updateConfig({ user: event.target.value })}
+                  type="text"
+                  value={cloudConfig.user}
+                />
+              </Field.Root>
+              <Field.Root>
+                <Field.Label>
+                  <i className="ri-lock-password-line" />
+                  密码 (Password)
+                </Field.Label>
+                <Input
+                  onChange={(event) => updateConfig({ password: event.target.value })}
+                  placeholder="••••••••"
+                  type="password"
+                  value={cloudConfig.password || ''}
+                />
+              </Field.Root>
+            </FormGrid>
 
-                <FormGrid columns={2}>
-                  <Field.Root>
-                    <Field.Label>
-                      <i className="ri-hashtag" />
-                      端口 (Port)
-                    </Field.Label>
-                    <Input
-                      onChange={(event) => updateConfig({ port: Number(event.target.value) })}
-                      type="number"
-                      value={cloudConfig.port}
-                    />
-                  </Field.Root>
-                  <Field.Root>
-                    <Field.Label>
-                      <i className="ri-database-2-line" />
-                      数据库名 (Database)
-                    </Field.Label>
-                    <Input
-                      onChange={(event) => updateConfig({ db_name: event.target.value })}
-                      placeholder="例如: postgres"
-                      type="text"
-                      value={cloudConfig.db_name}
-                    />
-                  </Field.Root>
-                </FormGrid>
-
-                <FormGrid columns={2}>
-                  <Field.Root>
-                    <Field.Label>
-                      <i className="ri-user-line" />
-                      用户名 (User)
-                    </Field.Label>
-                    <Input
-                      onChange={(event) => updateConfig({ user: event.target.value })}
-                      type="text"
-                      value={cloudConfig.user}
-                    />
-                  </Field.Root>
-                  <Field.Root>
-                    <Field.Label>
-                      <i className="ri-lock-password-line" />
-                      密码 (Password)
-                    </Field.Label>
-                    <Input
-                      onChange={(event) => updateConfig({ password: event.target.value })}
-                      placeholder="••••••••"
-                      type="password"
-                      value={cloudConfig.password || ''}
-                    />
-                  </Field.Root>
-                </FormGrid>
-
-                {cloudConfig.db_type === 'postgres' ? (
-                  <Field.Root>
-                    <Field.Label>
-                      <i className="ri-shield-check-line" />
-                      SSL 模式
-                    </Field.Label>
-                    <Select
-                      aria-label="SSL 模式"
-                      onValueChange={(value) => updateConfig({ ssl_mode: value })}
-                      options={[
-                        { label: 'Disable', value: 'disable' },
-                        { label: 'Require (推荐)', value: 'require' },
-                        { label: 'Verify Full', value: 'verify-full' },
-                      ]}
-                      value={cloudConfig.ssl_mode || 'require'}
-                    />
-                  </Field.Root>
-                ) : null}
-              </FormSection>
-            </Card.Content>
-
-            <Card.Footer>
-              <FormActions align="between" className="sync-form-actions">
-                <Card.Description>
+            {cloudConfig.db_type === 'postgres' ? (
+              <Field.Root>
+                <Field.Label>
                   <i className="ri-shield-check-line" />
-                  <span>你的数据库凭据仅用于本地连接，不会发送到任何第三方服务器</span>
-                </Card.Description>
-                <Button onClick={() => void testConnection()} pending={testLoading}>
-                  <span>{testLoading ? '正在测试...' : '测试连接并下一步'}</span>
-                  {!testLoading ? <i className="ri-arrow-right-line" /> : null}
-                </Button>
-              </FormActions>
-            </Card.Footer>
-          </Card.Root>
+                  SSL 模式
+                </Field.Label>
+                <Select
+                  aria-label="SSL 模式"
+                  onValueChange={(value) => updateConfig({ ssl_mode: value })}
+                  options={[
+                    { label: 'Disable', value: 'disable' },
+                    { label: 'Require (推荐)', value: 'require' },
+                    { label: 'Verify Full', value: 'verify-full' },
+                  ]}
+                  value={cloudConfig.ssl_mode || 'require'}
+                />
+              </Field.Root>
+            ) : null}
+          </FormSection>
+
+          <FormActions align="between" className="sync-form-actions">
+            <p className="settings-note">
+              <i aria-hidden="true" className="ri-shield-check-line" />
+              <span>你的数据库凭据仅用于本地连接，不会发送到任何第三方服务器</span>
+            </p>
+            <Button onClick={() => void testConnection()} pending={testLoading}>
+              <span>{testLoading ? '正在测试...' : '测试连接并下一步'}</span>
+              {!testLoading ? <i aria-hidden="true" className="ri-arrow-right-line" /> : null}
+            </Button>
+          </FormActions>
         </div>
       ) : (
         <div className="sync-content">
@@ -379,6 +338,7 @@ export default function DataSyncPanel() {
             orientation="horizontal"
             padding="sm"
             tone="success"
+            variant="tertiary"
           >
             <div className="sync-connection-info">
               <Surface
@@ -419,113 +379,95 @@ export default function DataSyncPanel() {
             </div>
           </Card.Root>
 
-          <Card.Root gap="lg" padding="lg">
-            <Card.Header>
-              <SectionHeader
-                actions={<Chip size="sm">{compareResults.length} 个表</Chip>}
-                density="compact"
-                headingLevel={3}
-                icon={<i className="ri-file-list-3-line" />}
-                title="数据对比明细"
-              />
-            </Card.Header>
+          <section className="sync-details">
+            <SectionHeader
+              actions={<Chip size="sm">{compareResults.length} 个表</Chip>}
+              density="compact"
+              headingLevel={2}
+              title="数据对比明细"
+            />
 
-            <Card.Content>
-              {loading ? (
-                <Spinner className="sync-loading-state" label="正在分析数据库差异" size="lg" />
-              ) : compareResults.length === 0 ? (
-                <EmptyState
-                  className="sync-empty-state"
-                  description="请在上方点击「重新对比」按钮开始分析"
-                  icon={<i className="ri-inbox-archive-line" />}
-                  size="md"
-                  title="暂无对比数据"
-                />
-              ) : (
-                <Table.Root aria-label="数据对比明细">
-                  <Table.Header>
-                    <Table.Row>
-                      <Table.Column>数据表</Table.Column>
-                      <Table.Column align="center">本地</Table.Column>
-                      <Table.Column align="center">云端</Table.Column>
-                      <Table.Column align="center">状态</Table.Column>
-                      <Table.Column align="end">同步结果</Table.Column>
-                    </Table.Row>
-                  </Table.Header>
-                  <Table.Body>
-                    {compareResults.map((result) => {
-                      const syncResult = getSyncResultForTable(result.table_name)
-                      return (
-                        <Table.Row key={result.table_name}>
-                          <Table.Cell>
-                            <div className="sync-table-identity">
-                              <Surface
-                                className="sync-table-icon"
-                                padding="sm"
-                                radius="control"
-                                tone="accent"
-                              >
-                                <i className="ri-table-2" />
-                              </Surface>
-                              <div className="sync-table-info">
-                                <div className="sync-table-name">
-                                  {tableLabels[result.table_name] || result.table_name}
-                                </div>
-                                <div className="sync-table-code">{result.table_name}</div>
-                              </div>
+            {loading ? (
+              <Spinner className="sync-loading-state" label="正在分析数据库差异" size="lg" />
+            ) : compareResults.length === 0 ? (
+              <EmptyState
+                className="sync-empty-state"
+                description="请在上方点击「重新对比」按钮开始分析"
+                icon={<i className="ri-inbox-archive-line" />}
+                size="md"
+                title="暂无对比数据"
+              />
+            ) : (
+              <Table.Root aria-label="数据对比明细" variant="plain">
+                <Table.Header>
+                  <Table.Row>
+                    <Table.Column>数据表</Table.Column>
+                    <Table.Column align="center">本地</Table.Column>
+                    <Table.Column align="center">云端</Table.Column>
+                    <Table.Column align="center">状态</Table.Column>
+                    <Table.Column align="end">同步结果</Table.Column>
+                  </Table.Row>
+                </Table.Header>
+                <Table.Body>
+                  {compareResults.map((result) => {
+                    const syncResult = getSyncResultForTable(result.table_name)
+                    return (
+                      <Table.Row key={result.table_name}>
+                        <Table.Cell>
+                          <div className="sync-table-info">
+                            <div className="sync-table-name">
+                              {tableLabels[result.table_name] || result.table_name}
                             </div>
-                          </Table.Cell>
-                          <Table.Cell align="center">{result.local_count}</Table.Cell>
-                          <Table.Cell align="center">
-                            {result.remote_count === -1 ? (
-                              <Chip size="sm" tone="danger">
-                                连接失败
-                              </Chip>
+                            <div className="sync-table-code">{result.table_name}</div>
+                          </div>
+                        </Table.Cell>
+                        <Table.Cell align="center">{result.local_count}</Table.Cell>
+                        <Table.Cell align="center">
+                          {result.remote_count === -1 ? (
+                            <Chip size="sm" tone="danger">
+                              连接失败
+                            </Chip>
+                          ) : (
+                            result.remote_count
+                          )}
+                        </Table.Cell>
+                        <Table.Cell align="center">
+                          {result.local_count !== result.remote_count ? (
+                            <Chip size="sm" tone="warning">
+                              <i className="ri-alert-line" />
+                              <span>差异</span>
+                            </Chip>
+                          ) : (
+                            <Chip size="sm" tone="success">
+                              <i className="ri-check-line" />
+                              <span>一致</span>
+                            </Chip>
+                          )}
+                        </Table.Cell>
+                        <Table.Cell align="end">
+                          {syncResult ? (
+                            syncResult.success ? (
+                              <span className="sync-result-success">
+                                <i className="ri-check-double-line" />
+                                <span>已同步 {syncResult.synced_count} 条</span>
+                              </span>
                             ) : (
-                              result.remote_count
-                            )}
-                          </Table.Cell>
-                          <Table.Cell align="center">
-                            {result.local_count !== result.remote_count ? (
-                              <Chip size="sm" tone="warning">
-                                <i className="ri-alert-line" />
-                                <span>差异</span>
-                              </Chip>
-                            ) : (
-                              <Chip size="sm" tone="success">
-                                <i className="ri-check-line" />
-                                <span>一致</span>
-                              </Chip>
-                            )}
-                          </Table.Cell>
-                          <Table.Cell align="end">
-                            {syncResult ? (
-                              syncResult.success ? (
-                                <span className="sync-result-success">
-                                  <i className="ri-check-double-line" />
-                                  <span>已同步 {syncResult.synced_count} 条</span>
-                                </span>
-                              ) : (
-                                <span
-                                  className="sync-result-error"
-                                  title={syncResult.error_message}
-                                >
-                                  <i className="ri-error-warning-line" />
-                                  <span>同步失败</span>
-                                </span>
-                              )
-                            ) : (
-                              <span className="sync-result-pending">—</span>
-                            )}
-                          </Table.Cell>
-                        </Table.Row>
-                      )
-                    })}
-                  </Table.Body>
-                </Table.Root>
-              )}
-            </Card.Content>
-          </Card.Root>
+                              <span className="sync-result-error" title={syncResult.error_message}>
+                                <i className="ri-error-warning-line" />
+                                <span>同步失败</span>
+                              </span>
+                            )
+                          ) : (
+                            <span className="sync-result-pending">—</span>
+                          )}
+                        </Table.Cell>
+                      </Table.Row>
+                    )
+                  })}
+                </Table.Body>
+              </Table.Root>
+            )}
+          </section>
         </div>
       )}
     </div>

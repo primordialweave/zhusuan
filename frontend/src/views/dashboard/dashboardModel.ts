@@ -16,13 +16,19 @@ export interface PaymentDisplayItem {
 
 const periodLabels: Record<DashboardPeriod, string> = {
   month: '近30天',
-  quarter: '近3个月',
+  quarter: '近90天',
   week: '近7天',
-  year: '近12个月',
+  year: '近365天',
 }
 
 export function getPeriodLabel(period: DashboardPeriod) {
   return periodLabels[period]
+}
+
+export function getCollectionTimingLabel(days: number) {
+  const rounded = Math.round(Math.abs(days))
+  if (!Number.isFinite(days) || rounded === 0) return '0 天'
+  return `${days < 0 ? '提前' : '延后'} ${rounded} 天`
 }
 
 export type IncomeSeriesValue = number | null
@@ -55,7 +61,7 @@ export function getPaymentDueLabel(daysLeft: number) {
   return daysLeft === 0 ? '下一笔今日到期' : `下一笔 ${daysLeft} 天后到期`
 }
 
-export function toMetricTrend(value: number, positiveIsGood: boolean) {
+export function toMetricTrend(value: number, positiveIsGood: boolean, prefix = '较上期') {
   const direction =
     value === 0 ? ('flat' as const) : value > 0 ? ('up' as const) : ('down' as const)
   const improved = value === 0 ? null : value > 0 === positiveIsGood
@@ -69,9 +75,9 @@ export function toMetricTrend(value: number, positiveIsGood: boolean) {
   const outcomeLabel = improved === null ? '保持稳定' : improved ? '表现改善' : '表现承压'
 
   return {
-    accessibleLabel: `较上期${directionLabel} ${Math.abs(value).toFixed(2)}%，${outcomeLabel}`,
+    accessibleLabel: `${prefix}${directionLabel} ${Math.abs(value).toFixed(2)}%，${outcomeLabel}`,
     direction,
-    label: `较上期 ${Math.abs(value).toFixed(2)}%`,
+    label: `${prefix} ${Math.abs(value).toFixed(2)}%`,
     tone,
   }
 }

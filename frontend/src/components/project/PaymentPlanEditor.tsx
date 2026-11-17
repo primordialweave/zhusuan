@@ -40,7 +40,7 @@ const methodOptions: SelectOption[] = [
 
 const statusOptions: SelectOption[] = [
   { label: '待收款', value: 'pending' },
-  { label: '已收款', value: 'paid' },
+  { label: '已收款', value: 'confirmed' },
   { label: '已逾期', value: 'overdue' },
 ]
 
@@ -174,7 +174,7 @@ export function PaymentPlanEditor({
                     aria-label="状态"
                     onValueChange={(value) => updateItem(index, { status: value })}
                     options={statusOptions}
-                    value={item.status}
+                    value={item.status === 'paid' ? 'confirmed' : item.status}
                   />
                 </Field.Root>
 

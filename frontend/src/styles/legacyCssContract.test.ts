@@ -11,18 +11,19 @@ const dashboardCss = readSource('src/styles/dashboard.css')
 const loginCss = readSource('src/styles/login.css')
 const motionCss = readSource('src/styles/motion.css')
 const projectDomainCss = readSource('src/styles/project-domain.css')
+const sceneCss = readSource('src/styles/scene.css')
 const mainSource = readSource('src/main.tsx')
 const appLayoutSource = readSource('src/components/layout/AppLayout.tsx')
 const dashboardViewSource = readSource('src/views/DashboardView.tsx')
-const dashboardSkeletonSource = readSource('src/views/dashboard/DashboardSkeleton.tsx')
 const legacyCss = mainCss
 
-// Inventory from the task-11 migration audit:
+// Inventory:
 // - legacy/dead: sidebar/nav-menu/nav-item shell, page-header/title/subtitle/actions,
 //   quick actions, dashboard chart/project rows, and table-era dashboard project-list rules.
-// - current owner: app shell selectors live in layout.css; Ember dashboard selectors live in
-//   dashboard.css.
-// - active but misplaced: StatCard is still used by Analytics and moves to stat-card.css.
+// - current owner: app shell selectors live in layout.css, the 烟雨江南 backdrop in scene.css
+//   and the workbench payment summary in dashboard.css.
+// - retired with the workbench redesign: the top bar, the pointer-tracking background, the
+//   Ember dashboard grid and the StatCard stylesheet.
 const removedLegacySelector =
   /(^|[,{]\s*)\.(?:sidebar(?:[.:\s~]|$)|nav-menu(?:[.:\s]|$)|nav-section(?:[.:\s]|$)|nav-item(?:[.:\s]|$)|page-header(?:[.:\s]|$)|page-title(?:[.:\s,]|$)|page-subtitle(?:[.:\s,]|$)|page-actions(?:[.:\s]|$)|quick-action(?:[.:\s-]|$)|quick-actions-grid(?:[.:\s]|$)|dashboard-charts-row(?:[.:\s,]|$)|dashboard-projects-row(?:[.:\s,]|$))/m
 
@@ -32,10 +33,13 @@ describe('legacy CSS ownership contract', () => {
     expect(mainSource).not.toContain("import './assets/liquid-glass.css'")
   })
 
-  it('keeps the active shell exclusively in layout.css', () => {
+  it('keeps the active shell exclusively in layout.css and scene.css', () => {
     expect(layoutCss).toMatch(/\.app-container\s*\{/)
-    expect(layoutCss).toMatch(/\.app-background\s*\{/)
     expect(layoutCss).toMatch(/\.app-main\s*\{/)
+    expect(layoutCss).toMatch(/\.app-dock\s*\{/)
+    expect(sceneCss).toMatch(/\.jiangnan-scene\s*\{/)
+    expect(`${layoutCss}\n${sceneCss}`).not.toMatch(/\.app-(?:background|topbar)(?:[.:\s_-]|$)/m)
+    expect(legacyCss).not.toMatch(/(^|[,{]\s*)\.(?:app-dock|jiangnan-scene)(?:[.:\s_-]|$)/m)
 
     expect(legacyCss).not.toMatch(/(^|[,{]\s*)\.app-container(?:[.:\s]|$)/m)
     expect(legacyCss).not.toMatch(/(^|[,{]\s*)\.app-background(?:[.:\s]|$)/m)
@@ -45,17 +49,16 @@ describe('legacy CSS ownership contract', () => {
     expect(appLayoutSource).not.toMatch(/className=["'`]([^"'`]*\s)?main-content(?:\s|["'`])/)
   })
 
-  it('keeps the current dashboard layout exclusively in dashboard.css', () => {
-    expect(dashboardCss).toMatch(/\.ember-dashboard\s*\{/)
-    expect(dashboardCss).toMatch(/\.dashboard-action-grid\s*\{/)
+  it('keeps the workbench exclusively in dashboard.css', () => {
+    expect(dashboardCss).toMatch(/\.workbench\s*\{/)
+    expect(dashboardCss).toMatch(/\.payment-summary\s*\{/)
+    expect(dashboardCss).not.toMatch(/\.(?:ember-dashboard|dashboard-action-grid)(?:[.:\s_-]|$)/m)
 
     expect(legacyCss).not.toContain('.dashboard-view .dashboard-charts-row')
     expect(legacyCss).not.toContain('.dashboard-view .dashboard-projects-row')
     expect(legacyCss).not.toMatch(/\.project-list-card\s+\.project-table/)
     expect(legacyCss).not.toMatch(/\.project-list-card\s+\.table-scroll-container/)
-    expect(`${dashboardViewSource}\n${dashboardSkeletonSource}`).not.toMatch(
-      /className=["'`][^"'`]*\bdashboard-view\b/,
-    )
+    expect(dashboardViewSource).not.toMatch(/className=["'`][^"'`]*\bdashboard-view\b/)
   })
 
   it('removes legacy GlassCard and StatusBadge implementations superseded by ODS', () => {
@@ -89,22 +92,27 @@ describe('legacy CSS ownership contract', () => {
     expect(mainCss).not.toMatch(/(^|[,{]\s*)\.calendar-view \.event-dot(?:[.:\s-]|$)/m)
   })
 
-  it('moves the Analytics StatCard contract out of legacy global styles', () => {
-    const statCardPath = 'src/styles/stat-card.css'
-
-    expect(existsSync(resolve(statCardPath))).toBe(true)
-    const statCardCss = readSource(statCardPath)
-
+  it('retires the StatCard stylesheet now that metrics use the SummaryMetric pattern', () => {
+    expect(existsSync(resolve('src/styles/stat-card.css'))).toBe(false)
+    expect(existsSync(resolve('src/components/dashboard/StatCard.tsx'))).toBe(false)
+    expect(mainSource).not.toContain('stat-card.css')
     expect(legacyCss).not.toMatch(/(^|[,{]\s*)\.stat-card(?:[.:\s-]|$)/m)
-    expect(statCardCss).toMatch(/\.stat-card-icon\s*\{/)
-    expect(statCardCss).toMatch(/\.stat-card-value\s*\{/)
-    expect(statCardCss).toMatch(/@media \(max-width: 1024px\)/)
-    expect(mainSource).toContain("import './styles/stat-card.css'")
   })
 
-  it('removes unreferenced dashboard components and the unused Vue starter stylesheet', () => {
-    expect(existsSync(resolve('src/components/dashboard/QuickActions.tsx'))).toBe(false)
-    expect(existsSync(resolve('src/components/dashboard/UpcomingPayments.tsx'))).toBe(false)
+  it('removes the superseded dashboard and the unused Vue starter stylesheet', () => {
+    for (const name of [
+      'ActionQueue',
+      'DashboardClock',
+      'FinancialHero',
+      'IncomeChart',
+      'ProjectList',
+      'QuickActions',
+      'UpcomingPayments',
+    ]) {
+      expect(existsSync(resolve(`src/components/dashboard/${name}.tsx`)), name).toBe(false)
+    }
+    expect(existsSync(resolve('src/components/layout/AppTopbar.tsx'))).toBe(false)
+    expect(existsSync(resolve('src/components/common/ThemeSelector.tsx'))).toBe(false)
     expect(existsSync(resolve('src/assets/base.css'))).toBe(false)
     expect(mainSource).not.toContain('base.css')
   })

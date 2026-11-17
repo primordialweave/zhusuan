@@ -7,26 +7,40 @@ import {
 
 const cx = (...classes: Array<string | false | undefined>) => classes.filter(Boolean).join(' ')
 
+export type TableVariant = 'card' | 'plain'
+
 export interface TableProps extends HTMLAttributes<HTMLTableElement> {
   stickyHeader?: boolean
+  /** `plain` drops the frame and header fill and separates rows with hairlines only. */
+  variant?: TableVariant
   visuallyHidden?: boolean
   wrapperClassName?: string
 }
 
 export const TableRoot = forwardRef<HTMLTableElement, TableProps>(function TableRoot(
-  { children, className, stickyHeader = false, visuallyHidden = false, wrapperClassName, ...props },
+  {
+    children,
+    className,
+    stickyHeader = false,
+    variant = 'card',
+    visuallyHidden = false,
+    wrapperClassName,
+    ...props
+  },
   ref,
 ) {
   return (
     <div
       className={cx('ods-table__scroll', visuallyHidden && 'ods-sr-only', wrapperClassName)}
       data-slot="scroll"
+      data-variant={variant}
     >
       <table
         {...props}
         className={cx('ods-table', className)}
         data-slot="table"
         data-sticky={stickyHeader || undefined}
+        data-variant={variant}
         ref={ref}
       >
         {children}

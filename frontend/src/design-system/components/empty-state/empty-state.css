@@ -19,7 +19,7 @@
   border: 1px solid rgba(var(--ods-color-accent-rgb), 0.2);
   border-radius: var(--ods-radius-panel);
   background: var(--ods-color-accent-soft);
-  color: var(--ods-color-accent);
+  color: var(--ods-color-accent-text);
   font-size: var(--ods-font-size-2xl);
 }
 

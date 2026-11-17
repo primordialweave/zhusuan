@@ -33,6 +33,7 @@
 @import './components/radio-group/radio-group.css';
 @import './components/scroll-shadow/scroll-shadow.css';
 @import './components/search-field/search-field.css';
+@import './components/segmented-control/segmented-control.css';
 @import './components/select/select.css';
 @import './components/skeleton/skeleton.css';
 @import './components/slider/slider.css';
@@ -46,6 +47,7 @@
 @import './components/toast/toast.css';
 @import './components/tooltip/tooltip.css';
 @import './components/user/user.css';
+@import './patterns/cloud-panel/cloud-panel.css';
 @import './patterns/data-list/data-list.css';
 @import './patterns/form-layout/form-layout.css';
 @import './patterns/page-header/page-header.css';
@@ -53,3 +55,4 @@
 @import './patterns/router-controls/router-controls.css';
 @import './patterns/section-header/section-header.css';
 @import './patterns/summary-metric/summary-metric.css';
+@import './patterns/work-surface/work-surface.css';

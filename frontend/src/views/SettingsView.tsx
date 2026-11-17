@@ -1,5 +1,5 @@
-import { useEffect, useMemo, useState } from 'react'
-import { useSearchParams } from 'react-router-dom'
+import { useEffect, useId, useMemo, useState } from 'react'
+import { useNavigate, useSearchParams } from 'react-router-dom'
 import { Browser } from '@wailsio/runtime'
 import api, { type ApiResponse } from '@/api'
 import type { User } from '@/api/auth'
@@ -12,49 +12,47 @@ import { useConfirm } from '@/composables/useConfirm'
 import { useToastStore } from '@/composables/useToast'
 import {
   Button,
-  Card,
   Chip,
   Field,
   FormGrid,
   Image,
   Input,
-  Radio,
-  RadioGroup,
-  SectionHeader,
-  Surface,
+  PageHeader,
+  RouterButton,
+  SegmentedControl,
+  Switch,
   Tabs,
+  User as UserBadge,
 } from '@/design-system'
+import { useAppearanceStore, type AppearancePreferences } from '@/stores/appearance'
 import { useAuthStore } from '@/stores/auth'
 import { THEME_OPTIONS, useThemeStore } from '@/stores/theme'
 import '@/styles/settings.css'
 import pkg from '../../package.json'
 
-const techStack = [
-  { key: 'wails', label: 'Wails v3' },
-  { key: 'react', label: 'React' },
-  { key: 'ts', label: 'TypeScript' },
-  { key: 'go', label: 'Go' },
+const techStack = ['Wails v3', 'React', 'TypeScript', 'Go']
+
+const appearanceSwitches: ReadonlyArray<{
+  description: string
+  key: keyof AppearancePreferences
+  title: string
+}> = [
+  {
+    description: '在工作台播放雨丝、水波和柳枝动画',
+    key: 'sceneMotion',
+    title: '江南动态场景',
+  },
+  {
+    description: '保留静态雨景，减少背景动效',
+    key: 'reduceMotion',
+    title: '减少动态效果',
+  },
+  {
+    description: '在底部导航显示透明与折射',
+    key: 'liquidGlass',
+    title: '液态玻璃效果',
+  },
 ]
-
-const compactSettingsNavigationQuery = '(max-width: 48rem)'
-
-const useCompactSettingsNavigation = () => {
-  const [isCompact, setIsCompact] = useState(() =>
-    typeof window === 'undefined'
-      ? false
-      : window.matchMedia(compactSettingsNavigationQuery).matches,
-  )
-
-  useEffect(() => {
-    const media = window.matchMedia(compactSettingsNavigationQuery)
-    const sync = () => setIsCompact(media.matches)
-    sync()
-    media.addEventListener('change', sync)
-    return () => media.removeEventListener('change', sync)
-  }, [])
-
-  return isCompact
-}
 
 interface ReleaseInfo {
   html_url: string
@@ -102,6 +100,8 @@ const createProfileFormState = (user: User | null): ProfileFormState => {
 }
 
 export default function SettingsView() {
+  const navigate = useNavigate()
+  const rowId = useId()
   const [searchParams, setSearchParams] = useSearchParams()
   const { confirm } = useConfirm()
   const toastError = useToastStore((state) => state.error)
@@ -112,9 +112,10 @@ export default function SettingsView() {
   const refreshUser = useAuthStore((state) => state.refreshUser)
   const updateProfile = useAuthStore((state) => state.updateProfile)
   const changePassword = useAuthStore((state) => state.changePassword)
+  const logout = useAuthStore((state) => state.logout)
   const theme = useThemeStore((state) => state.theme)
   const setTheme = useThemeStore((state) => state.setTheme)
-  const compactNavigation = useCompactSettingsNavigation()
+  const appearance = useAppearanceStore()
   const isAdmin = user?.role === 'admin'
   const [profileForm, setProfileForm] = useState(() => createProfileFormState(user))
   const profile = profileForm.draft
@@ -154,20 +155,24 @@ export default function SettingsView() {
     return () => window.clearTimeout(timer)
   }, [user])
 
-  const settingsNav = useMemo(() => {
-    const items = [
-      { icon: 'ri-user-line', key: 'profile', label: '个人信息' },
-      ...(isAdmin ? [{ icon: 'ri-team-line', key: 'users', label: '用户管理' }] : []),
-      ...(isAdmin ? [{ icon: 'ri-book-2-line', key: 'dictionary', label: '字典管理' }] : []),
-      { icon: 'ri-lock-line', key: 'security', label: '安全设置' },
-      { icon: 'ri-cloud-line', key: 'data-sync', label: '数据同步' },
-      { icon: 'ri-palette-line', key: 'appearance', label: '外观设置' },
-      { icon: 'ri-notification-3-line', key: 'notification', label: '通知设置' },
-      { icon: 'ri-terminal-box-line', key: 'developer', label: '开发设置' },
-      { icon: 'ri-information-line', key: 'about', label: '关于' },
-    ]
-    return items
-  }, [isAdmin])
+  const settingsNav = useMemo(
+    () => [
+      { key: 'profile', label: '个人信息' },
+      { key: 'security', label: '安全设置' },
+      { key: 'appearance', label: '外观设置' },
+      { key: 'notification', label: '通知设置' },
+      { key: 'data-sync', label: '数据同步' },
+      ...(isAdmin
+        ? [
+            { key: 'users', label: '用户管理' },
+            { key: 'dictionary', label: '字典管理' },
+          ]
+        : []),
+      { key: 'developer', label: '开发设置' },
+      { key: 'about', label: '关于' },
+    ],
+    [isAdmin],
+  )
 
   const requestedTab = searchParams.get('tab')
   const activeTab =
@@ -249,6 +254,11 @@ export default function SettingsView() {
     }
   }
 
+  const handleLogout = async () => {
+    await logout()
+    await navigate('/login')
+  }
+
   const openExternalUrl = (url: string) => {
     void Browser.OpenURL(url).catch(() => {
       window.open(url, '_blank', 'noopener,noreferrer')
@@ -288,6 +298,43 @@ export default function SettingsView() {
     }
   }
 
+  const passwordField = (field: keyof typeof securityForm, label: string, placeholder: string) => (
+    <Field.Root>
+      <Field.Label>{label}</Field.Label>
+      <Input
+        autoCapitalize="off"
+        autoComplete="off"
+        autoCorrect="off"
+        onChange={(event) =>
+          setSecurityForm((current) => ({ ...current, [field]: event.target.value }))
+        }
+        placeholder={placeholder}
+        spellCheck={false}
+        type="password"
+        value={securityForm[field]}
+      />
+    </Field.Root>
+  )
+
+  const profileField = (
+    field: keyof ProfileFields,
+    label: string,
+    type: 'email' | 'tel' | 'text',
+  ) => (
+    <Field.Root>
+      <Field.Label>{label}</Field.Label>
+      <Input
+        autoCapitalize="off"
+        autoComplete="off"
+        autoCorrect="off"
+        onChange={(event) => updateProfileField(field, event.target.value)}
+        spellCheck={false}
+        type={type}
+        value={profile[field]}
+      />
+    </Field.Root>
+  )
+
   const activePanel = () => {
     if (activeTab === 'users' && isAdmin) {
       return (
@@ -316,84 +363,33 @@ export default function SettingsView() {
     if (activeTab === 'developer') {
       return (
         <section className="settings-management-panel" aria-label="开发设置">
-          <TokenManagement />
+          <TokenManagement
+            actions={
+              <RouterButton to="/design-system" variant="outline">
+                <span>组件展厅</span>
+                <i aria-hidden="true" className="ri-arrow-right-line" />
+              </RouterButton>
+            }
+          />
         </section>
       )
     }
 
     if (activeTab === 'security') {
       return (
-        <Card.Root className="security-card" gap="lg" padding="lg" variant="secondary">
-          <SectionHeader
-            actions={
-              <Button onClick={handlePasswordChange}>
-                <i className="ri-lock-password-line" />
-                <span>修改密码</span>
-              </Button>
-            }
-            description="管理账户安全，保护个人信息"
-            icon={<i className="ri-lock-line" />}
-            size="lg"
-            title="安全设置"
-          />
-
+        <section aria-label="安全设置" className="settings-form">
           <FormGrid columns={3}>
-            <Field.Root>
-              <Field.Label>当前密码</Field.Label>
-              <Input
-                autoCapitalize="off"
-                autoComplete="off"
-                autoCorrect="off"
-                onChange={(event) =>
-                  setSecurityForm((current) => ({
-                    ...current,
-                    oldPassword: event.target.value,
-                  }))
-                }
-                placeholder="请输入当前密码"
-                spellCheck={false}
-                type="password"
-                value={securityForm.oldPassword}
-              />
-            </Field.Root>
-            <Field.Root>
-              <Field.Label>新密码</Field.Label>
-              <Input
-                autoCapitalize="off"
-                autoComplete="off"
-                autoCorrect="off"
-                onChange={(event) =>
-                  setSecurityForm((current) => ({
-                    ...current,
-                    newPassword: event.target.value,
-                  }))
-                }
-                placeholder="请输入新密码（至少6位）"
-                spellCheck={false}
-                type="password"
-                value={securityForm.newPassword}
-              />
-            </Field.Root>
-            <Field.Root>
-              <Field.Label>确认新密码</Field.Label>
-              <Input
-                autoCapitalize="off"
-                autoComplete="off"
-                autoCorrect="off"
-                onChange={(event) =>
-                  setSecurityForm((current) => ({
-                    ...current,
-                    confirmPassword: event.target.value,
-                  }))
-                }
-                placeholder="请再次输入新密码"
-                spellCheck={false}
-                type="password"
-                value={securityForm.confirmPassword}
-              />
-            </Field.Root>
+            {passwordField('oldPassword', '当前密码', '请输入当前密码')}
+            {passwordField('newPassword', '新密码', '请输入新密码（至少6位）')}
+            {passwordField('confirmPassword', '确认新密码', '请再次输入新密码')}
           </FormGrid>
-        </Card.Root>
+          <div className="settings-form__actions">
+            <Button onClick={handlePasswordChange}>
+              <i aria-hidden="true" className="ri-lock-password-line" />
+              <span>修改密码</span>
+            </Button>
+          </div>
+        </section>
       )
     }
 
@@ -407,252 +403,160 @@ export default function SettingsView() {
 
     if (activeTab === 'appearance') {
       return (
-        <Card.Root className="appearance-card" gap="lg" padding="lg" variant="secondary">
-          <SectionHeader
-            description="自定义界面主题，打造专属的使用体验"
-            icon={<i className="ri-palette-line" />}
-            size="lg"
-            title="外观设置"
-          />
-
-          <RadioGroup
-            aria-label="主题模式"
-            columns={3}
-            name="appearance-theme"
-            onValueChange={(value) => setTheme(value as typeof theme)}
-            value={theme}
-          >
-            {THEME_OPTIONS.map((item) => (
-              <Radio key={item.value} value={item.value} variant="card">
-                <span className="theme-card-content" data-active={theme === item.value}>
-                  <span className="theme-icon">
-                    <i className={item.icon} />
+        <section aria-label="外观设置" className="settings-appearance">
+          <ul className="settings-list">
+            <li className="settings-row">
+              <span className="settings-row__title">界面主题</span>
+              <SegmentedControl
+                aria-label="界面主题"
+                onValueChange={setTheme}
+                options={THEME_OPTIONS}
+                value={theme}
+              />
+            </li>
+            {appearanceSwitches.map((item) => (
+              <li className="settings-row" key={item.key}>
+                <div className="settings-row__copy">
+                  <span className="settings-row__title" id={`${rowId}-${item.key}-title`}>
+                    {item.title}
                   </span>
-                  <span className="theme-label">{item.label}</span>
-                  {theme === item.value ? (
-                    <span className="theme-check">
-                      <i className="ri-check-line" />
-                    </span>
-                  ) : null}
-                </span>
-              </Radio>
+                  <span
+                    className="settings-row__description"
+                    id={`${rowId}-${item.key}-description`}
+                  >
+                    {item.description}
+                  </span>
+                </div>
+                <Switch
+                  aria-describedby={`${rowId}-${item.key}-description`}
+                  aria-labelledby={`${rowId}-${item.key}-title`}
+                  checked={appearance[item.key]}
+                  onChange={(event) => appearance.setPreference(item.key, event.target.checked)}
+                  size="lg"
+                />
+              </li>
             ))}
-          </RadioGroup>
-        </Card.Root>
+          </ul>
+          <div aria-label="江南场景预览" className="settings-preview" role="img" />
+        </section>
       )
     }
 
     if (activeTab === 'about') {
       return (
-        <section className="about-page">
-          <div className="about-container">
-            <div className="about-hero">
-              <div className="logo-wrapper">
-                <div className="logo-glow" />
-                <Image alt="Orange Logo" className="about-logo" src="/orange.png" />
-              </div>
-              <h1 className="about-title">Orange</h1>
-              <div className="about-subtitle">
-                <Chip size="sm" tone="accent">
-                  v{pkg.version}
-                </Chip>
-                <span className="tagline">小旭姐专属记账工具</span>
-              </div>
+        <section aria-label="关于" className="settings-about">
+          <div className="about-hero">
+            <Image alt="" className="about-logo" src="/orange.png" />
+            <div className="about-hero__copy">
+              <h2 className="about-title">Orange</h2>
+              <span className="about-tagline">小旭姐专属记账工具</span>
             </div>
-
-            <div className="info-cards-grid">
-              <Card.Root className="info-card" gap="sm" padding="lg" variant="tertiary">
-                <Surface
-                  as="span"
-                  className="card-icon-wrapper"
-                  padding="none"
-                  radius="panel"
-                  tone="accent"
-                >
-                  <i className="ri-user-smile-line" />
-                </Surface>
-                <span className="card-label">作者</span>
-                <span className="card-value">willxue</span>
-              </Card.Root>
-              <Card.Root className="info-card" gap="sm" padding="lg" variant="tertiary">
-                <Surface
-                  as="span"
-                  className="card-icon-wrapper"
-                  padding="none"
-                  radius="panel"
-                  tone="success"
-                >
-                  <i className="ri-wechat-line" />
-                </Surface>
-                <span className="card-label">微信公众号</span>
-                <span className="card-value">为学书院</span>
-              </Card.Root>
-              <Card.Root
-                as="button"
-                className="info-card"
-                gap="sm"
-                onClick={openGitHub}
-                padding="lg"
-                pressable
-                type="button"
-                variant="tertiary"
+            <div className="about-hero__version">
+              <Chip size="sm" tone="accent">
+                v{pkg.version}
+              </Chip>
+              <Button
+                onClick={() => void checkUpdate()}
+                pending={checkingUpdate}
+                size="sm"
+                variant="outline"
               >
-                <Surface
-                  as="span"
-                  className="card-icon-wrapper"
-                  padding="none"
-                  radius="panel"
-                  variant="inset"
-                >
-                  <i className="ri-github-line" />
-                </Surface>
-                <span className="card-label">开源地址</span>
-                <span className="card-value">
-                  FruitsAI/Orange
-                  <i className="ri-arrow-right-up-line external-icon" />
-                </span>
-              </Card.Root>
-            </div>
-
-            <div className="tech-stack">
-              {techStack.map((tech) => (
-                <Chip data-tech={tech.key} key={tech.key}>
-                  <span className="tech-dot" />
-                  <span className="tech-name">{tech.label}</span>
-                </Chip>
-              ))}
-            </div>
-
-            <Button onClick={() => void checkUpdate()} pending={checkingUpdate}>
-              <i className={`ri-loop-left-line ${checkingUpdate ? 'spinning' : ''}`} />
-              <span>{checkingUpdate ? '正在检测更新...' : '检测更新'}</span>
-            </Button>
-
-            <div className="copyright">
-              <span className="copyright-text">© {new Date().getFullYear()} FruitsAI</span>
-              <span className="copyright-divider">·</span>
-              <span className="copyright-rights">All rights reserved</span>
+                <i
+                  aria-hidden="true"
+                  className={`ri-loop-left-line ${checkingUpdate ? 'spinning' : ''}`}
+                />
+                <span>{checkingUpdate ? '正在检测更新...' : '检测更新'}</span>
+              </Button>
             </div>
           </div>
+
+          <ul className="settings-list">
+            <li className="settings-row">
+              <span className="settings-row__title">作者</span>
+              <span className="settings-row__value">willxue</span>
+            </li>
+            <li className="settings-row">
+              <span className="settings-row__title">微信公众号</span>
+              <span className="settings-row__value">为学书院</span>
+            </li>
+            <li className="settings-row">
+              <span className="settings-row__title" id={`${rowId}-source-title`}>
+                开源地址
+              </span>
+              <Button
+                aria-describedby={`${rowId}-source-title`}
+                onClick={openGitHub}
+                size="sm"
+                variant="outline"
+              >
+                <span>FruitsAI/Orange</span>
+                <i aria-hidden="true" className="ri-arrow-right-up-line" />
+              </Button>
+            </li>
+            <li className="settings-row">
+              <span className="settings-row__title">技术栈</span>
+              <div className="settings-row__value">
+                {techStack.map((tech) => (
+                  <Chip key={tech} size="sm">
+                    {tech}
+                  </Chip>
+                ))}
+              </div>
+            </li>
+          </ul>
+
+          <p className="about-copyright">
+            © {new Date().getFullYear()} FruitsAI · All rights reserved
+          </p>
         </section>
       )
     }
 
     return (
-      <Card.Root className="profile-card" gap="lg" padding="lg" variant="secondary">
-        <SectionHeader
-          actions={
-            <Button onClick={saveProfile}>
-              <i className="ri-save-line" />
-              <span>保存更改</span>
-            </Button>
-          }
-          description="管理您的个人资料和联系方式"
-          icon={<i className="ri-user-3-line" />}
-          size="lg"
-          title="个人信息"
-        />
-
-        <FormGrid columns={2}>
-          <Field.Root>
-            <Field.Label>姓名</Field.Label>
-            <Input
-              autoCapitalize="off"
-              autoComplete="off"
-              autoCorrect="off"
-              onChange={(event) => updateProfileField('name', event.target.value)}
-              spellCheck={false}
-              type="text"
-              value={profile.name}
-            />
-          </Field.Root>
-          <Field.Root>
-            <Field.Label>职位</Field.Label>
-            <Input
-              autoCapitalize="off"
-              autoComplete="off"
-              autoCorrect="off"
-              onChange={(event) => updateProfileField('position', event.target.value)}
-              spellCheck={false}
-              type="text"
-              value={profile.position}
-            />
-          </Field.Root>
-          <Field.Root>
-            <Field.Label>邮箱</Field.Label>
-            <Input
-              autoCapitalize="off"
-              autoComplete="off"
-              autoCorrect="off"
-              onChange={(event) => updateProfileField('email', event.target.value)}
-              spellCheck={false}
-              type="email"
-              value={profile.email}
-            />
-          </Field.Root>
-          <Field.Root>
-            <Field.Label>手机</Field.Label>
-            <Input
-              autoCapitalize="off"
-              autoComplete="off"
-              autoCorrect="off"
-              onChange={(event) => updateProfileField('phone', event.target.value)}
-              spellCheck={false}
-              type="tel"
-              value={profile.phone}
-            />
-          </Field.Root>
-          <Field.Root className="settings-field--full">
-            <Field.Label>部门</Field.Label>
-            <Input
-              autoCapitalize="off"
-              autoComplete="off"
-              autoCorrect="off"
-              onChange={(event) => updateProfileField('department', event.target.value)}
-              spellCheck={false}
-              type="text"
-              value={profile.department}
-            />
-          </Field.Root>
+      <section aria-label="个人信息" className="settings-form">
+        <FormGrid columns={3}>
+          {profileField('name', '姓名', 'text')}
+          {profileField('position', '职位', 'text')}
+          {profileField('department', '部门', 'text')}
+          {profileField('email', '邮箱', 'email')}
+          {profileField('phone', '手机', 'tel')}
         </FormGrid>
-      </Card.Root>
+        <div className="settings-form__actions">
+          <Button onClick={saveProfile}>
+            <i aria-hidden="true" className="ri-save-line" />
+            <span>保存更改</span>
+          </Button>
+        </div>
+
+        <ul className="settings-list">
+          <li className="settings-row">
+            <UserBadge
+              avatarProps={{ name: user?.name || user?.username, src: user?.avatar || undefined }}
+              description={user?.username}
+              name={user?.name || user?.username || '未登录'}
+            />
+            <Button onClick={() => void handleLogout()} tone="danger" variant="outline">
+              <i aria-hidden="true" className="ri-logout-box-r-line" />
+              <span>退出登录</span>
+            </Button>
+          </li>
+        </ul>
+      </section>
     )
   }
 
   return (
     <div className="settings-workspace" data-motion-scope="settings">
+      <PageHeader description="管理账户和界面偏好" title="系统设置" />
+
       <Tabs.Root className="settings-view" onValueChange={selectTab} value={activeTab}>
-        <aside className="settings-navigation" aria-label="设置导航">
-          <Card.Root className="nav-card" gap="sm" padding="sm" variant="secondary">
-            <div className="settings-nav-header">
-              <span aria-hidden="true" className="settings-nav-header__icon">
-                <i className="ri-equalizer-2-line" />
-              </span>
-              <span className="settings-nav-header__copy">
-                <strong>设置分类</strong>
-                <span>{settingsNav.length} 个可用分区</span>
-              </span>
-            </div>
-
-            <Tabs.List
-              aria-label="设置分类"
-              orientation={compactNavigation ? 'horizontal' : 'vertical'}
-              variant="rail"
-            >
-              {settingsNav.map((item) => (
-                <Tabs.Tab key={item.key} value={item.key}>
-                  <i aria-hidden="true" className={item.icon} />
-                  <span>{item.label}</span>
-                </Tabs.Tab>
-              ))}
-            </Tabs.List>
-
-            <div className="settings-nav-footer">
-              <i aria-hidden="true" className="ri-shield-check-line" />
-              <span>{isAdmin ? '管理权限已启用' : '账户配置受保护'}</span>
-            </div>
-          </Card.Root>
-        </aside>
+        <Tabs.List aria-label="设置分类" variant="underline">
+          {settingsNav.map((item) => (
+            <Tabs.Tab key={item.key} value={item.key}>
+              {item.label}
+            </Tabs.Tab>
+          ))}
+        </Tabs.List>
 
         <Tabs.Panel className="settings-content" value={activeTab}>
           <div className="settings-panel-frame" key={activeTab}>

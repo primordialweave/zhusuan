@@ -29,11 +29,11 @@ ODS 的生产页面迁移已经完成，当前目标是维持零债务基线：�
 | `ConfirmModal`                                | `AlertDialog`                           | 保留文案和回调，统一 focus 行为       |
 | 页面级 `.modal*`                              | `Dialog`                                | 分页迁移，不保留多个 overlay 实现     |
 | `GlassCard`                                   | `Surface`/`Card`                        | hover 不再是调用方布尔开关            |
-| `EmberPanel`                                  | `Card` 或产品 pattern                   | 兼容 wrapper 标记 deprecated          |
+| `EmberPanel`                                  | `Card` 或产品 pattern                   | 已随工作台重构删除                    |
 | `PanelHeader`                                 | `Card.Header` 或 `patterns/PanelHeader` | 根据是否包含业务语气决定层级          |
 | `StatusBadge`                                 | `Chip`/status variant                   | 状态语义通过 tone 映射                |
 | `DatePicker`                                  | 原生 `DateField`                        | 完整 calendar 延后到 Phase 2          |
-| `ThemeSelector`、topbar menus                 | `Popover` + `ListBox`                   | 保留 portal、键盘和 focus restore     |
+| `ThemeSelector`、topbar menus                 | `SegmentedControl`、`Popover`           | 主题在设置页切换，通知在 Dock 旁弹出  |
 | 多套 pagination                               | `Pagination`                            | 统一 page、pageSize 与 disabled 状态  |
 | `ToastContainer`                              | `Toaster`                               | 保留现有 store，替换 presentation     |
 
@@ -83,7 +83,7 @@ background: var(--ods-color-bg-surface-raised);
 - `rg` 无生产 TSX/class/token 引用。
 - focused tests 与全量 frontend tests 通过。
 - ESLint、TypeScript 和生产构建通过。
-- Day Ember、Night Orbit、键盘与 320px 验收通过。
+- 烟雨、夜雨、键盘与 320px 验收通过。
 - 对应旧 alias 已无消费者，且 token 契约扫描保持通过。
 
 不要以“大文件不好维护”为理由直接批量删除；每次删除都要有消费者清单和回归证据。

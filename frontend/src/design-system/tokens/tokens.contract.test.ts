@@ -25,6 +25,7 @@ const themeContract = [
   '--ods-color-bg-surface',
   '--ods-color-bg-surface-raised',
   '--ods-color-bg-surface-glass',
+  '--ods-color-bg-surface-glass-dense',
   '--ods-color-bg-surface-hover',
   '--ods-color-bg-surface-pressed',
   '--ods-color-fg-default',
@@ -39,13 +40,16 @@ const themeContract = [
   '--ods-color-fg-brand-surface-danger',
   '--ods-color-border-default',
   '--ods-color-border-strong',
+  '--ods-color-border-control',
   '--ods-color-border-focus',
   '--ods-color-border-brand-surface',
   '--ods-color-accent',
+  '--ods-color-accent-text',
   '--ods-color-accent-hover',
   '--ods-color-accent-pressed',
   '--ods-color-accent-soft',
   '--ods-color-accent-fg',
+  '--ods-color-accent-warm',
   '--ods-color-status-success',
   '--ods-color-status-success-soft',
   '--ods-color-status-warning',
@@ -57,11 +61,15 @@ const themeContract = [
   '--ods-color-overlay-scrim',
   '--ods-color-ambient-glow',
   '--ods-color-selection',
+  '--ods-color-scene-veil',
+  '--ods-color-scene-mist',
   '--ods-shadow-soft',
   '--ods-shadow-panel',
   '--ods-shadow-modal',
   '--ods-shadow-brand-surface',
+  '--ods-shadow-nav-selected',
   '--ods-gradient-glow',
+  '--ods-gradient-nav-selected',
   '--ods-gradient-text',
   '--ods-gradient-brand-surface',
   '--ods-material-glass-blur',
@@ -69,13 +77,20 @@ const themeContract = [
   '--ods-material-glass-brightness',
   '--ods-material-glass-contrast',
   '--ods-material-glass-specular',
+  '--ods-material-glass-sheen',
   '--ods-material-glass-shadow-outer',
+  '--ods-material-glass-shadow-dense',
   '--ods-material-glass-shadow-inner',
   '--ods-material-glass-border',
   '--ods-material-glass-border-subtle',
+  '--ods-material-frost-veil',
+  '--ods-material-frost-rim',
+  '--ods-material-frost-control',
   '--ods-data-series-planned',
   '--ods-data-series-actual',
   '--ods-data-series-actual-fill',
+  '--ods-data-part-paid',
+  '--ods-data-part-pending',
   '--ods-data-grid',
   '--ods-data-tooltip-bg',
   '--ods-data-tooltip-fg',
@@ -87,12 +102,12 @@ const forbiddenLegacyReference =
   /var\(--(?:bg-|text-|border-color|separator-color|color-(?:primary|bg|surface|text|border|accent|ambient|secondary|success|warning|danger|info|teal)|glass-|space-|spacing-|radius-|motion-|transition-|ease-|font-)/
 
 describe('Orange Design System token contracts', () => {
-  it('keeps Day Ember and Night Orbit semantically complete', () => {
+  it('keeps 烟雨 and 夜雨 semantically complete', () => {
     const dayTokens = extractCustomPropertyNames(
-      readDesignSystemFile('tokens/themes/day-ember.css'),
+      readDesignSystemFile('tokens/themes/jiangnan-mist.css'),
     )
     const nightTokens = extractCustomPropertyNames(
-      readDesignSystemFile('tokens/themes/night-orbit.css'),
+      readDesignSystemFile('tokens/themes/jiangnan-night.css'),
     )
 
     expect([...dayTokens].filter((token) => token.startsWith('--ods-')).sort()).toEqual(
@@ -100,8 +115,8 @@ describe('Orange Design System token contracts', () => {
     )
 
     for (const token of themeContract) {
-      expect(dayTokens, `Day Ember is missing ${token}`).toContain(token)
-      expect(nightTokens, `Night Orbit is missing ${token}`).toContain(token)
+      expect(dayTokens, `烟雨 is missing ${token}`).toContain(token)
+      expect(nightTokens, `夜雨 is missing ${token}`).toContain(token)
     }
   })
 
@@ -109,8 +124,8 @@ describe('Orange Design System token contracts', () => {
     const publicTokenSources = [
       'tokens/reference.css',
       'tokens/semantic.css',
-      'tokens/themes/day-ember.css',
-      'tokens/themes/night-orbit.css',
+      'tokens/themes/jiangnan-mist.css',
+      'tokens/themes/jiangnan-night.css',
     ]
 
     for (const path of publicTokenSources) {

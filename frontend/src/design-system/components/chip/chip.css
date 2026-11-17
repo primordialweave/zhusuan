@@ -12,14 +12,14 @@
   color: var(--ods-chip-color);
   font-family: var(--ods-font-family-body);
   font-size: var(--ods-font-size-xs);
-  font-weight: var(--ods-font-weight-semibold);
+  font-weight: var(--ods-font-weight-medium);
   letter-spacing: var(--ods-letter-spacing-body);
   line-height: var(--ods-line-height-tight);
   white-space: nowrap;
 }
 
 .ods-chip[data-tone='accent'] {
-  --ods-chip-color: var(--ods-color-accent);
+  --ods-chip-color: var(--ods-color-accent-text);
   --ods-chip-soft: var(--ods-color-accent-soft);
 }
 

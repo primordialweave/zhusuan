@@ -48,6 +48,27 @@ describe('Table', () => {
     expect(selectedRow).toHaveAttribute('data-selected', 'true')
   })
 
+  it('marks the frame and the table with the chosen variant', () => {
+    const { rerender } = render(
+      <Table.Root aria-label="台账">
+        <Table.Body />
+      </Table.Root>,
+    )
+
+    const table = screen.getByRole('table', { name: '台账' })
+    expect(table).toHaveAttribute('data-variant', 'card')
+    expect(table.parentElement).toHaveAttribute('data-variant', 'card')
+
+    rerender(
+      <Table.Root aria-label="台账" variant="plain">
+        <Table.Body />
+      </Table.Root>,
+    )
+
+    expect(table).toHaveAttribute('data-variant', 'plain')
+    expect(table.parentElement).toHaveAttribute('data-variant', 'plain')
+  })
+
   it('owns sticky columns and visual state for rows with nested accessible actions', () => {
     const onClick = vi.fn()
     render(

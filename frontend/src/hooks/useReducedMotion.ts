@@ -1,4 +1,5 @@
 import { useSyncExternalStore } from 'react'
+import { useAppearanceStore } from '@/stores/appearance'
 
 const reducedMotionQuery = '(prefers-reduced-motion: reduce)'
 const subscribers = new Set<() => void>()
@@ -47,6 +48,9 @@ function getServerSnapshot() {
   return false
 }
 
+/** True when the system asks for reduced motion or the in-app preference is switched on. */
 export function useReducedMotion() {
-  return useSyncExternalStore(subscribe, getSnapshot, getServerSnapshot)
+  const systemPreference = useSyncExternalStore(subscribe, getSnapshot, getServerSnapshot)
+  const appPreference = useAppearanceStore((state) => state.reduceMotion)
+  return systemPreference || appPreference
 }

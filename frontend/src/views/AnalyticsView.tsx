@@ -1,37 +1,20 @@
-import type { ChartConfiguration } from 'chart.js'
+import dayjs from 'dayjs'
+import type { ChartConfiguration, ScriptableContext } from 'chart.js'
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react'
 import { dashboardApi, type DashboardStats, type IncomeTrend } from '@/api/dashboard'
 import Chart from '@/config/chart'
 import { useReducedMotion } from '@/hooks/useReducedMotion'
-import {
-  Button,
-  Card,
-  EmptyState,
-  PageHeader,
-  SectionHeader,
-  Skeleton,
-  SummaryMetric,
-  Table,
-  Tabs,
-  type MetricTrend,
-  type SummaryMetricProps,
-} from '@/design-system'
+import { Button, EmptyState, PageHeader, Skeleton, Table, Tabs } from '@/design-system'
 import { useToastStore } from '@/composables/useToast'
 import { useThemeStore } from '@/stores/theme'
 import { downloadCsv } from '@/utils/csv'
-import { formatCurrency } from '@/utils/format'
+import { getCollectionTimingLabel, getPeriodLabel } from '@/views/dashboard/dashboardModel'
+import { formatAmount, formatCurrency } from '@/utils/format'
 import '@/styles/analytics.css'
 
 type Period = 'week' | 'month' | 'quarter' | 'year'
 
 const periods: Period[] = ['week', 'month', 'quarter', 'year']
-
-const metricDefinitions = [
-  { icon: 'ri-timer-line', label: '平均收款周期' },
-  { icon: 'ri-funds-line', label: '预期收款' },
-  { icon: 'ri-percent-line', label: '收款率' },
-  { icon: 'ri-error-warning-line', label: '逾期比例' },
-] as const
 
 const emptyStats: DashboardStats = {
   avg_collection_days: 0,
@@ -59,12 +42,23 @@ const periodLabel = (period: Period) => {
   return '年'
 }
 
-const formatWholeCurrency = (amount: number) => `¥${Math.round(amount).toLocaleString('zh-CN')}`
+const formatAxisAmount = (amount: number) => {
+  if (Math.abs(amount) >= 100000000) return `${Number((amount / 100000000).toFixed(1))}亿`
+  if (Math.abs(amount) >= 10000) return `${Number((amount / 10000).toFixed(1))}万`
+  return Math.round(amount).toLocaleString('zh-CN')
+}
 
-const formatAxisCurrency = (amount: number) => {
-  if (Math.abs(amount) >= 100000000) return `¥${(amount / 100000000).toFixed(1)}亿`
-  if (Math.abs(amount) >= 10000) return `¥${(amount / 10000).toFixed(1)}万`
-  return `¥${Math.round(amount).toLocaleString('zh-CN')}`
+// One decimal at most, and none when it would be a zero: 60%, 66.7%.
+const formatShare = (part: number, whole: number) =>
+  whole ? `${Number(((part / whole) * 100).toFixed(1))}%` : '—'
+
+// The API sends `MM-DD` for daily points and `YYYY-MM` for monthly ones.
+const formatTrendLabel = (label: string) => {
+  const day = /^(\d{2})-(\d{2})$/.exec(label)
+  if (day) return `${Number(day[1])}月${Number(day[2])}日`
+  const month = /^(\d{4})-(\d{2})$/.exec(label)
+  if (month) return `${month[1]}年${Number(month[2])}月`
+  return label
 }
 
 const readToken = (name: string, fallback: string) => {
@@ -73,24 +67,36 @@ const readToken = (name: string, fallback: string) => {
   return value || fallback
 }
 
-const makeTrend = (
-  value: number,
-  prefix: string,
-  label: string,
-  lowerIsBetter = false,
-): MetricTrend => {
-  const direction: MetricTrend['direction'] = value > 0 ? 'up' : value < 0 ? 'down' : 'flat'
-  const favorable = lowerIsBetter ? value <= 0 : value >= 0
-  const tone: MetricTrend['tone'] =
-    direction === 'flat' ? 'neutral' : favorable ? 'positive' : 'negative'
-  const directionLabel = direction === 'up' ? '上升' : direction === 'down' ? '下降' : '持平'
+// Centre-line radius of a ring that touches the edge of a 100-unit box (stroke 22.8, hole 54 %).
+const DONUT_RADIUS = 38.6
+const DONUT_CIRCUMFERENCE = 2 * Math.PI * DONUT_RADIUS
 
-  return {
-    accessibleLabel: `${prefix}${label}${directionLabel}${Math.abs(value).toFixed(2)}%`,
-    direction,
-    label: `${Math.abs(value).toFixed(2)}%`,
-    tone,
-  }
+/** Two butt-ended ring segments, clockwise from twelve o'clock: received, then pending. */
+function StructureDonut({ paid, pending }: { paid: number; pending: number }) {
+  const total = paid + pending
+  const paidShare = total > 0 ? paid / total : 0
+  const paidPercent = Math.round(paidShare * 100)
+
+  return (
+    <svg
+      aria-label={`已收款 ${paidPercent}%，待收款 ${100 - paidPercent}%`}
+      className="analytics-donut"
+      role="img"
+      viewBox="0 0 100 100"
+    >
+      <circle cx="50" cy="50" data-part="pending" r={DONUT_RADIUS} />
+      {paidShare > 0 ? (
+        <circle
+          cx="50"
+          cy="50"
+          data-part="paid"
+          r={DONUT_RADIUS}
+          strokeDasharray={`${(paidShare * DONUT_CIRCUMFERENCE).toFixed(3)} ${DONUT_CIRCUMFERENCE.toFixed(3)}`}
+          transform="rotate(-90 50 50)"
+        />
+      ) : null}
+    </svg>
+  )
 }
 
 export default function AnalyticsView() {
@@ -102,10 +108,8 @@ export default function AnalyticsView() {
   const [trend, setTrend] = useState<IncomeTrend>(emptyTrend)
   const [isLoading, setIsLoading] = useState(true)
   const [loadError, setLoadError] = useState(false)
-  const barChartCanvas = useRef<HTMLCanvasElement | null>(null)
-  const breakdownChartCanvas = useRef<HTMLCanvasElement | null>(null)
-  const barChart = useRef<Chart<'bar'> | null>(null)
-  const breakdownChart = useRef<Chart<'bar'> | null>(null)
+  const trendCanvas = useRef<HTMLCanvasElement | null>(null)
+  const trendChart = useRef<Chart<'line'> | null>(null)
   const isMountedRef = useRef(false)
   const requestGenerationRef = useRef(0)
 
@@ -117,20 +121,10 @@ export default function AnalyticsView() {
     }
   }, [])
 
-  const collectionRate = useMemo(() => {
-    if (!stats.total_amount) return '0.00'
-    return ((stats.paid_amount / stats.total_amount) * 100).toFixed(2)
-  }, [stats])
-
-  const overdueRate = useMemo(() => {
-    if (!stats.total_amount) return '0.00'
-    return ((stats.overdue_amount / stats.total_amount) * 100).toFixed(2)
-  }, [stats])
-
-  const pendingNotOverdue = useMemo(
-    () => Math.max(0, stats.pending_amount - stats.overdue_amount),
-    [stats.overdue_amount, stats.pending_amount],
-  )
+  // Overdue is part of pending; the structure shows received against everything still due.
+  const pendingAmount = Math.max(0, stats.pending_amount)
+  const overdueAmount = Math.max(0, stats.overdue_amount)
+  const paidAmount = Math.max(0, stats.paid_amount)
 
   const hasTrendData = useMemo(
     () =>
@@ -139,178 +133,121 @@ export default function AnalyticsView() {
     [trend.actual_values, trend.expected_values],
   )
 
-  const hasBreakdownData = stats.paid_amount + pendingNotOverdue + stats.overdue_amount > 0
+  const hasStructureData = paidAmount + pendingAmount > 0
 
-  const trendPrefix = useMemo(() => `较上${periodLabel(activePeriod)}`, [activePeriod])
-
-  const chartTitle = useMemo(() => {
-    if (activePeriod === 'week') return '周度收入对比'
-    if (activePeriod === 'month') return '月度收入对比'
-    if (activePeriod === 'quarter') return '季度收入对比'
-    return '年度收入对比'
-  }, [activePeriod])
+  const periodDays = { week: 7, month: 30, quarter: 90, year: 365 }[activePeriod]
+  const periodName = getPeriodLabel(activePeriod)
+  const rangeLabel = `${
+    (!isLoading && !loadError && trend.start_date) ||
+    dayjs()
+      .subtract(periodDays - 1, 'day')
+      .format('YYYY-MM-DD')
+  } — ${(!isLoading && !loadError && trend.end_date) || dayjs().format('YYYY-MM-DD')}`
 
   const colors = useMemo(() => {
     const isDark = effectiveTheme === 'dark'
     return {
-      actual: readToken('--ods-data-series-actual', isDark ? '#ff9d45' : '#df5d16'),
+      actual: readToken('--ods-data-series-actual', isDark ? '#85bc8b' : '#629569'),
       actualFill: readToken(
         '--ods-data-series-actual-fill',
-        isDark ? 'rgba(255, 138, 31, 0.16)' : 'rgba(226, 91, 20, 0.14)',
+        isDark ? 'rgba(133, 188, 139, 0.2)' : 'rgba(98, 149, 105, 0.2)',
       ),
-      danger: readToken('--ods-color-status-danger', isDark ? '#ff6259' : '#d7473e'),
+      axis: readToken('--ods-color-border-strong', isDark ? '#799588' : '#a9bfb0'),
       grid: readToken(
         '--ods-data-grid',
-        isDark ? 'rgba(255, 245, 236, 0.07)' : 'rgba(83, 52, 32, 0.08)',
+        isDark ? 'rgba(229, 242, 233, 0.1)' : 'rgba(24, 57, 44, 0.1)',
       ),
-      planned: readToken('--ods-data-series-planned', isDark ? '#a89c91' : '#85796f'),
-      success: readToken('--ods-color-status-success', isDark ? '#43d17a' : '#238653'),
-      text: readToken(
-        '--ods-color-fg-muted',
-        isDark ? 'rgba(255, 247, 237, 0.72)' : 'rgba(51, 39, 31, 0.7)',
-      ),
-      tooltipBackground: readToken('--ods-data-tooltip-bg', isDark ? '#211d1a' : '#fffaf5'),
-      tooltipBorder: readToken('--ods-data-tooltip-border', isDark ? '#4d4037' : '#e4d7cc'),
-      tooltipText: readToken('--ods-data-tooltip-fg', isDark ? '#f7f2ee' : '#2c211a'),
-      warning: readToken('--ods-color-status-warning', isDark ? '#ffd166' : '#c47b00'),
+      planned: readToken('--ods-data-series-planned', isDark ? '#e3c574' : '#8d6c29'),
+      text: readToken('--ods-color-fg-muted', isDark ? '#adc2b6' : '#4f655a'),
+      tooltipBackground: readToken('--ods-data-tooltip-bg', isDark ? '#22362f' : '#f6fbf6'),
+      tooltipBorder: readToken('--ods-data-tooltip-border', isDark ? '#3d564b' : '#cedcd1'),
+      tooltipText: readToken('--ods-data-tooltip-fg', isDark ? '#e5f2e9' : '#10321a'),
     }
   }, [effectiveTheme])
 
   const initCharts = useCallback(() => {
-    barChart.current?.destroy()
-    breakdownChart.current?.destroy()
+    trendChart.current?.destroy()
 
-    const animation = {
-      duration: reducedMotion ? 0 : 280,
-      easing: 'easeOutCubic' as const,
+    const context = trendCanvas.current?.getContext('2d')
+    if (!context) return
+
+    // The area under the received line fades towards the axis.
+    const areaFill = ({ chart }: ScriptableContext<'line'>) => {
+      const area = chart.chartArea
+      if (!area || typeof chart.ctx?.createLinearGradient !== 'function') return colors.actualFill
+      const gradient = chart.ctx.createLinearGradient(0, area.top, 0, area.bottom)
+      gradient.addColorStop(0, colors.actualFill)
+      gradient.addColorStop(1, 'rgba(0, 0, 0, 0)')
+      return gradient
     }
 
-    const barContext = barChartCanvas.current?.getContext('2d')
-    if (barContext) {
-      const barConfig: ChartConfiguration<'bar'> = {
-        data: {
-          datasets: [
-            {
-              backgroundColor: colors.actual,
-              borderColor: colors.actual,
-              borderRadius: 8,
-              borderSkipped: false,
-              data: [],
-              label: '实际收款',
-            },
-            {
-              backgroundColor: colors.actualFill,
-              borderColor: colors.planned,
-              borderRadius: 8,
-              borderSkipped: false,
-              data: [],
-              label: '预期收款',
-            },
-          ],
-          labels: [],
-        },
-        options: {
-          animation,
-          interaction: { intersect: false, mode: 'index' },
-          maintainAspectRatio: false,
-          plugins: {
-            legend: {
-              labels: {
-                color: colors.text,
-                padding: 16,
-                pointStyle: 'circle',
-                usePointStyle: true,
-              },
-              position: 'bottom',
-            },
-            tooltip: {
-              backgroundColor: colors.tooltipBackground,
-              bodyColor: colors.tooltipText,
-              borderColor: colors.tooltipBorder,
-              borderWidth: 1,
-              callbacks: {
-                label: (context) =>
-                  `${context.dataset.label ?? '金额'}：${formatCurrency(Number(context.raw))}`,
-              },
-              titleColor: colors.tooltipText,
-            },
+    const config: ChartConfiguration<'line'> = {
+      data: {
+        datasets: [
+          {
+            backgroundColor: areaFill,
+            borderColor: colors.actual,
+            borderWidth: 3,
+            data: [],
+            fill: 'origin',
+            label: '实际收款',
           },
-          responsive: true,
-          scales: {
-            x: {
-              grid: { display: false },
-              ticks: { color: colors.text, maxRotation: 0 },
+          {
+            borderColor: colors.planned,
+            borderDash: [8, 5],
+            borderWidth: 2.5,
+            data: [],
+            fill: false,
+            label: '计划收款',
+          },
+        ],
+        labels: [],
+      },
+      options: {
+        animation: { duration: reducedMotion ? 0 : 280, easing: 'easeOutCubic' },
+        elements: {
+          line: { borderCapStyle: 'round', cubicInterpolationMode: 'monotone' },
+          point: { hitRadius: 12, hoverRadius: 4, radius: 0 },
+        },
+        interaction: { intersect: false, mode: 'index' },
+        maintainAspectRatio: false,
+        plugins: {
+          legend: { display: false },
+          tooltip: {
+            backgroundColor: colors.tooltipBackground,
+            bodyColor: colors.tooltipText,
+            borderColor: colors.tooltipBorder,
+            borderWidth: 1,
+            callbacks: {
+              label: (item) =>
+                `${item.dataset.label ?? '金额'}：${formatCurrency(Number(item.raw))}`,
             },
-            y: {
-              beginAtZero: true,
-              grid: { color: colors.grid },
-              ticks: {
-                color: colors.text,
-                callback: (value) => formatAxisCurrency(Number(value) || 0),
-              },
+            titleColor: colors.tooltipText,
+          },
+        },
+        responsive: true,
+        scales: {
+          x: {
+            border: { color: colors.axis },
+            grid: { color: colors.axis, drawOnChartArea: false, tickLength: 6 },
+            ticks: { color: colors.text, maxRotation: 0, maxTicksLimit: 6 },
+          },
+          y: {
+            beginAtZero: true,
+            border: { color: colors.axis },
+            grid: { color: colors.grid, drawTicks: false },
+            ticks: {
+              callback: (value) => formatAxisAmount(Number(value) || 0),
+              color: colors.text,
+              maxTicksLimit: 6,
+              padding: 12,
             },
           },
         },
-        type: 'bar',
-      }
-      barChart.current = new Chart(barContext, barConfig)
+      },
+      type: 'line',
     }
-
-    const breakdownContext = breakdownChartCanvas.current?.getContext('2d')
-    if (breakdownContext) {
-      const breakdownConfig: ChartConfiguration<'bar'> = {
-        data: {
-          datasets: [
-            {
-              backgroundColor: [colors.success, colors.warning, colors.danger],
-              borderRadius: 8,
-              borderSkipped: false,
-              data: [0, 0, 0],
-              label: '金额',
-            },
-          ],
-          labels: ['已收款', '待收未逾期', '逾期'],
-        },
-        options: {
-          animation,
-          indexAxis: 'y',
-          maintainAspectRatio: false,
-          plugins: {
-            legend: {
-              display: false,
-            },
-            tooltip: {
-              backgroundColor: colors.tooltipBackground,
-              bodyColor: colors.tooltipText,
-              borderColor: colors.tooltipBorder,
-              borderWidth: 1,
-              callbacks: {
-                label: (context) =>
-                  `${context.label ?? '金额'}：${formatCurrency(Number(context.raw))}`,
-              },
-              titleColor: colors.tooltipText,
-            },
-          },
-          responsive: true,
-          scales: {
-            x: {
-              beginAtZero: true,
-              grid: { color: colors.grid },
-              ticks: {
-                color: colors.text,
-                callback: (value) => formatAxisCurrency(Number(value) || 0),
-              },
-            },
-            y: {
-              grid: { display: false },
-              ticks: { color: colors.text },
-            },
-          },
-        },
-        type: 'bar',
-      }
-      breakdownChart.current = new Chart(breakdownContext, breakdownConfig)
-    }
+    trendChart.current = new Chart(context, config)
   }, [colors, reducedMotion])
 
   const fetchAnalytics = useCallback(
@@ -358,19 +295,15 @@ export default function AnalyticsView() {
 
   useEffect(() => {
     if (isLoading || loadError) {
-      barChart.current?.destroy()
-      breakdownChart.current?.destroy()
-      barChart.current = null
-      breakdownChart.current = null
+      trendChart.current?.destroy()
+      trendChart.current = null
       return
     }
 
     initCharts()
     return () => {
-      barChart.current?.destroy()
-      breakdownChart.current?.destroy()
-      barChart.current = null
-      breakdownChart.current = null
+      trendChart.current?.destroy()
+      trendChart.current = null
     }
   }, [initCharts, isLoading, loadError])
 
@@ -387,63 +320,21 @@ export default function AnalyticsView() {
   }, [activePeriod, fetchAnalytics])
 
   useEffect(() => {
-    const chart = barChart.current
+    const chart = trendChart.current
     if (!chart) return
-    chart.data.labels = trend.labels
+    chart.data.labels = trend.labels.map(formatTrendLabel)
     if (chart.data.datasets[0]) chart.data.datasets[0].data = trend.actual_values
     if (chart.data.datasets[1]) chart.data.datasets[1].data = trend.expected_values
     if (reducedMotion) chart.update('none')
     else chart.update()
   }, [colors, reducedMotion, trend])
 
-  useEffect(() => {
-    if (!breakdownChart.current) return
-    if (breakdownChart.current.data.datasets[0]) {
-      breakdownChart.current.data.datasets[0].data = [
-        stats.paid_amount,
-        pendingNotOverdue,
-        stats.overdue_amount,
-      ]
-    }
-    if (reducedMotion) breakdownChart.current.update('none')
-    else breakdownChart.current.update()
-  }, [colors, pendingNotOverdue, reducedMotion, stats.overdue_amount, stats.paid_amount])
-
-  const summaryMetrics = useMemo<SummaryMetricProps[]>(() => {
-    if (isLoading || loadError) {
-      const status = isLoading ? 'loading' : 'error'
-      return metricDefinitions.map((metric) => ({ ...metric, status }))
-    }
-
-    return [
-      {
-        icon: 'ri-timer-line',
-        label: '平均收款周期',
-        status: 'data' as const,
-        trend: makeTrend(stats.avg_collection_days_trend, trendPrefix, '平均周期', true),
-        value: `${Math.round(stats.avg_collection_days)} 天`,
-      },
-      {
-        icon: 'ri-funds-line',
-        label: '预期收款',
-        status: 'data' as const,
-        trend: makeTrend(stats.total_trend, trendPrefix, '预期收款'),
-        value: formatWholeCurrency(stats.total_amount),
-      },
-      {
-        icon: 'ri-percent-line',
-        label: '收款率',
-        status: 'data' as const,
-        value: `${collectionRate}%`,
-      },
-      {
-        icon: 'ri-error-warning-line',
-        label: '逾期比例',
-        status: 'data' as const,
-        value: `${overdueRate}%`,
-      },
-    ]
-  }, [collectionRate, isLoading, loadError, overdueRate, stats, trendPrefix])
+  const metrics = [
+    { label: '平均到账偏差', value: getCollectionTimingLabel(stats.avg_collection_days) },
+    { label: '预期收款', value: formatAmount(stats.total_amount) },
+    { label: '收款率', value: formatShare(stats.paid_amount, stats.total_amount) },
+    { label: '逾期比例', value: formatShare(stats.overdue_amount, stats.total_amount) },
+  ]
 
   const handlePeriodChange = (value: string) => {
     const period = periods.find((candidate) => candidate === value)
@@ -452,12 +343,6 @@ export default function AnalyticsView() {
     setLoadError(false)
     setActivePeriod(period)
   }
-
-  const description = loadError
-    ? `${periodLabel(activePeriod)}度回款概览 · 数据暂不可用`
-    : isLoading
-      ? `${periodLabel(activePeriod)}度回款概览 · 正在加载`
-      : `${periodLabel(activePeriod)}度回款概览 · 已收 ${formatWholeCurrency(stats.paid_amount)} / 应收 ${formatWholeCurrency(stats.total_amount)}`
 
   const retryAction = (
     <Button onClick={() => void fetchAnalytics(activePeriod)} size="sm" variant="secondary">
@@ -468,14 +353,15 @@ export default function AnalyticsView() {
   const handleExport = useCallback(() => {
     const rows: Array<Array<number | string>> = [
       ['Orange 数据分析'],
-      ['统计周期', `${periodLabel(activePeriod)}度`],
-      ['平均收款周期（天）', stats.avg_collection_days],
+      ['统计周期', periodName],
+      ['日期范围', rangeLabel],
+      ['平均到账偏差（天，提前为负）', stats.avg_collection_days],
       ['应收金额', stats.total_amount],
       ['已收金额', stats.paid_amount],
-      ['待收未逾期金额', pendingNotOverdue],
+      ['待收未逾期金额', Math.max(0, stats.pending_amount - stats.overdue_amount)],
       ['逾期金额', stats.overdue_amount],
-      ['收款率', `${collectionRate}%`],
-      ['逾期比例', `${overdueRate}%`],
+      ['收款率', formatShare(stats.paid_amount, stats.total_amount)],
+      ['逾期比例', formatShare(stats.overdue_amount, stats.total_amount)],
       [],
       ['趋势周期', '实际收款', '预期收款'],
       ...trend.labels.map((label, index) => [
@@ -485,7 +371,7 @@ export default function AnalyticsView() {
       ]),
     ]
     downloadCsv(`Orange-${activePeriod}-${new Date().toISOString().slice(0, 10)}.csv`, rows)
-  }, [activePeriod, collectionRate, overdueRate, pendingNotOverdue, stats, trend])
+  }, [activePeriod, periodName, rangeLabel, stats, trend])
 
   return (
     <Tabs.Root
@@ -499,17 +385,16 @@ export default function AnalyticsView() {
           <div className="analytics-page-toolbar">
             <Tabs.List aria-label="统计周期" variant="accent">
               {periods.map((period) => (
-                <Tabs.Tab key={period} value={period}>
+                <Tabs.Tab className="analytics-period-tab" key={period} value={period}>
                   {periodLabel(period)}
                 </Tabs.Tab>
               ))}
             </Tabs.List>
             <Button
-              aria-label="导出报表"
               className="analytics-export-button"
               disabled={isLoading || loadError}
               onClick={handleExport}
-              variant="primary"
+              variant="outline"
             >
               <i aria-hidden="true" className="ri-download-line" />
               <span>导出报表</span>
@@ -517,8 +402,7 @@ export default function AnalyticsView() {
           </div>
         }
         data-motion="entrance"
-        description={description}
-        eyebrow="INSIGHTS / 回款表现"
+        description="了解收款进度与资金结构"
         title="数据分析"
       />
 
@@ -526,39 +410,47 @@ export default function AnalyticsView() {
         <Tabs.Panel className="analytics-period-panel" key={period} value={period}>
           {activePeriod === period ? (
             <>
-              <div
+              <dl
+                aria-busy={isLoading}
                 aria-label="关键指标"
                 className="analytics-metrics"
-                data-motion-group="metrics"
-                role="list"
+                data-motion="entrance"
               >
-                {summaryMetrics.map((metric) => (
-                  <div className="analytics-metric-item" key={String(metric.label)} role="listitem">
-                    <SummaryMetric {...metric} metaPosition="top-end" />
+                {metrics.map((metric) => (
+                  <div className="analytics-metric" key={metric.label}>
+                    <dt className="analytics-metric__label">{metric.label}</dt>
+                    <dd className="analytics-metric__value">
+                      {isLoading ? (
+                        <Skeleton height="1.75rem" width="6rem" />
+                      ) : loadError ? (
+                        '暂不可用'
+                      ) : (
+                        metric.value
+                      )}
+                    </dd>
                   </div>
                 ))}
-              </div>
+              </dl>
 
-              <div className="analytics-chart-layout" data-motion-group="charts">
-                <Card.Root
-                  aria-label={chartTitle}
-                  as="section"
-                  className="analytics-chart-card"
-                  data-motion="entrance"
-                  variant="tertiary"
-                >
-                  <Card.Header>
-                    <SectionHeader
-                      description="实际与预期回款趋势"
-                      headingLevel={2}
-                      icon={<i className="ri-bar-chart-2-line" />}
-                      title={chartTitle}
-                    />
-                  </Card.Header>
-                  <Card.Content className="analytics-chart-card__content">
+              <div className="analytics-chart-layout" data-motion="entrance">
+                <section aria-labelledby="analytics-trend-title" className="analytics-chart">
+                  <header className="analytics-chart__header">
+                    <h2 className="analytics-chart__title" id="analytics-trend-title">
+                      收款趋势
+                    </h2>
+                    <ul aria-label="图例" className="analytics-legend">
+                      <li className="analytics-legend__item" data-series="actual">
+                        实际收款
+                      </li>
+                      <li className="analytics-legend__item" data-series="planned">
+                        计划收款
+                      </li>
+                    </ul>
+                  </header>
+                  <div className="analytics-chart__body">
                     {isLoading ? (
                       <div
-                        aria-label={`${chartTitle}加载中`}
+                        aria-label="收款趋势加载中"
                         className="analytics-chart-state"
                         role="status"
                       >
@@ -582,20 +474,22 @@ export default function AnalyticsView() {
                       />
                     ) : (
                       <>
-                        <canvas aria-hidden="true" ref={barChartCanvas} />
+                        <div className="analytics-chart__canvas">
+                          <canvas aria-hidden="true" ref={trendCanvas} />
+                        </div>
                         <Table.Root visuallyHidden>
-                          <caption>{chartTitle}数据</caption>
+                          <caption>{periodName}收款趋势数据</caption>
                           <Table.Header>
                             <Table.Row>
                               <Table.Column>周期</Table.Column>
                               <Table.Column>实际收款</Table.Column>
-                              <Table.Column>预期收款</Table.Column>
+                              <Table.Column>计划收款</Table.Column>
                             </Table.Row>
                           </Table.Header>
                           <Table.Body>
                             {trend.labels.map((label, index) => (
                               <Table.Row key={`${label}-${index}`}>
-                                <Table.Column scope="row">{label}</Table.Column>
+                                <Table.Column scope="row">{formatTrendLabel(label)}</Table.Column>
                                 <Table.Cell>
                                   {trend.actual_values[index] == null
                                     ? '暂无数据'
@@ -612,28 +506,22 @@ export default function AnalyticsView() {
                         </Table.Root>
                       </>
                     )}
-                  </Card.Content>
-                </Card.Root>
+                  </div>
+                </section>
 
-                <Card.Root
-                  aria-label="资金状态对比"
-                  as="section"
-                  className="analytics-chart-card"
-                  data-motion="entrance"
-                  variant="tertiary"
+                <section
+                  aria-labelledby="analytics-structure-title"
+                  className="analytics-chart analytics-chart--structure"
                 >
-                  <Card.Header>
-                    <SectionHeader
-                      description="本期到账、本期待收与逾期金额"
-                      headingLevel={2}
-                      icon={<i className="ri-pie-chart-2-line" />}
-                      title="资金状态对比"
-                    />
-                  </Card.Header>
-                  <Card.Content className="analytics-chart-card__content">
+                  <header className="analytics-chart__header">
+                    <h2 className="analytics-chart__title" id="analytics-structure-title">
+                      收款结构
+                    </h2>
+                  </header>
+                  <div className="analytics-chart__body">
                     {isLoading ? (
                       <div
-                        aria-label="资金状态对比加载中"
+                        aria-label="收款结构加载中"
                         className="analytics-chart-state"
                         role="status"
                       >
@@ -644,47 +532,39 @@ export default function AnalyticsView() {
                         action={retryAction}
                         className="analytics-chart-empty"
                         description="请检查连接后重新加载"
-                        icon={<i className="ri-bar-chart-horizontal-line" />}
+                        icon={<i className="ri-donut-chart-line" />}
                         size="sm"
-                        title="资金状态数据暂不可用"
+                        title="收款结构暂不可用"
                       />
-                    ) : !hasBreakdownData ? (
+                    ) : !hasStructureData ? (
                       <EmptyState
                         className="analytics-chart-empty"
-                        icon={<i className="ri-bar-chart-horizontal-line" />}
+                        icon={<i className="ri-donut-chart-line" />}
                         size="sm"
-                        title="本期暂无资金状态数据"
+                        title="本期暂无收款结构"
                       />
                     ) : (
-                      <>
-                        <canvas aria-hidden="true" ref={breakdownChartCanvas} />
-                        <Table.Root visuallyHidden>
-                          <caption>资金状态对比数据</caption>
-                          <Table.Header>
-                            <Table.Row>
-                              <Table.Column>状态</Table.Column>
-                              <Table.Column>金额</Table.Column>
-                            </Table.Row>
-                          </Table.Header>
-                          <Table.Body>
-                            <Table.Row>
-                              <Table.Column scope="row">已收款</Table.Column>
-                              <Table.Cell>{formatCurrency(stats.paid_amount)}</Table.Cell>
-                            </Table.Row>
-                            <Table.Row>
-                              <Table.Column scope="row">待收未逾期</Table.Column>
-                              <Table.Cell>{formatCurrency(pendingNotOverdue)}</Table.Cell>
-                            </Table.Row>
-                            <Table.Row>
-                              <Table.Column scope="row">逾期</Table.Column>
-                              <Table.Cell>{formatCurrency(stats.overdue_amount)}</Table.Cell>
-                            </Table.Row>
-                          </Table.Body>
-                        </Table.Root>
-                      </>
+                      <div className="analytics-structure">
+                        <StructureDonut paid={paidAmount} pending={pendingAmount} />
+                        <dl className="analytics-structure__legend">
+                          <div className="analytics-structure__row" data-part="paid">
+                            <dt>已收款</dt>
+                            <dd>{formatAmount(stats.paid_amount)}</dd>
+                          </div>
+                          <div className="analytics-structure__row" data-part="pending">
+                            <dt>待收款</dt>
+                            <dd>{formatAmount(stats.pending_amount)}</dd>
+                            {overdueAmount > 0 ? (
+                              <dd className="analytics-structure__note">
+                                其中逾期 {formatAmount(overdueAmount)}
+                              </dd>
+                            ) : null}
+                          </div>
+                        </dl>
+                      </div>
                     )}
-                  </Card.Content>
-                </Card.Root>
+                  </div>
+                </section>
               </div>
             </>
           ) : null}

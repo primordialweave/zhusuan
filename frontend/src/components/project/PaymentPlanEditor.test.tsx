@@ -13,6 +13,39 @@ const installment: PaymentPlanItem = {
 }
 
 describe('PaymentPlanEditor', () => {
+  it.each([
+    ['confirmed', '已收款'],
+    ['paid', '已收款'],
+    ['pending', '待收款'],
+    ['overdue', '已逾期'],
+  ])(
+    'displays the saved %s status and marks the matching option selected',
+    async (status, label) => {
+      const user = userEvent.setup()
+      render(
+        <PaymentPlanEditor
+          installment
+          items={[{ ...installment, status }]}
+          onItemsChange={vi.fn()}
+        />,
+      )
+
+      expect(screen.getByRole('button', { name: '状态' })).toHaveTextContent(label)
+      await user.click(screen.getByRole('button', { name: '状态' }))
+      expect(screen.getByRole('option', { name: label })).toHaveAttribute('aria-selected', 'true')
+    },
+  )
+
+  it('uses the backend confirmed status when marking a payment received', async () => {
+    const user = userEvent.setup()
+    const onItemsChange = vi.fn()
+    render(<PaymentPlanEditor installment items={[installment]} onItemsChange={onItemsChange} />)
+
+    await user.click(screen.getByRole('button', { name: '状态' }))
+    await user.click(screen.getByRole('option', { name: '已收款' }))
+    expect(onItemsChange).toHaveBeenLastCalledWith([{ ...installment, status: 'confirmed' }])
+  })
+
   it('composes Orange Design System form primitives', () => {
     const { container } = render(
       <PaymentPlanEditor installment items={[installment]} onItemsChange={vi.fn()} />,

@@ -7,6 +7,7 @@ import {
   type HTMLAttributes,
   type MutableRefObject,
   type Ref,
+  type RefObject,
 } from 'react'
 import { createPortal } from 'react-dom'
 import { useDialogFocus } from '@/hooks/useDialogFocus'
@@ -39,8 +40,10 @@ const mergeRefs =
 
 export interface ModalRootProps extends Omit<HTMLAttributes<HTMLDivElement>, 'title'> {
   dismissable?: boolean
+  initialFocusRef?: RefObject<HTMLElement | null>
   onClose: () => void
   open: boolean
+  returnFocusRef?: RefObject<HTMLElement | null>
   placement?: ModalPlacement
   size?: ModalSize
 }
@@ -50,9 +53,11 @@ export const ModalRoot = forwardRef<HTMLDivElement, ModalRootProps>(function Mod
     children,
     className,
     dismissable = true,
+    initialFocusRef,
     onClose,
     open,
     placement = 'center',
+    returnFocusRef,
     role = 'dialog',
     size = 'md',
     ...props
@@ -65,8 +70,10 @@ export const ModalRoot = forwardRef<HTMLDivElement, ModalRootProps>(function Mod
   const { overlayToken, zIndex } = useDialogFocus({
     closeOnEscape: dismissable,
     dialogRef,
+    initialFocusRef,
     onClose,
     open,
+    returnFocusRef,
   })
 
   if (!open || typeof document === 'undefined') return null

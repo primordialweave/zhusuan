@@ -1,84 +1,107 @@
 import { describe, expect, test } from 'vitest'
 
 import './layout.css'
+import './scene.css'
 
-const rules = Array.from(document.styleSheets).flatMap((sheet) => Array.from(sheet.cssRules))
+const collectRules = (list: CSSRuleList): CSSRule[] =>
+  Array.from(list).flatMap((rule) =>
+    'cssRules' in rule ? [rule, ...collectRules((rule as CSSGroupingRule).cssRules)] : [rule],
+  )
+
+const topLevelRules = Array.from(document.styleSheets).flatMap((sheet) =>
+  Array.from(sheet.cssRules),
+)
+const allRules = Array.from(document.styleSheets).flatMap((sheet) => collectRules(sheet.cssRules))
 
 const findStyleRule = (selector: string) =>
-  rules.find(
+  topLevelRules.find(
     (rule): rule is CSSStyleRule => rule instanceof CSSStyleRule && rule.selectorText === selector,
   )
 
-describe('topbar window interaction boundaries', () => {
-  test('keeps a compact draggable topbar clear of the macOS window controls', () => {
-    const rootRule = findStyleRule(':root')
-    const dragRegionRule = findStyleRule('.app-titlebar-drag-region')
-    const iconButtonRule = findStyleRule('.app-topbar__icon-button')
-    const navLinkRule = findStyleRule('.app-topbar__nav-link')
-    const topbarRule = findStyleRule('.app-topbar')
-    const userButtonRule = findStyleRule('.app-topbar__user-button')
-    const contentRule = findStyleRule('.app-view-content')
+const findMediaRule = (condition: string) =>
+  topLevelRules.find(
+    (rule): rule is CSSMediaRule =>
+      rule instanceof CSSMediaRule && rule.conditionText.includes(condition),
+  )
 
-    expect(rootRule?.style.getPropertyValue('--app-topbar-top-inset')).toBe('12px')
-    expect(rootRule?.style.getPropertyValue('--app-topbar-height')).toBe('68px')
-    expect(rootRule?.style.getPropertyValue('--app-topbar-inset')).toBe('79px')
+describe('desktop shell window interaction boundaries', () => {
+  test('keeps one draggable strip across the top for the native window controls', () => {
+    const dragRegionRule = findStyleRule('.app-titlebar-drag-region')
+
     expect(dragRegionRule?.style.position).toBe('fixed')
     expect(dragRegionRule?.style.top).toBe('0px')
     expect(dragRegionRule?.style.left).toBe('0px')
     expect(dragRegionRule?.style.right).toBe('0px')
-    expect(dragRegionRule?.style.height).toBe('var(--app-topbar-top-inset)')
+    expect(dragRegionRule?.style.height).toBe('var(--ods-shell-titlebar-clearance)')
     expect(dragRegionRule?.style.getPropertyValue('--wails-draggable')).toBe('drag')
-    expect(Number(dragRegionRule?.style.zIndex)).toBeLessThan(Number(topbarRule?.style.zIndex))
-    expect(topbarRule?.style.top).toBe('var(--app-topbar-top-inset)')
-    expect(topbarRule?.style.left).toBe('var(--app-topbar-inset)')
-    expect(topbarRule?.style.right).toBe('var(--app-topbar-inset)')
-    expect(topbarRule?.style.getPropertyValue('--wails-draggable')).toBe('drag')
-    expect(iconButtonRule?.style.height).toBe('44px')
-    expect(iconButtonRule?.style.width).toBe('44px')
-    expect(navLinkRule?.style.height).toBe('36px')
-    expect(userButtonRule?.style.height).toBe('44px')
-    expect(contentRule?.style.padding).toContain('var(--app-topbar-top-inset)')
   })
 
-  test('keeps the scrolled topbar stationary', () => {
-    const scrolledRule = rules.find(
-      (rule): rule is CSSStyleRule =>
-        rule instanceof CSSStyleRule &&
-        rule.selectorText.startsWith('.app-topbar[data-scrolled=') &&
-        rule.selectorText.includes('true'),
-    )
+  test('stacks scene, content, drag strip and Dock in that order', () => {
+    const scene = Number(findStyleRule('.jiangnan-scene')?.style.zIndex)
+    const content = Number(findStyleRule('.app-main')?.style.zIndex)
+    const dragRegion = Number(findStyleRule('.app-titlebar-drag-region')?.style.zIndex)
+    const dock = Number(findStyleRule('.app-dock-area')?.style.zIndex)
 
-    expect(scrolledRule).toBeUndefined()
+    expect(scene).toBeLessThan(content)
+    expect(content).toBeLessThan(dragRegion)
+    expect(dragRegion).toBeLessThan(dock)
   })
 
-  test('uses responsive thresholds that preserve the wider typography', () => {
-    const mediaConditions = rules
-      .filter((rule): rule is CSSMediaRule => rule instanceof CSSMediaRule)
-      .map((rule) => rule.conditionText)
-
-    expect(mediaConditions).toEqual(
-      expect.arrayContaining(['(max-width: 1240px)', '(max-width: 1120px)', '(max-width: 1010px)']),
-    )
-    expect(mediaConditions).not.toEqual(
-      expect.arrayContaining(['(max-width: 1180px)', '(max-width: 920px)', '(max-width: 768px)']),
-    )
+  test('never lets the drag strip swallow clicks on shell controls', () => {
+    for (const selector of [
+      '.app-dock',
+      '.app-notification-entry',
+      '.app-notification-entry__menu',
+    ]) {
+      expect(findStyleRule(selector)?.style.getPropertyValue('--wails-draggable'), selector).toBe(
+        'no-drag',
+      )
+    }
+    expect(findStyleRule('.app-titlebar-drag-region')?.style.bottom).toBe('')
   })
 
-  test('marks portal content as non-draggable without a bespoke full-window overlay', () => {
-    expect(findStyleRule('.app-topbar-portal')?.style.getPropertyValue('--wails-draggable')).toBe(
-      'no-drag',
-    )
-    expect(findStyleRule('.app-topbar__overlay')).toBeUndefined()
+  test('keeps the scene decorative and out of the way of input', () => {
+    const sceneRule = findStyleRule('.jiangnan-scene')
+
+    expect(sceneRule?.style.position).toBe('fixed')
+    expect(sceneRule?.style.pointerEvents).toBe('none')
+    expect(sceneRule?.style.background).toContain('var(--ods-color-bg-canvas)')
   })
 
-  test('keeps the ODS theme popover non-draggable and compact-window safe', () => {
-    const popoverRule = findStyleRule('.theme-selector__popover')
+  test('scrolls inside the work surface so the Dock never covers the last row', () => {
+    const rootRule = findStyleRule(':root')
+    const containerRule = findStyleRule('.app-container')
+    const mainRule = findStyleRule('.app-main')
+    const clearance = rootRule?.style.getPropertyValue('--app-dock-clearance') ?? ''
 
-    expect(popoverRule?.style.width).toBe('196px')
-    expect(popoverRule?.style.maxWidth).toContain('100vw')
-    expect(popoverRule?.style.getPropertyValue('--wails-draggable')).toBe('no-drag')
-    expect(findStyleRule('.theme-selector__menu')).toBeUndefined()
-    expect(findStyleRule('.theme-selector__option')).toBeUndefined()
+    expect(clearance).toContain('var(--ods-shell-dock-height)')
+    expect(clearance).toContain('var(--ods-shell-dock-offset)')
+    expect(clearance).toContain('env(safe-area-inset-bottom)')
+    expect(containerRule?.style.overflow).toBe('hidden')
+    expect(mainRule?.style.padding).toContain('var(--app-dock-clearance)')
+  })
+
+  test('gives height back to the content in short windows before anything is clipped', () => {
+    const shortRule = findMediaRule('max-height: 760px')
+    const shortRoot = Array.from(shortRule?.cssRules ?? []).find(
+      (rule): rule is CSSStyleRule => rule instanceof CSSStyleRule && rule.selectorText === ':root',
+    )
+
+    expect(shortRule).toBeDefined()
+    expect(shortRoot?.style.getPropertyValue('--ods-shell-dock-height')).not.toBe('')
+    expect(shortRoot?.style.getPropertyValue('--ods-shell-dock-offset')).not.toBe('')
+  })
+
+  test('prints the page content without the shell chrome', () => {
+    const printRule = findMediaRule('print')
+    const hidden = Array.from(printRule?.cssRules ?? [])
+      .filter((rule): rule is CSSStyleRule => rule instanceof CSSStyleRule)
+      .filter((rule) => rule.style.display === 'none')
+      .map((rule) => rule.selectorText)
+      .join(', ')
+
+    expect(hidden).toContain('.app-dock-area')
+    expect(hidden).toContain('.app-titlebar-drag-region')
   })
 
   test('does not recreate button visuals with shell-level native element selectors', () => {
@@ -92,24 +115,23 @@ describe('topbar window interaction boundaries', () => {
       'padding',
       'width',
     ]
-    const bespokeButtonRules = rules.filter(
+    const bespokeButtonRules = allRules.filter(
       (rule): rule is CSSStyleRule =>
         rule instanceof CSSStyleRule &&
-        rule.selectorText.startsWith('.app-topbar') &&
-        /(?:^|\s|>)button(?:$|\s|:|\.)/.test(rule.selectorText) &&
+        rule.selectorText.startsWith('.app-') &&
+        /(?:^|\s|>)(?:a|button)(?:$|\s|:|\.)/.test(rule.selectorText) &&
         visualProperties.some((property) => rule.style.getPropertyValue(property) !== ''),
     )
 
     expect(bespokeButtonRules.map((rule) => rule.selectorText)).toEqual([])
   })
 
-  test('uses one tokenized warm ambient light for the shell', () => {
-    expect(findStyleRule('.app-background')?.style.background).toContain(
-      'var(--ods-color-bg-canvas)',
-    )
-    expect(findStyleRule('.app-background::before')?.style.background).toContain(
-      'var(--ods-color-ambient-glow)',
-    )
-    expect(findStyleRule('.app-background::after')?.style.content).toBe('none')
+  test('retires the top bar, its theme popover and the pointer light', () => {
+    const selectors = allRules
+      .filter((rule): rule is CSSStyleRule => rule instanceof CSSStyleRule)
+      .map((rule) => rule.selectorText)
+      .join('\n')
+
+    expect(selectors).not.toMatch(/\.app-topbar|\.theme-selector|\.app-background/)
   })
 })

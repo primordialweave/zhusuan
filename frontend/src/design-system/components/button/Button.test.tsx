@@ -34,6 +34,7 @@ describe('Button', () => {
       ".ods-button[data-variant='secondary'][data-tone='accent']:hover:not(:disabled):not([aria-disabled='true'])",
       ".ods-button[data-variant='tertiary']:hover:not(:disabled)",
       ".ods-button[data-variant='outline']:hover:not(:disabled)",
+      ".ods-button[data-variant='outline'][data-tone='danger']:hover:not(:disabled)",
       ".ods-button[data-variant='ghost']:hover:not(:disabled)",
       ".ods-button[data-variant='ghost'][data-tone='danger']:hover:not(:disabled)",
       ".ods-button[data-variant='danger']:hover:not(:disabled)",

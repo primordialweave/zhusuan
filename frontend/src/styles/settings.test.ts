@@ -32,33 +32,41 @@ describe('settings design-system ownership contract', () => {
     expect(settingsCss).not.toContain('!important')
   })
 
-  it('uses shared card radios for theme, database, and token-expiry choices', () => {
+  it('uses shared card radios for database and token-expiry choices, a segmented theme control', () => {
     expect(radioSource).toContain("variant?: 'card' | 'default'")
     expect(radioSource).toContain('columns?: 1 | 2 | 3')
     expect(radioCss).toContain(".ods-radio[data-variant='card']")
-    expect(settingsSource).toContain('columns={3}')
     expect(dataSyncSource).toContain('columns={2}')
     expect(tokenSource).toContain('columns={2}')
-    expect(settingsProductionSource.match(/variant="card"/g)).toHaveLength(3)
+    expect(settingsProductionSource.match(/variant="card"/g)).toHaveLength(2)
+    expect(settingsSource).toContain('<SegmentedControl')
+    expect(settingsSource).not.toContain('<RadioGroup')
   })
 
-  it('uses shared Tabs treatments for the workspace rail and dictionary sidebar', () => {
-    expect(tabsCss).toContain(".ods-tabs__list[data-variant='rail']")
+  it('uses shared Tabs treatments for the settings strip and dictionary sidebar', () => {
+    expect(tabsCss).toContain(".ods-tabs__list[data-variant='underline']")
     expect(tabsCss).toContain(".ods-tabs__list[data-variant='navigation']")
     expect(tabsCss).toMatch(
       /data-variant='navigation'\] \.ods-tabs__tab\s*\{[\s\S]*gap:\s*var\(--ods-space-2\)/,
     )
-    expect(tabsCss).toMatch(
-      /data-variant='rail'\] \.ods-tabs__tab > i\s*\{[\s\S]*width:\s*1\.25rem/,
-    )
-    expect(settingsSource).toContain('variant="rail"')
+    expect(tabsCss).toMatch(/data-variant='underline'\]\s*\{[\s\S]*overflow-x:\s*auto/)
+    expect(settingsSource).toContain('variant="underline"')
     expect(dictionarySource).toContain('variant="navigation"')
   })
 
-  it('uses the relaxed foreground and lighter heading weights within settings', () => {
-    expect(settingsCss).toContain('--ods-color-fg-default: var(--ods-color-fg-relaxed)')
-    expect(settingsCss).toContain('--ods-font-weight-semibold: var(--ods-font-weight-medium)')
-    expect(settingsCss).toContain('--ods-font-weight-bold: 600')
+  it('lays the page out flat: no cards or section headers around the built-in panels', () => {
+    expect(settingsSource).not.toContain('<Card.Root')
+    expect(settingsSource).not.toContain('<SectionHeader')
+    expect(settingsSource).toContain(
+      '<PageHeader description="管理账户和界面偏好" title="系统设置" />',
+    )
+    expect(settingsCss).toMatch(/\.settings-row\s*\{[\s\S]*border-block-end:\s*1px solid/)
+  })
+
+  it('shares the global foreground and typography tokens across settings', () => {
+    expect(settingsCss).not.toContain('--ods-color-fg-default:')
+    expect(settingsCss).not.toContain('--ods-font-weight-semibold:')
+    expect(settingsCss).not.toContain('--ods-font-weight-bold:')
     expect(settingsSource).not.toContain('className="settings-overview"')
   })
 
@@ -84,8 +92,11 @@ describe('settings design-system ownership contract', () => {
     )
   })
 
-  it('composes every settings panel heading from the shared SectionHeader pattern', () => {
-    expect(settingsProductionSource.match(/<SectionHeader\b/g)).toHaveLength(10)
+  it('names a panel once, on its tab, and keeps SectionHeader for the sections inside it', () => {
+    expect(settingsProductionSource.match(/<SectionHeader\b/g)).toHaveLength(2)
+    expect(settingsProductionSource).not.toMatch(/<SectionHeader[^>]*size="lg"/)
+    expect(settingsProductionSource).not.toMatch(/className="(?:dev|sync)-stat/)
+    expect(settingsProductionSource.match(/className="settings-toolbar"/g)).toHaveLength(4)
     expect(settingsProductionSource).not.toMatch(
       /className="(?:nav-header|dev-header|dev-header-content|dev-title-section|dev-title-info|dev-title|dev-subtitle|dev-icon-wrapper|appearance-header|appearance-header-main|appearance-title-wrapper|appearance-title-content|appearance-title|appearance-subtitle|appearance-icon|sync-title-wrapper|sync-title|sync-subtitle|sync-icon)"/,
     )

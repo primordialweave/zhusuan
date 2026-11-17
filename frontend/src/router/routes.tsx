@@ -7,6 +7,7 @@ import CalendarView from '@/views/CalendarView'
 import DashboardView from '@/views/DashboardView'
 import DesignSystemView from '@/views/DesignSystemView'
 import LoginView from '@/views/LoginView'
+import NotFoundView from '@/views/NotFoundView'
 import PaymentCreateView from '@/views/PaymentCreateView'
 import ProjectCreateView from '@/views/ProjectCreateView'
 import ProjectDetailView from '@/views/ProjectDetailView'
@@ -41,6 +42,8 @@ export const router = createBrowserRouter([
           },
         ],
       },
+      // Unknown addresses get the scene page, outside the app shell and its Dock.
+      { path: '*', element: <NotFoundView /> },
     ],
   },
 ])

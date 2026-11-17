@@ -1,0 +1,65 @@
+/* 烟雨江南 backdrop. Keep the crop in step with SCENE_FOCUS in scene/sceneFrame.ts. */
+.jiangnan-scene {
+  position: fixed;
+  z-index: 0;
+  inset: 0;
+  overflow: hidden;
+  background: var(--ods-color-bg-canvas);
+  pointer-events: none;
+}
+
+.jiangnan-scene__still,
+.jiangnan-scene__layer,
+.jiangnan-scene__veil {
+  position: absolute;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+}
+
+.jiangnan-scene__still {
+  background-image: url('../assets/jiangnan/scene.webp');
+  background-position: 50% 45%;
+  background-repeat: no-repeat;
+  background-size: cover;
+}
+
+/* Business pages keep the scene as a quiet, pre-blurred still so text stays the first read. */
+.jiangnan-scene[data-variant='business'] .jiangnan-scene__still {
+  background-image: url('../assets/jiangnan/scene-business.webp');
+}
+
+.jiangnan-scene__layer {
+  max-width: none;
+  opacity: 0;
+  transition: opacity var(--ods-duration-hero) var(--ods-ease-standard);
+}
+
+.jiangnan-scene__layer[data-active] {
+  opacity: 1;
+}
+
+/* 夜雨 dims the same painting instead of shipping a second one. */
+.jiangnan-scene__veil {
+  background: var(--ods-color-scene-veil);
+}
+
+/* Behind business pages the trees and roofs sit in thicker mist, as in the prototypes; it
+   thins out above the Dock so the water and the glass keep their tone. */
+.jiangnan-scene[data-variant='business'] .jiangnan-scene__veil {
+  background:
+    linear-gradient(to bottom, var(--ods-color-scene-mist) 64%, transparent 84%),
+    var(--ods-color-scene-veil);
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .jiangnan-scene__layer {
+    transition: none;
+  }
+}
+
+@media print {
+  .jiangnan-scene {
+    display: none;
+  }
+}

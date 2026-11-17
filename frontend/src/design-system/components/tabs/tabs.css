@@ -1,5 +1,6 @@
 .ods-tabs {
   display: grid;
+  grid-template-columns: minmax(0, 1fr);
   gap: var(--ods-space-4);
   min-width: 0;
 }
@@ -22,7 +23,7 @@
   flex-direction: column;
 }
 
-.ods-tabs__list:is([data-variant='navigation'], [data-variant='rail']) .ods-tabs__tab {
+.ods-tabs__list[data-variant='navigation'] .ods-tabs__tab {
   display: flex;
   align-items: center;
   text-align: start;
@@ -39,6 +40,14 @@
   box-shadow: none;
 }
 
+/* Accent: an outlined, see-through track; only the chosen tab is filled.
+   The border comes out of the inset, so the track is exactly one medium control tall. */
+.ods-tabs__list[data-variant='accent'] {
+  padding: calc(var(--ods-space-1) - 1px);
+  background: transparent;
+  box-shadow: none;
+}
+
 .ods-tabs__list[data-variant='accent']
   .ods-tabs__tab:hover:not(:disabled):not([aria-selected='true']) {
   background: var(--ods-color-accent-soft);
@@ -47,7 +56,9 @@
 
 .ods-tabs__list[data-variant='accent'] .ods-tabs__tab[aria-selected='true'] {
   background: var(--ods-gradient-glow);
-  box-shadow: 0 6px 18px rgba(var(--ods-color-accent-rgb), 0.28);
+  box-shadow:
+    inset 0 1px 0 rgba(255, 255, 255, 0.5),
+    0 2px 6px rgba(var(--ods-color-accent-rgb), 0.18);
   color: var(--ods-color-accent-fg);
 }
 
@@ -73,117 +84,98 @@
 .ods-tabs__list[data-variant='navigation'] .ods-tabs__tab[aria-selected='true'] {
   border-inline-start-color: var(--ods-color-accent);
   background: var(--ods-color-accent-soft);
-  color: var(--ods-color-accent);
+  color: var(--ods-color-accent-text);
 }
 
-.ods-tabs__list[data-variant='rail'] {
+/* Underline: text tabs on one hairline; the chosen tab carries a bar that rests on it.
+   The hairline runs one step past the tabs on both sides, so a tab's bar starts where the
+   page title does. The strip scrolls sideways when the tabs do not fit, fading the edge
+   that hides more. */
+.ods-tabs__list[data-variant='underline'] {
   width: 100%;
   align-items: stretch;
-  gap: var(--ods-space-1);
-  padding: 0;
+  gap: var(--ods-space-6);
+  overflow-x: auto;
+  padding: 0 var(--ods-space-4);
   border: 0;
+  border-block-end: 1px solid var(--ods-color-border-default);
   border-radius: 0;
   background: transparent;
   box-shadow: none;
-}
-
-.ods-tabs__list[data-variant='rail'][data-orientation='vertical'] {
-  flex-direction: column;
-}
-
-.ods-tabs__list[data-variant='rail'] .ods-tabs__tab {
-  position: relative;
-  width: 100%;
-  min-height: 2.875rem;
-  justify-content: flex-start;
-  gap: var(--ods-space-3);
-  overflow: hidden;
-  padding-inline: var(--ods-space-3);
-  border-radius: var(--ods-radius-control);
-}
-
-.ods-tabs__list[data-variant='rail'] .ods-tabs__tab::before {
-  position: absolute;
-  width: 3px;
-  height: 0;
-  inset-block-start: 50%;
-  inset-inline-start: 0;
-  border-radius: var(--ods-radius-pill);
-  background: var(--ods-color-accent);
-  box-shadow: 0 0 14px rgba(var(--ods-color-accent-rgb), 0.6);
-  content: '';
-  transform: translateY(-50%);
-  transition: height var(--ods-duration-page) var(--ods-ease-emphasized);
-}
-
-.ods-tabs__list[data-variant='rail'] .ods-tabs__tab > i {
-  display: inline-grid;
-  width: 1.25rem;
-  height: 1.25rem;
-  flex: 0 0 1.25rem;
-  place-items: center;
-  color: var(--ods-color-fg-subtle);
-  font-size: var(--ods-font-size-lg);
-  transition:
-    color var(--ods-duration-fast) var(--ods-ease-standard),
-    transform var(--ods-duration-fast) var(--ods-ease-standard);
-}
-
-.ods-tabs__list[data-variant='rail'] .ods-tabs__tab:hover:not(:disabled) > i {
-  color: var(--ods-color-fg-default);
-  transform: translateX(1px);
-}
-
-.ods-tabs__list[data-variant='rail'] .ods-tabs__tab[aria-selected='true'] {
-  background: var(--ods-color-accent-soft);
-  box-shadow: inset 0 0 0 1px rgba(var(--ods-color-accent-rgb), 0.12);
-  color: var(--ods-color-fg-default);
-}
-
-.ods-tabs__list[data-variant='rail'] .ods-tabs__tab[aria-selected='true']::before {
-  height: 1.375rem;
-}
-
-.ods-tabs__list[data-variant='rail'] .ods-tabs__tab[aria-selected='true'] > i {
-  color: var(--ods-color-accent);
-  transform: translateX(1px);
-}
-
-.ods-tabs__list[data-variant='rail'][data-orientation='horizontal'] {
-  max-width: 100%;
-  flex-direction: row;
-  overflow-x: auto;
-  padding-block: var(--ods-space-1);
   scrollbar-width: none;
 }
 
-.ods-tabs__list[data-variant='rail'][data-orientation='horizontal']::-webkit-scrollbar {
+.ods-tabs__list[data-variant='underline']::-webkit-scrollbar {
   display: none;
 }
 
-.ods-tabs__list[data-variant='rail'][data-orientation='horizontal'] .ods-tabs__tab {
-  width: auto;
-  min-width: max-content;
-  flex: 0 0 auto;
+.ods-tabs__list[data-variant='underline'][data-fade='end'] {
+  mask-image: linear-gradient(to right, #000 calc(100% - var(--ods-space-12)), transparent);
 }
 
-.ods-tabs__list[data-variant='rail'][data-orientation='horizontal'] .ods-tabs__tab::before {
-  width: 0;
+.ods-tabs__list[data-variant='underline'][data-fade='start'] {
+  mask-image: linear-gradient(to left, #000 calc(100% - var(--ods-space-12)), transparent);
+}
+
+.ods-tabs__list[data-variant='underline'][data-fade='both'] {
+  mask-image: linear-gradient(
+    to right,
+    transparent,
+    #000 var(--ods-space-12),
+    #000 calc(100% - var(--ods-space-12)),
+    transparent
+  );
+}
+
+.ods-tabs__list[data-variant='underline'] .ods-tabs__tab {
+  position: relative;
+  height: auto;
+  padding: var(--ods-space-3) var(--ods-space-4);
+  border-radius: 0;
+  font-size: var(--ods-font-size-md);
+  font-weight: var(--ods-font-weight-regular);
+}
+
+.ods-tabs__list[data-variant='underline'] .ods-tabs__tab::after {
+  position: absolute;
   height: 3px;
-  inset-block-start: auto;
   inset-block-end: 0;
-  inset-inline-start: 50%;
-  transform: translateX(-50%);
-  transition: width var(--ods-duration-page) var(--ods-ease-emphasized);
+  inset-inline: 0;
+  border-radius: var(--ods-radius-xs) var(--ods-radius-xs) 0 0;
+  background: var(--ods-color-accent-text);
+  content: '';
+  opacity: 0;
+  transform: scaleX(0.4);
+  transition:
+    opacity var(--ods-duration-fast) var(--ods-ease-standard),
+    transform var(--ods-duration-fast) var(--ods-ease-standard);
 }
 
-.ods-tabs__list[data-variant='rail'][data-orientation='horizontal']
-  .ods-tabs__tab[aria-selected='true']::before {
-  width: calc(100% - var(--ods-space-5));
-  height: 3px;
+/* Colour and the bar mark the choice; the weight stays put so no label shifts. */
+.ods-tabs__list[data-variant='underline'] .ods-tabs__tab:hover:not(:disabled),
+.ods-tabs__list[data-variant='underline'] .ods-tabs__tab[aria-selected='true'] {
+  background: transparent;
+  box-shadow: none;
+  color: var(--ods-color-fg-default);
+  font-weight: var(--ods-font-weight-regular);
+}
+
+.ods-tabs__list[data-variant='underline'] .ods-tabs__tab[aria-selected='true']::after {
+  opacity: 1;
+  transform: none;
+}
+
+/* The strip clips what leaves its box, so the focus ring is drawn inside the tab. */
+.ods-tabs__list[data-variant='underline'] .ods-tabs__tab:focus-visible {
+  outline-offset: calc(var(--ods-focus-ring-width) * -1);
+}
+
+.ods-tabs__list[data-variant='underline'] .ods-tabs__tab:active:not(:disabled) {
+  transform: none;
 }
 
 .ods-tabs__tab {
+  flex-shrink: 0;
   background: transparent;
   border: 0;
   border-radius: var(--ods-radius-pill);
@@ -195,6 +187,7 @@
   height: var(--ods-control-height-sm);
   line-height: var(--ods-line-height-body);
   padding-inline: var(--ods-control-padding-inline-sm);
+  white-space: nowrap;
   transition:
     background-color var(--ods-duration-fast) var(--ods-ease-standard),
     box-shadow var(--ods-duration-fast) var(--ods-ease-standard),
@@ -244,12 +237,7 @@
 }
 
 @media (prefers-reduced-motion: reduce) {
-  .ods-tabs__list[data-variant='rail'] .ods-tabs__tab::before,
-  .ods-tabs__list[data-variant='rail'] .ods-tabs__tab > i {
+  .ods-tabs__list[data-variant='underline'] .ods-tabs__tab::after {
     transition: none;
-  }
-
-  .ods-tabs__list[data-variant='rail'] .ods-tabs__tab:is(:hover, [aria-selected='true']) > i {
-    transform: none;
   }
 }

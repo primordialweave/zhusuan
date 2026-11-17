@@ -1,330 +1,175 @@
+/* Application shell: scene, drag region, work surface and Dock. */
 :root {
-  --app-dock-height: 62px;
-  --app-topbar-height: 68px;
-  --app-topbar-inset: 79px;
-  --app-topbar-top-inset: 12px;
+  --app-surface-top: clamp(48px, calc(8.5vw - 45px), 82px);
+  --app-surface-inline: clamp(20px, calc(9vw - 54px), 96px);
+  --app-dock-clearance: calc(
+    var(--ods-shell-dock-height) + var(--ods-shell-dock-offset) + env(safe-area-inset-bottom)
+  );
 }
 
 .app-container {
-  display: block;
-  min-height: 100vh;
   position: relative;
-}
-
-.app-background {
-  position: fixed;
-  z-index: -1;
-  inset: 0;
+  height: 100vh;
   overflow: hidden;
-  background: var(--ods-color-bg-canvas);
+  isolation: isolate;
 }
 
-.app-background::before {
-  position: absolute;
-  inset: 0;
-  background: radial-gradient(
-    circle 760px at var(--light-x, 28%) var(--light-y, 18%),
-    var(--ods-color-ambient-glow),
-    transparent 58%
-  );
-  content: '';
-  pointer-events: none;
-}
-
-.app-background::after {
-  content: none;
-}
-
+/* Layering: scene 0, content 20, drag region 25, Dock 30; ODS overlays sit above all of it. */
 .app-titlebar-drag-region {
   --wails-draggable: drag;
-  height: var(--app-topbar-top-inset);
-  left: 0;
   position: fixed;
-  right: 0;
+  z-index: 25;
   top: 0;
-  z-index: 999;
+  right: 0;
+  left: 0;
+  height: var(--ods-shell-titlebar-clearance);
 }
 
-.app-topbar {
-  --wails-draggable: drag;
-  align-items: center;
-  display: grid;
-  grid-template-columns: minmax(0, 1fr) auto minmax(0, 1fr);
-  height: var(--app-topbar-height);
-  left: var(--app-topbar-inset);
-  padding: 0 12px;
-  position: fixed;
-  right: var(--app-topbar-inset);
-  top: var(--app-topbar-top-inset);
-  z-index: 1000;
-}
-
-.app-topbar a,
-.app-topbar button,
-.app-topbar input,
-.app-topbar [role='menu'],
-.app-topbar__popover {
-  --wails-draggable: no-drag;
-}
-
-.app-topbar__brand {
-  align-items: center;
-  display: inline-flex;
-  font-family: var(--ods-font-family-display);
-  font-size: var(--ods-font-size-lg);
-  font-weight: var(--ods-font-weight-bold);
-  gap: 10px;
-  justify-self: start;
-  letter-spacing: 0;
-  text-decoration: none;
-}
-
-.app-topbar__brand-logo {
-  height: 38px;
-  width: 38px;
-}
-
-.app-topbar__nav {
-  --wails-draggable: drag;
-  align-items: center;
+.app-main {
+  position: relative;
+  z-index: 20;
   display: flex;
-  gap: 3px;
-  justify-self: center;
-  padding: 4px;
-}
-
-.app-topbar__nav-link {
-  height: 36px;
-}
-
-.app-topbar__utilities {
-  --wails-draggable: drag;
-  align-items: center;
-  display: flex;
-  gap: 6px;
-  justify-self: end;
+  height: 100vh;
   min-width: 0;
+  justify-content: center;
+  padding: var(--app-surface-top) var(--app-surface-inline)
+    calc(var(--app-dock-clearance) + var(--ods-space-6) + var(--ods-space-1));
 }
 
-.app-topbar__icon-button {
-  height: 44px;
-  font-size: 18px;
-  position: relative;
-  text-decoration: none;
-  width: 44px;
+.app-work-surface {
+  width: min(100%, 1440px);
+  height: 100%;
 }
 
-.app-topbar__menu-wrapper {
-  position: relative;
-}
-
-.app-topbar__user-button {
-  height: 44px;
-  max-width: 156px;
-  padding: 0 9px 0 5px;
-}
-
-.app-topbar__user-name {
-  color: var(--ods-color-fg-default);
-  font-size: var(--ods-font-size-sm);
-  font-weight: var(--ods-font-weight-medium);
-  max-width: 76px;
-  overflow: hidden;
-  text-overflow: ellipsis;
-  white-space: nowrap;
-}
-
-.app-topbar__notification-menu {
-  overflow: hidden;
-  width: min(340px, calc(100vw - 28px));
-}
-
-.app-topbar__dropdown-header {
-  align-items: center;
-  color: var(--ods-color-fg-muted);
+/* A view may opt into filling the panel height with flex: 1; by default it keeps its own height. */
+.app-view-content {
   display: flex;
-  font-size: var(--ods-font-size-sm);
-  justify-content: space-between;
-  padding: 12px 14px;
-}
-
-.app-topbar__notification-list {
-  max-height: 320px;
-  overflow-y: auto;
-}
-
-.app-topbar__empty {
-  padding: var(--ods-space-8);
-}
-
-.app-topbar__notification-item {
-  align-items: stretch;
+  min-width: 0;
+  min-height: 100%;
   flex-direction: column;
-  text-align: left;
 }
 
-.app-topbar__notification-title {
-  align-items: center;
-  display: flex;
-  font-size: var(--ods-font-size-sm);
-  gap: 6px;
+.app-work-surface :is([id], h1, h2, [tabindex='-1']) {
+  scroll-margin-block: var(--ods-space-6);
 }
 
-.app-topbar__notification-title > :last-child {
-  overflow: hidden;
-  text-overflow: ellipsis;
-  white-space: nowrap;
+/* Static page headings receive navigation focus for announcements, not interaction. */
+.app-work-surface h1[data-route-focus]:focus {
+  outline: none;
 }
 
-.app-topbar__notification-title .unread-title {
-  color: var(--ods-color-fg-default);
-  font-weight: var(--ods-font-weight-semibold);
-}
-
-.app-topbar__notification-title .read-title {
-  color: var(--ods-color-fg-muted);
-}
-
-.app-topbar__notification-time {
-  color: var(--ods-color-fg-subtle);
-  display: block;
-  font-size: var(--ods-font-size-xs);
-  margin: 5px 0 0 12px;
-}
-
-.app-topbar__user-menu {
-  min-width: 180px;
-}
-
-.app-topbar__user-menu-action {
-  justify-content: flex-start;
-}
-
-.theme-selector__popover {
-  --wails-draggable: no-drag;
-  width: 196px;
-  max-width: calc(100vw - 24px);
-}
-
-.app-topbar-portal {
-  --wails-draggable: no-drag;
-}
-
-.app-topbar-portal a,
-.app-topbar-portal button,
-.app-topbar-portal input,
-.app-topbar-portal [role='dialog'] {
-  --wails-draggable: no-drag;
+.app-dock-area {
+  position: fixed;
+  z-index: 30;
+  bottom: calc(var(--ods-shell-dock-offset) + env(safe-area-inset-bottom));
+  left: 50%;
+  transform: translateX(-50%);
 }
 
 .app-dock {
   --wails-draggable: no-drag;
-  align-items: center;
-  bottom: calc(10px + env(safe-area-inset-bottom));
-  display: none;
+  display: grid;
+  width: min(var(--ods-shell-dock-width), calc(100vw - 24px));
+  height: var(--ods-shell-dock-height);
   grid-template-columns: repeat(5, minmax(0, 1fr));
-  height: var(--app-dock-height);
-  left: 50%;
-  padding: 5px;
-  position: fixed;
-  transform: translateX(-50%);
-  width: min(430px, calc(100vw - 24px));
-  z-index: 1000;
+  gap: var(--ods-shell-dock-gap);
+  /* The prototype's five cells are 1px narrower at each end than an even inset would make them. */
+  padding: var(--ods-shell-dock-padding) calc(var(--ods-shell-dock-padding) + 1px);
 }
 
-.app-main {
-  height: 100vh;
-  margin-left: 0;
-  min-height: 100vh;
-  overflow-x: hidden;
+.app-notification-entry {
+  --wails-draggable: no-drag;
+  position: absolute;
+  top: 50%;
+  left: calc(100% + var(--ods-space-3));
+  transform: translateY(-50%);
+}
+
+.app-notification-entry__trigger {
+  font-size: var(--ods-font-size-xl);
+}
+
+.app-notification-entry__menu {
+  --wails-draggable: no-drag;
+  overflow: hidden;
+  width: min(340px, calc(100vw - 28px));
+}
+
+.app-notification-entry__header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: var(--ods-space-3) var(--ods-space-4);
+  color: var(--ods-color-fg-muted);
+  font-size: var(--ods-font-size-sm);
+}
+
+.app-notification-entry__list {
+  max-height: 320px;
   overflow-y: auto;
-  padding: 0;
-  width: 100%;
 }
 
-.app-view-content {
-  margin: 0 auto;
-  max-width: 1600px;
-  min-width: 0;
-  padding: calc(var(--app-topbar-height) + var(--app-topbar-top-inset) + 28px)
-    clamp(18px, 3vw, 44px) 44px;
-  width: 100%;
+.app-notification-entry__empty {
+  padding: var(--ods-space-8);
 }
 
-@media (max-width: 1240px) {
-  .app-topbar__brand span,
-  .app-topbar__user-name,
-  .app-topbar__user-button > .ri-arrow-down-s-line {
-    display: none;
-  }
-
-  .app-topbar__user-button {
-    padding: 0 5px;
-  }
+.app-notification-entry__item {
+  flex-direction: column;
+  align-items: stretch;
+  text-align: left;
 }
 
-@media (max-width: 1120px) {
-  .app-topbar__nav {
-    gap: 1px;
-  }
+.app-notification-entry__title {
+  display: flex;
+  align-items: center;
+  gap: var(--ods-space-2);
+  font-size: var(--ods-font-size-sm);
 }
 
-@media (max-width: 1010px) {
-  .app-topbar {
-    grid-template-columns: minmax(0, 1fr) auto;
-  }
-
-  .app-topbar__nav {
-    display: none;
-  }
-
-  .app-dock {
-    display: grid;
-  }
-
-  .app-view-content {
-    padding-bottom: calc(var(--app-dock-height) + env(safe-area-inset-bottom) + 28px);
-  }
+.app-notification-entry__title > :last-child {
+  overflow: hidden;
+  color: var(--ods-color-fg-default);
+  font-weight: var(--ods-font-weight-semibold);
+  text-overflow: ellipsis;
+  white-space: nowrap;
 }
 
-@media (max-width: 480px) {
-  .app-topbar {
-    padding-inline: 6px;
-  }
-
-  .app-topbar__utilities {
-    gap: 3px;
-  }
-
-  .app-topbar__icon-button {
-    height: 34px;
-    width: 34px;
-  }
-
-  .app-topbar__user-button {
-    height: 34px;
-    padding-inline: 3px;
-    width: 34px;
-  }
+.app-notification-entry__title > [data-read='true'] {
+  color: var(--ods-color-fg-muted);
+  font-weight: var(--ods-font-weight-regular);
 }
 
-@media (prefers-reduced-motion: reduce) {
-  .app-topbar,
-  .app-topbar__icon-button,
-  .app-topbar__user-button {
-    transition-duration: 0.01ms;
+.app-notification-entry__time {
+  display: block;
+  margin: var(--ods-space-1) 0 0 var(--ods-space-3);
+  color: var(--ods-color-fg-subtle);
+  font-size: var(--ods-font-size-xs);
+}
+
+/* Short windows give height back to the content before anything is clipped. */
+@media (max-height: 760px) {
+  :root {
+    --app-surface-top: var(--ods-shell-titlebar-clearance);
+    --ods-shell-dock-height: 76px;
+    --ods-shell-dock-offset: 16px;
+    --ods-shell-dock-padding: 8px;
+  }
+
+  .app-main {
+    padding-bottom: calc(var(--app-dock-clearance) + var(--ods-space-4));
   }
 }
 
 @media print {
-  .app-background,
   .app-titlebar-drag-region,
-  .app-topbar,
-  .app-dock {
+  .app-dock-area {
     display: none !important;
   }
 
-  .app-view-content {
-    padding-top: 0;
+  .app-container,
+  .app-main {
+    height: auto;
+    overflow: visible;
+    padding: 0;
   }
 }

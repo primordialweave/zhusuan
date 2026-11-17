@@ -91,21 +91,10 @@ export default function DesignSystemView() {
         className="design-showcase__header"
         description={
           <>
-            组件与视觉基础的实时预览，所有组件来自 <Code>@/design-system</Code>
-            ，随主题在昼夜之间切换。
+            所有组件来自 <Code>@/design-system</Code>，随烟雨与夜雨两套主题切换
           </>
         }
-        eyebrow={
-          <>
-            <span aria-hidden="true" className="design-showcase__pulse" />
-            Ember Orbit · Design System
-          </>
-        }
-        title={
-          <>
-            <span className="design-showcase__title-accent">Orange</span> 设计系统
-          </>
-        }
+        title="Orange 设计系统"
       />
 
       <ShowcaseSection
@@ -157,7 +146,7 @@ export default function DesignSystemView() {
         <div className="design-showcase__row">
           <User
             avatarProps={{ name: '橙子', tone: 'accent' }}
-            description="产品设计 · Ember Orbit"
+            description="产品设计 · 烟雨江南"
             name="橙子"
           />
           <Badge content={5} tone="danger">

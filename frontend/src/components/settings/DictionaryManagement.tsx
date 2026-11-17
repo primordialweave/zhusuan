@@ -1,10 +1,9 @@
-import { useCallback, useEffect, useMemo, useRef, useState } from 'react'
+import { useCallback, useEffect, useMemo, useRef, useState, type MouseEvent } from 'react'
 import { dictionaryApi, type Dictionary, type DictionaryItem } from '@/api/dictionary'
 import { useConfirm } from '@/composables/useConfirm'
 import { useToastStore } from '@/composables/useToast'
 import {
   Button,
-  Card,
   EmptyState,
   Field,
   FormActions,
@@ -12,7 +11,6 @@ import {
   Input,
   Modal,
   SectionHeader,
-  Surface,
   Tabs,
 } from '@/design-system'
 
@@ -45,6 +43,8 @@ export default function DictionaryManagement() {
   const dictionariesRequestRef = useRef(0)
   const itemsRequestRef = useRef(0)
   const submitInFlightRef = useRef(false)
+  const returnFocusRef = useRef<HTMLButtonElement | null>(null)
+  const nameInputRef = useRef<HTMLInputElement | null>(null)
 
   const activeDictName = useMemo(() => {
     const dictionary = dictionaries.find((item) => item.code === activeDictId)
@@ -97,7 +97,8 @@ export default function DictionaryManagement() {
     }
   }, [activeDictId, fetchDictItems])
 
-  const openAddModal = () => {
+  const openAddModal = (event: MouseEvent<HTMLButtonElement>) => {
+    returnFocusRef.current = event.currentTarget
     setIsEditing(false)
     setModalForm({
       ...emptyForm,
@@ -106,7 +107,8 @@ export default function DictionaryManagement() {
     setShowModal(true)
   }
 
-  const openEditModal = (item: DictionaryItem) => {
+  const openEditModal = (item: DictionaryItem, event: MouseEvent<HTMLButtonElement>) => {
+    returnFocusRef.current = event.currentTarget
     setIsEditing(true)
     setModalForm({
       id: item.id,
@@ -177,53 +179,6 @@ export default function DictionaryManagement() {
 
   return (
     <div className="dict-management">
-      <div className="settings-panel-header">
-        <SectionHeader
-          actions={
-            <Button disabled={!activeDictId} onClick={openAddModal}>
-              <i className="ri-add-line" />
-              <span>新增条目</span>
-            </Button>
-          }
-          description="管理系统数据字典和配置项"
-          icon={<i className="ri-book-2-line" />}
-          size="lg"
-          title="字典管理"
-        />
-
-        <div className="dev-stats">
-          <Card.Root className="dev-stat-card" gap="sm" orientation="horizontal" padding="sm">
-            <Surface className="dev-stat-icon" padding="none" radius="control" tone="info">
-              <i className="ri-folder-line" />
-            </Surface>
-            <div className="dev-stat-info">
-              <span className="dev-stat-value">{dictionaries.length}</span>
-              <span className="dev-stat-label">字典分类</span>
-            </div>
-          </Card.Root>
-          <Card.Root className="dev-stat-card" gap="sm" orientation="horizontal" padding="sm">
-            <Surface className="dev-stat-icon" padding="none" radius="control" tone="accent">
-              <i className="ri-list-check" />
-            </Surface>
-            <div className="dev-stat-info">
-              <span className="dev-stat-value">{activeDictItems.length}</span>
-              <span className="dev-stat-label">当前条目</span>
-            </div>
-          </Card.Root>
-          {activeDictId ? (
-            <Card.Root className="dev-stat-card" gap="sm" orientation="horizontal" padding="sm">
-              <Surface className="dev-stat-icon" padding="none" radius="control" tone="success">
-                <i className="ri-bookmark-line" />
-              </Surface>
-              <div className="dev-stat-info">
-                <span className="dev-stat-value">{activeDictName}</span>
-                <span className="dev-stat-label">当前字典</span>
-              </div>
-            </Card.Root>
-          ) : null}
-        </div>
-      </div>
-
       <Tabs.Root className="dict-layout" onValueChange={setActiveDictId} value={activeDictId}>
         <Tabs.List
           aria-label="字典分类"
@@ -234,7 +189,7 @@ export default function DictionaryManagement() {
           <div className="dict-sidebar-title">字典分类</div>
           {dictionaries.map((dictionary) => (
             <Tabs.Tab key={dictionary.id} value={dictionary.code}>
-              <i className="ri-folder-2-line" />
+              <i aria-hidden="true" className="ri-folder-2-line" />
               <span>{dictionary.name}</span>
             </Tabs.Tab>
           ))}
@@ -242,27 +197,30 @@ export default function DictionaryManagement() {
 
         <Tabs.Panel value={activeDictId}>
           <div className="dict-content">
+            <SectionHeader
+              actions={
+                <Button disabled={!activeDictId} onClick={openAddModal}>
+                  <i aria-hidden="true" className="ri-add-line" />
+                  <span>新增条目</span>
+                </Button>
+              }
+              title={activeDictName || '字典条目'}
+              description={`共 ${activeDictItems.length} 个条目`}
+              headingLevel={2}
+              density="compact"
+            />
             {activeDictItems.length === 0 ? (
               <EmptyState
                 className="dict-empty"
                 description="点击右上角按钮添加新条目"
-                icon={<i className="ri-file-list-3-line" />}
+                icon={<i aria-hidden="true" className="ri-file-list-3-line" />}
                 size="md"
                 title="暂无数据"
               />
             ) : (
-              <div className="dict-list">
+              <ul className="dict-list">
                 {activeDictItems.map((item) => (
-                  <Card.Root
-                    className="dict-item-card"
-                    gap="sm"
-                    key={item.id}
-                    orientation="horizontal"
-                    padding="sm"
-                  >
-                    <Surface className="dict-item-icon" padding="none" radius="control" tone="info">
-                      <i className="ri-price-tag-3-line" />
-                    </Surface>
+                  <li className="dict-item" key={item.id}>
                     <div className="dict-item-info">
                       <span className="dict-item-label">{item.label}</span>
                       <span className="dict-item-value">{item.value}</span>
@@ -270,32 +228,39 @@ export default function DictionaryManagement() {
                     <div className="dict-item-actions">
                       <IconButton
                         label="编辑字典条目"
-                        onClick={() => openEditModal(item)}
+                        onClick={(event) => openEditModal(item, event)}
                         size="sm"
                         title="编辑"
                         variant="ghost"
                       >
-                        <i className="ri-edit-line" />
+                        <i aria-hidden="true" className="ri-edit-line" />
                       </IconButton>
                       <IconButton
                         label="删除字典条目"
                         onClick={() => void deleteDictItem(item.id)}
                         size="sm"
                         title="删除"
-                        variant="danger"
+                        variant="ghost"
+                        tone="danger"
                       >
-                        <i className="ri-delete-bin-line" />
+                        <i aria-hidden="true" className="ri-delete-bin-line" />
                       </IconButton>
                     </div>
-                  </Card.Root>
+                  </li>
                 ))}
-              </div>
+              </ul>
             )}
           </div>
         </Tabs.Panel>
       </Tabs.Root>
 
-      <Modal.Root dismissable={!submitting} onClose={() => setShowModal(false)} open={showModal}>
+      <Modal.Root
+        dismissable={!submitting}
+        onClose={() => setShowModal(false)}
+        open={showModal}
+        returnFocusRef={returnFocusRef}
+        initialFocusRef={nameInputRef}
+      >
         <Modal.Header>{isEditing ? '编辑条目' : '新增条目'}</Modal.Header>
         {!submitting ? (
           <Modal.Close label={isEditing ? '关闭编辑条目弹窗' : '关闭新增条目弹窗'} />
@@ -304,6 +269,7 @@ export default function DictionaryManagement() {
           <Field.Root>
             <Field.Label>名称 (Label)</Field.Label>
             <Input
+              ref={nameInputRef}
               autoComplete="off"
               onChange={(event) =>
                 setModalForm((current) => ({ ...current, label: event.target.value }))

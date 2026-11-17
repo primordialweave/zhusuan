@@ -1,10 +1,10 @@
-@layer reset, vendor, tokens, base, components, patterns, utilities, overrides;
+@layer reset, vendor, theme, tokens, base, components, patterns, utilities, overrides;
 
 /* The application shell owns the single Tailwind import. */
 @import './tokens/reference.css' layer(tokens);
 @import './tokens/semantic.css' layer(tokens);
-@import './tokens/themes/day-ember.css' layer(tokens);
-@import './tokens/themes/night-orbit.css' layer(tokens);
+@import './tokens/themes/jiangnan-mist.css' layer(tokens);
+@import './tokens/themes/jiangnan-night.css' layer(tokens);
 @import './foundations/reset.css' layer(reset);
 @import './foundations/typography.css' layer(base);
 @import './foundations/focus.css' layer(base);

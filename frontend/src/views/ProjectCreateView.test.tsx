@@ -2,9 +2,12 @@ import { act, screen, waitFor, within } from '@testing-library/react'
 import userEvent from '@testing-library/user-event'
 import { Route, Routes, useNavigate } from 'react-router-dom'
 import { beforeEach, describe, expect, it, vi } from 'vitest'
+import { dictionaryApi, type DictionaryItem } from '@/api/dictionary'
 import { paymentApi, projectApi, type Payment, type Project } from '@/api/project'
 import { render } from '@/test/render'
 import ProjectCreateView from './ProjectCreateView'
+
+vi.mock('@/api/dictionary', () => ({ dictionaryApi: { getItems: vi.fn() } }))
 
 vi.mock('@/api/project', async (importOriginal) => {
   const original = await importOriginal<typeof import('@/api/project')>()
@@ -72,6 +75,11 @@ const payments = [
 
 const apiResponse = <T,>(data: T) => ({ data: { data } })
 
+const projectTypes = [
+  { dictionary_id: 4, id: 1, label: '医学研究', sort: 1, status: 1, value: 'medicine' },
+  { dictionary_id: 4, id: 2, label: '软件开发', sort: 2, status: 1, value: 'software' },
+] satisfies DictionaryItem[]
+
 const createDeferred = <T,>() => {
   let resolve!: (value: T | PromiseLike<T>) => void
   const promise = new Promise<T>((promiseResolve) => {
@@ -109,6 +117,7 @@ function renderEditor() {
 describe('ProjectCreateView design system migration', () => {
   beforeEach(() => {
     vi.clearAllMocks()
+    vi.mocked(dictionaryApi.getItems).mockResolvedValue(apiResponse(projectTypes) as never)
     vi.mocked(projectApi.get).mockResolvedValue(apiResponse(project) as never)
     vi.mocked(projectApi.getPayments).mockResolvedValue(apiResponse(payments) as never)
     vi.mocked(projectApi.create).mockResolvedValue(apiResponse(project) as never)
@@ -117,6 +126,67 @@ describe('ProjectCreateView design system migration', () => {
     vi.mocked(paymentApi.delete).mockResolvedValue(apiResponse(null) as never)
     vi.mocked(paymentApi.update).mockResolvedValue(apiResponse(payments[0]) as never)
   })
+
+  it('fills a saved project type before its dictionary arrives, then uses the dictionary label', async () => {
+    const user = userEvent.setup()
+    const dictionary = createDeferred<Awaited<ReturnType<typeof dictionaryApi.getItems>>>()
+    vi.mocked(dictionaryApi.getItems).mockReturnValue(dictionary.promise)
+    vi.mocked(projectApi.get).mockResolvedValue(
+      apiResponse({ ...project, type: 'medicine' }) as never,
+    )
+
+    renderEditor()
+    await waitFor(() => expect(screen.getByLabelText(/项目名称/)).toHaveValue(project.name))
+    expect(screen.getByRole('button', { name: '项目类型' })).toHaveTextContent('medicine')
+
+    await act(async () => {
+      dictionary.resolve(apiResponse(projectTypes) as never)
+      await dictionary.promise
+    })
+
+    expect(dictionaryApi.getItems).toHaveBeenCalledWith('project_type')
+    expect(screen.getByRole('button', { name: '项目类型' })).toHaveTextContent('医学研究')
+    const summary = screen.getByRole('complementary', { name: '项目草稿摘要' })
+    expect(within(summary).getByText('医学研究')).toBeInTheDocument()
+    await user.click(screen.getByRole('button', { name: '项目类型' }))
+    expect(screen.getByRole('option', { name: '医学研究' })).toHaveAttribute(
+      'aria-selected',
+      'true',
+    )
+  })
+
+  it.each(['missing', 'unavailable'])(
+    'preserves a saved type and confirmed payment when the dictionary is %s',
+    async (dictionaryState) => {
+      const user = userEvent.setup()
+      if (dictionaryState === 'unavailable') {
+        vi.mocked(dictionaryApi.getItems).mockRejectedValue(new Error('字典不可用'))
+      }
+      vi.mocked(projectApi.get).mockResolvedValue(
+        apiResponse({ ...project, type: 'legacy_type' }) as never,
+      )
+      vi.mocked(projectApi.getPayments).mockResolvedValue(
+        apiResponse([{ ...payments[0], status: 'confirmed' }]) as never,
+      )
+
+      renderEditor()
+      await waitFor(() => expect(screen.getByLabelText(/项目名称/)).toHaveValue(project.name))
+      expect(screen.getByRole('button', { name: '项目类型' })).toHaveTextContent('legacy_type')
+      expect(screen.getByRole('button', { name: '状态' })).toHaveTextContent('已收款')
+      await user.click(screen.getByRole('button', { name: '确认保存' }))
+
+      await waitFor(() => {
+        expect(projectApi.update).toHaveBeenCalledWith(
+          42,
+          expect.objectContaining({ type: 'legacy_type' }),
+        )
+        expect(paymentApi.update).toHaveBeenCalledWith(
+          7,
+          expect.objectContaining({ status: 'confirmed' }),
+        )
+      })
+    },
+  )
 
   it('builds the project form from ODS fields and form patterns', async () => {
     const user = userEvent.setup()
@@ -133,7 +203,14 @@ describe('ProjectCreateView design system migration', () => {
     expect(container.querySelector('.ods-form-actions')).toBeInTheDocument()
     expect(container.querySelector('.project-compose-layout')).toBeInTheDocument()
     expect(screen.getByRole('complementary', { name: '项目草稿摘要' })).toBeInTheDocument()
-    expect(screen.getByText('PROJECT DRAFT')).toBeInTheDocument()
+    // Flat page: no English kickers, no step counters, nothing framed in a filled card.
+    expect(container.textContent).not.toMatch(/PROJECT|STEP \d/)
+    expect(container.querySelector('.ods-page-header__eyebrow')).toBeNull()
+    expect(
+      Array.from(container.querySelectorAll('.ods-card')).map((card) =>
+        card.getAttribute('data-variant'),
+      ),
+    ).toEqual(['transparent', 'transparent'])
     expect(screen.getByText('档案完整度')).toBeInTheDocument()
     expect(screen.getByText('计划金额')).toBeInTheDocument()
     expect(screen.getByLabelText(/项目名称/)).toHaveClass('ods-input')

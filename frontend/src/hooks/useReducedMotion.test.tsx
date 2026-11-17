@@ -1,6 +1,7 @@
 import { act, renderHook } from '@testing-library/react'
 import { renderToString } from 'react-dom/server'
 import { afterEach, describe, expect, it, vi } from 'vitest'
+import { useAppearanceStore } from '@/stores/appearance'
 import { useReducedMotion } from './useReducedMotion'
 
 type MotionListener = (event: MediaQueryListEvent) => void
@@ -47,6 +48,7 @@ describe('useReducedMotion', () => {
   afterEach(() => {
     vi.unstubAllGlobals()
     vi.restoreAllMocks()
+    useAppearanceStore.setState({ reduceMotion: false })
   })
 
   it('is safe during server rendering', () => {
@@ -99,6 +101,19 @@ describe('useReducedMotion', () => {
     expect(query.addEventListener).toHaveBeenCalledTimes(2)
     third.unmount()
     expect(query.removeEventListener).toHaveBeenCalledTimes(2)
+  })
+
+  it('also follows the in-app preference when the system allows motion', () => {
+    const query = createMediaQuery(false)
+    vi.spyOn(window, 'matchMedia').mockReturnValue(query.mediaQuery)
+    const { result, unmount } = renderHook(() => useReducedMotion())
+
+    expect(result.current).toBe(false)
+    act(() => useAppearanceStore.setState({ reduceMotion: true }))
+    expect(result.current).toBe(true)
+    act(() => useAppearanceStore.setState({ reduceMotion: false }))
+    expect(result.current).toBe(false)
+    unmount()
   })
 
   it('removes the modern change listener on unmount', () => {

@@ -133,6 +133,8 @@ export const RouterLink = forwardRef<HTMLAnchorElement, RouterLinkProps>(functio
 })
 
 export interface RouterNavLinkProps extends Omit<ReactRouterNavLinkProps, 'className'> {
+  /** Overrides path matching, for an entry that owns routes outside its own prefix. */
+  active?: boolean
   appearance?: 'dock' | 'link' | 'tab'
   className?: ReactRouterNavLinkProps['className']
   icon?: ReactNode
@@ -156,10 +158,14 @@ const renderRouterNavLinkContent = (content: ReactNode, icon?: ReactNode) => (
 export const RouterNavLink = forwardRef<HTMLAnchorElement, RouterNavLinkProps>(
   function RouterNavLink(
     {
+      active,
       appearance = 'link',
+      caseSensitive,
       children,
       className,
+      end,
       icon,
+      style,
       tone = 'foreground',
       underline = 'none',
       ...props
@@ -167,6 +173,37 @@ export const RouterNavLink = forwardRef<HTMLAnchorElement, RouterNavLinkProps>(
     ref,
   ) {
     const baseClasses = ['ods-link', 'ods-router-link', 'ods-router-nav-link']
+    if (active !== undefined) {
+      // The caller decides the match, so the path-matching options do not apply here.
+      const state: NavLinkRenderProps = {
+        isActive: active,
+        isPending: false,
+        isTransitioning: false,
+      }
+      return (
+        <ReactRouterLink
+          {...props}
+          aria-current={active ? 'page' : undefined}
+          className={[
+            ...baseClasses,
+            typeof className === 'function' ? className(state) : className,
+          ]
+            .filter(Boolean)
+            .join(' ')}
+          data-appearance={appearance}
+          data-tone={tone}
+          data-underline={underline}
+          ref={ref}
+          style={typeof style === 'function' ? style(state) : style}
+        >
+          {renderRouterNavLinkContent(
+            typeof children === 'function' ? children(state) : children,
+            icon,
+          )}
+        </ReactRouterLink>
+      )
+    }
+
     const resolvedClassName: ReactRouterNavLinkProps['className'] =
       typeof className === 'function'
         ? (state) => [...baseClasses, className(state)].filter(Boolean).join(' ')
@@ -179,11 +216,14 @@ export const RouterNavLink = forwardRef<HTMLAnchorElement, RouterNavLinkProps>(
     return (
       <ReactRouterNavLink
         {...props}
+        caseSensitive={caseSensitive}
         className={resolvedClassName}
         data-appearance={appearance}
         data-tone={tone}
         data-underline={underline}
+        end={end}
         ref={ref}
+        style={style}
       >
         {resolvedChildren}
       </ReactRouterNavLink>

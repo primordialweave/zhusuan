@@ -2,7 +2,7 @@ import { act } from '@testing-library/react'
 import userEvent from '@testing-library/user-event'
 import { beforeEach, describe, expect, it, vi } from 'vitest'
 import { dictionaryApi, type Dictionary, type DictionaryItem } from '@/api/dictionary'
-import { render, screen, waitFor } from '@/test/render'
+import { fireEvent, render, screen, waitFor } from '@/test/render'
 import DictionaryManagement from './DictionaryManagement'
 
 vi.mock('@/api/dictionary', async (importOriginal) => {
@@ -50,6 +50,19 @@ describe('DictionaryManagement request integrity', () => {
     vi.clearAllMocks()
     vi.mocked(dictionaryApi.list).mockResolvedValue(response(dictionaries) as never)
     vi.mocked(dictionaryApi.getItems).mockResolvedValue(response([]) as never)
+  })
+
+  it('restores the actual trigger when pointer activation did not focus it', async () => {
+    const user = userEvent.setup()
+    render(<DictionaryManagement />)
+    const trigger = await screen.findByRole('button', { name: '新增条目' })
+    await waitFor(() => expect(trigger).toBeEnabled())
+    expect(trigger).not.toHaveFocus()
+    fireEvent.click(trigger)
+    expect(screen.getByLabelText('名称 (Label)')).toHaveFocus()
+    await user.keyboard('{Escape}')
+    expect(trigger).toHaveFocus()
+    expect(screen.queryByRole('dialog')).not.toBeInTheDocument()
   })
 
   it('keeps the latest dictionary items when an older request resolves last', async () => {

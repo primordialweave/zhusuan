@@ -88,3 +88,15 @@
     justify-self: end;
   }
 }
+
+@media (max-width: 36rem) {
+  .ods-pagination-bar[data-layout='centered'] {
+    grid-template-columns: minmax(0, 1fr);
+  }
+
+  .ods-pagination-bar[data-layout='centered'] .ods-pagination,
+  .ods-pagination-bar[data-layout='centered'] .ods-pagination-bar__trailing {
+    grid-column: 1;
+    justify-self: start;
+  }
+}

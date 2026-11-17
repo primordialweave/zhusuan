@@ -39,9 +39,9 @@
 .ods-page-header__title {
   margin: 0;
   color: var(--ods-color-fg-default);
-  font-family: var(--ods-font-family-display);
-  font-size: var(--ods-font-size-3xl);
-  font-weight: var(--ods-font-weight-bold);
+  font-family: var(--ods-font-family-title);
+  font-size: clamp(var(--ods-font-size-3xl), 2.9vw, var(--ods-font-size-4xl));
+  font-weight: var(--ods-font-weight-title);
   letter-spacing: var(--ods-letter-spacing-tight);
   line-height: var(--ods-line-height-heading);
 }

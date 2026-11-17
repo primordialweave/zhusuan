@@ -29,7 +29,7 @@
 }
 
 a.ods-breadcrumbs__link:hover {
-  color: var(--ods-color-accent);
+  color: var(--ods-color-accent-text);
 }
 
 a.ods-breadcrumbs__link:focus-visible {

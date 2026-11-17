@@ -33,7 +33,7 @@
 .ods-section-header__icon[data-tone='accent'] {
   border-color: color-mix(in srgb, var(--ods-color-accent) 38%, var(--ods-color-border-default));
   background: var(--ods-color-accent-soft);
-  color: var(--ods-color-accent);
+  color: var(--ods-color-accent-text);
 }
 
 .ods-section-header__icon[data-tone='success'] {

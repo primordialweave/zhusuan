@@ -2,7 +2,6 @@ import './styles/motion.css'
 import './assets/main.css'
 import './styles/layout.css'
 import './styles/dashboard.css'
-import './styles/stat-card.css'
 import './styles/login.css'
 import './styles/design-showcase.css'
 // ODS owns tokens, foundations, components, and patterns; Tailwind is loaded once by main.css.
@@ -19,9 +18,11 @@ import { RouterProvider } from 'react-router-dom'
 import { setAuthLogout } from '@/api'
 import { router } from '@/router/routes'
 import { useAuthStore } from '@/stores/auth'
+import { applyAppearanceBeforeRender } from '@/stores/appearance'
 import { applyThemeBeforeRender } from '@/stores/theme'
 
 applyThemeBeforeRender()
+applyAppearanceBeforeRender()
 
 setAuthLogout(async () => {
   await useAuthStore.getState().logout()

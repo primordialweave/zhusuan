@@ -6,21 +6,14 @@ import { useToastStore } from '@/composables/useToast'
 import {
   Button,
   Calendar,
-  Card,
   Chip,
-  DataList,
   EmptyState,
   PageHeader,
-  RouterButton,
-  SectionHeader,
+  RouterLink,
   Skeleton,
-  SummaryMetric,
-  type CalendarDayState,
-  type CalendarMarkTone,
-  type SummaryMetricProps,
   type SurfaceTone,
 } from '@/design-system'
-import { formatCurrency, formatDate } from '@/utils/format'
+import { formatAmount } from '@/utils/format'
 import '@/styles/calendar-domain.css'
 
 const paymentStageLabels: Record<string, string> = {
@@ -49,55 +42,101 @@ const getPaymentStatus = (payment: Payment): Payment['status'] => {
     : payment.status
 }
 
-// One mark per day, colored by the most urgent plan on it.
-const TONE_PRIORITY: Record<Payment['status'], number> = {
-  overdue: 3,
-  pending: 2,
-  confirmed: 1,
-  paid: 1,
-}
+type PaymentStatus = Payment['status']
+type StatusGroup = 'overdue' | 'pending' | 'received'
 
-const STATUS_MARK: Record<Payment['status'], CalendarMarkTone> = {
-  confirmed: 'success',
-  overdue: 'danger',
-  paid: 'success',
-  pending: 'warning',
+// Most urgent first: the order of in-cell lines and of a day's entries.
+const STATUS_GROUPS: StatusGroup[] = ['overdue', 'pending', 'received']
+const GROUP_LABEL: Record<StatusGroup, string> = {
+  overdue: '逾期',
+  pending: '待收',
+  received: '已收',
+}
+const statusGroup = (status: PaymentStatus): StatusGroup =>
+  status === 'overdue' || status === 'pending' ? status : 'received'
+
+const WEEKDAY_NAMES = ['日', '一', '二', '三', '四', '五', '六']
+const CELL_LINE_LIMIT = 2
+const UPCOMING_LIMIT = 5
+
+interface DaySummary {
+  count: number
+  groups: Array<{ amount: number; count: number; group: StatusGroup }>
 }
 
 const paymentLink = (payment: Payment) =>
   `/projects/${payment.project_id}?tab=payments&payment=${payment.id}`
 
-const PREVIEW_LIMIT = 2
-const newestPaymentFirst = (a: Payment, b: Payment) =>
-  b.plan_date.localeCompare(a.plan_date) || b.id - a.id
+const byUrgency = (a: Payment, b: Payment) =>
+  STATUS_GROUPS.indexOf(statusGroup(getPaymentStatus(a))) -
+    STATUS_GROUPS.indexOf(statusGroup(getPaymentStatus(b))) || a.id - b.id
 
-interface PaymentRowProps {
-  payment: Payment
-  secondary: string
-  secondaryTone?: SurfaceTone
+const summarizeDay = (payments: Payment[]): DaySummary => ({
+  count: payments.length,
+  groups: STATUS_GROUPS.map((group) => {
+    const matching = payments.filter((payment) => statusGroup(getPaymentStatus(payment)) === group)
+    return {
+      amount: matching.reduce((sum, payment) => sum + payment.amount, 0),
+      count: matching.length,
+      group,
+    }
+  }).filter((entry) => entry.count > 0),
+})
+
+const formatDayHeading = (date: string) => {
+  const day = dayjs(date)
+  return `${day.month() + 1}月${day.date()}日 · 周${WEEKDAY_NAMES[day.day()]}`
 }
 
-function PaymentRow({ payment, secondary, secondaryTone = 'neutral' }: PaymentRowProps) {
-  const status = getPaymentStatus(payment)
+const formatShortDate = (date: string) => {
+  const day = dayjs(date)
+  return day.isValid() ? `${day.month() + 1}月${day.date()}日` : '—'
+}
+
+function DayEntries({ summary }: { summary: DaySummary }) {
+  const visible = summary.groups.slice(0, CELL_LINE_LIMIT)
+  const hiddenCount = summary.groups
+    .slice(CELL_LINE_LIMIT)
+    .reduce((sum, entry) => sum + entry.count, 0)
 
   return (
-    <DataList.Item data-motion-item>
-      <DataList.Link
-        density="comfortable"
-        icon={<i className="ri-arrow-right-s-line" />}
-        markerTone={statusMeta[status].tone}
-        to={paymentLink(payment)}
-      >
-        <DataList.Identity>
-          <DataList.Primary>{payment.project?.name || '未知项目'}</DataList.Primary>
-          <DataList.Secondary>{formatStage(payment)}</DataList.Secondary>
-        </DataList.Identity>
-        <DataList.Meta align="end" numeric>
-          <DataList.Primary>{formatCurrency(payment.amount)}</DataList.Primary>
-          <DataList.Secondary tone={secondaryTone}>{secondary}</DataList.Secondary>
-        </DataList.Meta>
-      </DataList.Link>
-    </DataList.Item>
+    <>
+      {visible.map((entry) => (
+        <span className="calendar-day-entry" data-status={entry.group} key={entry.group}>
+          <span aria-hidden="true" className="calendar-day-entry__dot" />
+          <span className="calendar-day-entry__text">
+            {GROUP_LABEL[entry.group]} {formatAmount(entry.amount)}
+          </span>
+        </span>
+      ))}
+      {hiddenCount > 0 ? <span className="calendar-day-entry__more">+{hiddenCount} 笔</span> : null}
+    </>
+  )
+}
+
+function PaymentEntry({ payment }: { payment: Payment }) {
+  const status = getPaymentStatus(payment)
+  const received = statusGroup(status) === 'received'
+  const actualDate = received && payment.actual_date ? payment.actual_date.slice(0, 10) : ''
+
+  return (
+    <li className="calendar-entry" data-motion-item>
+      <div className="calendar-entry__identity">
+        <RouterLink className="calendar-entry__name" to={paymentLink(payment)} tone="foreground">
+          {payment.project?.name || '未知项目'}
+        </RouterLink>
+        <span className="calendar-entry__stage">
+          {formatStage(payment)}
+          {actualDate && actualDate !== payment.plan_date
+            ? ` · ${formatShortDate(actualDate)}到账`
+            : ''}
+        </span>
+      </div>
+      <span className="calendar-entry__amount">{formatAmount(payment.amount)}</span>
+      <Chip size="lg" tone={statusMeta[status].tone}>
+        {statusMeta[status].label}
+      </Chip>
+    </li>
   )
 }
 
@@ -114,8 +153,6 @@ export default function CalendarView() {
       : dayjs().format('YYYY-MM-DD')
   const monthKey = selectedDate.slice(0, 7)
   const currentMonth = useMemo(() => dayjs(`${monthKey}-01`), [monthKey])
-  const listScope = searchParams.get('view')
-  const showAllPayments = listScope === 'day' || listScope === 'month'
   const setSelectedDate = useCallback(
     (value: string) => {
       setSearchParams(
@@ -170,263 +207,96 @@ export default function CalendarView() {
     }
   }, [loadPayments])
 
-  const dateTones = useMemo(() => {
-    const tones = new Map<string, Payment['status']>()
+  const daySummaries = useMemo(() => {
+    const byDate = new Map<string, Payment[]>()
     for (const payment of payments) {
-      const status = getPaymentStatus(payment)
-      const current = tones.get(payment.plan_date)
-      if (!current || TONE_PRIORITY[status] > TONE_PRIORITY[current]) {
-        tones.set(payment.plan_date, status)
-      }
+      if (!payment.plan_date.startsWith(monthKey)) continue
+      byDate.set(payment.plan_date, [...(byDate.get(payment.plan_date) ?? []), payment])
     }
-    return tones
-  }, [payments])
+    return new Map([...byDate].map(([date, items]) => [date, summarizeDay(items)]))
+  }, [monthKey, payments])
 
   const selectedDatePayments = useMemo(
-    () => payments.filter((payment) => payment.plan_date === selectedDate).sort(newestPaymentFirst),
+    () => payments.filter((payment) => payment.plan_date === selectedDate).sort(byUrgency),
     [payments, selectedDate],
   )
 
-  const monthlyPayments = useMemo(
-    () =>
-      payments
-        .filter((payment) => dayjs(payment.plan_date).isSame(currentMonth, 'month'))
-        .sort(newestPaymentFirst),
-    [currentMonth, payments],
-  )
-
-  const monthSummary = useMemo(() => {
-    const total = monthlyPayments.reduce((sum, payment) => sum + payment.amount, 0)
-    const count = (status: 'pending' | 'overdue') =>
-      monthlyPayments.filter((payment) => getPaymentStatus(payment) === status).length
-    const received = monthlyPayments.filter(
-      (payment) => payment.status === 'paid' || payment.status === 'confirmed',
-    ).length
-    const receivedAmount = monthlyPayments
-      .filter((payment) => payment.status === 'paid' || payment.status === 'confirmed')
-      .reduce((sum, payment) => sum + payment.amount, 0)
-    return {
-      overdue: count('overdue'),
-      pending: count('pending'),
-      received,
-      receivedAmount,
-      total,
-    }
-  }, [monthlyPayments])
+  // Pending plans from today on, within the visible month; the selected day is already listed above.
+  const upcomingPayments = useMemo(() => {
+    const today = dayjs().format('YYYY-MM-DD')
+    return payments
+      .filter(
+        (payment) =>
+          payment.status === 'pending' &&
+          payment.plan_date.startsWith(monthKey) &&
+          payment.plan_date >= today &&
+          payment.plan_date !== selectedDate,
+      )
+      .sort((a, b) => a.plan_date.localeCompare(b.plan_date) || a.id - b.id)
+  }, [monthKey, payments, selectedDate])
 
   const handleVisibleMonthChange = useCallback(
     (value: string) => {
       const nextMonth = dayjs(value).startOf('month')
-      if (nextMonth.format('YYYY-MM') !== monthKey) {
-        setLoading(true)
-        setLoadError(false)
-      }
-      setSelectedDate(nextMonth.format('YYYY-MM-DD'))
+      if (nextMonth.format('YYYY-MM') === monthKey) return
+      setLoading(true)
+      setLoadError(false)
+      // Keep the day of month where the new month has it.
+      const day = Math.min(dayjs(selectedDate).date(), nextMonth.daysInMonth())
+      setSelectedDate(nextMonth.date(day).format('YYYY-MM-DD'))
     },
-    [monthKey, setSelectedDate],
+    [monthKey, selectedDate, setSelectedDate],
   )
 
-  const getDateTone = useCallback(
-    (date: string) => {
-      const status = dateTones.get(date)
-      return status ? STATUS_MARK[status] : undefined
-    },
-    [dateTones],
-  )
+  const isDateMarked = useCallback((date: string) => daySummaries.has(date), [daySummaries])
 
   const getDateAriaLabel = useCallback(
-    (date: string, state: CalendarDayState) => {
-      const status = dateTones.get(date)
-      return `${formatDate(date)}${state.isMarked && status ? `，收款计划状态：${statusMeta[status].label}` : ''}`
+    (date: string) => {
+      const day = dayjs(date)
+      const summary = daySummaries.get(date)
+      const base = `${day.year()}年${day.month() + 1}月${day.date()}日，星期${WEEKDAY_NAMES[day.day()]}`
+      if (!summary) return base
+      return `${base}，${summary.groups
+        .map((entry) => `${GROUP_LABEL[entry.group]} ${formatAmount(entry.amount)}`)
+        .join('，')}，共 ${summary.count} 笔`
     },
-    [dateTones],
+    [daySummaries],
   )
 
-  const summaryText = loadError
-    ? `${currentMonth.month() + 1} 月收款计划加载失败`
-    : loading
-      ? '正在同步收款计划…'
-      : monthlyPayments.length === 0
-        ? `${currentMonth.month() + 1} 月暂无收款计划`
-        : `${currentMonth.month() + 1} 月应收 ${formatCurrency(monthSummary.total)} · 待收 ${
-            monthSummary.pending
-          } 笔${
-            monthSummary.overdue > 0 ? ` · 逾期 ${monthSummary.overdue} 笔` : ''
-          } · 已收 ${monthSummary.received} 笔`
-
-  const metricState = (value: string) =>
-    loadError
-      ? ({ errorValue: '暂不可用', status: 'error' } as const)
-      : loading
-        ? ({ loadingValue: '—', status: 'loading' } as const)
-        : ({ status: 'data', value } as const)
-
-  const summaryMetrics: SummaryMetricProps[] = [
-    {
-      label: `${currentMonth.month() + 1} 月应收`,
-      layout: 'stacked',
-      meta: (
-        <Chip size="sm" tone={loadError ? 'neutral' : 'accent'}>
-          {loadError ? '加载失败' : loading ? '同步中' : `${monthlyPayments.length} 笔计划`}
-        </Chip>
-      ),
-      tone: loadError ? 'neutral' : 'accent',
-      variant: 'default',
-      ...metricState(formatCurrency(monthSummary.total)),
+  const renderDayContent = useCallback(
+    (date: string) => {
+      const summary = daySummaries.get(date)
+      return summary ? <DayEntries summary={summary} /> : null
     },
-    {
-      label: '风险关注',
-      layout: 'stacked',
-      meta: (
-        <Chip
-          size="sm"
-          tone={loadError ? 'neutral' : monthSummary.overdue > 0 ? 'danger' : 'warning'}
-        >
-          {loadError
-            ? '加载失败'
-            : loading
-              ? '同步中'
-              : monthSummary.overdue > 0
-                ? `逾期 ${monthSummary.overdue} 笔`
-                : '暂无逾期'}
-        </Chip>
-      ),
-      tone: loadError ? 'neutral' : monthSummary.overdue > 0 ? 'danger' : 'warning',
-      variant: 'default',
-      ...metricState(`${monthSummary.pending + monthSummary.overdue} 笔`),
-    },
-    {
-      label: '已收回款',
-      layout: 'stacked',
-      meta: (
-        <Chip size="sm" tone={loadError ? 'neutral' : 'success'}>
-          {loadError ? '加载失败' : loading ? '同步中' : `${monthSummary.received} 笔已确认`}
-        </Chip>
-      ),
-      tone: loadError ? 'neutral' : 'success',
-      variant: 'default',
-      ...metricState(formatCurrency(monthSummary.receivedAmount)),
-    },
-  ]
-
-  if (showAllPayments) {
-    const listedPayments = listScope === 'day' ? selectedDatePayments : monthlyPayments
-    const period =
-      listScope === 'day' ? formatDate(selectedDate) : currentMonth.format('YYYY 年 M 月')
-    return (
-      <div className="calendar-view" data-motion-scope="calendar">
-        <PageHeader
-          actions={
-            <RouterButton to={`/calendar?date=${selectedDate}`} variant="outline">
-              <i aria-hidden="true" className="ri-arrow-left-line" />
-              返回收款日历
-            </RouterButton>
-          }
-          description={`${period} · 按计划日期从新到旧`}
-          title={listScope === 'day' ? '当日全部收款' : '本月全部收款'}
-        />
-        <Card.Root aria-busy={loading} variant="tertiary">
-          <Card.Header>
-            <SectionHeader
-              description={
-                loadError
-                  ? '收款计划加载失败'
-                  : loading
-                    ? '正在同步收款计划…'
-                    : `共 ${listedPayments.length} 笔 · 合计 ${formatCurrency(listedPayments.reduce((sum, payment) => sum + payment.amount, 0))}`
-              }
-              headingLevel={2}
-              title="收款明细"
-            />
-          </Card.Header>
-          <Card.Content>
-            {loading ? (
-              <div
-                aria-label="正在加载全部收款计划"
-                className="calendar-loading-list"
-                role="status"
-              >
-                <Skeleton height="3.75rem" />
-                <Skeleton height="3.75rem" />
-              </div>
-            ) : loadError ? (
-              <EmptyState
-                action={
-                  <Button onClick={() => void loadPayments()} variant="ghost">
-                    重试
-                  </Button>
-                }
-                icon={<i className="ri-wifi-off-line" />}
-                title="收款计划暂时不可用"
-              />
-            ) : listedPayments.length === 0 ? (
-              <EmptyState
-                icon={<i className="ri-calendar-check-line" />}
-                title={listScope === 'day' ? '该日无收款计划' : '本月无收款计划'}
-              />
-            ) : (
-              <DataList.Root aria-label="全部收款明细">
-                {listedPayments.map((payment) => (
-                  <PaymentRow
-                    key={payment.id}
-                    payment={payment}
-                    secondary={`${formatDate(payment.plan_date)} · ${statusMeta[getPaymentStatus(payment)].label}`}
-                    secondaryTone={statusMeta[getPaymentStatus(payment)].tone}
-                  />
-                ))}
-              </DataList.Root>
-            )}
-          </Card.Content>
-        </Card.Root>
-      </div>
-    )
-  }
+    [daySummaries],
+  )
 
   return (
     <div className="calendar-view" data-motion-scope="calendar">
-      <PageHeader description={summaryText} title="收款日历" />
-
-      <div className="calendar-summary" data-motion-group="summary">
-        {summaryMetrics.map((metric) => (
-          <SummaryMetric key={String(metric.label)} {...metric} />
-        ))}
-      </div>
+      <PageHeader description="查看计划收款与到账安排" title="收款日历" />
 
       <div className="calendar-view__layout" data-motion="entrance">
-        <section aria-label="收款日历" className="calendar-board">
+        <section aria-label="月历" className="calendar-board">
           <Calendar
             aria-busy={loading}
-            aria-label="收款日历"
-            className="calendar-view__calendar"
             getDateAriaLabel={getDateAriaLabel}
-            getDateTone={getDateTone}
-            layout="fluid"
+            isDateMarked={isDateMarked}
+            layout="board"
             onValueChange={setSelectedDate}
             onVisibleMonthChange={handleVisibleMonthChange}
+            renderDayContent={renderDayContent}
             showTodayAction
             todayActionLabel="本月"
             value={selectedDate}
-            variant="tertiary"
             visibleMonth={currentMonth.format('YYYY-MM-DD')}
+            weekStartsOn={0}
           />
         </section>
 
-        <div className="calendar-view__detail-stack">
-          <Card.Root
-            aria-busy={loading}
-            aria-label="选中日期收款"
-            className="calendar-preview"
-            data-motion="entrance"
-            variant="tertiary"
-          >
-            <Card.Header>
-              <SectionHeader
-                description={formatDate(selectedDate)}
-                headingLevel={2}
-                title="选中日期收款"
-              />
-            </Card.Header>
-            <Card.Content className="calendar-preview__content">
+        <aside aria-busy={loading} aria-label="收款明细" className="calendar-detail">
+          <div className="calendar-detail__scroll">
+            <section className="calendar-detail__section">
+              <h2 className="calendar-detail__heading">{formatDayHeading(selectedDate)}</h2>
               {loading ? (
                 <div aria-label="正在加载收款计划" className="calendar-loading-list" role="status">
                   <Skeleton height="3.75rem" />
@@ -450,128 +320,50 @@ export default function CalendarView() {
                   title="该日无收款计划"
                 />
               ) : (
-                <div className="calendar-selection-content" key={selectedDate}>
-                  <DataList.Root>
-                    {selectedDatePayments.slice(0, PREVIEW_LIMIT).map((payment) => (
-                      <PaymentRow
-                        key={payment.id}
-                        payment={payment}
-                        secondary={statusMeta[getPaymentStatus(payment)].label}
-                        secondaryTone={statusMeta[getPaymentStatus(payment)].tone}
-                      />
-                    ))}
-                  </DataList.Root>
-                </div>
+                <ul className="calendar-entries" key={selectedDate}>
+                  {selectedDatePayments.map((payment) => (
+                    <PaymentEntry key={payment.id} payment={payment} />
+                  ))}
+                </ul>
               )}
-            </Card.Content>
-            <Card.Footer className="calendar-preview__footer">
-              <span className="calendar-preview__count">
-                {loadError
-                  ? '暂不可用'
-                  : loading
-                    ? '同步中…'
-                    : `共 ${selectedDatePayments.length} 笔`}
-              </span>
-              <RouterButton
-                aria-label="查看选中日期全部收款"
-                disabled={loading || loadError || selectedDatePayments.length === 0}
-                size="sm"
-                to={`/calendar?date=${selectedDate}&view=day`}
-                variant="ghost"
-              >
-                查看全部 <i aria-hidden="true" className="ri-arrow-right-line" />
-              </RouterButton>
-            </Card.Footer>
-          </Card.Root>
+            </section>
 
-          <Card.Root
-            aria-busy={loading}
-            aria-label="本月收款"
-            className="calendar-preview"
-            data-motion="entrance"
-            variant="tertiary"
-          >
-            <Card.Header>
-              <SectionHeader
-                description="最近两笔 · 按计划日期从新到旧"
-                headingLevel={2}
-                title="本月收款"
-              />
-            </Card.Header>
-            <Card.Content className="calendar-preview__content">
-              {loading ? (
-                <div
-                  aria-label="正在加载本月收款计划"
-                  className="calendar-loading-list"
-                  role="status"
-                >
-                  <Skeleton height="3.75rem" />
-                  <Skeleton height="3.75rem" />
-                </div>
-              ) : loadError ? (
-                <EmptyState
-                  action={
-                    <Button onClick={() => void loadPayments()} size="sm" variant="ghost">
-                      重试
-                    </Button>
-                  }
-                  icon={<i className="ri-wifi-off-line" />}
-                  size="sm"
-                  title="收款计划暂时不可用"
-                />
-              ) : monthlyPayments.length === 0 ? (
-                <EmptyState
-                  icon={<i className="ri-calendar-event-line" />}
-                  size="sm"
-                  title="本月无收款计划"
-                />
-              ) : (
-                <div className="calendar-selection-content" key={currentMonth.format('YYYY-MM')}>
-                  <DataList.Root>
-                    {monthlyPayments.slice(0, PREVIEW_LIMIT).map((payment) => (
-                      <PaymentRow
-                        key={payment.id}
-                        payment={payment}
-                        secondary={`${dayjs(payment.plan_date).format('MM-DD')} · ${
-                          statusMeta[getPaymentStatus(payment)].label
-                        }`}
-                        secondaryTone={
-                          getPaymentStatus(payment) === 'overdue' ? 'danger' : 'neutral'
-                        }
-                      />
+            {loading || loadError ? null : (
+              <section className="calendar-detail__section">
+                <h2 className="calendar-detail__heading">近期收款</h2>
+                {upcomingPayments.length === 0 ? (
+                  <p className="calendar-detail__empty">本月没有其他待收款项</p>
+                ) : (
+                  <ul className="calendar-upcoming">
+                    {upcomingPayments.slice(0, UPCOMING_LIMIT).map((payment) => (
+                      <li className="calendar-upcoming__item" key={payment.id}>
+                        <RouterLink
+                          className="calendar-upcoming__link"
+                          replace
+                          to={`?date=${payment.plan_date}`}
+                          tone="foreground"
+                          underline="none"
+                        >
+                          <span className="calendar-upcoming__date">
+                            {formatShortDate(payment.plan_date)}
+                          </span>
+                          <span className="calendar-upcoming__name">
+                            {payment.project?.name || '未知项目'}
+                          </span>
+                        </RouterLink>
+                      </li>
                     ))}
-                  </DataList.Root>
-                </div>
-              )}
-            </Card.Content>
-            <Card.Footer className="calendar-preview__footer">
-              <span className="calendar-preview__count">
-                {loadError ? '暂不可用' : loading ? '同步中…' : `共 ${monthlyPayments.length} 笔`}
-              </span>
-              <RouterButton
-                aria-label="查看本月全部收款"
-                disabled={loading || loadError || monthlyPayments.length === 0}
-                size="sm"
-                to={`/calendar?date=${selectedDate}&view=month`}
-                variant="ghost"
-              >
-                查看全部 <i aria-hidden="true" className="ri-arrow-right-line" />
-              </RouterButton>
-            </Card.Footer>
-          </Card.Root>
-        </div>
-        <div aria-label="收款状态图例" className="calendar-legend" role="group">
-          <span className="calendar-legend__label">计划状态</span>
-          <Chip size="sm" tone="success">
-            <i aria-hidden="true" className="ri-checkbox-circle-line" /> 已收
-          </Chip>
-          <Chip size="sm" tone="warning">
-            <i aria-hidden="true" className="ri-time-line" /> 待收
-          </Chip>
-          <Chip size="sm" tone="danger">
-            <i aria-hidden="true" className="ri-error-warning-line" /> 逾期
-          </Chip>
-        </div>
+                  </ul>
+                )}
+                {upcomingPayments.length > UPCOMING_LIMIT ? (
+                  <p className="calendar-detail__empty">
+                    另有 {upcomingPayments.length - UPCOMING_LIMIT} 笔
+                  </p>
+                ) : null}
+              </section>
+            )}
+          </div>
+        </aside>
       </div>
     </div>
   )

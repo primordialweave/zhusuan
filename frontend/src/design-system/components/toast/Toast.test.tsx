@@ -22,7 +22,7 @@ describe('Toast', () => {
 
   it('positions feedback below the shell and keeps entrance motion brief', () => {
     expect(toastCss).toMatch(
-      /\.ods-toaster\s*\{[\s\S]*inset-block-start:\s*calc\(var\(--ods-shell-topbar-height\)/,
+      /\.ods-toaster\s*\{[\s\S]*inset-block-start:\s*calc\(var\(--ods-shell-titlebar-clearance\)/,
     )
     expect(toastCss).not.toContain('inset-block-start: var(--ods-space-8)')
     expect(toastCss).toMatch(

@@ -53,6 +53,23 @@ describe('Surface', () => {
     expect(ref.current).toBe(surface)
   })
 
+  it('offers a denser glass for navigation chrome and ignores density on other variants', () => {
+    render(
+      <>
+        <Surface aria-label="主导航" as="nav" density="dense" variant="glass" />
+        <Surface aria-label="内容玻璃" variant="glass" />
+        <Surface aria-label="实色面板" density="dense" variant="raised" />
+      </>,
+    )
+
+    expect(screen.getByLabelText('主导航')).toHaveAttribute('data-density', 'dense')
+    expect(screen.getByLabelText('内容玻璃')).not.toHaveAttribute('data-density')
+    expect(screen.getByLabelText('实色面板')).not.toHaveAttribute('data-density')
+    expect(surfaceCss).toMatch(
+      /\.ods-surface\[data-variant='glass'\]\[data-density='dense'\]\s*\{[^}]*--ods-color-bg-surface-glass-dense[^}]*--ods-material-glass-shadow-dense/,
+    )
+  })
+
   it('owns the themed brand treatment for narrative product surfaces', () => {
     render(
       <Surface as="section" aria-label="品牌概览" padding="none" radius="shell" variant="brand">

@@ -10,8 +10,15 @@ const styles = readFileSync(resolve('src/design-system/styles.css'), 'utf8')
 describe('Orange Design System stylesheet entry', () => {
   it('declares one deterministic cascade order', () => {
     expect(styles).toContain(
-      '@layer reset, vendor, tokens, base, components, patterns, utilities, overrides;',
+      '@layer reset, vendor, theme, tokens, base, components, patterns, utilities, overrides;',
     )
+  })
+
+  it('registers that order before Tailwind so reset cannot override component colors', () => {
+    const appStyles = readFileSync(resolve('src/assets/main.css'), 'utf8')
+    const declaration = styles.match(/@layer[^;]+;/)![0]
+    expect(appStyles).toContain(declaration)
+    expect(appStyles.indexOf(declaration)).toBeLessThan(appStyles.indexOf("@import 'tailwindcss'"))
   })
 
   it('imports tokens before foundations in the approved order', () => {
@@ -20,8 +27,8 @@ describe('Orange Design System stylesheet entry', () => {
     expect(imports).toEqual([
       './tokens/reference.css',
       './tokens/semantic.css',
-      './tokens/themes/day-ember.css',
-      './tokens/themes/night-orbit.css',
+      './tokens/themes/jiangnan-mist.css',
+      './tokens/themes/jiangnan-night.css',
       './foundations/reset.css',
       './foundations/typography.css',
       './foundations/focus.css',

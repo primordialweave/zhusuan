@@ -22,7 +22,7 @@
 }
 
 .ods-snippet__symbol {
-  color: var(--ods-color-accent);
+  color: var(--ods-color-accent-text);
   user-select: none;
 }
 

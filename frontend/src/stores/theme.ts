@@ -8,13 +8,12 @@ export type ThemeMode = 'light' | 'dark' | 'auto'
 export type EffectiveTheme = 'light' | 'dark'
 
 export const THEME_OPTIONS: ReadonlyArray<{
-  icon: string
   label: string
   value: ThemeMode
 }> = [
-  { icon: 'ri-computer-line', label: '跟随系统', value: 'auto' },
-  { icon: 'ri-sun-line', label: '亮色', value: 'light' },
-  { icon: 'ri-moon-line', label: '深色', value: 'dark' },
+  { label: '浅色', value: 'light' },
+  { label: '深色', value: 'dark' },
+  { label: '跟随系统', value: 'auto' },
 ]
 
 export const getThemeModeLabel = (theme: ThemeMode) =>
@@ -63,7 +62,8 @@ const startThemeTransition = () => {
   if (
     typeof window === 'undefined' ||
     typeof document === 'undefined' ||
-    window.matchMedia('(prefers-reduced-motion: reduce)').matches
+    window.matchMedia('(prefers-reduced-motion: reduce)').matches ||
+    document.documentElement.getAttribute('data-motion') === 'reduced'
   ) {
     return
   }

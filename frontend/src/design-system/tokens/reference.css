@@ -8,51 +8,59 @@
   /* Color palette */
   --ods-ref-color-white: #ffffff;
   --ods-ref-color-black: #000000;
-  --ods-ref-color-ember-50: #fff7ed;
-  --ods-ref-color-ember-100: #ffedd5;
-  --ods-ref-color-ember-200: #fed7aa;
-  --ods-ref-color-ember-300: #fdba74;
-  --ods-ref-color-ember-400: #fb923c;
-  --ods-ref-color-ember-500: #f47b16;
-  --ods-ref-color-ember-600: #d85d08;
-  --ods-ref-color-ember-700: #b54708;
-  --ods-ref-color-ember-800: #7c2d12;
-  --ods-ref-color-ember-900: #431407;
-  --ods-ref-color-warm-25: #fffdf9;
-  --ods-ref-color-warm-50: #f7f2e9;
-  --ods-ref-color-warm-100: #eee4d8;
-  --ods-ref-color-warm-200: #dfd0c0;
-  --ods-ref-color-warm-300: #bea994;
-  --ods-ref-color-warm-400: #917b69;
-  --ods-ref-color-warm-500: #6a5749;
-  --ods-ref-color-warm-600: #4b3a2f;
-  --ods-ref-color-warm-700: #34271f;
-  --ods-ref-color-warm-800: #241b15;
-  --ods-ref-color-warm-900: #151210;
-  --ods-ref-color-warm-950: #080706;
-  --ods-ref-color-violet-500: #7166d9;
-  --ods-ref-color-violet-400: #8d7cff;
-  --ods-ref-color-green-500: #238653;
-  --ods-ref-color-green-400: #43d17a;
-  --ods-ref-color-amber-500: #c47b00;
-  --ods-ref-color-amber-300: #ffd166;
-  --ods-ref-color-red-500: #d7473e;
-  --ods-ref-color-red-400: #ff6259;
-  --ods-ref-color-blue-500: #287eb8;
-  --ods-ref-color-blue-300: #65c7ff;
-  --ods-ref-color-teal-500: #278f89;
-  --ods-ref-color-teal-300: #43c7bd;
+  --ods-ref-color-jade-50: #eff7ef;
+  --ods-ref-color-jade-100: #dceedc;
+  --ods-ref-color-jade-200: #c8e5c8;
+  --ods-ref-color-jade-300: #a0d7af;
+  --ods-ref-color-jade-400: #85bc8b;
+  --ods-ref-color-jade-500: #689b69;
+  --ods-ref-color-jade-600: #4b7f58;
+  --ods-ref-color-jade-700: #2d654a;
+  --ods-ref-color-jade-800: #24553e;
+  --ods-ref-color-jade-900: #10321a;
+  --ods-ref-color-mist-25: #f8fcf8;
+  --ods-ref-color-mist-50: #e7efe8;
+  --ods-ref-color-mist-100: #dce7de;
+  --ods-ref-color-mist-200: #cedcd1;
+  --ods-ref-color-mist-300: #a9bfb0;
+  --ods-ref-color-mist-400: #718b7d;
+  --ods-ref-color-mist-500: #3e5044;
+  --ods-ref-color-mist-600: #3d564b;
+  --ods-ref-color-mist-700: #22362f;
+  --ods-ref-color-mist-800: #1b2c26;
+  --ods-ref-color-mist-900: #13231f;
+  --ods-ref-color-mist-950: #0d1916;
+  --ods-ref-color-gold-200: #f3e3b4;
+  --ods-ref-color-gold-300: #e9d28f;
+  --ods-ref-color-gold-400: #e3c574;
+  --ods-ref-color-gold-600: #8d6c29;
+  --ods-ref-color-gold-700: #6f5210;
+  --ods-ref-color-apricot-400: #e2a264;
+  --ods-ref-color-rust-300: #ffb6a7;
+  --ods-ref-color-rust-600: #8c3b2b;
+  --ods-ref-color-lake-300: #9ccbdd;
+  --ods-ref-color-lake-600: #2e6276;
+  --ods-ref-color-teal-500: #2f7a75;
+  --ods-ref-color-teal-300: #7cc5be;
 
   /* Typography */
   --ods-ref-font-family-display:
     'MiSans VF', 'MiSans', 'PingFang SC', 'Microsoft YaHei', system-ui, -apple-system, sans-serif;
   --ods-ref-font-family-body:
     'MiSans VF', 'MiSans', 'PingFang SC', 'Microsoft YaHei', system-ui, -apple-system, sans-serif;
+  --ods-ref-font-family-title:
+    'Songti SC', 'Noto Serif SC', 'Source Han Serif SC', STSong, SimSun, serif;
+  /* Brush and numeral faces are system fonts where installed; neither is bundled. */
+  --ods-ref-font-family-brush:
+    'Kaiti SC', STKaiti, KaiTi, 'Songti SC', 'Noto Serif SC', 'Source Han Serif SC', STSong, SimSun,
+    serif;
+  --ods-ref-font-family-numeral: Baskerville, Didot, 'Bodoni 72', Georgia, 'Times New Roman', serif;
   --ods-ref-font-family-mono: 'JetBrains Mono', 'SF Mono', monospace;
   --ods-ref-font-weight-regular: 400;
   --ods-ref-font-weight-medium: 500;
   --ods-ref-font-weight-semibold: 600;
   --ods-ref-font-weight-bold: 700;
+  --ods-ref-font-weight-black: 900;
   --ods-ref-font-size-11: 0.6875rem;
   --ods-ref-font-size-12: 0.75rem;
   --ods-ref-font-size-13: 0.8125rem;

@@ -2,12 +2,10 @@ import { useCallback, useEffect, useMemo, useRef, useState } from 'react'
 import { useNavigate } from 'react-router-dom'
 import { projectApi, type Project } from '@/api/project'
 import { ProjectStatusChip } from '@/components/project/ProjectStatusChip'
-import { DEFAULT_PAGE_SIZE } from '@/constants/pagination'
 import {
   Alert,
   AlertDialog,
   Button,
-  Card,
   Dropdown,
   EmptyState,
   IconButton,
@@ -19,37 +17,32 @@ import {
   SearchField,
   Select,
   Skeleton,
-  SummaryMetric,
   Table,
-  Tabs,
-  type SummaryMetricProps,
 } from '@/design-system'
 import { useToastStore } from '@/composables/useToast'
-import { useAuthStore } from '@/stores/auth'
 import { downloadCsv } from '@/utils/csv'
-import { formatCurrency, formatDate } from '@/utils/format'
+import { formatAmount, formatDate } from '@/utils/format'
 import '@/styles/project-domain.css'
 
-const filters = [
-  { key: 'all', label: '全部项目' },
-  { key: 'active', label: '进行中' },
-  { key: 'completed', label: '已完成' },
-  { key: 'notstarted', label: '未开始' },
-  { key: 'overdue', label: '已逾期' },
-  { key: 'archived', label: '已归档' },
+const statusOptions = [
+  { label: '全部状态', value: 'all' },
+  { label: '进行中', value: 'active' },
+  { label: '已完成', value: 'completed' },
+  { label: '未开始', value: 'notstarted' },
+  { label: '已逾期', value: 'overdue' },
+  { label: '已归档', value: 'archived' },
 ]
 
 const pageSizeOptions = [
   { label: '5 条 / 页', value: '5' },
   { label: '10 条 / 页', value: '10' },
+  { label: '20 条 / 页', value: '20' },
 ]
 
+/** Real collection percentage; null when the contract amount gives no denominator. */
 const getProgress = (project: Project) => {
-  if (!project.total_amount) return 0
-  return Math.min(
-    100,
-    Math.max(0, Math.round(((project.received_amount || 0) / project.total_amount) * 100)),
-  )
+  if (!project.total_amount) return null
+  return Math.round(((project.received_amount || 0) / project.total_amount) * 100)
 }
 
 interface ConfirmationState {
@@ -61,8 +54,6 @@ export default function ProjectsView() {
   const navigate = useNavigate()
   const toastError = useToastStore((state) => state.error)
   const toastSuccess = useToastStore((state) => state.success)
-  const user = useAuthStore((state) => state.user)
-  const isAdmin = user?.role === 'admin'
 
   const [projects, setProjects] = useState<Project[]>([])
   const [loading, setLoading] = useState(true)
@@ -70,7 +61,7 @@ export default function ProjectsView() {
   const [loadError, setLoadError] = useState(false)
   const [totalItems, setTotalItems] = useState(0)
   const [currentPage, setCurrentPage] = useState(1)
-  const [pageSize, setPageSize] = useState(DEFAULT_PAGE_SIZE)
+  const [pageSize, setPageSize] = useState(10)
   const [keyword, setKeyword] = useState('')
   const [searchKeyword, setSearchKeyword] = useState('')
   const [activeFilter, setActiveFilter] = useState('all')
@@ -81,20 +72,7 @@ export default function ProjectsView() {
   const requestIdRef = useRef(0)
 
   const totalPages = Math.ceil(totalItems / pageSize)
-  const colSpan = isAdmin ? 11 : 10
-
-  const pageMetrics = useMemo(() => {
-    const contractAmount = projects.reduce((sum, project) => sum + (project.total_amount || 0), 0)
-    const receivedAmount = projects.reduce(
-      (sum, project) => sum + (project.received_amount || 0),
-      0,
-    )
-    const collectionRate = contractAmount
-      ? `${Math.round((receivedAmount / contractAmount) * 100)}%`
-      : '0%'
-
-    return { collectionRate, contractAmount }
-  }, [projects])
+  const colSpan = 8
 
   const paginationInfo = useMemo(() => {
     if (!hasLoaded) return loadError ? '数据暂不可用' : '正在加载'
@@ -183,6 +161,13 @@ export default function ProjectsView() {
     setCurrentPage(1)
   }
 
+  const isFiltered = searchKeyword !== '' || activeFilter !== 'all'
+
+  const clearFilters = () => {
+    setActiveFilter('all')
+    clearSearch()
+  }
+
   const exportProject = (project: Project) => {
     downloadCsv(`Orange-project-${project.id}.csv`, [
       ['项目名称', '客户', '开始日期', '截止日期', '合同金额', '已收款', '收款进度', '状态'],
@@ -193,388 +178,275 @@ export default function ProjectsView() {
         project.end_date,
         project.total_amount,
         project.received_amount || 0,
-        `${getProgress(project)}%`,
+        getProgress(project) === null ? '—' : `${getProgress(project)}%`,
         project.status,
       ],
     ])
   }
 
-  const summaryMetrics: SummaryMetricProps[] = !hasLoaded
-    ? [
-        {
-          icon: 'ri-folder-2-line',
-          label: '项目总数',
-          status: loadError ? 'error' : 'loading',
-        },
-        {
-          icon: 'ri-contract-line',
-          label: '当前页合同额',
-          status: loadError ? 'error' : 'loading',
-        },
-        {
-          icon: 'ri-pie-chart-line',
-          label: '当前页收款率',
-          status: loadError ? 'error' : 'loading',
-        },
-      ]
-    : [
-        {
-          icon: 'ri-folder-2-line',
-          label: '项目总数',
-          status: 'data',
-          value: `${totalItems} 个`,
-        },
-        {
-          icon: 'ri-contract-line',
-          label: '当前页合同额',
-          status: 'data',
-          value: formatCurrency(pageMetrics.contractAmount),
-        },
-        {
-          icon: 'ri-pie-chart-line',
-          label: '当前页收款率',
-          status: 'data',
-          value: pageMetrics.collectionRate,
-        },
-      ]
-
   return (
     <div className="projects-view" data-motion-scope="projects">
       <PageHeader
         actions={
-          <RouterButton to="/projects/create">
+          <RouterButton size="lg" to="/projects/create">
             <i aria-hidden="true" className="ri-add-line" />
             <span>新建项目</span>
           </RouterButton>
         }
-        description={
-          !hasLoaded && loading
-            ? '正在同步项目台账…'
-            : !hasLoaded && loadError
-              ? '项目数据暂不可用，请重试'
-              : `${totalItems} 个项目 · ${paginationInfo}`
-        }
-        eyebrow="WORKSPACE / PROJECTS"
+        description="查看合同与收款进度"
         title="项目管理"
       />
 
-      <section aria-label="项目概览" className="projects-summary-grid">
-        {summaryMetrics.map((metric) => (
-          <SummaryMetric key={String(metric.label)} {...metric} />
-        ))}
-      </section>
-
       <section aria-label="项目台账" className="projects-workspace" data-motion="entrance">
-        <Tabs.Root
-          className="project-filter-tabs"
-          onValueChange={handleFilterChange}
-          value={activeFilter}
+        <div className="projects-toolbar">
+          <SearchField
+            aria-label="搜索项目"
+            className="project-search"
+            onClear={clearSearch}
+            onKeyDown={(event) => {
+              if (event.key === 'Enter') handleSearch()
+            }}
+            onValueChange={setKeyword}
+            pending={loading}
+            placeholder="搜索项目"
+            value={keyword}
+          />
+          <Select
+            aria-label="项目状态筛选"
+            className="project-status-filter"
+            onValueChange={handleFilterChange}
+            options={statusOptions}
+            value={activeFilter}
+          />
+        </div>
+
+        <Table.Root
+          aria-busy={loading}
+          aria-label="项目列表"
+          className="project-table"
+          variant="plain"
+          wrapperClassName="project-table-scroll"
         >
-          <div className="projects-toolbar">
-            <div className="projects-toolbar__context">
-              <span className="projects-toolbar__eyebrow">PROJECT LEDGER</span>
-              <span className="projects-toolbar__summary">{paginationInfo}</span>
-            </div>
-            <Tabs.List
-              aria-label="项目状态筛选"
-              className="project-filter-tabs__list"
-              variant="accent"
-            >
-              {filters.map((filter) => (
-                <Tabs.Tab key={filter.key} value={filter.key}>
-                  {filter.label}
-                </Tabs.Tab>
-              ))}
-            </Tabs.List>
-
-            <div className="project-list-actions">
-              <SearchField
-                aria-label="搜索项目"
-                className="project-search"
-                onClear={clearSearch}
-                onKeyDown={(event) => {
-                  if (event.key === 'Enter') handleSearch()
-                }}
-                onValueChange={setKeyword}
-                pending={loading}
-                placeholder="搜索项目…"
-                value={keyword}
-              />
-            </div>
-          </div>
-
-          {filters.map((filter) => (
-            <Tabs.Panel className="project-filter-tabs__panel" key={filter.key} value={filter.key}>
-              {filter.key === activeFilter ? (
-                <>
-                  <Card.Root
-                    aria-busy={loading}
-                    className="project-table-card"
-                    padding="none"
-                    variant="tertiary"
-                  >
-                    <div className="project-table-frame">
-                      <Table.Root
-                        aria-label="项目列表"
-                        className="project-table"
-                        stickyHeader
-                        wrapperClassName="project-table-scroll"
+          <Table.Header>
+            <Table.Row>
+              <Table.Column className="project-name-column">项目名称</Table.Column>
+              <Table.Column className="project-client-column">客户</Table.Column>
+              <Table.Column>截止日期</Table.Column>
+              <Table.Column align="end">合同金额</Table.Column>
+              <Table.Column align="end">已收款</Table.Column>
+              <Table.Column className="project-progress-column">收款进度</Table.Column>
+              <Table.Column>状态</Table.Column>
+              <Table.Column align="end" sticky="end">
+                <span className="ods-sr-only">操作</span>
+              </Table.Column>
+            </Table.Row>
+          </Table.Header>
+          <Table.Body>
+            {loadError ? (
+              <Table.Row>
+                <Table.Cell colSpan={colSpan}>
+                  <Alert
+                    action={
+                      <Button
+                        aria-label="重试项目列表"
+                        onClick={() => void fetchProjects()}
+                        size="sm"
+                        variant="secondary"
                       >
-                        <Table.Header>
-                          <Table.Row>
-                            <Table.Column className="project-name-column">项目名称</Table.Column>
-                            <Table.Column>客户</Table.Column>
-                            <Table.Column>开始日期</Table.Column>
-                            <Table.Column>截止日期</Table.Column>
-                            <Table.Column>创建日期</Table.Column>
-                            {isAdmin ? <Table.Column>创建人</Table.Column> : null}
-                            <Table.Column align="end">合同金额</Table.Column>
-                            <Table.Column align="end">已收款</Table.Column>
-                            <Table.Column>收款进度</Table.Column>
-                            <Table.Column>状态</Table.Column>
-                            <Table.Column align="end" sticky="end">
-                              操作
-                            </Table.Column>
-                          </Table.Row>
-                        </Table.Header>
-                        <Table.Body>
-                          {loadError ? (
-                            <Table.Row>
-                              <Table.Cell colSpan={colSpan}>
-                                <Alert
-                                  action={
-                                    <Button
-                                      aria-label="重试项目列表"
-                                      onClick={() => void fetchProjects()}
-                                      size="sm"
-                                      variant="secondary"
-                                    >
-                                      <i aria-hidden="true" className="ri-refresh-line" />
-                                      重试
-                                    </Button>
-                                  }
-                                  icon={<i className="ri-error-warning-line" />}
-                                  title="项目列表加载失败"
-                                  tone="danger"
-                                >
-                                  {hasLoaded
-                                    ? '当前展示最近一次成功加载的数据。'
-                                    : '暂时无法获取项目数据，请稍后重试。'}
-                                </Alert>
-                              </Table.Cell>
-                            </Table.Row>
-                          ) : null}
+                        <i aria-hidden="true" className="ri-refresh-line" />
+                        重试
+                      </Button>
+                    }
+                    icon={<i className="ri-error-warning-line" />}
+                    title="项目列表加载失败"
+                    tone="danger"
+                  >
+                    {hasLoaded
+                      ? '当前展示最近一次成功加载的数据。'
+                      : '暂时无法获取项目数据，请稍后重试。'}
+                  </Alert>
+                </Table.Cell>
+              </Table.Row>
+            ) : null}
 
-                          {projects.map((project) => {
-                            const progress = getProgress(project)
-                            return (
-                              <Table.Row
-                                data-motion-item
-                                interactive
-                                key={project.id}
-                                onClick={() => navigate(`/projects/${project.id}`)}
-                              >
-                                <Table.Cell className="project-name-column" title={project.name}>
-                                  <RouterLink
-                                    className="project-name-link"
-                                    onClick={(event) => event.stopPropagation()}
-                                    to={`/projects/${project.id}`}
-                                  >
-                                    <strong>{project.name}</strong>
-                                  </RouterLink>
-                                </Table.Cell>
-                                <Table.Cell>{project.company}</Table.Cell>
-                                <Table.Cell>{formatDate(project.start_date)}</Table.Cell>
-                                <Table.Cell>{formatDate(project.end_date)}</Table.Cell>
-                                <Table.Cell>{formatDate(project.create_time)}</Table.Cell>
-                                {isAdmin ? (
-                                  <Table.Cell>{project.user?.name || '-'}</Table.Cell>
-                                ) : null}
-                                <Table.Cell align="end">
-                                  {formatCurrency(project.total_amount)}
-                                </Table.Cell>
-                                <Table.Cell align="end">
-                                  {formatCurrency(project.received_amount || 0)}
-                                </Table.Cell>
-                                <Table.Cell>
-                                  <div className="project-progress-cell">
-                                    <ProgressBar
-                                      className="project-table-progress"
-                                      label={`${project.name} 收款进度`}
-                                      motion="reveal"
-                                      size="sm"
-                                      tone={project.status === 'completed' ? 'success' : 'accent'}
-                                      value={progress}
-                                      valueLabel={`${progress}%`}
-                                    />
-                                    <span>{progress}%</span>
-                                  </div>
-                                </Table.Cell>
-                                <Table.Cell>
-                                  <ProjectStatusChip status={project.status} />
-                                </Table.Cell>
-                                <Table.Cell align="end" sticky="end">
-                                  <div className="project-row-actions">
-                                    <IconButton
-                                      label={`${project.name}：编辑项目`}
-                                      onClick={(event) => {
-                                        event.stopPropagation()
-                                        navigate(`/projects/edit/${project.id}`)
-                                      }}
-                                      size="sm"
-                                      title="编辑"
-                                      variant="ghost"
-                                    >
-                                      <i aria-hidden="true" className="ri-edit-line" />
-                                    </IconButton>
-                                    <IconButton
-                                      label={`${project.name}：删除项目`}
-                                      onClick={(event) => {
-                                        event.stopPropagation()
-                                        setConfirmation({ action: 'delete', projectId: project.id })
-                                      }}
-                                      size="sm"
-                                      title="删除"
-                                      variant="ghost"
-                                    >
-                                      <i aria-hidden="true" className="ri-delete-bin-line" />
-                                    </IconButton>
-                                    <Dropdown
-                                      onOpenChange={(open) =>
-                                        setActiveDropdownId(open ? project.id : null)
-                                      }
-                                      open={activeDropdownId === project.id}
-                                      placement="bottom-end"
-                                    >
-                                      <Dropdown.Trigger>
-                                        <IconButton
-                                          aria-haspopup="menu"
-                                          label={`${project.name}：更多项目操作`}
-                                          onClick={(event) => event.stopPropagation()}
-                                          size="sm"
-                                          variant="ghost"
-                                        >
-                                          <i aria-hidden="true" className="ri-more-line" />
-                                        </IconButton>
-                                      </Dropdown.Trigger>
-                                      <Dropdown.Menu
-                                        label={`${project.name} 的更多操作`}
-                                        onClick={(event) => event.stopPropagation()}
-                                      >
-                                        <Dropdown.Item
-                                          onSelect={() => {
-                                            exportProject(project)
-                                            setActiveDropdownId(null)
-                                          }}
-                                          startContent={
-                                            <i aria-hidden="true" className="ri-download-2-line" />
-                                          }
-                                        >
-                                          导出项目
-                                        </Dropdown.Item>
-                                        <Dropdown.Item
-                                          onSelect={() =>
-                                            navigate(`/projects/${project.id}/payment/create`)
-                                          }
-                                          startContent={
-                                            <i
-                                              aria-hidden="true"
-                                              className="ri-money-dollar-box-line"
-                                            />
-                                          }
-                                        >
-                                          添加收款
-                                        </Dropdown.Item>
-                                        <Dropdown.Item
-                                          onSelect={() => {
-                                            setActiveDropdownId(null)
-                                            setConfirmation({
-                                              action: 'archive',
-                                              projectId: project.id,
-                                            })
-                                          }}
-                                          startContent={
-                                            <i aria-hidden="true" className="ri-archive-line" />
-                                          }
-                                        >
-                                          归档项目
-                                        </Dropdown.Item>
-                                      </Dropdown.Menu>
-                                    </Dropdown>
-                                  </div>
-                                </Table.Cell>
-                              </Table.Row>
-                            )
-                          })}
-
-                          {loading && !hasLoaded
-                            ? Array.from({ length: 4 }, (_, index) => (
-                                <Table.Row aria-hidden="true" key={`project-loading-${index}`}>
-                                  <Table.Cell colSpan={colSpan}>
-                                    <div className="project-loading-row">
-                                      <Skeleton height="1.25rem" width="42%" />
-                                      <Skeleton height="0.75rem" width="24%" />
-                                    </div>
-                                  </Table.Cell>
-                                </Table.Row>
-                              ))
-                            : null}
-
-                          {hasLoaded && projects.length === 0 && !loadError ? (
-                            <Table.Row>
-                              <Table.Cell colSpan={colSpan}>
-                                <EmptyState
-                                  action={
-                                    searchKeyword ? (
-                                      <Button onClick={clearSearch} size="sm" variant="ghost">
-                                        清除搜索
-                                      </Button>
-                                    ) : null
-                                  }
-                                  description={
-                                    searchKeyword ? '换个关键词试试，或清除当前搜索。' : undefined
-                                  }
-                                  icon={<i className="ri-folder-open-line" />}
-                                  size="lg"
-                                  title="暂无项目数据"
-                                />
-                              </Table.Cell>
-                            </Table.Row>
-                          ) : null}
-                        </Table.Body>
-                      </Table.Root>
+            {projects.map((project) => {
+              const progress = getProgress(project)
+              const progressLabel = progress === null ? '—' : `${progress}%`
+              return (
+                <Table.Row
+                  data-motion-item
+                  interactive
+                  key={project.id}
+                  onClick={() => navigate(`/projects/${project.id}`)}
+                >
+                  <Table.Cell className="project-name-column" title={project.name}>
+                    <RouterLink
+                      className="project-name-link"
+                      tone="foreground"
+                      onClick={(event) => event.stopPropagation()}
+                      to={`/projects/${project.id}`}
+                    >
+                      {project.name}
+                    </RouterLink>
+                  </Table.Cell>
+                  <Table.Cell className="project-client-column" title={project.company}>
+                    {project.company || '—'}
+                  </Table.Cell>
+                  <Table.Cell className="project-date-cell">
+                    {formatDate(project.end_date)}
+                  </Table.Cell>
+                  <Table.Cell align="end" className="project-amount-cell">
+                    {formatAmount(project.total_amount)}
+                  </Table.Cell>
+                  <Table.Cell align="end" className="project-amount-cell">
+                    {formatAmount(project.received_amount || 0)}
+                  </Table.Cell>
+                  <Table.Cell className="project-progress-column">
+                    <div className="project-progress-cell">
+                      <ProgressBar
+                        label={`${project.name} 收款进度`}
+                        motion="reveal"
+                        value={progress ?? 0}
+                        valueLabel={progressLabel}
+                      />
+                      <div className="project-progress-caption">
+                        <span>
+                          {formatAmount(project.received_amount || 0)} /{' '}
+                          {formatAmount(project.total_amount)}
+                        </span>
+                        <span>{progressLabel}</span>
+                      </div>
                     </div>
-                  </Card.Root>
-
-                  {totalItems > 0 && totalPages > 0 ? (
-                    <PaginationBar
-                      info={paginationInfo}
-                      layout="centered"
-                      onPageChange={setCurrentPage}
-                      page={currentPage}
-                      pageCount={totalPages}
-                      paginationLabel="项目分页"
-                      separated
-                      trailing={
-                        <Select
-                          aria-label="每页条数"
-                          onValueChange={(value) => {
-                            setPageSize(Number(value))
-                            setCurrentPage(1)
+                  </Table.Cell>
+                  <Table.Cell>
+                    <ProjectStatusChip size="lg" status={project.status} />
+                  </Table.Cell>
+                  <Table.Cell align="end" sticky="end">
+                    <Dropdown
+                      onOpenChange={(open) => setActiveDropdownId(open ? project.id : null)}
+                      open={activeDropdownId === project.id}
+                      placement="bottom-end"
+                    >
+                      <Dropdown.Trigger>
+                        <IconButton
+                          aria-haspopup="menu"
+                          label={`${project.name}：项目操作`}
+                          onClick={(event) => event.stopPropagation()}
+                          variant="ghost"
+                        >
+                          <i aria-hidden="true" className="ri-more-fill" />
+                        </IconButton>
+                      </Dropdown.Trigger>
+                      <Dropdown.Menu
+                        label={`${project.name} 的操作`}
+                        onClick={(event) => event.stopPropagation()}
+                      >
+                        <Dropdown.Item
+                          onSelect={() => navigate(`/projects/edit/${project.id}`)}
+                          startContent={<i aria-hidden="true" className="ri-edit-line" />}
+                        >
+                          编辑项目
+                        </Dropdown.Item>
+                        <Dropdown.Item
+                          onSelect={() => navigate(`/projects/${project.id}/payment/create`)}
+                          startContent={
+                            <i aria-hidden="true" className="ri-money-dollar-box-line" />
+                          }
+                        >
+                          添加收款
+                        </Dropdown.Item>
+                        <Dropdown.Item
+                          onSelect={() => {
+                            exportProject(project)
+                            setActiveDropdownId(null)
                           }}
-                          options={pageSizeOptions}
-                          size="sm"
-                          value={String(pageSize)}
-                          width="content"
-                        />
-                      }
-                    />
-                  ) : null}
-                </>
-              ) : null}
-            </Tabs.Panel>
-          ))}
-        </Tabs.Root>
+                          startContent={<i aria-hidden="true" className="ri-download-2-line" />}
+                        >
+                          导出项目
+                        </Dropdown.Item>
+                        <Dropdown.Item
+                          onSelect={() => {
+                            setActiveDropdownId(null)
+                            setConfirmation({ action: 'archive', projectId: project.id })
+                          }}
+                          startContent={<i aria-hidden="true" className="ri-archive-line" />}
+                        >
+                          归档项目
+                        </Dropdown.Item>
+                        <Dropdown.Item
+                          onSelect={() => {
+                            setActiveDropdownId(null)
+                            setConfirmation({ action: 'delete', projectId: project.id })
+                          }}
+                          startContent={<i aria-hidden="true" className="ri-delete-bin-line" />}
+                          tone="danger"
+                        >
+                          删除项目
+                        </Dropdown.Item>
+                      </Dropdown.Menu>
+                    </Dropdown>
+                  </Table.Cell>
+                </Table.Row>
+              )
+            })}
+
+            {loading && !hasLoaded
+              ? Array.from({ length: 4 }, (_, index) => (
+                  <Table.Row aria-hidden="true" key={`project-loading-${index}`}>
+                    <Table.Cell colSpan={colSpan}>
+                      <Skeleton height="1.25rem" width="42%" />
+                    </Table.Cell>
+                  </Table.Row>
+                ))
+              : null}
+
+            {hasLoaded && projects.length === 0 && !loadError ? (
+              <Table.Row>
+                <Table.Cell colSpan={colSpan}>
+                  <EmptyState
+                    action={
+                      isFiltered ? (
+                        <Button onClick={clearFilters} size="sm" variant="ghost">
+                          清除筛选
+                        </Button>
+                      ) : (
+                        <RouterButton size="sm" to="/projects/create">
+                          新建项目
+                        </RouterButton>
+                      )
+                    }
+                    icon={<i className="ri-folder-open-line" />}
+                    size="lg"
+                    title={isFiltered ? '没有符合条件的项目' : '还没有项目'}
+                  />
+                </Table.Cell>
+              </Table.Row>
+            ) : null}
+          </Table.Body>
+        </Table.Root>
+
+        {totalItems > 0 && totalPages > 0 ? (
+          <PaginationBar
+            info={paginationInfo}
+            onPageChange={setCurrentPage}
+            page={currentPage}
+            pageCount={totalPages}
+            paginationLabel="项目分页"
+            trailing={
+              <Select
+                aria-label="每页条数"
+                onValueChange={(value) => {
+                  setPageSize(Number(value))
+                  setCurrentPage(1)
+                }}
+                options={pageSizeOptions}
+                size="sm"
+                value={String(pageSize)}
+                width="content"
+              />
+            }
+          />
+        ) : null}
 
         <AlertDialog
           action={confirmation?.action === 'archive' ? '确认归档' : '确认删除'}

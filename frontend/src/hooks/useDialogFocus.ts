@@ -20,6 +20,7 @@ interface DialogFocusOptions {
   closeOnEscape?: boolean
   dialogRef: RefObject<HTMLElement | null>
   initialFocusRef?: RefObject<HTMLElement | null>
+  returnFocusRef?: RefObject<HTMLElement | null>
   onClose: () => void
   open: boolean
 }
@@ -28,15 +29,18 @@ export function useDialogFocus({
   closeOnEscape = true,
   dialogRef,
   initialFocusRef,
+  returnFocusRef,
   onClose,
   open,
 }: DialogFocusOptions) {
   const onCloseRef = useRef(onClose)
+  const closeOnEscapeRef = useRef(closeOnEscape)
   const { token: overlayToken, zIndex } = useOverlayLayer({ kind: 'dialog', open })
 
   useEffect(() => {
     onCloseRef.current = onClose
-  }, [onClose])
+    closeOnEscapeRef.current = closeOnEscape
+  }, [closeOnEscape, onClose])
 
   useEffect(() => {
     if (!open) return
@@ -51,6 +55,7 @@ export function useDialogFocus({
     dialogStack.push(dialogToken)
     const previouslyFocused =
       document.activeElement instanceof HTMLElement ? document.activeElement : null
+    const returnTarget = returnFocusRef?.current ?? previouslyFocused
     const dialog = dialogRef.current
     const getFocusableElements = () => {
       const containers = [dialog, ...getOverlayLayerDescendantElements(overlayToken)].filter(
@@ -77,7 +82,7 @@ export function useDialogFocus({
 
     const handleKeyDown = (event: KeyboardEvent) => {
       if (event.key === 'Escape') {
-        if (!closeOnEscape || !isTopOverlayLayer(overlayToken)) return
+        if (!closeOnEscapeRef.current || !isTopOverlayLayer(overlayToken)) return
         event.preventDefault()
         onCloseRef.current()
         return
@@ -111,9 +116,9 @@ export function useDialogFocus({
       const wasTopmost = dialogStack.at(-1) === dialogToken
       const stackIndex = dialogStack.lastIndexOf(dialogToken)
       if (stackIndex >= 0) dialogStack.splice(stackIndex, 1)
-      if (wasTopmost) previouslyFocused?.focus()
+      if (wasTopmost && returnTarget?.isConnected) returnTarget.focus({ preventScroll: true })
     }
-  }, [closeOnEscape, dialogRef, initialFocusRef, open, overlayToken])
+  }, [dialogRef, initialFocusRef, returnFocusRef, open, overlayToken])
 
   return { overlayToken, zIndex }
 }

@@ -8,11 +8,16 @@
   /* Typography */
   --ods-font-family-display: var(--ods-ref-font-family-display);
   --ods-font-family-body: var(--ods-ref-font-family-body);
+  --ods-font-family-title: var(--ods-ref-font-family-title);
+  --ods-font-family-brush: var(--ods-ref-font-family-brush);
+  --ods-font-family-numeral: var(--ods-ref-font-family-numeral);
   --ods-font-family-mono: var(--ods-ref-font-family-mono);
   --ods-font-weight-regular: var(--ods-ref-font-weight-regular);
   --ods-font-weight-medium: var(--ods-ref-font-weight-medium);
   --ods-font-weight-semibold: var(--ods-ref-font-weight-semibold);
   --ods-font-weight-bold: var(--ods-ref-font-weight-bold);
+  /* Songti at its heaviest cut; the page title is the only place the title face appears. */
+  --ods-font-weight-title: var(--ods-ref-font-weight-black);
   --ods-font-size-xs: var(--ods-ref-font-size-12);
   --ods-font-size-sm: var(--ods-ref-font-size-14);
   --ods-font-size-md: var(--ods-ref-font-size-16);
@@ -53,6 +58,7 @@
   --ods-radius-panel: var(--ods-ref-radius-16);
   --ods-radius-shell: var(--ods-ref-radius-20);
   --ods-radius-lg: var(--ods-ref-radius-24);
+  --ods-radius-surface: clamp(var(--ods-ref-radius-24), 2.7vw, var(--ods-ref-radius-40));
   --ods-radius-pill: var(--ods-ref-radius-full);
   --ods-control-height-sm: var(--ods-ref-control-height-sm);
   --ods-control-height-md: var(--ods-ref-control-height-md);
@@ -84,9 +90,20 @@
   --ods-z-modal: var(--ods-ref-z-modal);
   --ods-z-toast: var(--ods-ref-z-toast);
 
-  /* Desktop shell */
-  --ods-shell-titlebar-clearance: 52px;
-  --ods-shell-topbar-height: 68px;
-  --ods-shell-topbar-inline-inset: 14px;
+  /*
+   * Desktop shell. The Dock follows the approved workbench prototype (1487px wide): it scales
+   * with the window and stops growing at the prototype's own size.
+   */
+  --ods-shell-titlebar-clearance: 44px;
+  --ods-shell-dock-width: clamp(560px, 46.36vw, 689px);
+  --ods-shell-dock-height: clamp(76px, 6.9vw, 102.5px);
+  --ods-shell-dock-offset: clamp(20px, 2.91vw, 43px);
+  --ods-shell-dock-padding: clamp(10px, 0.89vw, 13.25px);
+  --ods-shell-dock-gap: clamp(4px, 0.39vw, 5.75px);
+  --ods-shell-dock-icon-size: clamp(28px, 2.42vw, 36px);
+  --ods-shell-dock-label-size: clamp(13px, 1.01vw, 15px);
+  /* Between regular and medium; the variable font carries the intermediate weight. */
+  --ods-shell-dock-label-weight: 450;
+  --ods-shell-dock-item-gap: clamp(4px, 0.44vw, 6.6px);
   --ods-shell-content-gap: var(--ods-space-6);
 }

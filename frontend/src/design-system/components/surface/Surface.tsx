@@ -8,12 +8,15 @@ import {
 } from 'react'
 
 export type SurfaceVariant = 'base' | 'raised' | 'glass' | 'inset' | 'brand'
+export type SurfaceDensity = 'regular' | 'dense'
 export type SurfacePadding = 'none' | 'sm' | 'md' | 'lg'
-export type SurfaceRadius = 'control' | 'panel' | 'shell' | 'pill'
+export type SurfaceRadius = 'control' | 'panel' | 'shell' | 'surface' | 'pill'
 export type SurfaceTone = 'neutral' | 'accent' | 'success' | 'warning' | 'danger' | 'info'
 export type IntrinsicElementName = keyof HTMLElementTagNameMap
 
 interface SurfaceOwnProps {
+  /** Glass only. `dense` is for navigation chrome, which is more opaque than content glass. */
+  density?: SurfaceDensity
   focusWithin?: boolean
   padding?: SurfacePadding
   radius?: SurfaceRadius
@@ -50,6 +53,7 @@ export function Surface(props: SurfaceProps): ReactElement | null
 export function Surface({
   as,
   className,
+  density = 'regular',
   focusWithin = false,
   padding = 'md',
   radius = 'panel',
@@ -62,6 +66,7 @@ export function Surface({
   return createElement(Component, {
     ...props,
     className: joinClasses('ods-surface', className),
+    'data-density': variant === 'glass' && density === 'dense' ? 'dense' : undefined,
     'data-focus-within': focusWithin || undefined,
     'data-padding': padding,
     'data-radius': radius,

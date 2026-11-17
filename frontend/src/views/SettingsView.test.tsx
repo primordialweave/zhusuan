@@ -1,13 +1,20 @@
-import { useEffect } from 'react'
+import { useEffect, type ReactNode } from 'react'
 import { act, fireEvent } from '@testing-library/react'
 import userEvent from '@testing-library/user-event'
 import { useLocation, useNavigate, type NavigateFunction } from 'react-router-dom'
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 import type { User } from '@/api/auth'
+import { APPEARANCE_STORAGE_KEY, DEFAULT_APPEARANCE, useAppearanceStore } from '@/stores/appearance'
 import { useAuthStore } from '@/stores/auth'
 import { useThemeStore } from '@/stores/theme'
-import { render, screen, waitFor } from '@/test/render'
+import { render, screen, waitFor, within } from '@/test/render'
 import SettingsView from './SettingsView'
+
+vi.mock('@/components/settings/TokenManagement', () => ({
+  default: ({ actions }: { actions?: ReactNode }) => (
+    <div data-testid="token-management">{actions}</div>
+  ),
+}))
 
 const adminUser: User = {
   avatar: '',
@@ -43,6 +50,7 @@ function RouteProbe({ onNavigate }: { onNavigate?: (navigate: NavigateFunction) 
 
 describe('SettingsView', () => {
   const originalChangePassword = useAuthStore.getState().changePassword
+  const originalLogout = useAuthStore.getState().logout
   const originalRefreshUser = useAuthStore.getState().refreshUser
   const originalUpdateProfile = useAuthStore.getState().updateProfile
   const originalUser = useAuthStore.getState().user
@@ -50,6 +58,7 @@ describe('SettingsView', () => {
   beforeEach(() => {
     window.localStorage.clear()
     useThemeStore.setState({ effectiveTheme: 'light', theme: 'auto' })
+    useAppearanceStore.setState(DEFAULT_APPEARANCE)
     useAuthStore.setState({
       refreshUser: vi.fn().mockResolvedValue(undefined),
       user: adminUser,
@@ -73,35 +82,63 @@ describe('SettingsView', () => {
     vi.useRealTimers()
     useAuthStore.setState({
       changePassword: originalChangePassword,
+      logout: originalLogout,
       refreshUser: originalRefreshUser,
       updateProfile: originalUpdateProfile,
       user: originalUser,
     })
+    document.documentElement.removeAttribute('data-glass')
+    document.documentElement.removeAttribute('data-motion')
     vi.unstubAllGlobals()
   })
 
-  it('uses design-system tabs and radio controls that stay synchronized with the theme store', async () => {
+  it('offers the theme as one segmented choice that stays synchronized with the theme store', async () => {
     const user = userEvent.setup()
     render(<SettingsView />, { initialEntries: ['/settings?tab=appearance'] })
 
-    const automatic = screen.getByRole('radio', { name: '跟随系统' })
-    const light = screen.getByRole('radio', { name: '亮色' })
-    const dark = screen.getByRole('radio', { name: '深色' })
-    expect(screen.getByRole('tablist', { name: '设置分类' })).toHaveClass('ods-tabs__list')
-    expect(screen.getByRole('tablist', { name: '设置分类' })).toHaveAttribute(
-      'data-variant',
-      'rail',
-    )
-    expect(automatic.closest('.ods-radio')).not.toBeNull()
-    expect(automatic.closest('.ods-radio')).toHaveAttribute('data-variant', 'card')
-    expect(automatic).toBeChecked()
-    expect(light).not.toBeChecked()
-    expect(dark).not.toBeChecked()
+    const tabs = screen.getByRole('tablist', { name: '设置分类' })
+    expect(tabs).toHaveClass('ods-tabs__list')
+    expect(tabs).toHaveAttribute('data-variant', 'underline')
 
-    await user.click(dark)
+    const theme = screen.getByRole('radiogroup', { name: '界面主题' })
+    expect(theme).toHaveClass('ods-segmented-control')
+    expect(
+      within(theme)
+        .getAllByRole('radio')
+        .map((option) => option.textContent),
+    ).toEqual(['浅色', '深色', '跟随系统'])
+    expect(within(theme).getByRole('radio', { name: '跟随系统' })).toBeChecked()
+
+    await user.click(within(theme).getByRole('radio', { name: '深色' }))
     expect(useThemeStore.getState().theme).toBe('dark')
-    expect(dark).toBeChecked()
+    expect(within(theme).getByRole('radio', { name: '深色' })).toBeChecked()
     expect(window.localStorage.getItem('theme')).toBe('dark')
+  })
+
+  it('applies and stores each appearance switch the moment it is flipped', async () => {
+    const user = userEvent.setup()
+    render(<SettingsView />, { initialEntries: ['/settings?tab=appearance'] })
+
+    const scene = screen.getByRole('switch', { name: '江南动态场景' })
+    const reduce = screen.getByRole('switch', { name: '减少动态效果' })
+    const glass = screen.getByRole('switch', { name: '液态玻璃效果' })
+    expect(scene).toBeChecked()
+    expect(reduce).not.toBeChecked()
+    expect(glass).toBeChecked()
+    expect(reduce).toHaveAccessibleDescription('保留静态雨景，减少背景动效')
+
+    await user.click(reduce)
+    await user.click(glass)
+
+    expect(useAppearanceStore.getState()).toMatchObject({ liquidGlass: false, reduceMotion: true })
+    expect(document.documentElement).toHaveAttribute('data-motion', 'reduced')
+    expect(document.documentElement).toHaveAttribute('data-glass', 'solid')
+    expect(JSON.parse(window.localStorage.getItem(APPEARANCE_STORAGE_KEY) ?? '{}')).toEqual({
+      liquidGlass: false,
+      reduceMotion: true,
+      sceneMotion: true,
+    })
+    expect(screen.getByRole('img', { name: '江南场景预览' })).toBeInTheDocument()
   })
 
   it('composes profile actions and fields from Orange Design System', () => {
@@ -112,12 +149,52 @@ describe('SettingsView', () => {
     expect(screen.getByRole('textbox', { name: '部门' }).closest('.ods-field')).not.toBeNull()
   })
 
-  it('starts directly with settings navigation without a redundant overview', () => {
+  it('opens with the page heading and keeps every section on one tab strip', () => {
     render(<SettingsView />, { initialEntries: ['/settings?tab=profile'] })
 
-    expect(screen.queryByRole('heading', { level: 1, name: '系统设置' })).not.toBeInTheDocument()
-    expect(screen.queryByLabelText('当前设置状态')).not.toBeInTheDocument()
-    expect(screen.getByLabelText('设置导航')).toBeInTheDocument()
+    expect(screen.getByRole('heading', { level: 1, name: '系统设置' })).toBeInTheDocument()
+    expect(screen.getByText('管理账户和界面偏好')).toBeInTheDocument()
+    expect(screen.queryByLabelText('设置导航')).not.toBeInTheDocument()
+    expect(screen.getAllByRole('tab').map((tab) => tab.textContent)).toEqual([
+      '个人信息',
+      '安全设置',
+      '外观设置',
+      '通知设置',
+      '数据同步',
+      '用户管理',
+      '字典管理',
+      '开发设置',
+      '关于',
+    ])
+  })
+
+  it('signs the account out from the profile tab and returns to the login page', async () => {
+    const logout = vi.fn().mockResolvedValue(undefined)
+    useAuthStore.setState({ logout })
+    const user = userEvent.setup()
+    render(
+      <>
+        <SettingsView />
+        <RouteProbe />
+      </>,
+      { initialEntries: ['/settings?tab=profile'] },
+    )
+
+    expect(screen.getByText('admin')).toBeInTheDocument()
+    await user.click(screen.getByRole('button', { name: '退出登录' }))
+
+    expect(logout).toHaveBeenCalledOnce()
+    await waitFor(() => expect(screen.getByTestId('settings-location')).toHaveTextContent('/login'))
+  })
+
+  it('links the component gallery from the developer tab', () => {
+    render(<SettingsView />, { initialEntries: ['/settings?tab=developer'] })
+
+    const gallery = within(screen.getByTestId('token-management')).getByRole('link', {
+      name: '组件展厅',
+    })
+    expect(gallery).toHaveAttribute('href', '/design-system')
+    expect(gallery).toHaveClass('ods-button')
   })
 
   it('derives the authorized active tab from the URL and follows same-route history', async () => {
@@ -222,12 +299,14 @@ describe('SettingsView', () => {
     expect(changePassword).toHaveBeenCalledWith('old-secret', 'new-secret')
   })
 
-  it('uses valid inline content inside the About pressable card', () => {
+  it('lists the About facts as rows and opens the repository from an ODS button', () => {
     render(<SettingsView />, { initialEntries: ['/settings?tab=about'] })
 
-    const githubCard = screen.getByRole('button', { name: /开源地址/ })
-    expect(githubCard).toHaveClass('ods-card')
-    expect(githubCard).toHaveAttribute('data-pressable', 'true')
-    expect(githubCard.querySelector('div')).toBeNull()
+    expect(screen.getByRole('heading', { level: 2, name: 'Orange' })).toBeInTheDocument()
+    const repository = screen.getByRole('button', { name: 'FruitsAI/Orange' })
+    expect(repository).toHaveClass('ods-button')
+    expect(repository).toHaveAccessibleDescription('开源地址')
+    expect(screen.getByRole('button', { name: '检测更新' })).toHaveClass('ods-button')
+    expect(document.querySelector('.ods-card')).toBeNull()
   })
 })

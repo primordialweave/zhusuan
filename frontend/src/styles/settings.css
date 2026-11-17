@@ -1,104 +1,124 @@
+/* Settings page composition. ODS owns component paint and anatomy. */
 .settings-workspace {
-  --ods-color-fg-default: var(--ods-color-fg-relaxed);
-  --ods-font-weight-semibold: var(--ods-font-weight-medium);
-  --ods-font-weight-bold: 600;
-
   display: flex;
   min-width: 0;
   flex-direction: column;
   gap: var(--ods-space-6);
 }
 
-.settings-nav-header__icon {
-  display: grid;
-  flex: 0 0 auto;
-  place-items: center;
-  border: 1px solid color-mix(in srgb, var(--ods-color-accent) 36%, var(--ods-color-border-default));
-  background: var(--ods-color-accent-soft);
-  color: var(--ods-color-accent);
-}
-
+/* The tab strip's hairline is the top edge of whatever panel is open. */
 .settings-view {
-  display: grid;
-  min-height: 100%;
-  grid-template-columns: minmax(13.75rem, 15.5rem) minmax(0, 1fr);
-  align-items: start;
-  gap: var(--ods-space-6);
+  gap: 0;
 }
 
-.settings-navigation,
 .settings-content,
 .settings-panel-frame {
   min-width: 0;
 }
 
-.settings-view .nav-card {
-  position: sticky;
-  top: 6.25rem;
-  max-height: calc(100vh - 7.5rem);
-  align-self: start;
-  overflow: auto;
-}
-
-.settings-nav-header {
+/* Label on the left, control on the right, one hairline under every row. */
+.settings-list {
   display: flex;
   min-width: 0;
+  flex-direction: column;
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+.settings-row {
+  display: flex;
+  min-width: 0;
+  min-height: 4rem;
   align-items: center;
-  gap: var(--ods-space-3);
-  padding: var(--ods-space-2) var(--ods-space-2) var(--ods-space-3);
-  border-bottom: 1px solid var(--ods-color-border-default);
+  justify-content: space-between;
+  gap: var(--ods-space-6);
+  padding: var(--ods-space-4) var(--ods-space-2) var(--ods-space-4) var(--ods-space-4);
+  border-block-end: 1px solid var(--ods-color-border-default);
 }
 
-.settings-nav-header__icon {
-  width: 2.5rem;
-  height: 2.5rem;
-  border-radius: var(--ods-radius-control);
-  font-size: var(--ods-font-size-lg);
-}
-
-.settings-nav-header__copy {
+.settings-row__copy {
   display: flex;
   min-width: 0;
   flex-direction: column;
   gap: var(--ods-space-1);
 }
 
-.settings-nav-header__copy strong {
+.settings-row__title {
   color: var(--ods-color-fg-default);
   font-size: var(--ods-font-size-md);
-  font-weight: var(--ods-font-weight-semibold);
+  font-weight: var(--ods-font-weight-regular);
+  line-height: var(--ods-line-height-heading);
 }
 
-.settings-nav-header__copy span {
-  color: var(--ods-color-fg-subtle);
-  font-size: var(--ods-font-size-xs);
-}
-
-.settings-nav-footer {
-  display: flex;
-  align-items: center;
-  gap: var(--ods-space-2);
-  margin-top: var(--ods-space-1);
-  padding: var(--ods-space-3) var(--ods-space-2) var(--ods-space-1);
-  border-top: 1px solid var(--ods-color-border-default);
+.settings-row__description {
   color: var(--ods-color-fg-muted);
-  font-size: var(--ods-font-size-xs);
+  font-size: var(--ods-font-size-sm);
+  line-height: var(--ods-line-height-body);
 }
 
-.settings-nav-footer i {
-  color: var(--ods-color-status-success);
+.settings-row__value {
+  display: flex;
+  min-width: 0;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: flex-end;
+  gap: var(--ods-space-3);
+  color: var(--ods-color-fg-default);
   font-size: var(--ods-font-size-md);
 }
 
-.settings-panel-frame {
-  min-height: 24rem;
+/* Forms and fact lists take the same column as the appearance rows (the 1.97 : 1 split
+   of that grid), so the content edge does not move when the tab changes. */
+.settings-form,
+.settings-about,
+.settings-view .sync-config {
+  width: calc((100% - var(--ods-space-10)) * 1.97 / 2.97);
+}
+
+.settings-form,
+.settings-view .sync-config {
+  display: flex;
+  flex-direction: column;
+  gap: var(--ods-space-5);
+  padding-inline-start: var(--ods-space-4);
+}
+
+.settings-form {
+  padding-block-start: var(--ods-space-6);
+}
+
+.settings-note {
+  display: flex;
+  min-width: 0;
+  align-items: center;
+  gap: var(--ods-space-2);
+  margin: 0;
+  color: var(--ods-color-fg-muted);
+  font-size: var(--ods-font-size-sm);
+  line-height: var(--ods-line-height-body);
+}
+
+.settings-form__actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--ods-space-3);
+}
+
+.settings-form > .settings-list {
+  margin-inline-start: calc(var(--ods-space-4) * -1);
+  border-block-start: 1px solid var(--ods-color-border-default);
+}
+
+.settings-form > .settings-list > .settings-row:last-child {
+  border-block-end: 0;
 }
 
 .settings-unsaved-indicator {
   display: flex;
   align-items: center;
   gap: var(--ods-space-2);
-  margin-bottom: var(--ods-space-3);
+  margin-block-start: var(--ods-space-4);
   padding: var(--ods-space-3) var(--ods-space-4);
   border: 1px solid
     color-mix(in srgb, var(--ods-color-status-warning) 36%, var(--ods-color-border-default));
@@ -114,16 +134,65 @@
   font-size: var(--ods-font-size-lg);
 }
 
-.settings-view .profile-card,
-.settings-view .security-card,
-.settings-view .appearance-card {
-  min-height: 24rem;
-  align-self: stretch;
+.settings-management-panel {
+  display: flex;
+  min-width: 0;
+  flex-direction: column;
+  gap: var(--ods-space-6);
+  padding-block-start: var(--ods-space-6);
 }
 
-.settings-management-panel {
+/* A management panel opens with one line: counts on the left, search and the main action
+   on the right. The tab above already names the panel. */
+.settings-toolbar {
+  display: flex;
   min-width: 0;
-  min-height: 24rem;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--ods-space-4) var(--ods-space-6);
+  padding-inline-start: var(--ods-space-4);
+}
+
+.settings-stats {
+  display: flex;
+  min-width: 0;
+  flex-wrap: wrap;
+  gap: var(--ods-space-2) var(--ods-space-8);
+  margin: 0;
+}
+
+.settings-stats > div {
+  display: flex;
+  align-items: baseline;
+  gap: var(--ods-space-2);
+}
+
+.settings-stats dt {
+  color: var(--ods-color-fg-muted);
+  font-size: var(--ods-font-size-sm);
+}
+
+.settings-stats dd {
+  margin: 0;
+  color: var(--ods-color-fg-default);
+  font-size: var(--ods-font-size-xl);
+  font-variant-numeric: tabular-nums;
+  line-height: var(--ods-line-height-heading);
+}
+
+.settings-toolbar__actions {
+  display: flex;
+  min-width: 0;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: var(--ods-space-3);
+  margin-inline-start: auto;
+}
+
+.settings-toolbar__search {
+  width: 16rem;
+  max-width: 100%;
 }
 
 .settings-view .data-sync-panel,
@@ -138,12 +207,6 @@
   gap: var(--ods-space-6);
 }
 
-.settings-view .settings-panel-header {
-  display: flex;
-  flex-direction: column;
-  gap: var(--ods-space-5);
-}
-
 .settings-view .dev-content,
 .settings-view .sync-content {
   display: flex;
@@ -153,58 +216,12 @@
   gap: var(--ods-space-5);
 }
 
-.settings-view .dev-stats,
-.settings-view .sync-stats {
-  display: grid;
-  grid-template-columns: repeat(3, minmax(0, 1fr));
-  gap: var(--ods-space-4);
-}
-
-.settings-view .dev-stat-card,
-.settings-view .sync-stat-item {
-  min-width: 0;
-}
-
 .settings-view .dict-item-icon,
 .settings-view .notification-type-icon,
 .settings-view .sync-connection-icon-wrapper {
   display: grid;
   flex: 0 0 auto;
   place-items: center;
-}
-
-.settings-view .dev-stat-icon,
-.settings-view .sync-stat-icon {
-  display: grid;
-  width: 2.5rem;
-  height: 2.5rem;
-  place-items: center;
-}
-
-.settings-view .dev-stat-info,
-.settings-view .sync-stat-info {
-  display: flex;
-  min-width: 0;
-  flex-direction: column;
-  gap: var(--ods-space-1);
-}
-
-.settings-view .dev-stat-value,
-.settings-view .sync-stat-value {
-  overflow: hidden;
-  color: var(--ods-color-fg-default);
-  font-size: var(--ods-font-size-2xl);
-  font-weight: var(--ods-font-weight-bold);
-  line-height: var(--ods-line-height-tight);
-  text-overflow: ellipsis;
-  white-space: nowrap;
-}
-
-.settings-view .dev-stat-label,
-.settings-view .sync-stat-label {
-  color: var(--ods-color-fg-muted);
-  font-size: var(--ods-font-size-sm);
-  font-weight: var(--ods-font-weight-medium);
 }
 
 .settings-field--full {
@@ -311,17 +328,31 @@
 }
 
 .settings-view .dict-content {
+  display: flex;
   min-width: 0;
+  flex-direction: column;
+  gap: var(--ods-space-4);
   padding: var(--ods-space-4);
 }
 
-.settings-view .dict-item-icon {
-  width: 2.25rem;
-  height: 2.25rem;
+.settings-view .dict-list {
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+.settings-view .dict-item {
+  display: flex;
+  min-height: 4.5rem;
+  align-items: center;
+  gap: var(--ods-space-4);
+  padding-block: var(--ods-space-3);
+  border-block-end: 1px solid var(--ods-color-border-default);
 }
 
 .settings-view .dict-item-info {
   display: flex;
+  min-width: 0;
   flex-direction: column;
   gap: var(--ods-space-1);
 }
@@ -332,12 +363,15 @@
 }
 
 .settings-view .dict-item-value {
+  overflow-wrap: anywhere;
   color: var(--ods-color-fg-muted);
   font-family: var(--ods-font-family-mono);
   font-size: var(--ods-font-size-sm);
 }
 
 .settings-view .dict-item-actions {
+  display: flex;
+  gap: var(--ods-space-1);
   flex: 0 0 auto;
   margin-inline-start: auto;
 }
@@ -535,11 +569,11 @@
 .settings-view .sync-connection-info,
 .settings-view .sync-connection-value,
 .settings-view .sync-connection-actions,
-.settings-view .sync-table-identity {
+.settings-view .sync-details {
   display: flex;
   min-width: 0;
-  align-items: center;
-  gap: var(--ods-space-2);
+  flex-direction: column;
+  gap: var(--ods-space-4);
 }
 
 .settings-view .sync-connection-icon-wrapper {
@@ -592,13 +626,6 @@
   animation: settings-sync-pulse 1.5s var(--ods-ease-standard) infinite;
 }
 
-.settings-view .sync-table-icon {
-  display: grid;
-  width: 2.25rem;
-  height: 2.25rem;
-  place-items: center;
-}
-
 .settings-view .sync-table-name {
   color: var(--ods-color-fg-default);
   font-weight: var(--ods-font-weight-semibold);
@@ -625,161 +652,108 @@
   color: var(--ods-color-fg-subtle);
 }
 
-/* Appearance */
-.settings-view .theme-card-content {
-  position: relative;
-  display: flex;
-  min-height: 6rem;
-  flex-direction: column;
-  align-items: center;
-  justify-content: center;
-  gap: var(--ods-space-2);
-  text-align: center;
-}
-
-.settings-view .theme-icon {
-  color: var(--ods-color-accent);
-  font-size: var(--ods-font-size-3xl);
-  transform: translateY(0);
-  transition:
-    color var(--ods-duration-fast) var(--ods-ease-standard),
-    transform var(--ods-duration-page) var(--ods-ease-emphasized);
-}
-
-.settings-view .theme-label {
-  color: var(--ods-color-fg-default);
-  font-weight: var(--ods-font-weight-medium);
-}
-
-.settings-view .theme-check {
-  position: absolute;
-  inset-block-start: 0;
-  inset-inline-end: 0;
+/* Appearance: the option rows on the left, the scene on the right. */
+.settings-appearance {
   display: grid;
-  width: var(--ods-space-5);
-  height: var(--ods-space-5);
-  place-items: center;
-  border-radius: var(--ods-radius-pill);
-  background: var(--ods-color-accent);
-  color: var(--ods-color-accent-fg);
-  font-size: var(--ods-font-size-xs);
+  min-width: 0;
+  grid-template-columns: minmax(0, 1.97fr) minmax(0, 1fr);
+  align-items: start;
+  column-gap: var(--ods-space-10);
+  padding-block-start: var(--ods-space-2);
 }
 
-.settings-view .theme-card-content[data-active='true'] .theme-icon {
-  transform: translateY(-2px) scale(1.06);
+/* Four rows share the height the window can spare, so the list and the preview end together. */
+.settings-appearance .settings-row {
+  min-height: clamp(4.5rem, 10vh, 6.75rem);
+}
+
+/* The backdrop painting itself. It runs from the first control to the last rule; at the
+   prototype's proportions that crops it to the bridge and the willow. */
+.settings-preview {
+  position: relative;
+  align-self: stretch;
+  overflow: hidden;
+  margin-block: var(--ods-space-4) var(--ods-space-6);
+  border: var(--ods-material-glass-border);
+  border-radius: var(--ods-radius-shell);
+  background-image: url('../assets/jiangnan/scene.webp');
+  background-position: 12% 0;
+  background-repeat: no-repeat;
+  background-size: cover;
+  box-shadow: inset 0 0 0 1px var(--ods-color-border-strong);
+}
+
+/* 夜雨 dims the preview the same way it dims the backdrop. */
+.settings-preview::after {
+  position: absolute;
+  background: var(--ods-color-scene-veil);
+  content: '';
+  inset: 0;
 }
 
 /* About */
-.settings-view .about-page {
-  min-height: 30rem;
-  container-type: inline-size;
-}
-
-.settings-view .about-container,
-.settings-view .about-hero {
+.settings-about {
   display: flex;
   flex-direction: column;
+  padding-block-start: var(--ods-space-6);
+}
+
+.about-hero {
+  display: flex;
+  min-width: 0;
   align-items: center;
-  text-align: center;
+  gap: var(--ods-space-4);
+  padding: 0 var(--ods-space-2) var(--ods-space-5) var(--ods-space-4);
+  border-block-end: 1px solid var(--ods-color-border-default);
 }
 
-.settings-view .about-container {
-  justify-content: center;
-  gap: var(--ods-space-8);
-  min-height: 100%;
-  padding: var(--ods-space-8) var(--ods-space-6);
-}
-
-.settings-view .logo-wrapper {
-  position: relative;
-  margin-bottom: var(--ods-space-4);
-  filter: drop-shadow(0 1rem 1.8rem rgba(var(--ods-color-accent-rgb), 0.2));
-}
-
-.settings-view .logo-glow {
-  display: none;
-}
-
-.settings-view .about-logo {
-  position: relative;
-  width: 6rem;
-  height: 6rem;
+.about-logo {
+  width: 3.5rem;
+  height: 3.5rem;
+  flex: 0 0 auto;
   object-fit: contain;
 }
 
-.settings-view .about-title {
-  margin: 0 0 var(--ods-space-3);
-  color: var(--ods-color-fg-default);
-  font-family: var(--ods-font-family-display);
-  font-size: var(--ods-font-size-4xl);
-  font-weight: var(--ods-font-weight-bold);
-  letter-spacing: 0;
+.about-hero__copy {
+  display: flex;
+  min-width: 0;
+  flex: 1;
+  flex-direction: column;
+  gap: var(--ods-space-1);
 }
 
-.settings-view .about-subtitle,
-.settings-view .tech-stack,
-.settings-view .copyright {
+.about-hero__version {
   display: flex;
   flex-wrap: wrap;
   align-items: center;
-  justify-content: center;
-  gap: var(--ods-space-2);
+  justify-content: flex-end;
+  gap: var(--ods-space-3);
 }
 
-.settings-view .tagline,
-.settings-view .copyright {
+/* Plain facts: shorter rows than the ones that carry a description. */
+.settings-about .settings-row {
+  min-height: 3rem;
+  padding-block: var(--ods-space-3);
+}
+
+.about-title {
+  margin: 0;
+  color: var(--ods-color-fg-default);
+  font-family: var(--ods-font-family-display);
+  font-size: var(--ods-font-size-2xl);
+  font-weight: var(--ods-font-weight-bold);
+  line-height: var(--ods-line-height-heading);
+}
+
+.about-tagline,
+.about-copyright {
   color: var(--ods-color-fg-muted);
   font-size: var(--ods-font-size-sm);
 }
 
-.settings-view .info-cards-grid {
-  display: grid;
-  width: min(100%, 45rem);
-  grid-auto-flow: dense;
-  grid-template-columns: repeat(3, minmax(0, 1fr));
-  gap: var(--ods-space-5);
-}
-
-.settings-view .info-card {
-  min-height: 11rem;
-  align-items: center;
-  justify-content: center;
-  text-align: center;
-}
-
-.settings-view .card-icon-wrapper {
-  display: grid;
-  width: 3.5rem;
-  height: 3.5rem;
-  place-items: center;
-}
-
-.settings-view .card-label {
-  color: var(--ods-color-fg-muted);
-  font-size: var(--ods-font-size-xs);
-  font-weight: var(--ods-font-weight-semibold);
-  letter-spacing: 0;
-  text-transform: uppercase;
-}
-
-.settings-view .card-value {
-  display: inline-flex;
-  align-items: center;
-  gap: var(--ods-space-1);
-  color: var(--ods-color-accent);
-  font-weight: var(--ods-font-weight-semibold);
-}
-
-.settings-view .tech-dot {
-  width: 0.375rem;
-  height: 0.375rem;
-  border-radius: var(--ods-radius-pill);
-  background: var(--ods-color-accent);
-}
-
-.settings-view .copyright-divider,
-.settings-view .copyright-rights {
-  color: var(--ods-color-fg-subtle);
+.about-copyright {
+  margin: 0;
+  padding: var(--ods-space-3) var(--ods-space-4) 0;
 }
 
 @keyframes settings-sync-pulse {
@@ -797,18 +771,6 @@
   }
 }
 
-@keyframes settings-logo-breathe {
-  0%,
-  100% {
-    filter: drop-shadow(0 1rem 1.8rem rgba(var(--ods-color-accent-rgb), 0.2));
-    transform: translateY(0);
-  }
-  50% {
-    filter: drop-shadow(0 1.25rem 2.1rem rgba(var(--ods-color-accent-rgb), 0.3));
-    transform: translateY(-3px);
-  }
-}
-
 @media (prefers-reduced-motion: no-preference) {
   .settings-view {
     animation: settings-content-in var(--ods-duration-page) var(--ods-ease-emphasized) both;
@@ -817,15 +779,24 @@
   .settings-panel-frame {
     animation: settings-content-in 280ms var(--ods-ease-emphasized) both;
   }
-
-  .settings-view .logo-wrapper {
-    animation: settings-logo-breathe 4s var(--ods-ease-standard) infinite;
-  }
 }
 
 @media (max-width: 64rem) {
-  .settings-view {
-    grid-template-columns: minmax(11rem, 13rem) minmax(0, 1fr);
+  .settings-appearance {
+    grid-template-columns: minmax(0, 1fr);
+    row-gap: var(--ods-space-6);
+  }
+
+  .settings-form,
+  .settings-about,
+  .settings-view .sync-config {
+    width: 100%;
+  }
+
+  .settings-preview {
+    width: min(100%, 24rem);
+    aspect-ratio: 401 / 370;
+    margin-block: 0;
   }
 
   .settings-view .dev-token-grid {
@@ -834,25 +805,9 @@
 }
 
 @media (max-width: 48rem) {
-  .settings-view {
-    grid-template-columns: minmax(0, 1fr);
-    gap: var(--ods-space-4);
-  }
-
-  .settings-view .nav-card {
-    position: static;
-    width: 100%;
-    max-height: none;
-    overflow: hidden;
-  }
-
-  .settings-nav-header,
-  .settings-nav-footer {
-    display: none;
-  }
-
-  .settings-view .info-cards-grid {
-    grid-template-columns: minmax(0, 1fr);
+  .settings-row {
+    flex-wrap: wrap;
+    gap: var(--ods-space-3);
   }
 
   .settings-view .sync-connection-banner,
@@ -861,11 +816,6 @@
   .settings-view .dict-item-card {
     align-items: stretch;
     flex-direction: column;
-  }
-
-  .settings-view .dev-stats,
-  .settings-view .sync-stats {
-    grid-template-columns: minmax(0, 1fr);
   }
 
   .settings-view .dict-layout {
@@ -888,13 +838,8 @@
 @media (prefers-reduced-motion: reduce) {
   .settings-panel-frame,
   .settings-view,
-  .settings-view .logo-wrapper,
   .settings-view .sync-pulse {
     animation: none;
     transform: none;
-  }
-
-  .settings-view .theme-icon {
-    transition: none;
   }
 }

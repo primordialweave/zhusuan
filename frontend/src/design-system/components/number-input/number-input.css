@@ -68,7 +68,7 @@
 
 .ods-number-input__button:hover:not(:disabled) {
   background: var(--ods-color-bg-surface-hover);
-  color: var(--ods-color-accent);
+  color: var(--ods-color-accent-text);
 }
 
 .ods-number-input__button:active:not(:disabled) {

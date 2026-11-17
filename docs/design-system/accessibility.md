@@ -8,7 +8,7 @@ ODS 以 WCAG 2.2 AA 为最低目标，并把键盘和辅助技术行为视为组
 - 不通过全局 `:focus { outline: none }` 隐藏浏览器 fallback。
 - `.ods-sr-only` 隐藏视觉内容但保留辅助技术访问。
 - `.ods-hit-target` 提供 44×44px 最小指针目标工具。
-- `prefers-reduced-motion: reduce` 停止装饰动画并取消平滑滚动。
+- `prefers-reduced-motion: reduce` 停止装饰动画并取消平滑滚动。应用内的「减少动态效果」开关在根元素写入 `data-motion='reduced'`，与系统设置等效；需要在脚本里判断时使用 `useReducedMotion()`，它已合并两者。
 - `forced-colors: active` 保留系统 focus 指示；仅确有必要的装饰使用 `forced-color-adjust: none`。
 
 ## 组件要求
@@ -46,4 +46,4 @@ ODS 以 WCAG 2.2 AA 为最低目标，并把键盘和辅助技术行为视为组
 5. reduced motion 下不依赖动画完成行为。
 6. 320px 宽度下无阻断性溢出。
 
-视觉验收同时检查 Day Ember、Night Orbit、键盘 focus 和 forced-colors 可用性。若系统设置不能安全切换，必须记录自动契约覆盖与未完成的手工项，不能声称已手测通过。
+视觉验收同时检查烟雨、夜雨、键盘 focus 和 forced-colors 可用性。若系统设置不能安全切换，必须记录自动契约覆盖与未完成的手工项，不能声称已手测通过。

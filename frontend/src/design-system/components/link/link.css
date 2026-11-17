@@ -1,5 +1,5 @@
 .ods-link {
-  --ods-link-color: var(--ods-color-accent);
+  --ods-link-color: var(--ods-color-accent-text);
 
   display: inline-flex;
   align-items: center;

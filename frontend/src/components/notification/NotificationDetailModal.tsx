@@ -21,12 +21,7 @@ export default function NotificationDetailModal({
   const notificationType = typeConfig(notification?.type)
 
   return (
-    <Modal.Root
-      className="app-topbar-portal notification-detail-modal"
-      onClose={onClose}
-      open={open}
-      size="md"
-    >
+    <Modal.Root className="notification-detail-modal" onClose={onClose} open={open} size="md">
       <Modal.Header>通知详情</Modal.Header>
       <Modal.Close label="关闭通知详情" />
       {notification ? (

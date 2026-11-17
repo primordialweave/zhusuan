@@ -20,7 +20,7 @@
 }
 
 .ods-search-field .ods-spinner {
-  color: var(--ods-color-accent);
+  color: var(--ods-color-accent-text);
 }
 
 .ods-search-field[data-pending='true'] {

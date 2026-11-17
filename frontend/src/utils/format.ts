@@ -17,7 +17,22 @@ export function formatCurrency(amount: number, decimals: number = 2): string {
   if (amount == null || isNaN(amount)) return '¥0.00'
   return `¥${amount.toLocaleString('zh-CN', {
     minimumFractionDigits: decimals,
-    maximumFractionDigits: decimals
+    maximumFractionDigits: decimals,
+  })}`
+}
+
+/**
+ * 格式化金额，整数不带小数，有分币时保留两位，不把有效分币舍入为整数
+ * @param amount 金额数字；没有值时返回 "—"，真实的零返回 "¥0"
+ * @returns 如 "¥3,600" 或 "¥3,600.50"
+ */
+export function formatAmount(amount: number | null | undefined): string {
+  if (amount == null || Number.isNaN(amount)) return '—'
+  const cents = Math.round(amount * 100)
+  const decimals = cents % 100 === 0 ? 0 : 2
+  return `${cents < 0 ? '-' : ''}¥${(Math.abs(cents) / 100).toLocaleString('zh-CN', {
+    minimumFractionDigits: decimals,
+    maximumFractionDigits: decimals,
   })}`
 }
 
@@ -27,7 +42,10 @@ export function formatCurrency(amount: number, decimals: number = 2): string {
  * @param format 格式化模板，默认 'YYYY-MM-DD'
  * @returns 格式化后的日期字符串，无效日期返回 '-'
  */
-export function formatDate(date: string | Date | null | undefined, format: string = 'YYYY-MM-DD'): string {
+export function formatDate(
+  date: string | Date | null | undefined,
+  format: string = 'YYYY-MM-DD',
+): string {
   if (!date) return '-'
   const d = dayjs(date)
   return d.isValid() ? d.format(format) : '-'

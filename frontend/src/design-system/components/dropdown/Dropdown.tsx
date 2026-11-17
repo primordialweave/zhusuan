@@ -88,13 +88,13 @@ export function DropdownMenu({
 }: DropdownMenuProps) {
   return (
     <Popover.Content
+      aria-label={label}
       className={['ods-dropdown', className].filter(Boolean).join(' ')}
       initialFocus={MENU_ITEM_SELECTOR}
       role="menu"
     >
       <div
         {...props}
-        aria-label={label}
         className="ods-dropdown__list"
         data-slot="menu"
         onKeyDown={(event) => {

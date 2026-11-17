@@ -14,7 +14,6 @@ import {
   Input,
   Modal,
   PaginationBar,
-  SectionHeader,
   Select,
   Spinner,
   Surface,
@@ -237,52 +236,29 @@ export default function NotificationManagement({ isAdmin = false }: Notification
 
   return (
     <div className="notification-management">
-      <div className="settings-panel-header">
-        <SectionHeader
-          actions={
-            isAdmin ? (
-              <Button onClick={openCreateModal}>
-                <i className="ri-add-line" />
-                <span>发送通知</span>
-              </Button>
-            ) : null
-          }
-          description={`查看系统消息${isAdmin ? '，管理员可发送通知' : ''}`}
-          icon={<i className="ri-notification-3-line" />}
-          iconTone="warning"
-          size="lg"
-          title="通知管理"
-        />
-
-        <div className="dev-stats">
-          <Card.Root className="dev-stat-card" gap="sm" orientation="horizontal" padding="sm">
-            <Surface className="dev-stat-icon" padding="none" radius="control" tone="info">
-              <i className="ri-mail-line" />
-            </Surface>
-            <div className="dev-stat-info">
-              <span className="dev-stat-value">{notificationTotal}</span>
-              <span className="dev-stat-label">总通知</span>
-            </div>
-          </Card.Root>
-          <Card.Root className="dev-stat-card" gap="sm" orientation="horizontal" padding="sm">
-            <Surface className="dev-stat-icon" padding="none" radius="control" tone="warning">
-              <i className="ri-mail-unread-line" />
-            </Surface>
-            <div className="dev-stat-info">
-              <span className="dev-stat-value">{unreadNotifications}</span>
-              <span className="dev-stat-label">未读</span>
-            </div>
-          </Card.Root>
-          <Card.Root className="dev-stat-card" gap="sm" orientation="horizontal" padding="sm">
-            <Surface className="dev-stat-icon" padding="none" radius="control" tone="info">
-              <i className="ri-computer-line" />
-            </Surface>
-            <div className="dev-stat-info">
-              <span className="dev-stat-value">{systemNotifications}</span>
-              <span className="dev-stat-label">系统</span>
-            </div>
-          </Card.Root>
-        </div>
+      <div className="settings-toolbar">
+        <dl className="settings-stats">
+          <div>
+            <dt>总通知</dt>
+            <dd>{notificationTotal}</dd>
+          </div>
+          <div>
+            <dt>未读</dt>
+            <dd>{unreadNotifications}</dd>
+          </div>
+          <div>
+            <dt>系统</dt>
+            <dd>{systemNotifications}</dd>
+          </div>
+        </dl>
+        {isAdmin ? (
+          <div className="settings-toolbar__actions">
+            <Button onClick={openCreateModal}>
+              <i aria-hidden="true" className="ri-add-line" />
+              <span>发送通知</span>
+            </Button>
+          </div>
+        ) : null}
       </div>
 
       <div className="dev-content">
@@ -384,7 +360,8 @@ export default function NotificationManagement({ isAdmin = false }: Notification
                           onClick={() => void handleDeleteNotification(notification.id)}
                           size="sm"
                           title="删除"
-                          variant="danger"
+                          tone="danger"
+                          variant="ghost"
                         >
                           <i className="ri-delete-bin-line" />
                         </IconButton>

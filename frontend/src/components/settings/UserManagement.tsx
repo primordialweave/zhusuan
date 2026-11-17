@@ -17,10 +17,8 @@ import {
   Modal,
   PaginationBar,
   SearchField,
-  SectionHeader,
   Select,
   Spinner,
-  Surface,
 } from '@/design-system'
 
 interface UserForm {
@@ -217,74 +215,51 @@ export default function UserManagement() {
 
   return (
     <div className="user-management">
-      <div className="settings-panel-header">
-        <SectionHeader
-          actions={
-            <Button onClick={openAddModal}>
-              <i className="ri-add-line" />
-              <span>新增用户</span>
-            </Button>
-          }
-          description="管理系统用户账户和权限设置"
-          icon={<i className="ri-team-line" />}
-          iconTone="info"
-          size="lg"
-          title="用户管理"
-        />
-
-        <div className="dev-stats">
-          <Card.Root className="dev-stat-card" gap="sm" orientation="horizontal" padding="sm">
-            <Surface className="dev-stat-icon" padding="none" radius="control" tone="info">
-              <i className="ri-group-line" />
-            </Surface>
-            <div className="dev-stat-info">
-              <span className="dev-stat-value">{total}</span>
-              <span className="dev-stat-label">总用户</span>
-            </div>
-          </Card.Root>
-          <Card.Root className="dev-stat-card" gap="sm" orientation="horizontal" padding="sm">
-            <Surface className="dev-stat-icon" padding="none" radius="control" tone="accent">
-              <i className="ri-shield-user-line" />
-            </Surface>
-            <div className="dev-stat-info">
-              <span className="dev-stat-value">{adminCount}</span>
-              <span className="dev-stat-label">管理员</span>
-            </div>
-          </Card.Root>
-          <Card.Root className="dev-stat-card" gap="sm" orientation="horizontal" padding="sm">
-            <Surface className="dev-stat-icon" padding="none" radius="control" tone="info">
-              <i className="ri-user-line" />
-            </Surface>
-            <div className="dev-stat-info">
-              <span className="dev-stat-value">{userCount}</span>
-              <span className="dev-stat-label">普通用户</span>
-            </div>
-          </Card.Root>
+      <div className="settings-toolbar">
+        <dl className="settings-stats">
+          <div>
+            <dt>总用户</dt>
+            <dd>{total}</dd>
+          </div>
+          <div>
+            <dt>管理员</dt>
+            <dd>{adminCount}</dd>
+          </div>
+          <div>
+            <dt>普通用户</dt>
+            <dd>{userCount}</dd>
+          </div>
+        </dl>
+        <div className="settings-toolbar__actions">
+          <SearchField
+            aria-label="搜索用户"
+            className="settings-toolbar__search"
+            autoCapitalize="off"
+            autoComplete="off"
+            autoCorrect="off"
+            onClear={handleClearSearch}
+            onValueChange={setKeyword}
+            onKeyUp={(event) => {
+              if (event.key === 'Enter') handleSearch()
+            }}
+            placeholder="搜索用户名或姓名..."
+            spellCheck={false}
+            value={keyword}
+          />
+          <Button onClick={openAddModal}>
+            <i aria-hidden="true" className="ri-add-line" />
+            <span>新增用户</span>
+          </Button>
         </div>
       </div>
 
       <div className="dev-content">
-        <SearchField
-          aria-label="搜索用户"
-          autoCapitalize="off"
-          autoComplete="off"
-          autoCorrect="off"
-          onClear={handleClearSearch}
-          onValueChange={setKeyword}
-          onKeyUp={(event) => {
-            if (event.key === 'Enter') handleSearch()
-          }}
-          placeholder="搜索用户名或姓名..."
-          spellCheck={false}
-          value={keyword}
-        />
-
         {loading ? (
           <Spinner className="dev-loading" label="正在加载用户列表" size="lg" />
         ) : users.length === 0 ? (
           <EmptyState
             className="dev-empty"
-            description="点击右上角按钮添加新用户"
+            description="点击「新增用户」添加"
             icon={<i className="ri-user-unfollow-line" />}
             size="lg"
             title="暂无用户"
@@ -298,6 +273,7 @@ export default function UserManagement() {
                 key={user.id}
                 orientation="horizontal"
                 padding="sm"
+                variant="tertiary"
               >
                 <Avatar
                   fallback={
@@ -375,7 +351,8 @@ export default function UserManagement() {
                     onClick={() => void handleDelete(user)}
                     size="sm"
                     title="删除"
-                    variant="danger"
+                    tone="danger"
+                    variant="ghost"
                   >
                     <i className="ri-delete-bin-line" />
                   </IconButton>

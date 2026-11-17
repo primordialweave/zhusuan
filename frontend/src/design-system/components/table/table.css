@@ -89,3 +89,39 @@
   inset-inline-end: 0;
   box-shadow: -1px 0 var(--ods-color-border-default);
 }
+
+/* Plain: a ledger drawn straight on the work surface, organised by hairlines. */
+.ods-table__scroll[data-variant='plain'] {
+  border: 0;
+  border-radius: 0;
+  background: transparent;
+}
+
+.ods-table[data-variant='plain'] .ods-table__column {
+  height: var(--ods-control-height-lg);
+  border-block: 1px solid var(--ods-color-border-strong);
+  background: transparent;
+  color: var(--ods-color-fg-default);
+  font-weight: var(--ods-font-weight-regular);
+}
+
+.ods-table[data-variant='plain'][data-sticky='true'] .ods-table__column {
+  background: var(--ods-color-bg-canvas-subtle);
+}
+
+.ods-table[data-variant='plain'] .ods-table__cell {
+  height: var(--ods-space-16);
+}
+
+.ods-table[data-variant='plain'] .ods-table__body .ods-table__row:first-child {
+  border-block-start: 0;
+}
+
+.ods-table[data-variant='plain'] .ods-table__body .ods-table__row:last-child {
+  border-block-end: 1px solid var(--ods-color-border-default);
+}
+
+.ods-table[data-variant='plain'] .ods-table__column[data-sticky],
+.ods-table[data-variant='plain'] .ods-table__cell[data-sticky] {
+  box-shadow: none;
+}

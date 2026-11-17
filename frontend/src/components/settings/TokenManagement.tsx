@@ -1,4 +1,4 @@
-import { useCallback, useEffect, useMemo, useState } from 'react'
+import { useCallback, useEffect, useMemo, useState, type ReactNode } from 'react'
 import { tokenApi, type PersonalAccessToken } from '@/api/token'
 import { useConfirm } from '@/composables/useConfirm'
 import { useToastStore } from '@/composables/useToast'
@@ -14,10 +14,8 @@ import {
   Modal,
   Radio,
   RadioGroup,
-  SectionHeader,
   Snippet,
   Spinner,
-  Surface,
 } from '@/design-system'
 import { formatRelativeTime } from '@/utils/format'
 
@@ -58,7 +56,12 @@ const isExpiringSoon = (dateStr: string | null) => {
   return new Date(dateStr) < new Date(Date.now() + 7 * 24 * 60 * 60 * 1000)
 }
 
-export default function TokenManagement() {
+interface TokenManagementProps {
+  /** Extra controls for the toolbar, placed before the main action. */
+  actions?: ReactNode
+}
+
+export default function TokenManagement({ actions }: TokenManagementProps) {
   const { confirm } = useConfirm()
   const toastError = useToastStore((state) => state.error)
   const toastSuccess = useToastStore((state) => state.success)
@@ -159,48 +162,25 @@ export default function TokenManagement() {
 
   return (
     <div className="developer-settings">
-      <div className="settings-panel-header">
-        <SectionHeader
-          actions={
-            <Button onClick={openCreateModal}>
-              <i className="ri-add-line" />
-              <span>生成新令牌</span>
-            </Button>
-          }
-          description="管理个人访问令牌 (PAT) 用于 API 认证"
-          icon={<i className="ri-terminal-box-line" />}
-          size="lg"
-          title="开发设置"
-        />
-
-        <div className="dev-stats">
-          <Card.Root className="dev-stat-card" gap="sm" orientation="horizontal" padding="sm">
-            <Surface className="dev-stat-icon" padding="none" radius="control" tone="success">
-              <i className="ri-shield-check-line" />
-            </Surface>
-            <div className="dev-stat-info">
-              <span className="dev-stat-value">{activeTokens.length}</span>
-              <span className="dev-stat-label">有效令牌</span>
+      <div className="settings-toolbar">
+        {tokens.length > 0 ? (
+          <dl className="settings-stats">
+            <div>
+              <dt>有效令牌</dt>
+              <dd>{activeTokens.length}</dd>
             </div>
-          </Card.Root>
-          <Card.Root className="dev-stat-card" gap="sm" orientation="horizontal" padding="sm">
-            <Surface className="dev-stat-icon" padding="none" radius="control" tone="danger">
-              <i className="ri-forbid-line" />
-            </Surface>
-            <div className="dev-stat-info">
-              <span className="dev-stat-value">{revokedTokens.length}</span>
-              <span className="dev-stat-label">已撤销</span>
+            <div>
+              <dt>已撤销</dt>
+              <dd>{revokedTokens.length}</dd>
             </div>
-          </Card.Root>
-          <Card.Root className="dev-stat-card" gap="sm" orientation="horizontal" padding="sm">
-            <Surface className="dev-stat-icon" padding="none" radius="control" tone="info">
-              <i className="ri-key-2-line" />
-            </Surface>
-            <div className="dev-stat-info">
-              <span className="dev-stat-value">{tokens.length}</span>
-              <span className="dev-stat-label">总计</span>
-            </div>
-          </Card.Root>
+          </dl>
+        ) : null}
+        <div className="settings-toolbar__actions">
+          {actions}
+          <Button onClick={openCreateModal}>
+            <i aria-hidden="true" className="ri-add-line" />
+            <span>生成新令牌</span>
+          </Button>
         </div>
       </div>
 
@@ -209,14 +189,8 @@ export default function TokenManagement() {
           <Spinner className="dev-loading" label="正在加载令牌列表" size="lg" />
         ) : tokens.length === 0 ? (
           <EmptyState
-            action={
-              <Button onClick={openCreateModal}>
-                <i className="ri-add-line" />
-                生成令牌
-              </Button>
-            }
             className="dev-empty"
-            description="生成您的第一个个人访问令牌，开始集成 API"
+            description="个人访问令牌 (PAT) 用于 API 认证"
             icon={<i className="ri-key-2-line" />}
             size="lg"
             title="暂无访问令牌"
@@ -273,7 +247,12 @@ export default function TokenManagement() {
                           <i className="ri-forbid-line" />
                           撤销
                         </Button>
-                        <Button onClick={() => void handleDelete(token)} size="sm" variant="danger">
+                        <Button
+                          onClick={() => void handleDelete(token)}
+                          size="sm"
+                          tone="danger"
+                          variant="outline"
+                        >
                           <i className="ri-delete-bin-line" />
                           删除
                         </Button>
@@ -322,7 +301,12 @@ export default function TokenManagement() {
                       </div>
 
                       <div className="dev-token-actions">
-                        <Button onClick={() => void handleDelete(token)} size="sm" variant="danger">
+                        <Button
+                          onClick={() => void handleDelete(token)}
+                          size="sm"
+                          tone="danger"
+                          variant="outline"
+                        >
                           <i className="ri-delete-bin-line" />
                           彻底删除
                         </Button>

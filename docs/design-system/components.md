@@ -37,7 +37,7 @@ Phase 1 以真实生产用量为依据，而不是复制 HeroUI 的完整目录�
 4. Choices：Checkbox、RadioGroup。
 5. Overlays：Dialog、AlertDialog。
 6. Anchored overlays：Popover、Dropdown、ListBox。
-7. Navigation：Tabs、Pagination。
+7. Navigation：Tabs、SegmentedControl、Pagination。
 8. Data display：Chip/StatusBadge、Table。
 9. Feedback：Toast/Toaster、Alert。
 10. States：EmptyState、Skeleton、Spinner。
@@ -91,11 +91,19 @@ import {
 
 - `Button` 的 `tone="danger"` 可与 `variant="ghost"` 正交组合，页面不再自行覆盖危险操作颜色。
 - `Surface` 通过 `tone` 表达 accent/success/warning/danger/info 语义，业务图标块不再复制底色与边框。
+- `Surface variant="glass"` 有两档密度：默认档承载内容（首页收款摘要），`density="dense"` 用于导航（Dock），更不透明、阴影更重。其他 variant 忽略 `density`。
 - `RouterButton`、`RouterLink` 保留 React Router 客户端导航，并复用 ODS Button/Link variants；列表入口使用 `RouterLink appearance="row"`，由 ODS 统一 hover、pressed、focus 与 reduced-motion 行为。
 - `Table.Row interactive` 统一可点击行的视觉反馈，仍由行内真实链接/按钮承担键盘语义；`Table.Column/Cell sticky="end"` 统一固定操作列的层级、背景和分隔线。
+- `Table.Root variant="plain"` 用于直接画在工作面板上的台账：去掉外框和表头底色，只留横向细线（表头线用 `--ods-color-border-strong`，行线用 `--ods-color-border-default`），表头高 48、行高 64。默认 `card` 保持带框外观。
 - `PageHeader` 只用于页面级 `h1`；`SectionHeader` 支持 `headingLevel={2 | 3 | 4}`。
 - `FormSection`、`FormGrid`、`FormActions` 统一表单分区、响应式列和操作行。
 - `PaginationBar` 组合结果信息、共享 `Pagination` 与可选 trailing control。
+- `WorkSurface` 是浮在江南场景上的唯一业务面板，自己滚动内容；路由滚动恢复挂在它的 `scrollRef` 上。
+- `SegmentedControl` 用于少量并列选项的单选（界面主题），语义是 `radiogroup`，支持方向键、Home、End。
+- `Tabs` 的列表有四个变体：默认的 `pill`、分析页周期用的 `accent`（描边透明轨道）、字典侧栏用的 `navigation`，以及设置页用的 `underline`（一条细线上的文字标签，选中项底部一道下划条；放不下时自己横向滚动，`data-fade` 标出被遮住的一侧，选中项自动滚进可视范围）。
+- `CloudPanel` 是浮在场景上的海棠角磨砂卡片（登录页、未找到页）。它不做实时模糊：页面通过局部属性 `--cloud-panel-backdrop` 交给它一张预模糊的静帧（通常 `fixed`，和页面背景同一套裁切），它在上面盖 `--ods-material-frost-veil`。`backdrop` 属性里的内容画在卡片上、内容之下，并被卡片轮廓裁切。卡片内的输入框等控件自动换成更亮的一层玻璃（`--ods-material-frost-control`）。卡片及其祖先不能有 `transform`。
+- `Switch` 的 `lg` 是 48 × 28，用于设置行；关闭态轨道用 `--ods-color-border-strong`。`Button` 的 `outline` 变体支持 `tone="danger"`。
+- `RouterNavLink appearance="dock"` 是底部 Dock 的导航项；`active` 用于归属路径不在自身前缀下的入口。
 
 这些名称可以在代码中表现为较少的组件包。例如 Field 子组件共享 context 和样式，Dialog 与 AlertDialog 共享 overlay primitives。
 
@@ -118,8 +126,8 @@ Phase 2 的复杂 collection 与颜色组件不得只为了“组件齐全”而
 
 以下内容不应伪装成通用 primitive：
 
-- Financial Hero、Summary Metric 等 Dashboard 叙事组件。
-- AppTopbar、TitlebarDragRegion、AppDock 等桌面壳层模式。
+- Summary Metric、工作台收款摘要等数据叙事组件。
+- TitlebarDragRegion、AppDock、NotificationEntry、JiangnanScene 等桌面壳层模式。
 - PanelHeader、PageHeader、EmptyState 的品牌化组合。
 - Settings 的统计头部、业务卡片和数据同步流程。
 

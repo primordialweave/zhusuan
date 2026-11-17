@@ -34,7 +34,7 @@
 
 .ods-listbox__item[data-selected='true'] {
   background: var(--ods-color-accent-soft);
-  color: var(--ods-color-accent);
+  color: var(--ods-color-accent-text);
   font-weight: var(--ods-font-weight-semibold);
 }
 
@@ -63,7 +63,7 @@
 
 .ods-listbox__check {
   flex: 0 0 auto;
-  color: var(--ods-color-accent);
+  color: var(--ods-color-accent-text);
   opacity: 0;
 }
 

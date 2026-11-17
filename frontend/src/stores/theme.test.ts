@@ -74,9 +74,9 @@ describe('theme store', () => {
 
   it('shares the three product theme modes and labels', () => {
     expect(THEME_OPTIONS).toEqual([
-      expect.objectContaining({ label: '跟随系统', value: 'auto' }),
-      expect.objectContaining({ label: '亮色', value: 'light' }),
-      expect.objectContaining({ label: '深色', value: 'dark' }),
+      { label: '浅色', value: 'light' },
+      { label: '深色', value: 'dark' },
+      { label: '跟随系统', value: 'auto' },
     ])
   })
 
@@ -152,6 +152,19 @@ describe('theme store', () => {
     media.setReducedMotion(true)
     useThemeStore.getState().setTheme('light')
     expect(document.documentElement).not.toHaveClass('theme-transitioning')
+  })
+
+  it('does not animate a theme change while the in-app reduced-motion preference is on', () => {
+    installMatchMedia(false)
+    document.documentElement.setAttribute('data-motion', 'reduced')
+
+    try {
+      useThemeStore.getState().setTheme('dark')
+      expect(document.documentElement).toHaveAttribute('data-theme', 'dark')
+      expect(document.documentElement).not.toHaveClass('theme-transitioning')
+    } finally {
+      document.documentElement.removeAttribute('data-motion')
+    }
   })
 
   it('removes the media listener and pending transition during cleanup', () => {

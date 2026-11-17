@@ -1,5 +1,6 @@
 import { useCallback, useEffect, useLayoutEffect, useRef, useState, type FormEvent } from 'react'
 import { useNavigate, useParams } from 'react-router-dom'
+import { dictionaryApi } from '@/api/dictionary'
 import {
   paymentApi,
   projectApi,
@@ -46,7 +47,7 @@ const emptyForm: ProjectRequest = {
   type: '',
 }
 
-const projectTypeOptions: SelectOption[] = [
+const defaultProjectTypeOptions: SelectOption[] = [
   { label: '软件开发', value: 'software' },
   { label: '技术咨询', value: 'consulting' },
   { label: '运营服务', value: 'service' },
@@ -80,34 +81,6 @@ const oneTimeStageOptions: SelectOption[] = [
 const getOptionLabel = (options: SelectOption[], value: string | undefined) =>
   options.find((option) => option.value === value)?.label || value || '待填写'
 
-function ProjectFormSectionTitle({
-  icon,
-  index,
-  title,
-}: {
-  icon: string
-  index: number
-  title: string
-}) {
-  return (
-    <span className="project-form-section-title">
-      <Surface
-        className="project-section-icon"
-        padding="none"
-        radius="control"
-        tone="accent"
-        variant="inset"
-      >
-        <i aria-hidden="true" className={icon} />
-      </Surface>
-      <span>
-        <small>STEP {String(index).padStart(2, '0')}</small>
-        {title}
-      </span>
-    </span>
-  )
-}
-
 const toPaymentPlanItem = (payment: Payment): PaymentPlanItem => ({
   ...createPaymentPlanItem(payment.stage !== 'all'),
   amount: String(payment.amount),
@@ -125,6 +98,7 @@ export default function ProjectCreateView() {
   const toastError = useToastStore((state) => state.error)
   const toastSuccess = useToastStore((state) => state.success)
   const [form, setForm] = useState<ProjectRequest>(emptyForm)
+  const [projectTypes, setProjectTypes] = useState<SelectOption[]>(defaultProjectTypeOptions)
   const [paymentItems, setPaymentItems] = useState<PaymentPlanItem[]>([createPaymentPlanItem()])
   const originalPaymentIds = useRef<number[]>([])
   const [saving, setSaving] = useState(false)
@@ -134,6 +108,10 @@ export default function ProjectCreateView() {
   const activeProjectIdRef = useRef<number | null>(projectId)
   const isEdit = projectId !== null
   const isInstallment = form.payment_method === '分期付款'
+  const projectTypeOptions =
+    form.type && !projectTypes.some((option) => option.value === form.type)
+      ? [...projectTypes, { label: form.type, value: form.type }]
+      : projectTypes
   const plannedAmount = paymentItems.reduce((sum, item) => sum + (Number(item.amount) || 0), 0)
   const requiredFields = [
     form.name.trim(),
@@ -163,6 +141,23 @@ export default function ProjectCreateView() {
   useLayoutEffect(() => {
     activeProjectIdRef.current = projectId
   }, [projectId])
+
+  useEffect(() => {
+    let active = true
+    void dictionaryApi
+      .getItems('project_type')
+      .then((response) => {
+        if (active) {
+          setProjectTypes(response.data.data.map(({ label, value }) => ({ label, value })))
+        }
+      })
+      .catch(() => {
+        if (active) toastError('获取项目类型失败，暂时显示默认选项')
+      })
+    return () => {
+      active = false
+    }
+  }, [toastError])
 
   const updateForm = (patch: Partial<ProjectRequest>) =>
     setForm((current) => ({ ...current, ...patch }))
@@ -319,13 +314,7 @@ export default function ProjectCreateView() {
   return (
     <div className="project-create-view project-form-page" data-motion-scope="project-create">
       <PageHeader
-        description={isEdit ? '更新项目档案与收款计划。' : '建立项目档案并规划回款节点。'}
-        eyebrow={
-          <span className="project-create-kicker">
-            <i aria-hidden="true" className={isEdit ? 'ri-edit-box-line' : 'ri-add-box-line'} />
-            {isEdit ? 'PROJECT EDITOR' : 'NEW PROJECT'}
-          </span>
-        }
+        description={isEdit ? '更新项目档案与收款计划' : '建立项目档案并规划回款节点'}
         leading={
           <IconButton label="返回上一页" onClick={() => navigate(-1)} variant="ghost">
             <i aria-hidden="true" className="ri-arrow-left-line" />
@@ -335,15 +324,9 @@ export default function ProjectCreateView() {
       />
 
       <div className="project-compose-layout">
-        <Card.Root className="project-form-card" padding="none" variant="secondary">
+        <Card.Root className="project-form-card" padding="none" variant="transparent">
           <form aria-label="项目编辑表单" className="project-form" onSubmit={handleSubmit}>
-            <FormSection
-              className="project-form-section"
-              description="确定项目归属、服务类型和交付周期。"
-              title={
-                <ProjectFormSectionTitle icon="ri-folder-user-line" index={1} title="基本信息" />
-              }
-            >
+            <FormSection className="project-form-section" title="基本信息">
               <FormGrid columns={2}>
                 <Field.Root required>
                   <Field.Label>项目名称</Field.Label>
@@ -417,13 +400,7 @@ export default function ProjectCreateView() {
               </FormGrid>
             </FormSection>
 
-            <FormSection
-              className="project-form-section"
-              description="记录合同金额、签署信息和约定付款方式。"
-              title={
-                <ProjectFormSectionTitle icon="ri-file-list-3-line" index={2} title="合同信息" />
-              }
-            >
+            <FormSection className="project-form-section" title="合同信息">
               <FormGrid columns={2}>
                 <Field.Root required>
                   <Field.Label>合同总金额 (¥)</Field.Label>
@@ -476,23 +453,14 @@ export default function ProjectCreateView() {
 
             <PaymentPlanEditor
               className="project-form-section"
-              description="设置每笔应收金额与计划到账日期。"
               installment={isInstallment}
               items={paymentItems}
               onItemsChange={setPaymentItems}
               stageOptions={isInstallment ? installmentStageOptions : oneTimeStageOptions}
-              title={
-                <ProjectFormSectionTitle icon="ri-secure-payment-line" index={3} title="收款计划" />
-              }
+              title="收款计划"
             />
 
-            <FormSection
-              className="project-form-section"
-              description="补充团队需要了解的交付背景。"
-              title={
-                <ProjectFormSectionTitle icon="ri-sticky-note-line" index={4} title="补充说明" />
-              }
-            >
+            <FormSection className="project-form-section" title="补充说明">
               <Field.Root>
                 <Field.Label>项目描述</Field.Label>
                 <TextArea
@@ -518,22 +486,10 @@ export default function ProjectCreateView() {
         </Card.Root>
 
         <aside aria-label="项目草稿摘要" className="project-form-aside">
-          <Card.Root className="project-draft-card" padding="lg" variant="secondary">
+          <Card.Root className="project-draft-card" padding="none" variant="transparent">
             <div className="project-draft-card__heading">
-              <div>
-                <span className="project-draft-card__eyebrow">PROJECT DRAFT</span>
-                <h2>{form.name.trim() || '未命名项目'}</h2>
-                <p>{form.company.trim() || '客户待填写'}</p>
-              </div>
-              <Surface
-                className="project-draft-card__icon"
-                padding="none"
-                radius="control"
-                tone="accent"
-                variant="inset"
-              >
-                <i aria-hidden="true" className="ri-folder-chart-line" />
-              </Surface>
+              <h2>{form.name.trim() || '未命名项目'}</h2>
+              <p>{form.company.trim() || '客户待填写'}</p>
             </div>
 
             <div className="project-draft-progress">
@@ -582,7 +538,7 @@ export default function ProjectCreateView() {
                   className={planAligned ? 'ri-check-line' : 'ri-scales-3-line'}
                 />
               </Surface>
-              <div>
+              <div className="project-plan-check__content">
                 <span>计划金额</span>
                 <strong>{formatCurrency(plannedAmount)}</strong>
                 <small>

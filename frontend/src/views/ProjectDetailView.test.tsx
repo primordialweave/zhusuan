@@ -117,7 +117,7 @@ describe('ProjectDetailView payment deep links', () => {
   it('gives icon-only project controls explicit accessible labels', async () => {
     const { container } = renderProjectDetail('/projects/42')
 
-    await waitFor(() => expect(screen.getByText('项目整体进度')).toBeInTheDocument())
+    await waitFor(() => expect(screen.getByText('回款完成度')).toBeInTheDocument())
     expect(container.querySelector('.project-settlement-board')).toBeInTheDocument()
     expect(container.querySelector('.project-runway')).toBeInTheDocument()
     expect(screen.getByRole('heading', { name: '项目档案' })).toBeInTheDocument()
@@ -141,7 +141,7 @@ describe('ProjectDetailView payment deep links', () => {
     const user = userEvent.setup()
     renderProjectDetail('/projects/42')
 
-    await waitFor(() => expect(screen.getByText('项目整体进度')).toBeInTheDocument())
+    await waitFor(() => expect(screen.getByText('回款完成度')).toBeInTheDocument())
     expect(screen.getByRole('tab', { name: '项目概览' })).toHaveClass('active')
 
     await user.click(screen.getByRole('button', { name: '打开收款深链' }))

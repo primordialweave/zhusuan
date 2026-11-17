@@ -7,11 +7,13 @@ import {
   type HTMLAttributes,
   type KeyboardEvent,
   type MutableRefObject,
+  type ReactNode,
   type Ref,
 } from 'react'
 import { Button } from '../button'
 
-export type CalendarLayout = 'compact' | 'fluid'
+export type CalendarLayout = 'board' | 'compact'
+export type CalendarWeekStart = 0 | 1
 export type CalendarMarkTone = 'accent' | 'success' | 'warning' | 'danger'
 export type CalendarVariant = 'secondary' | 'tertiary'
 
@@ -32,16 +34,19 @@ export interface CalendarProps extends Omit<HTMLAttributes<HTMLDivElement>, 'onC
   min?: string
   onValueChange: (value: string) => void
   onVisibleMonthChange?: (value: string) => void
+  renderDayContent?: (date: string, state: CalendarDayState) => ReactNode
   showTodayAction?: boolean
   todayActionLabel?: string
   value?: string
   variant?: CalendarVariant
   visibleMonth?: string
+  weekStartsOn?: CalendarWeekStart
 }
 
 type CalendarView = 'days' | 'months' | 'years'
 
-const WEEKDAYS = ['一', '二', '三', '四', '五', '六', '日']
+// Indexed by dayjs day(): 0 = Sunday.
+const WEEKDAY_NAMES = ['日', '一', '二', '三', '四', '五', '六']
 const MONTHS = [
   '1月',
   '2月',
@@ -59,13 +64,15 @@ const MONTHS = [
 const ISO_FORMAT = 'YYYY-MM-DD'
 const YEARS_PER_PAGE = 12
 
-// Monday-first grid: dayjs day() is 0=Sun..6=Sat, shift so Monday=0.
-const mondayIndex = (date: Dayjs) => (date.day() + 6) % 7
+const columnIndex = (date: Dayjs, weekStartsOn: CalendarWeekStart) =>
+  (date.day() - weekStartsOn + 7) % 7
 
-const buildGrid = (visibleMonth: Dayjs) => {
+const buildGrid = (visibleMonth: Dayjs, weekStartsOn: CalendarWeekStart, fixedRows: boolean) => {
   const firstOfMonth = visibleMonth.startOf('month')
-  const gridStart = firstOfMonth.subtract(mondayIndex(firstOfMonth), 'day')
-  return Array.from({ length: 42 }, (_, index) => gridStart.add(index, 'day'))
+  const leading = columnIndex(firstOfMonth, weekStartsOn)
+  const weekCount = fixedRows ? 6 : Math.ceil((leading + visibleMonth.daysInMonth()) / 7)
+  const gridStart = firstOfMonth.subtract(leading, 'day')
+  return Array.from({ length: weekCount * 7 }, (_, index) => gridStart.add(index, 'day'))
 }
 
 const normalizeMonth = (value: string | undefined, fallback: Dayjs) => {
@@ -79,7 +86,7 @@ const assignRef = <T,>(ref: Ref<T> | undefined, node: T | null) => {
 }
 
 const getDefaultDateAriaLabel = (date: Dayjs) =>
-  `${date.year()}年${date.month() + 1}月${date.date()}日，星期${WEEKDAYS[mondayIndex(date)]}`
+  `${date.year()}年${date.month() + 1}月${date.date()}日，星期${WEEKDAY_NAMES[date.day()]}`
 
 export const Calendar = forwardRef<HTMLDivElement, CalendarProps>(function Calendar(
   {
@@ -92,11 +99,13 @@ export const Calendar = forwardRef<HTMLDivElement, CalendarProps>(function Calen
     min,
     onValueChange,
     onVisibleMonthChange,
+    renderDayContent,
     showTodayAction = false,
     todayActionLabel = '今天',
     value,
     variant = 'secondary',
     visibleMonth: controlledVisibleMonth,
+    weekStartsOn = 1,
     ...props
   },
   ref,
@@ -116,8 +125,16 @@ export const Calendar = forwardRef<HTMLDivElement, CalendarProps>(function Calen
 
   const minDate = min ? dayjs(min) : null
   const maxDate = max ? dayjs(max) : null
-  const days = buildGrid(visibleMonth)
-  const weeks = Array.from({ length: 6 }, (_, index) => days.slice(index * 7, index * 7 + 7))
+  // A board shows only the visible month: no adjacent-month days, only the weeks it needs.
+  const isBoard = layout === 'board'
+  const days = buildGrid(visibleMonth, weekStartsOn, !isBoard)
+  const weeks = Array.from({ length: days.length / 7 }, (_, index) =>
+    days.slice(index * 7, index * 7 + 7),
+  )
+  const weekdays = Array.from(
+    { length: 7 },
+    (_, index) => WEEKDAY_NAMES[(index + weekStartsOn) % 7],
+  )
   const yearPageStart = Math.floor(visibleMonth.year() / YEARS_PER_PAGE) * YEARS_PER_PAGE
   const years = Array.from({ length: YEARS_PER_PAGE }, (_, index) => yearPageStart + index)
 
@@ -147,7 +164,9 @@ export const Calendar = forwardRef<HTMLDivElement, CalendarProps>(function Calen
     onValueChange(today.format(ISO_FORMAT))
   }
 
-  const enabledDays = days.filter((day) => !isDisabled(day))
+  const enabledDays = days.filter(
+    (day) => !isDisabled(day) && (!isBoard || day.isSame(visibleMonth, 'month')),
+  )
   const findEnabledDate = (date: string | null | undefined) => {
     if (!date) return undefined
     return enabledDays.find(
@@ -202,13 +221,13 @@ export const Calendar = forwardRef<HTMLDivElement, CalendarProps>(function Calen
     else if (event.key === 'ArrowUp') nextDay = findNextEnabledDay(day.subtract(7, 'day'), -7)
     else if (event.key === 'ArrowDown') nextDay = findNextEnabledDay(day.add(7, 'day'), 7)
     else if (event.key === 'Home') {
-      const weekStart = day.subtract(mondayIndex(day), 'day')
+      const weekStart = day.subtract(columnIndex(day, weekStartsOn), 'day')
       nextDay =
         Array.from({ length: 7 }, (_, index) => weekStart.add(index, 'day')).find(
           (candidate) => !isDisabled(candidate),
         ) ?? null
     } else if (event.key === 'End') {
-      const weekEnd = day.add(6 - mondayIndex(day), 'day')
+      const weekEnd = day.add(6 - columnIndex(day, weekStartsOn), 'day')
       nextDay =
         Array.from({ length: 7 }, (_, index) => weekEnd.subtract(index, 'day')).find(
           (candidate) => !isDisabled(candidate),
@@ -225,6 +244,63 @@ export const Calendar = forwardRef<HTMLDivElement, CalendarProps>(function Calen
     if (nextDay) focusDay(nextDay)
   }
 
+  const yearLabel = isBoard ? `${visibleMonth.year()}年` : `${visibleMonth.year()} 年`
+  const monthLabel = isBoard ? `${visibleMonth.month() + 1}月` : `${visibleMonth.month() + 1} 月`
+  const title = (
+    <span aria-live="polite" className="ods-calendar__title">
+      <button
+        aria-label="选择年份"
+        className="ods-calendar__title-button"
+        data-active={view === 'years' || undefined}
+        onClick={() => setView(view === 'years' ? 'days' : 'years')}
+        type="button"
+      >
+        {view === 'years' ? `${yearPageStart} – ${yearPageStart + YEARS_PER_PAGE - 1}` : yearLabel}
+      </button>
+      {view === 'days' ? (
+        <button
+          aria-label="选择月份"
+          className="ods-calendar__title-button"
+          onClick={() => setView('months')}
+          type="button"
+        >
+          {monthLabel}
+        </button>
+      ) : null}
+    </span>
+  )
+  const previousButton = (
+    <button
+      aria-label={view === 'days' ? '上个月' : view === 'months' ? '上一年' : '前 12 年'}
+      className="ods-calendar__nav"
+      onClick={() => navigate(-1)}
+      type="button"
+    >
+      <i aria-hidden="true" className="ri-arrow-left-s-line" />
+    </button>
+  )
+  const nextButton = (
+    <button
+      aria-label={view === 'days' ? '下个月' : view === 'months' ? '下一年' : '后 12 年'}
+      className="ods-calendar__nav"
+      onClick={() => navigate(1)}
+      type="button"
+    >
+      <i aria-hidden="true" className="ri-arrow-right-s-line" />
+    </button>
+  )
+  const todayButton = showTodayAction ? (
+    <Button
+      className="ods-calendar__today"
+      disabled={todayDisabled}
+      onClick={selectToday}
+      size={isBoard ? 'md' : 'sm'}
+      variant="outline"
+    >
+      {todayActionLabel}
+    </Button>
+  ) : null
+
   return (
     <div
       {...props}
@@ -239,62 +315,29 @@ export const Calendar = forwardRef<HTMLDivElement, CalendarProps>(function Calen
       }}
     >
       <div className="ods-calendar__header">
-        <button
-          aria-label={view === 'days' ? '上个月' : view === 'months' ? '上一年' : '前 12 年'}
-          className="ods-calendar__nav"
-          onClick={() => navigate(-1)}
-          type="button"
-        >
-          <span aria-hidden="true">‹</span>
-        </button>
-        <span aria-live="polite" className="ods-calendar__title">
-          <button
-            aria-label="选择年份"
-            className="ods-calendar__title-button"
-            data-active={view === 'years' || undefined}
-            onClick={() => setView(view === 'years' ? 'days' : 'years')}
-            type="button"
-          >
-            {view === 'years'
-              ? `${yearPageStart} – ${yearPageStart + YEARS_PER_PAGE - 1}`
-              : `${visibleMonth.year()} 年`}
-          </button>
-          {view === 'days' ? (
-            <button
-              aria-label="选择月份"
-              className="ods-calendar__title-button"
-              onClick={() => setView('months')}
-              type="button"
-            >
-              {visibleMonth.month() + 1} 月
-            </button>
-          ) : null}
-        </span>
-        {showTodayAction ? (
-          <Button
-            className="ods-calendar__today"
-            disabled={todayDisabled}
-            onClick={selectToday}
-            size="sm"
-            variant="outline"
-          >
-            {todayActionLabel}
-          </Button>
-        ) : null}
-        <button
-          aria-label={view === 'days' ? '下个月' : view === 'months' ? '下一年' : '后 12 年'}
-          className="ods-calendar__nav"
-          onClick={() => navigate(1)}
-          type="button"
-        >
-          <span aria-hidden="true">›</span>
-        </button>
+        {isBoard ? (
+          <>
+            {title}
+            <div className="ods-calendar__nav-group">
+              {previousButton}
+              {todayButton}
+              {nextButton}
+            </div>
+          </>
+        ) : (
+          <>
+            {previousButton}
+            {title}
+            {todayButton}
+            {nextButton}
+          </>
+        )}
       </div>
 
       {view === 'days' ? (
         <>
           <div aria-hidden="true" className="ods-calendar__weekdays">
-            {WEEKDAYS.map((weekday) => (
+            {weekdays.map((weekday) => (
               <span className="ods-calendar__weekday" key={weekday}>
                 {weekday}
               </span>
@@ -303,7 +346,7 @@ export const Calendar = forwardRef<HTMLDivElement, CalendarProps>(function Calen
           <div
             aria-colcount={7}
             aria-label={`${visibleMonth.year()}年${visibleMonth.month() + 1}月`}
-            aria-rowcount={6}
+            aria-rowcount={weeks.length}
             className="ods-calendar__grid"
             role="grid"
           >
@@ -311,7 +354,17 @@ export const Calendar = forwardRef<HTMLDivElement, CalendarProps>(function Calen
               <div className="ods-calendar__week" key={week[0].format(ISO_FORMAT)} role="row">
                 {week.map((day) => {
                   const date = day.format(ISO_FORMAT)
-                  const outside = day.month() !== visibleMonth.month()
+                  const outside = !day.isSame(visibleMonth, 'month')
+                  if (outside && isBoard) {
+                    return (
+                      <div
+                        className="ods-calendar__cell"
+                        data-outside="true"
+                        key={date}
+                        role="gridcell"
+                      />
+                    )
+                  }
                   const isSelected = selected ? day.isSame(selected, 'day') : false
                   const isToday = day.isSame(dayjs(), 'day')
                   const disabled = isDisabled(day)
@@ -351,8 +404,13 @@ export const Calendar = forwardRef<HTMLDivElement, CalendarProps>(function Calen
                         tabIndex={!disabled && date === tabStopDate ? 0 : -1}
                         type="button"
                       >
-                        {day.date()}
-                        {isMarked ? (
+                        <span className="ods-calendar__day-number">{day.date()}</span>
+                        {renderDayContent ? (
+                          <span className="ods-calendar__day-content" data-slot="day-content">
+                            {renderDayContent(date, state)}
+                          </span>
+                        ) : null}
+                        {isMarked && !renderDayContent ? (
                           <span
                             aria-hidden="true"
                             className="ods-calendar__marker"

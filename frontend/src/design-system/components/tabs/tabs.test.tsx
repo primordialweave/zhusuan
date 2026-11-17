@@ -1,3 +1,4 @@
+import { fireEvent } from '@testing-library/react'
 import userEvent from '@testing-library/user-event'
 import { describe, expect, it, vi } from 'vitest'
 import { render, screen } from '@/test/render'
@@ -118,24 +119,36 @@ describe('Tabs', () => {
     expect(screen.getByRole('tab', { name: '月' })).toHaveAttribute('aria-selected', 'true')
   })
 
-  it('exposes a responsive rail treatment for settings navigation', () => {
-    render(
-      <Tabs.Root onValueChange={() => {}} value="profile">
-        <Tabs.List aria-label="设置分类" orientation="vertical" variant="rail">
+  it('exposes an underline strip that marks hidden tabs and keeps the chosen one in view', () => {
+    const view = (value: string) => (
+      <Tabs.Root onValueChange={() => {}} value={value}>
+        <Tabs.List aria-label="设置分类" variant="underline">
           <Tabs.Tab value="profile">个人信息</Tabs.Tab>
-          <Tabs.Tab value="security">安全设置</Tabs.Tab>
+          <Tabs.Tab value="about">关于</Tabs.Tab>
         </Tabs.List>
-        <Tabs.Panel value="profile">个人资料</Tabs.Panel>
-      </Tabs.Root>,
+        <Tabs.Panel value={value}>内容</Tabs.Panel>
+      </Tabs.Root>
+    )
+    const { rerender } = render(view('profile'))
+    const list = screen.getByRole('tablist', { name: '设置分类' })
+    expect(list).toHaveAttribute('data-variant', 'underline')
+    expect(list).not.toHaveAttribute('data-fade')
+
+    // A 200px strip holding 500px of tabs, with the second tab outside its right edge.
+    Object.defineProperties(list, {
+      clientWidth: { configurable: true, value: 200 },
+      scrollWidth: { configurable: true, value: 500 },
+    })
+    const box = (left: number, right: number) => ({ left, right, width: right - left }) as DOMRect
+    vi.spyOn(list, 'getBoundingClientRect').mockReturnValue(box(0, 200))
+    vi.spyOn(screen.getByRole('tab', { name: '关于' }), 'getBoundingClientRect').mockReturnValue(
+      box(420, 500),
     )
 
-    expect(screen.getByRole('tablist', { name: '设置分类' })).toHaveAttribute(
-      'data-variant',
-      'rail',
-    )
-    expect(screen.getByRole('tablist', { name: '设置分类' })).toHaveAttribute(
-      'aria-orientation',
-      'vertical',
-    )
+    rerender(view('about'))
+    expect(list.scrollLeft).toBe(340)
+
+    fireEvent.scroll(list)
+    expect(list).toHaveAttribute('data-fade', 'start')
   })
 })

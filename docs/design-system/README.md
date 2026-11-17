@@ -1,6 +1,6 @@
 # Orange Design System
 
-Orange Design System（ODS）是 Orange 桌面应用的视觉与交互公共层。它将 Day Ember、Night Orbit、macOS/Wails 桌面壳层约束和无障碍行为整理为稳定 API，使页面不再依赖散落的颜色、尺寸和全局 class。
+Orange Design System（ODS）是 Orange 桌面应用的视觉与交互公共层。它将烟雨（浅色）与夜雨（深色）两套江南主题、macOS/Wails 桌面壳层约束和无障碍行为整理为稳定 API，使页面不再依赖散落的颜色、尺寸和全局 class。
 
 ## 目标
 
@@ -30,7 +30,7 @@ frontend/src/design-system/
 - React 组件从 `@/design-system` 使用 named imports。
 - `.ods-*` 是 Design System 的 DOM class 命名空间；内部 anatomy 使用 `data-slot`。
 - 旧 `styles/tokens.css` 与 `tokens/compatibility.css` 已删除；所有生产样式只消费 `--ods-*`。
-- 页面布局、Dashboard Hero 和业务卡片等产品表达属于 patterns 或业务目录，不进入基础组件。
+- 页面布局、工作台收款摘要和业务卡片等产品表达属于 patterns 或业务目录，不进入基础组件。
 - 页面只能组合 ODS primitives 和 patterns，不得复制 Button、Field、Select、Table、Modal、Popover、Pagination 等控件的视觉或交互实现。
 
 未来的根聚合入口遵循以下规则：
@@ -66,3 +66,4 @@ ODS 不安装 HeroUI、不复制其源码、不复刻全部组件目录，也不
 - [Accessibility](./accessibility.md)
 - [Migration](./migration.md)
 - [Implementation plan](../plans/2026-07-14-orange-design-system.md)
+- [烟雨江南界面重构规范](../ORANGE_DESIGN_SYSTEM.md)

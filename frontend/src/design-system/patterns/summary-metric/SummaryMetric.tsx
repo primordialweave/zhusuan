@@ -19,6 +19,7 @@ interface SummaryMetricBaseProps extends Omit<ComponentPropsWithoutRef<'article'
   errorValue?: ReactNode
   icon?: ReactNode | string
   iconTone?: SurfaceTone
+  iconAppearance?: 'plain' | 'inset'
   label: ReactNode
   layout?: 'compact' | 'stacked'
   loadingValue?: ReactNode
@@ -37,6 +38,7 @@ export function SummaryMetric({
   errorValue = '暂不可用',
   icon,
   iconTone = 'accent',
+  iconAppearance = 'plain',
   label,
   layout = 'compact',
   loadingValue,
@@ -83,6 +85,7 @@ export function SummaryMetric({
       as="article"
       className={['ods-summary-metric', className].filter(Boolean).join(' ')}
       data-layout={layout}
+      data-icon-appearance={iconAppearance}
       data-meta-position={metaPosition}
       data-motion="entrance"
       data-motion-item

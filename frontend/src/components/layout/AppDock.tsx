@@ -1,22 +1,29 @@
+import { useLocation } from 'react-router-dom'
 import { RouterNavLink, Surface } from '@/design-system'
-import { primaryNavigationItems } from './primaryNavigation'
+import DockIcon from './DockIcon'
+import { getActiveNavigationKey, primaryNavigationItems } from './primaryNavigation'
 
 export default function AppDock() {
+  const { pathname } = useLocation()
+  const activeKey = getActiveNavigationKey(pathname)
+
   return (
     <Surface
       as="nav"
-      aria-label="快捷导航"
+      aria-label="主导航"
       className="app-dock"
+      density="dense"
       padding="none"
-      radius="shell"
+      radius="pill"
       variant="glass"
     >
       {primaryNavigationItems.map((item) => (
         <RouterNavLink
+          active={item.key === activeKey}
           appearance="dock"
           className="app-dock__link"
-          icon={<i className={item.icon} />}
-          key={item.path}
+          icon={<DockIcon name={item.key} />}
+          key={item.key}
           to={item.path}
         >
           {item.label}

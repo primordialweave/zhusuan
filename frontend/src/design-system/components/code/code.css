@@ -24,7 +24,7 @@
 }
 
 .ods-code[data-tone='accent'] {
-  --ods-code-color: var(--ods-color-accent);
+  --ods-code-color: var(--ods-color-accent-text);
   --ods-code-soft: var(--ods-color-accent-soft);
 }
 

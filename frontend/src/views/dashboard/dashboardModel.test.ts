@@ -21,8 +21,8 @@ const payment = (id: number, daysLeft: number): PaymentDisplayItem => ({
 })
 
 describe('dashboard hero model', () => {
-  it('uses the same rolling three-month label as the income chart', () => {
-    expect(getPeriodLabel('quarter')).toBe('近3个月')
+  it('uses the same rolling 90-day label as the income chart', () => {
+    expect(getPeriodLabel('quarter')).toBe('近90天')
   })
 
   it('normalizes income values to labels before aggregation', () => {

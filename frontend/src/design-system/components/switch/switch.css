@@ -24,7 +24,7 @@
 
 .ods-switch[data-size='lg'] {
   --ods-switch-w: var(--ods-space-12);
-  --ods-switch-h: var(--ods-space-8);
+  --ods-switch-h: calc(var(--ods-space-6) + var(--ods-space-1));
   font-size: var(--ods-font-size-md);
 }
 
@@ -49,8 +49,8 @@
   align-items: center;
   padding: var(--ods-switch-pad);
   border-radius: var(--ods-radius-pill);
-  background: var(--ods-color-bg-surface-pressed);
-  box-shadow: inset 0 1px 2px rgba(var(--ods-color-fg-default-rgb), 0.1);
+  /* A tint alone loses the off state on a pale panel and on the night one. */
+  background: var(--ods-color-border-strong);
   transition: background-color var(--ods-duration-fast) var(--ods-ease-standard);
 }
 
@@ -58,17 +58,16 @@
   width: calc(var(--ods-switch-h) - var(--ods-switch-pad) * 2);
   height: calc(var(--ods-switch-h) - var(--ods-switch-pad) * 2);
   border-radius: var(--ods-radius-pill);
-  background: var(--ods-color-bg-surface);
+  /* A light thumb in both themes; a surface-coloured one vanishes on the 夜雨 panel. */
+  background: var(--ods-color-fg-brand-surface);
   box-shadow: 0 1px 3px rgba(var(--ods-color-fg-default-rgb), 0.28);
   /* Spring settle so the thumb feels physical, not linear (apple-design §4). */
   transition: transform var(--ods-duration-fast) var(--ods-ease-spring);
 }
 
 .ods-switch__input:checked + .ods-switch__track {
-  background: var(--ods-gradient-glow);
-  box-shadow:
-    inset 0 1px 0 rgba(255, 255, 255, 0.24),
-    0 4px 10px rgba(var(--ods-color-accent-rgb), 0.3);
+  background: var(--ods-color-accent);
+  box-shadow: none;
 }
 
 .ods-switch__input:checked + .ods-switch__track .ods-switch__thumb {

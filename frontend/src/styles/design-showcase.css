@@ -9,21 +9,6 @@
   padding-block: var(--ods-space-4) var(--ods-space-2);
 }
 
-.design-showcase__pulse {
-  width: 8px;
-  height: 8px;
-  border-radius: var(--ods-radius-pill);
-  background: var(--ods-color-accent);
-  box-shadow: 0 0 14px rgba(var(--ods-color-accent-rgb), 0.72);
-}
-
-.design-showcase__title-accent {
-  background: var(--ods-gradient-text);
-  background-clip: text;
-  -webkit-background-clip: text;
-  color: transparent;
-}
-
 .design-showcase__section {
   display: flex;
   flex-direction: column;

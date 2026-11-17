@@ -1,3 +1,6 @@
+/* Register the full order before Tailwind introduces its own base/components layers. */
+@layer reset, vendor, theme, tokens, base, components, patterns, utilities, overrides;
+
 @import 'tailwindcss';
 
 /* Tailwind utilities only. Product composition belongs to feature stylesheets. */

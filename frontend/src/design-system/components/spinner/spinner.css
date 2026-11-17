@@ -6,7 +6,7 @@
 }
 
 .ods-spinner[data-tone='accent'] {
-  color: var(--ods-color-accent);
+  color: var(--ods-color-accent-text);
 }
 
 .ods-spinner[data-tone='success'] {

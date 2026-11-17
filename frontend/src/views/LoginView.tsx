@@ -1,18 +1,10 @@
-import { FormEvent, useState } from 'react'
+import { type FormEvent, useEffect, useRef, useState } from 'react'
 import { Navigate, useNavigate } from 'react-router-dom'
-import {
-  Alert,
-  Button,
-  Card,
-  Checkbox,
-  Field,
-  IconButton,
-  Image,
-  Input,
-  InputGroup,
-} from '@/design-system'
+import ScenePage, { BrushStroke } from '@/components/scene/ScenePage'
+import { Alert, Button, Checkbox, IconButton, Input, InputGroup } from '@/design-system'
 import { useAuthStore } from '@/stores/auth'
-import { useThemeStore } from '@/stores/theme'
+import { useToastStore } from '@/composables/useToast'
+import { rememberedLogin } from '@/utils/rememberedLogin'
 
 const getLastUsername = () => {
   if (typeof window === 'undefined') return ''
@@ -21,159 +13,234 @@ const getLastUsername = () => {
 
 export default function LoginView() {
   const navigate = useNavigate()
-  const toggleTheme = useThemeStore((state) => state.toggleTheme)
-  const effectiveTheme = useThemeStore((state) => state.effectiveTheme)
   const login = useAuthStore((state) => state.login)
   const loading = useAuthStore((state) => state.loading)
   const isLoggedIn = useAuthStore((state) => state.isLoggedIn)
+  const toastWarning = useToastStore((state) => state.warning)
+  const canRememberPassword = rememberedLogin.isAvailable()
   const [showPassword, setShowPassword] = useState(false)
   const [username, setUsername] = useState(getLastUsername)
   const [password, setPassword] = useState('')
   const [rememberMe, setRememberMe] = useState(Boolean(getLastUsername()))
+  const [rememberPassword, setRememberPassword] = useState(
+    () => canRememberPassword && window.localStorage.getItem('rememberPassword') === 'true',
+  )
+  const [restoring, setRestoring] = useState(rememberPassword)
+  const [submitting, setSubmitting] = useState(false)
+  const [forgetting, setForgetting] = useState(false)
+  const editedRef = useRef(false)
+  const autofilledRef = useRef(false)
   const [loginError, setLoginError] = useState('')
 
-  if (isLoggedIn) {
+  useEffect(() => {
+    if (!canRememberPassword || window.localStorage.getItem('rememberPassword') !== 'true') return
+    let active = true
+    void rememberedLogin
+      .load()
+      .then((credentials) => {
+        if (!active || editedRef.current) return
+        if (credentials && credentials.username === getLastUsername()) {
+          setUsername(credentials.username)
+          setPassword(credentials.password)
+          autofilledRef.current = true
+          setRememberMe(true)
+        } else {
+          setRememberPassword(false)
+          window.localStorage.removeItem('rememberPassword')
+        }
+      })
+      .catch(() => {
+        if (active) toastWarning('无法读取已保存的密码，请手动输入')
+      })
+      .finally(() => {
+        if (active) setRestoring(false)
+      })
+    return () => {
+      active = false
+    }
+  }, [canRememberPassword, toastWarning])
+
+  const forgetPassword = async (forgetUsername = false) => {
+    editedRef.current = true
+    setForgetting(true)
+    try {
+      if (canRememberPassword && window.localStorage.getItem('rememberPassword') === 'true') {
+        await rememberedLogin.clear()
+      }
+      window.localStorage.removeItem('rememberPassword')
+      setRememberPassword(false)
+      if (forgetUsername) {
+        window.localStorage.removeItem('lastUsername')
+        setRememberMe(false)
+      }
+    } catch {
+      toastWarning('清除已保存的密码失败，请重试')
+    } finally {
+      setForgetting(false)
+    }
+  }
+
+  if (isLoggedIn && !submitting) {
     return <Navigate replace to="/dashboard" />
   }
 
   const handleLogin = async (event: FormEvent<HTMLFormElement>) => {
     event.preventDefault()
+    if (loading || submitting || restoring || forgetting) return
+    editedRef.current = true
+    setSubmitting(true)
     setLoginError('')
 
-    const success = await login({ username, password })
-    if (success) {
-      if (rememberMe) {
-        window.localStorage.setItem('lastUsername', username)
-      } else {
-        window.localStorage.removeItem('lastUsername')
+    try {
+      const success = await login({ username, password })
+      if (success) {
+        if (rememberMe || rememberPassword) {
+          window.localStorage.setItem('lastUsername', username)
+        } else {
+          window.localStorage.removeItem('lastUsername')
+        }
+        if (rememberPassword && canRememberPassword) {
+          try {
+            await rememberedLogin.save({ username, password })
+            window.localStorage.setItem('rememberPassword', 'true')
+          } catch {
+            window.localStorage.removeItem('rememberPassword')
+            toastWarning('登录成功，但未能记住密码，请检查系统凭据存储')
+          }
+        }
+        await navigate('/dashboard')
+        return
       }
-      await navigate('/dashboard')
-      return
+      setLoginError(useAuthStore.getState().error || '登录失败')
+    } finally {
+      setSubmitting(false)
     }
-
-    setLoginError(useAuthStore.getState().error || '登录失败')
   }
 
   return (
-    <div className="login-wrapper">
-      <div className="login-background" />
-      <div className="floating-shapes">
-        <div className="shape" />
-        <div className="shape" />
-        <div className="shape" />
-        <div className="shape" />
-      </div>
+    <ScenePage labelledBy="login-title">
+      <header>
+        <h1 className="scene-page__title" id="login-title">
+          欢迎回来
+        </h1>
+        <BrushStroke />
+        <p className="scene-page__text">登录后继续查看项目与收款进度</p>
+      </header>
 
-      <IconButton
-        className="login-theme-toggle"
-        label={effectiveTheme === 'dark' ? '切换至亮色主题' : '切换至深色主题'}
-        onClick={toggleTheme}
-        title="切换主题"
-        tone="accent"
-        variant="secondary"
-      >
-        <i className={effectiveTheme === 'dark' ? 'ri-moon-line' : 'ri-sun-line'} />
-      </IconButton>
+      <form className="login-form" onSubmit={handleLogin}>
+        <InputGroup
+          adornmentSpacing="balanced"
+          focusAdornmentTone="accent"
+          size="lg"
+          startContent={<i aria-hidden="true" className="ri-user-line" />}
+        >
+          <Input
+            aria-label="用户名 / 邮箱 / 手机号"
+            autoCapitalize="off"
+            autoComplete="username"
+            autoCorrect="off"
+            name="username"
+            disabled={submitting || forgetting}
+            onChange={(event) => {
+              editedRef.current = true
+              setUsername(event.target.value)
+              if (autofilledRef.current) {
+                setPassword('')
+                autofilledRef.current = false
+              }
+            }}
+            placeholder="用户名 / 邮箱 / 手机号"
+            size="lg"
+            spellCheck={false}
+            type="text"
+            value={username}
+          />
+        </InputGroup>
 
-      <div className="login-container">
-        <Card.Root className="login-card" padding="lg" variant="tertiary">
-          <div className="login-logo">
-            <div className="login-logo-icon">
-              <Image
-                alt="Orange Logo"
-                background="transparent"
-                className="login-logo-image"
-                disableAnimation
-                radius="full"
-                showSkeleton={false}
-                src="/orange.png"
-              />
-            </div>
-            <h1>Orange</h1>
-            <p>项目收款管理系统</p>
-          </div>
+        <InputGroup
+          adornmentSpacing="balanced"
+          endContent={
+            <IconButton
+              label={showPassword ? '隐藏密码' : '显示密码'}
+              onClick={() => setShowPassword((value) => !value)}
+              size="md"
+              variant="ghost"
+            >
+              <i className={showPassword ? 'ri-eye-line' : 'ri-eye-off-line'} />
+            </IconButton>
+          }
+          focusAdornmentTone="accent"
+          size="lg"
+          startContent={<i aria-hidden="true" className="ri-lock-line" />}
+        >
+          <Input
+            aria-label="密码"
+            autoCapitalize="off"
+            autoComplete="current-password"
+            autoCorrect="off"
+            name="password"
+            disabled={submitting || forgetting}
+            onChange={(event) => {
+              editedRef.current = true
+              autofilledRef.current = false
+              setPassword(event.target.value)
+            }}
+            placeholder="密码"
+            size="lg"
+            spellCheck={false}
+            type={showPassword ? 'text' : 'password'}
+            value={password}
+          />
+        </InputGroup>
 
-          <div className="form-panel active-panel">
-            <form className="login-form" onSubmit={handleLogin}>
-              <Field.Root id="username">
-                <Field.Label>用户名 / 邮箱 / 手机号</Field.Label>
-                <InputGroup
-                  adornmentSpacing="balanced"
-                  focusAdornmentTone="accent"
-                  size="lg"
-                  startContent={<i aria-hidden="true" className="ri-mail-line" />}
-                >
-                  <Input
-                    autoCapitalize="off"
-                    autoComplete="username"
-                    autoCorrect="off"
-                    onChange={(event) => setUsername(event.target.value)}
-                    placeholder="请输入用户名或邮箱"
-                    size="lg"
-                    spellCheck={false}
-                    type="text"
-                    value={username}
-                  />
-                </InputGroup>
-              </Field.Root>
+        <div className="login-form__options">
+          <Checkbox
+            checked={rememberMe}
+            disabled={submitting || restoring || forgetting}
+            onChange={(event) => {
+              editedRef.current = true
+              if (event.target.checked) setRememberMe(true)
+              else void forgetPassword(true)
+            }}
+          >
+            记住用户名
+          </Checkbox>
+          <Checkbox
+            checked={rememberPassword}
+            disabled={!canRememberPassword || submitting || restoring || forgetting}
+            onChange={(event) => {
+              editedRef.current = true
+              if (event.target.checked) {
+                setRememberPassword(true)
+                setRememberMe(true)
+              } else {
+                void forgetPassword()
+              }
+            }}
+            title={
+              canRememberPassword
+                ? '在此设备的系统凭据存储中保存密码'
+                : '请在桌面客户端使用；网页版可使用浏览器密码管理器'
+            }
+          >
+            记住密码
+          </Checkbox>
+        </div>
 
-              <Field.Root id="password">
-                <Field.Label>密码</Field.Label>
-                <InputGroup
-                  adornmentSpacing="balanced"
-                  endContent={
-                    <IconButton
-                      label={showPassword ? '隐藏密码' : '显示密码'}
-                      onClick={() => setShowPassword((value) => !value)}
-                      size="md"
-                      variant="ghost"
-                    >
-                      <i className={showPassword ? 'ri-eye-line' : 'ri-eye-off-line'} />
-                    </IconButton>
-                  }
-                  focusAdornmentTone="accent"
-                  size="lg"
-                  startContent={<i aria-hidden="true" className="ri-lock-line" />}
-                >
-                  <Input
-                    autoCapitalize="off"
-                    autoComplete="current-password"
-                    autoCorrect="off"
-                    onChange={(event) => setPassword(event.target.value)}
-                    placeholder="请输入密码"
-                    size="lg"
-                    spellCheck={false}
-                    type={showPassword ? 'text' : 'password'}
-                    value={password}
-                  />
-                </InputGroup>
-              </Field.Root>
+        {loginError ? (
+          <Alert icon={<i className="ri-error-warning-line" />} title={loginError} tone="danger" />
+        ) : null}
 
-              <div className="login-form__options">
-                <Checkbox
-                  checked={rememberMe}
-                  onChange={(event) => setRememberMe(event.target.checked)}
-                >
-                  记住用户名
-                </Checkbox>
-              </div>
-
-              {loginError ? (
-                <Alert
-                  className="login-alert"
-                  icon={<i className="ri-error-warning-line" />}
-                  title={loginError}
-                  tone="danger"
-                />
-              ) : null}
-
-              <Button fullWidth pending={loading} size="lg" type="submit" variant="primary">
-                {loading ? '登录中...' : '登录'}
-              </Button>
-            </form>
-          </div>
-        </Card.Root>
-      </div>
-    </div>
+        <Button
+          fullWidth
+          pending={loading || submitting || restoring || forgetting}
+          size="lg"
+          type="submit"
+          variant="primary"
+        >
+          {loading || submitting ? '登录中...' : restoring ? '读取登录信息...' : '登录'}
+        </Button>
+      </form>
+    </ScenePage>
   )
 }

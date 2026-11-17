@@ -1,0 +1,104 @@
+/* 夜雨 — the dark theme. The same scene after dusk. */
+[data-theme='dark'] {
+  color-scheme: dark;
+
+  --ods-color-bg-canvas: var(--ods-ref-color-mist-900);
+  --ods-color-bg-canvas-rgb: 19, 35, 31;
+  --ods-color-bg-canvas-subtle: #172a25;
+  --ods-color-bg-surface: var(--ods-ref-color-mist-700);
+  --ods-color-bg-surface-raised: rgba(27, 44, 38, 0.96);
+  --ods-color-bg-surface-glass: rgba(30, 53, 44, 0.86);
+  --ods-color-bg-surface-glass-dense: var(--ods-color-bg-surface-glass);
+  --ods-color-bg-surface-hover: rgba(160, 215, 175, 0.08);
+  --ods-color-bg-surface-pressed: rgba(160, 215, 175, 0.14);
+  --ods-color-fg-default: #e5f2e9;
+  --ods-color-fg-default-rgb: 229, 242, 233;
+  --ods-color-fg-relaxed: rgba(229, 242, 233, 0.9);
+  --ods-color-fg-muted: #adc2b6;
+  --ods-color-fg-subtle: #93ab9e;
+  --ods-color-fg-disabled: rgba(229, 242, 233, 0.3);
+  --ods-color-fg-inverse: var(--ods-ref-color-mist-950);
+  --ods-color-fg-brand-surface: #e5f2e9;
+  --ods-color-fg-brand-surface-muted: rgba(229, 242, 233, 0.78);
+  --ods-color-fg-brand-surface-subtle: rgba(229, 242, 233, 0.58);
+  --ods-color-fg-brand-surface-danger: var(--ods-ref-color-rust-300);
+  --ods-color-border-default: var(--ods-ref-color-mist-600);
+  --ods-color-border-strong: #56705f;
+  --ods-color-border-control: #799588;
+  --ods-color-border-focus: var(--ods-color-accent-text);
+  --ods-color-border-brand-surface: rgba(229, 242, 233, 0.16);
+  --ods-color-accent: var(--ods-ref-color-jade-400);
+  --ods-color-accent-text: var(--ods-ref-color-jade-300);
+  --ods-color-accent-rgb: 133, 188, 139;
+  --ods-color-accent-hover: #97c99c;
+  --ods-color-accent-pressed: #74aa7b;
+  --ods-color-accent-soft: rgba(133, 188, 139, 0.2);
+  --ods-color-accent-fg: var(--ods-ref-color-mist-950);
+  --ods-color-accent-secondary: var(--ods-ref-color-gold-400);
+  --ods-color-accent-warm: var(--ods-ref-color-apricot-400);
+  --ods-color-status-success: var(--ods-ref-color-jade-400);
+  --ods-color-status-success-soft: rgba(133, 188, 139, 0.16);
+  --ods-color-status-warning: var(--ods-ref-color-gold-400);
+  --ods-color-status-warning-soft: rgba(227, 197, 116, 0.16);
+  --ods-color-status-danger: var(--ods-ref-color-rust-300);
+  --ods-color-status-danger-soft: rgba(255, 182, 167, 0.14);
+  --ods-color-status-info: var(--ods-ref-color-lake-300);
+  --ods-color-status-info-soft: rgba(156, 203, 221, 0.14);
+  --ods-color-status-teal: var(--ods-ref-color-teal-300);
+  --ods-color-overlay-scrim: rgba(5, 12, 10, 0.6);
+  --ods-color-ambient-glow: rgba(133, 188, 139, 0.05);
+  --ods-color-selection: rgba(133, 188, 139, 0.3);
+  --ods-color-scene-veil: rgba(13, 25, 22, 0.66);
+  --ods-color-scene-mist: rgba(13, 25, 22, 0);
+  --ods-shadow-soft: 0 2px 8px rgba(0, 0, 0, 0.18);
+  --ods-shadow-panel: 0 12px 32px rgba(0, 0, 0, 0.34);
+  --ods-shadow-modal: 0 30px 90px rgba(0, 0, 0, 0.58), 0 4px 18px rgba(0, 0, 0, 0.34);
+  --ods-shadow-brand-surface: var(--ods-shadow-panel);
+  --ods-shadow-nav-selected: 0 3px 10px rgba(0, 0, 0, 0.3);
+  --ods-gradient-glow: linear-gradient(180deg, #97c99c 0%, #7ab383 100%);
+  --ods-gradient-nav-selected: radial-gradient(
+    75% 90% at 38% 25%,
+    #a3d0a6 0%,
+    #93c597 40%,
+    #7ab383 90%
+  );
+  --ods-gradient-text: linear-gradient(135deg, #c8e5c8 0%, #a0d7af 58%, #85bc8b 100%);
+  --ods-gradient-brand-surface: linear-gradient(135deg, #24443a 0%, #1f3a31 54%, #1b2c26 100%);
+  --ods-material-glass-blur: 24px;
+  --ods-material-glass-saturation: 130%;
+  --ods-material-glass-brightness: 1.05;
+  --ods-material-glass-contrast: 1.02;
+  --ods-material-glass-specular: linear-gradient(
+    180deg,
+    rgba(229, 242, 233, 0.3) 0%,
+    rgba(229, 242, 233, 0.06) 50%,
+    rgba(229, 242, 233, 0.12) 100%
+  );
+  --ods-material-glass-sheen: linear-gradient(
+    168deg,
+    rgba(229, 242, 233, 0.05) 0%,
+    rgba(229, 242, 233, 0) 46%
+  );
+  --ods-material-glass-shadow-outer: var(--ods-shadow-panel);
+  --ods-material-glass-shadow-inner:
+    inset 0 1px 0 rgba(229, 242, 233, 0.16), inset 0 0 20px rgba(0, 0, 0, 0.25);
+  --ods-material-glass-shadow-dense:
+    var(--ods-material-glass-shadow-inner), var(--ods-material-glass-shadow-outer);
+  --ods-material-glass-border: 1px solid rgba(229, 242, 233, 0.16);
+  --ods-material-glass-border-subtle: 1px solid rgba(229, 242, 233, 0.1);
+  /* The still behind frost is not dimmed, so the veil is denser here and controls sink
+     into it instead of lifting; both keep in-field text at 4.5:1 over the mist. */
+  --ods-material-frost-veil: rgba(27, 44, 38, 0.9);
+  --ods-material-frost-rim: rgba(229, 242, 233, 0.22);
+  --ods-material-frost-control: rgba(13, 25, 22, 0.28);
+  --ods-data-series-planned: var(--ods-ref-color-gold-400);
+  --ods-data-series-actual: var(--ods-ref-color-jade-400);
+  --ods-data-series-actual-fill: rgba(133, 188, 139, 0.2);
+  --ods-data-part-paid: var(--ods-ref-color-jade-400);
+  --ods-data-part-pending: var(--ods-ref-color-gold-400);
+  --ods-data-grid: rgba(229, 242, 233, 0.09);
+  --ods-data-tooltip-bg: #22362f;
+  --ods-data-tooltip-fg: #e5f2e9;
+  --ods-data-tooltip-border: #3d564b;
+  --ods-data-point-bg: #22362f;
+}

@@ -2,11 +2,14 @@ import {
   createContext,
   forwardRef,
   useContext,
+  useEffect,
   useId,
   useMemo,
+  useRef,
   type ButtonHTMLAttributes,
   type HTMLAttributes,
   type KeyboardEvent,
+  type Ref,
 } from 'react'
 
 interface TabsContextValue {
@@ -21,6 +24,11 @@ const useTabsContext = () => {
   const context = useContext(TabsContext)
   if (!context) throw new Error('Tabs compound components must be used inside Tabs.Root')
   return context
+}
+
+const assignRef = <T,>(ref: Ref<T> | undefined, node: T | null) => {
+  if (typeof ref === 'function') ref(node)
+  else if (ref) ref.current = node
 }
 
 const getValueId = (value: string) => encodeURIComponent(value).replaceAll('%', '')
@@ -59,13 +67,39 @@ export const TabsRoot = forwardRef<HTMLDivElement, TabsRootProps>(function TabsR
 
 export interface TabsListProps extends HTMLAttributes<HTMLDivElement> {
   orientation?: 'horizontal' | 'vertical'
-  variant?: 'accent' | 'navigation' | 'pill' | 'rail'
+  variant?: 'accent' | 'navigation' | 'pill' | 'underline'
 }
 
 export const TabsList = forwardRef<HTMLDivElement, TabsListProps>(function TabsList(
   { className, orientation = 'horizontal', variant = 'pill', ...props },
   ref,
 ) {
+  const listRef = useRef<HTMLDivElement | null>(null)
+
+  // An underline strip scrolls sideways when its tabs do not fit; `data-fade` tells the
+  // stylesheet which edges still hide tabs.
+  useEffect(() => {
+    const list = listRef.current
+    if (!list || variant !== 'underline') return
+    const sync = () => {
+      const hiddenAfter = list.scrollWidth - list.clientWidth - list.scrollLeft > 1
+      const hiddenBefore = list.scrollLeft > 1
+      if (hiddenBefore && hiddenAfter) list.dataset.fade = 'both'
+      else if (hiddenBefore) list.dataset.fade = 'start'
+      else if (hiddenAfter) list.dataset.fade = 'end'
+      else delete list.dataset.fade
+    }
+    sync()
+    list.addEventListener('scroll', sync, { passive: true })
+    const observer = typeof ResizeObserver === 'undefined' ? null : new ResizeObserver(sync)
+    observer?.observe(list)
+    return () => {
+      list.removeEventListener('scroll', sync)
+      observer?.disconnect()
+      delete list.dataset.fade
+    }
+  }, [variant])
+
   return (
     <div
       {...props}
@@ -74,7 +108,10 @@ export const TabsList = forwardRef<HTMLDivElement, TabsListProps>(function TabsL
       data-orientation={orientation}
       data-slot="list"
       data-variant={variant}
-      ref={ref}
+      ref={(node) => {
+        listRef.current = node
+        assignRef(ref, node)
+      }}
       role="tablist"
     />
   )
@@ -90,6 +127,19 @@ export const TabsTab = forwardRef<HTMLButtonElement, TabsTabProps>(function Tabs
 ) {
   const context = useTabsContext()
   const selected = context.value === value
+  const tabRef = useRef<HTMLButtonElement | null>(null)
+
+  // Keep the chosen tab visible inside a list that scrolls sideways, without moving the page.
+  useEffect(() => {
+    const tab = tabRef.current
+    const list = tab?.closest<HTMLElement>('[role="tablist"]')
+    if (!selected || !tab || !list || list.scrollWidth <= list.clientWidth) return
+    const listBox = list.getBoundingClientRect()
+    const tabBox = tab.getBoundingClientRect()
+    const peek = tabBox.width / 2
+    if (tabBox.left < listBox.left) list.scrollLeft += tabBox.left - listBox.left - peek
+    else if (tabBox.right > listBox.right) list.scrollLeft += tabBox.right - listBox.right + peek
+  }, [selected])
 
   const handleKeyDown = (event: KeyboardEvent<HTMLButtonElement>) => {
     onKeyDown?.(event)
@@ -135,7 +185,10 @@ export const TabsTab = forwardRef<HTMLButtonElement, TabsTabProps>(function Tabs
         if (!event.defaultPrevented) context.onValueChange(value)
       }}
       onKeyDown={handleKeyDown}
-      ref={ref}
+      ref={(node) => {
+        tabRef.current = node
+        assignRef(ref, node)
+      }}
       role="tab"
       tabIndex={selected ? 0 : -1}
       type="button"

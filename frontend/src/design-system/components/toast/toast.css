@@ -1,7 +1,7 @@
 /* Liquid-glass capsule toasts, top-center — ported from the legacy ToastContainer. */
 .ods-toaster {
   position: fixed;
-  inset-block-start: calc(var(--ods-shell-topbar-height) + var(--ods-space-6));
+  inset-block-start: calc(var(--ods-shell-titlebar-clearance) + var(--ods-space-6));
   inset-inline-start: 50%;
   z-index: var(--ods-z-toast);
   display: flex;

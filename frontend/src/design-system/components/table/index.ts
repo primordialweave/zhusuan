@@ -5,4 +5,5 @@ export type {
   TableProps,
   TableRowProps,
   TableStickySide,
+  TableVariant,
 } from './Table'

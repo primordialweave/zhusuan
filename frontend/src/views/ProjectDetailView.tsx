@@ -231,14 +231,10 @@ export default function ProjectDetailView() {
         description={
           <span className="project-detail-meta">
             <span>客户：{project.company}</span>
+            {project.contract_number ? (
+              <span className="project-detail-meta__contract">{project.contract_number}</span>
+            ) : null}
             <ProjectStatusChip status={project.status} />
-          </span>
-        }
-        eyebrow={
-          <span className="project-detail-kicker">
-            <i aria-hidden="true" className="ri-folder-chart-line" />
-            项目台账
-            <span>{project.contract_number || `#${project.id}`}</span>
           </span>
         }
         leading={
@@ -276,14 +272,10 @@ export default function ProjectDetailView() {
                 data-motion="entrance"
                 gap="none"
                 padding="none"
-                variant="secondary"
+                variant="transparent"
               >
                 <div className="project-settlement-board__main">
                   <div className="project-settlement-board__headline">
-                    <span className="project-settlement-board__eyebrow">
-                      <span aria-hidden="true" className="project-live-dot" />
-                      项目结算盘面
-                    </span>
                     <span className="project-settlement-board__label">待回款</span>
                     <strong className="project-settlement-board__amount">
                       {formatCurrency(remainingAmount)}
@@ -305,7 +297,7 @@ export default function ProjectDetailView() {
                       value={progress}
                     />
                     <div>
-                      <strong className="project-settlement-progress__label">项目整体进度</strong>
+                      <strong className="project-settlement-progress__label">回款完成度</strong>
                       <span>以合同回款计算</span>
                     </div>
                   </div>
@@ -354,7 +346,7 @@ export default function ProjectDetailView() {
               </Card.Root>
 
               <div className="project-overview-grid" data-motion="entrance">
-                <Card.Root className="project-record-card" padding="lg">
+                <Card.Root className="project-record-card" padding="lg" variant="tertiary">
                   <Card.Header>
                     <Card.Title>项目档案</Card.Title>
                     <Card.Description>合同与交付的核心信息</Card.Description>
@@ -387,12 +379,16 @@ export default function ProjectDetailView() {
                         <dt>建档日期</dt>
                         <dd>{formatDate(project.create_time)}</dd>
                       </div>
+                      <div>
+                        <dt>创建人</dt>
+                        <dd>{project.user?.name || '-'}</dd>
+                      </div>
                     </dl>
                   </Card.Content>
                 </Card.Root>
 
                 <div className="project-overview-aside">
-                  <Card.Root className="project-next-payment-card" padding="lg">
+                  <Card.Root className="project-next-payment-card" padding="lg" variant="tertiary">
                     <Card.Header>
                       <div className="project-card-heading-row">
                         <div>
@@ -443,7 +439,7 @@ export default function ProjectDetailView() {
                     </Card.Content>
                   </Card.Root>
 
-                  <Card.Root className="project-notes-card" padding="lg" variant="secondary">
+                  <Card.Root className="project-notes-card" padding="lg" variant="tertiary">
                     <Card.Header>
                       <Card.Title>项目说明</Card.Title>
                     </Card.Header>

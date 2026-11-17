@@ -78,3 +78,11 @@
 .ods-pagination__button--direction {
   font-size: var(--ods-font-size-lg);
 }
+
+@media (max-width: 36rem) {
+  .ods-pagination__pages
+    > .ods-pagination__button:not(:first-of-type):not(:last-of-type):not([data-active='true']),
+  .ods-pagination__ellipsis {
+    display: none;
+  }
+}

@@ -118,10 +118,13 @@ export default function PaymentCreateView() {
             </Field.Root>
           )
         }
+        // The selector already names the chosen project; only a fixed project needs saying.
         description={
-          currentProject
-            ? `为「${currentProject.name}」规划本次收款节点。`
-            : '选择项目后添加收款节点。'
+          routeProjectId
+            ? currentProject?.name
+            : currentProject
+              ? undefined
+              : '选择项目后添加收款节点'
         }
         leading={
           <IconButton label="返回上一页" onClick={() => navigate(-1)} variant="ghost">
@@ -131,7 +134,7 @@ export default function PaymentCreateView() {
         title="创建收款计划"
       />
 
-      <Card.Root className="project-form-card" padding="lg">
+      <Card.Root className="project-form-card" padding="none" variant="transparent">
         <form className="payment-form" onSubmit={handleSubmit}>
           <PaymentPlanEditor
             installment={isInstallment}

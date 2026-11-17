@@ -40,15 +40,7 @@
   height: 100%;
   border-radius: inherit;
   background: var(--ods-progress-color);
-  box-shadow: 0 0 12px color-mix(in srgb, var(--ods-progress-color) 45%, transparent);
   transition: width var(--ods-duration-page) var(--ods-ease-emphasized);
-}
-
-/* Accent progress burns with the hero gradient. */
-.ods-progress:not([data-tone]) .ods-progress__fill,
-.ods-progress[data-tone='accent'] .ods-progress__fill {
-  background: var(--ods-gradient-glow);
-  box-shadow: 0 0 14px rgba(var(--ods-color-accent-rgb), 0.4);
 }
 
 .ods-progress[data-indeterminate='true'] .ods-progress__fill {

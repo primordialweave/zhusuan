@@ -151,7 +151,6 @@ describe('Calendar', () => {
       <Calendar
         getDateAriaLabel={(date, state) => `${date}${state.isMarked ? '，有事件' : ''}`}
         isDateMarked={(date) => date === '2026-07-20'}
-        layout="fluid"
         onValueChange={vi.fn()}
         value="2026-07-15"
         visibleMonth="2026-07-01"
@@ -161,7 +160,7 @@ describe('Calendar', () => {
     const markedDate = screen.getByRole('button', { name: '2026-07-20，有事件' })
     expect(markedDate).toHaveAttribute('data-marked', 'true')
     expect(markedDate.querySelector('.ods-calendar__marker')).toBeInTheDocument()
-    expect(markedDate.closest('.ods-calendar')).toHaveAttribute('data-layout', 'fluid')
+    expect(markedDate.closest('.ods-calendar')).toHaveAttribute('data-layout', 'compact')
   })
 
   it('colors marks by tone and marks toned dates without isDateMarked', () => {
@@ -180,5 +179,76 @@ describe('Calendar', () => {
     expect(
       screen.getByRole('button', { name: /2026年7月22日/ }).querySelector('.ods-calendar__marker'),
     ).not.toBeInTheDocument()
+  })
+
+  it('lays a board out from Sunday with only the weeks and days of the visible month', async () => {
+    const user = userEvent.setup()
+    const onValueChange = vi.fn()
+    const onVisibleMonthChange = vi.fn()
+    render(
+      <Calendar
+        layout="board"
+        onValueChange={onValueChange}
+        onVisibleMonthChange={onVisibleMonthChange}
+        renderDayContent={(date) => (date === '2026-11-13' ? <span>待收 ¥2,400</span> : null)}
+        showTodayAction
+        todayActionLabel="本月"
+        value="2026-11-13"
+        visibleMonth="2026-11-01"
+        weekStartsOn={0}
+      />,
+    )
+
+    const calendar = document.querySelector('.ods-calendar')!
+    expect(calendar).toHaveAttribute('data-layout', 'board')
+    expect(
+      [...calendar.querySelectorAll('.ods-calendar__weekday')].map((node) => node.textContent),
+    ).toEqual(['日', '一', '二', '三', '四', '五', '六'])
+    expect(screen.getByRole('button', { name: '选择年份' })).toHaveTextContent('2026年')
+    expect(screen.getByRole('button', { name: '选择月份' })).toHaveTextContent('11月')
+
+    // November 2026 starts on a Sunday: five weeks, the last five cells stay empty.
+    const grid = screen.getByRole('grid', { name: '2026年11月' })
+    expect(grid).toHaveAttribute('aria-rowcount', '5')
+    expect(within(grid).getAllByRole('row')).toHaveLength(5)
+    expect(within(grid).getAllByRole('gridcell')).toHaveLength(35)
+    expect(within(grid).getAllByRole('button')).toHaveLength(30)
+    expect(grid.querySelectorAll('[role="gridcell"][data-outside="true"]')).toHaveLength(5)
+
+    const selected = screen.getByRole('button', { name: /2026年11月13日，星期五/ })
+    expect(selected).toHaveAttribute('data-selected', 'true')
+    expect(within(selected).getByText('待收 ¥2,400')).toBeInTheDocument()
+    expect(selected.querySelector('.ods-calendar__marker')).not.toBeInTheDocument()
+
+    // The title leads; previous, today and next follow it as one group.
+    const group = calendar.querySelector('.ods-calendar__nav-group')!
+    expect(
+      within(group as HTMLElement)
+        .getAllByRole('button')
+        .map((node) => node.getAttribute('aria-label') ?? node.textContent),
+    ).toEqual(['上个月', '本月', '下个月'])
+    expect(screen.getByRole('button', { name: '本月' })).toHaveAttribute('data-size', 'md')
+
+    selected.focus()
+    await user.keyboard('{Home}')
+    expect(screen.getByRole('button', { name: /2026年11月8日，星期日/ })).toHaveFocus()
+    await user.keyboard('{End}')
+    expect(screen.getByRole('button', { name: /2026年11月14日，星期六/ })).toHaveFocus()
+  })
+
+  it('gives a board six weeks when the month needs them', () => {
+    render(
+      <Calendar
+        layout="board"
+        onValueChange={vi.fn()}
+        value="2026-08-15"
+        visibleMonth="2026-08-01"
+        weekStartsOn={0}
+      />,
+    )
+
+    const grid = screen.getByRole('grid', { name: '2026年8月' })
+    expect(within(grid).getAllByRole('row')).toHaveLength(6)
+    expect(within(grid).getAllByRole('button')).toHaveLength(31)
   })
 })
