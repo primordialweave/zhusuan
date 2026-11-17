@@ -16,6 +16,7 @@ import (
 
 	"github.com/FruitsAI/Orange/internal/app"
 	"github.com/FruitsAI/Orange/internal/config"
+	"github.com/FruitsAI/Orange/internal/desktop"
 	"github.com/wailsapp/wails/v3/pkg/application"
 )
 
@@ -132,6 +133,9 @@ func main() {
 	app := application.New(application.Options{
 		Name:        "Orange",
 		Description: "FruitsAI Orange Desktop App",
+		Services: []application.Service{
+			application.NewService(desktop.NewCredentialStore()),
+		},
 		Assets: application.AssetOptions{
 			Handler: assetHandler,
 		},
