@@ -446,3 +446,5 @@
 - /D真实修复：InstallDir头保持空，.onInit只在INSTDIR为空时设置LOCALAPPDATA默认/查询新注册；NSIS预置的显式/D非空保留。源码确认EXEDIR回填仅卸载器分支，故installer可可靠区分。新增普通/UPDATE两种显式Orange目录拒绝、原注册不变、实际exe落指定目录断言；NSIS隔离编译通过。
 
 - 最终Release44571413947 Windows与Linux全job通过，macOS排队15分钟后GitHub自动cancel；annotation明确The job was not acquired by Runner of type hosted... / macOS arm64 capacity constraints，runner_id0无步骤。这不是构建失败。保留同176c9780的两平台artifact，改Intel macOS runner专用workflow验同tag后聚合，不重复已过平台。
+
+- IntelMacCheck44576400310源身份/工具检查成功，前端597/598通过，必填新增用例5069ms触发默认5s（无断言错误）。专用4核Intel runner限制Vitest maxWorkers=2，保留全部用例/断言/5s门限，避免jsdom并发争用；不据此改产品或候选tag。

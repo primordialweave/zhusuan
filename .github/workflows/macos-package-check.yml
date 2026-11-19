@@ -76,7 +76,8 @@ jobs:
         run: |
           npm ci
           node node_modules/eslint/bin/eslint.js src --max-warnings=0
-          npm run test:run
+          # Limit jsdom concurrency to the standard Intel runner CPU budget.
+          npm run test:run -- --maxWorkers=2
       - name: Build Apple Silicon and Intel macOS packages
         shell: bash
         run: |
