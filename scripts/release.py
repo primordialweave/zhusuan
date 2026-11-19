@@ -63,7 +63,12 @@ def sync_metadata(root, tag):
 def names_for_platform(tag, platform):
     version_for_tag(tag)
     return {
-        'darwin': [f'zhusuan-{tag}-macOS-universal.zip'],
+        'darwin': [
+            f'zhusuan-{tag}-macOS-arm64.dmg',
+            f'zhusuan-{tag}-macOS-amd64.dmg',
+            f'zhusuan-{tag}-macOS-arm64.zip',
+            f'zhusuan-{tag}-macOS-amd64.zip',
+        ],
         'windows': [f'zhusuan-{tag}-windows-amd64-installer.exe'],
         'linux': [f'zhusuan-{tag}-linux-x86_64.AppImage', f'zhusuan-{tag}-linux-amd64.deb', f'zhusuan-{tag}-linux-amd64.rpm'],
     }[platform]
@@ -92,7 +97,9 @@ def prepare_assets(source, output, tag, platform):
     output.mkdir(parents=True, exist_ok=True)
     names = names_for_platform(tag, platform)
     if platform == 'darwin':
-        require_asset(output/names[0])  # ditto preserves the app bundle's metadata/symlinks.
+        # Native packaging creates both manual installers and compatible updater ZIPs.
+        for name in names:
+            require_asset(output/name)
     elif platform == 'windows':
         require_asset(source/'zhusuan-amd64-installer.exe')
         shutil.copy2(source/'zhusuan-amd64-installer.exe', output/names[0])

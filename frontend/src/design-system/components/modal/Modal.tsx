@@ -15,6 +15,7 @@ import { OverlayLayerProvider } from '@/hooks/overlayStack'
 
 export type ModalSize = 'sm' | 'md' | 'lg' | 'full'
 export type ModalPlacement = 'center' | 'top'
+export type ModalScrollBehavior = 'outside' | 'inside'
 
 interface ModalContextValue {
   onClose: () => void
@@ -45,6 +46,7 @@ export interface ModalRootProps extends Omit<HTMLAttributes<HTMLDivElement>, 'ti
   open: boolean
   returnFocusRef?: RefObject<HTMLElement | null>
   placement?: ModalPlacement
+  scrollBehavior?: ModalScrollBehavior
   size?: ModalSize
 }
 
@@ -59,6 +61,7 @@ export const ModalRoot = forwardRef<HTMLDivElement, ModalRootProps>(function Mod
     placement = 'center',
     returnFocusRef,
     role = 'dialog',
+    scrollBehavior = 'outside',
     size = 'md',
     ...props
   },
@@ -106,6 +109,7 @@ export const ModalRoot = forwardRef<HTMLDivElement, ModalRootProps>(function Mod
             aria-modal="true"
             className={['ods-modal', className].filter(Boolean).join(' ')}
             data-size={size}
+            data-scroll-behavior={scrollBehavior}
             data-slot="modal"
             ref={mergeRefs(dialogRef, ref)}
             role={role}

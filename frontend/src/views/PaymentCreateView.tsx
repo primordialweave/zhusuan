@@ -2,6 +2,7 @@ import { useCallback, useEffect, useLayoutEffect, useRef, useState, type FormEve
 import { useNavigate, useParams } from 'react-router-dom'
 import { projectApi, type Project } from '@/api/project'
 import { PaymentPlanEditor } from '@/components/project/PaymentPlanEditor'
+import { validatePaymentPlan } from '@/components/project/formValidation'
 import { ProjectPicker } from '@/components/project/ProjectPicker'
 import { createPaymentPlanItem, type PaymentPlanItem } from '@/components/project/paymentPlan'
 import {
@@ -43,6 +44,8 @@ export default function PaymentCreateView() {
   const [loadingProject, setLoadingProject] = useState(true)
   const [projectLoadFailed, setProjectLoadFailed] = useState(false)
   const [saveIssue, setSaveIssue] = useState<string | null>(null)
+  const [showValidation, setShowValidation] = useState(false)
+  const paymentErrors = showValidation ? validatePaymentPlan(paymentItems) : {}
   const [lockedProjectId, setLockedProjectId] = useState<number | null>(null)
   const paymentSaveStateRef = useRef(createPaymentPlanSaveState())
   const currentPaymentItemsRef = useRef(paymentItems)
@@ -138,8 +141,12 @@ export default function PaymentCreateView() {
       toastError('请选择项目')
       return
     }
-    if (paymentItems.length === 0 || paymentItems.some((item) => !item.amount || !item.planDate)) {
-      toastError('请完整填写收款金额和收款日期')
+    setShowValidation(true)
+    if (paymentItems.length === 0 || Object.keys(validatePaymentPlan(paymentItems)).length) {
+      toastError('请检查并填写标红的必填项')
+      requestAnimationFrame(() => {
+        document.querySelector<HTMLElement>('.payment-create-view [aria-invalid="true"]')?.focus()
+      })
       return
     }
 
@@ -222,9 +229,10 @@ export default function PaymentCreateView() {
       ) : null}
 
       <Card.Root className="project-form-card" padding="none" variant="transparent">
-        <form className="payment-form" onSubmit={handleSubmit}>
+        <form className="payment-form" noValidate onSubmit={handleSubmit}>
           <PaymentPlanEditor
             installment={isInstallment}
+            errors={paymentErrors}
             items={paymentItems}
             onItemsChange={setPaymentItems}
           />

@@ -258,6 +258,8 @@
 
 .settings-modal-body {
   display: grid;
+  grid-template-columns: minmax(0, 1fr);
+  min-width: 0;
   gap: var(--ods-space-4);
 }
 
@@ -424,6 +426,47 @@
 
 .settings-modal-body .dev-token-display {
   width: 100%;
+}
+
+.notification-detail-modal {
+  height: min(28rem, calc(100dvh - var(--ods-space-12)));
+}
+
+.notification-detail-body {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr);
+  align-content: start;
+  gap: var(--ods-space-4);
+  margin-block-end: var(--ods-space-6);
+}
+
+.notification-detail-header {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: var(--ods-space-3);
+}
+
+.notification-detail-title {
+  margin: 0;
+  color: var(--ods-color-fg-default);
+  font-size: var(--ods-font-size-xl);
+  font-weight: var(--ods-font-weight-medium);
+  line-height: var(--ods-line-height-heading);
+}
+
+.notification-detail-content,
+.notification-detail-content p {
+  margin: 0;
+  white-space: pre-wrap;
+  overflow-wrap: anywhere;
+}
+
+.notification-detail-meta {
+  margin-block-start: var(--ods-space-2);
+  color: var(--ods-color-fg-subtle);
+  font-size: var(--ods-font-size-sm);
+  overflow-wrap: anywhere;
 }
 
 .settings-modal-body .dev-security-tips {

@@ -2,11 +2,17 @@
 
 接手任何任务前先读这份文档。它只记两类东西：**当前在制品的状态**，和**已经踩过的坑**。踩到新坑就追加到第 2 节，状态变了就改第 1 节。
 
-## 1. 当前任务：珠算 1.0.0 正式发布
+## 1. 当前任务：珠算 1.0.1 修复与发布
+
+- 用户在上个会话明确选择“使用 1.0.1（推荐）”，本会话继续同一任务；已有合并/发布授权，无需重复确认版本。当前分支 `codex/macos-dmg-packages`，1.0.0 的标签和公开附件保持原样。
+- 范围：Apple Silicon / Intel DMG 与架构 ZIP；macOS Finder/Dock 图标无额外白底、中文包名“珠算”；Windows UTF-8 中文、用户目录新安装路径、不继承 Orange；令牌和通知弹层不溢出、通知详情内边距/固定高度；金额普通输入、最多两位小数、必填中文错误和红框；移除提示左粗线。
+- 已统一源版本为 1.0.1；前端598例/ESLint/build、Go race139顶层154子测试/vet/增量lint0、Python31例/actionlint通过。原生图标和两架构真实源码DMG/ZIP校验通过。ego lite已验1280×800/760×520下令牌、通知、金额必填校验及原始类型/青绿回归，最后CSS调整后的build与定向8例通过。正在提交PR/CI与三个平台正式产物校验；自有3466/9331与ego space8已关闭。最终证据写入 `docs/release-readiness-1.0.1.md`。
+
+## 1.1 珠算 1.0.0 已正式发布
 
 - 2026-11-19 用户明确授权“正式发布 1.0 版本”，按已选语义版本 1.0.0 执行，取代之前暂不合并/发布要求。分支 codex/zhusuan-migration，PR #2 合并到 main 后创建 v1.0.0，跟进三个平台完整发布。
 - 文档、版本、九张脱敏截图和全局审查修复已完成；最终检查/限制见 docs/release-readiness.md，坑见 2.7。金额保持源快照数值，真实账本未修改。
-- 发布前代码123f696的CI44501085250全通过。正式文档改动按当前head查询检查；发布工作流完成前不声称附件已公开。macOS仅ad-hoc、Windows未Authenticode，分发说明保留真实签名与原生验收边界。
+- 2026-11-19 12:39:34 UTC 已公开v1.0.0并设latest：https://github.com/primordialweave/zhusuan/releases/tag/v1.0.0 。七附件远端大小/服务端SHA256与本地一致，匿名latest update.json/SHA256SUMS和全部下载入口200验证。应用源码/标签保持c3af8fe；macOS仅ad-hoc、Windows未Authenticode。
 
 ## 1.1 历史任务：烟雨江南界面重构
 
@@ -409,3 +415,22 @@
 - macOS Recovery已成功生成并ad-hoc签名universal二进制，却在lipo校验失败：-verify_arch会把后面的全部参数视作架构名，输入文件必须放前面。改为lipo bin/zhusuan.app/Contents/MacOS/zhusuan -verify_arch arm64 x86_64；不能以打包成功日志代替架构校验通过。
 
 - Final平台构建44517508677的Windows安装smoke通过，但完整Go测试暴露POSIX权限、macOS WebKit/app archive场景误用于Windows，及日志夹具锁住TempDir清理。test_recipe_ref仅覆盖四份固定*_test.go；必须已合入main，发行Go/前端代码不替换，来源写入发行说明与manifest正文。保留WAL快照/旧库不覆盖/用户归属/回滚与native Windows profile断言；不将Unix模式位当Windows ACL验收，也不把Mac-only测试强跑Windows。
+
+- 最终发布复用成功产物：Linux来自Release44517508677完整通过job；macOS/Windows来自44520956468完整通过job（Windows完整Go测试/安装smoke通过，仅Darwin WebKit专属fixture在Windowsskip）。均同应用tag c3af8fe、同构建配方8d49977；test夹具cc1ab8e，未替换发行应用代码。后续Linux两次依赖镜像10分钟超时，未反复重做已过平台。五文件SHA256与三份平台清单重新聚合，生成manifest、上传draft核对七附件名字大小后公开，再核对公开API所有SHA256及匿名下载。来源写入Release说明和update.json正文。
+- 本地lipo对多架构verify参数与Xcode16.4工具解析不同，最终本地分别verify arm64/x86_64，archs确认两者，codesign --verify --deep --strict及plist1.0.0/新标识通过；不能把CLI参数不兼容误判成已生成fat binary缺架构。
+
+### 2.9 macOS DMG打包（2026-11-19）
+
+- DMG是手动安装主入口，包内Applications链接；必须拖出/Volumes到可写Applications后运行。1.0更新器只能解ZIP，新发布同时附两架构ZIP，resolver原有archZIP→universal→legacy顺序保留，并增加混合DMG/ZIP回归。
+- build_macos_packages.py只改私有复制bundle，fat主exe按所选arch薄化后ad-hoc重签；校验bundle标识/版本/唯一架构/签名，创建UDZO HFS+ DMG，read-only mount检查应用与Applications链接并detach。实际两包通过，ARM39.5MB/Intel40.9MB；未挂载用户盘或替换真实应用。
+- darwin:package改为DMG+ZIP，原bundle-only为package:app；CI显式调用后者再builder，避免重复生成/输出已存在失败。当前公开1.0仅append新DMG与独立清单，不覆盖旧公共产物/manifest。
+
+### 2.10 珠算 1.0.1 接续验证（2026-11-19）
+
+- 不能按聊天标题推断中断任务。原会话标题是项目类型/小天平，后续已追加 1.0.1 发布、DMG、图标/Windows路径、弹层和金额校验；`read_thread` 单个长turn输出巨大，应在工具编排内筛选用户消息、进度与尾部命令后再输出。
+- 直接从仓库根运行 frontend 的 vitest 会找不到正确配置；始终在 `frontend` 目录运行。前端 build 清空 dist，Go embed 与其串行；先编译隔离预览server，再build前端，再执行Go测试。
+- Icon Composer 仅透明fill仍可能给带留白的旧图套白/灰外层。必须用 NSWorkspace 实际渲染确认；本次采用无fill并调整图层scale，原始PNG保持不变。旧Xcode使用预编译Assets.car时，校验必须同时包含源PNG和icon.json，单独PNG哈希不能检测布局变化。
+
+- Linux旧CI连续卡在Canonical逐包超时；改为命令级临时deb822 sources（Azure→Canonical），不写/etc，继续Signed-By。APT update默认可能部分失败仍exit0，必须Error-Mode=any。先download-only再no-download安装，把网络timeout限制在dpkg之前；两次50s索引+130s下载、180s安装及kill grace总预算565s，低于job10分钟。stub6项通过不是runner实机验证。
+
+- 金额输入失焦不能直接Number(value).toFixed(2)：>=1e21会变科学记数且大整数丢精度；本次用字符串补零保持草稿数值文本。通知详情padding随内容滚动不能保证底部视觉留白，给滚动viewport外固定24px底margin。截图须等入场动画/Toast结束，不能拿过渡态当验收图。

@@ -346,6 +346,7 @@ export default function TokenManagement({ actions }: TokenManagementProps) {
             onCopyError={() => toastError('复制失败，请手动复制')}
             onCopySuccess={() => toastSuccess('令牌已复制到剪贴板')}
             size="lg"
+            wrap
           >
             {newTokenValue}
           </Snippet>

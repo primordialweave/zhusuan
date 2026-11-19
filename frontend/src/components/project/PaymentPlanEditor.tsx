@@ -5,7 +5,6 @@ import {
   Field,
   FormGrid,
   FormSection,
-  Input,
   Select,
   Surface,
   TextArea,
@@ -13,11 +12,14 @@ import {
 } from '@/design-system'
 import type { ReactNode } from 'react'
 import { createPaymentPlanItem, type PaymentPlanItem } from './paymentPlan'
+import { MoneyInput } from './MoneyInput'
+import type { PaymentPlanErrors } from './formValidation'
 
 export interface PaymentPlanEditorProps {
   className?: string
   description?: ReactNode
   installment: boolean
+  errors?: PaymentPlanErrors
   items: PaymentPlanItem[]
   onItemsChange: (items: PaymentPlanItem[]) => void
   stageOptions?: SelectOption[]
@@ -48,6 +50,7 @@ export function PaymentPlanEditor({
   className,
   description,
   installment,
+  errors = {},
   items,
   onItemsChange,
   stageOptions = defaultStageOptions,
@@ -121,23 +124,23 @@ export function PaymentPlanEditor({
               ) : null}
 
               <FormGrid columns={2}>
-                <Field.Root required>
+                <Field.Root required invalid={Boolean(errors[item.clientKey]?.amount)}>
                   <Field.Label>收款金额 (¥)</Field.Label>
-                  <Input
+                  <MoneyInput
                     autoCapitalize="off"
                     autoComplete="off"
                     autoCorrect="off"
-                    min="0"
-                    onChange={(event) => updateItem(index, { amount: event.currentTarget.value })}
+                    onValueChange={(amount) => updateItem(index, { amount })}
                     placeholder="0.00"
                     spellCheck={false}
-                    step="0.01"
-                    type="number"
                     value={item.amount}
                   />
+                  {errors[item.clientKey]?.amount ? (
+                    <Field.Error>{errors[item.clientKey]?.amount}</Field.Error>
+                  ) : null}
                 </Field.Root>
 
-                <Field.Root required>
+                <Field.Root required invalid={Boolean(errors[item.clientKey]?.planDate)}>
                   <Field.Label>收款日期</Field.Label>
                   <DatePicker
                     aria-label="收款日期"
@@ -145,9 +148,12 @@ export function PaymentPlanEditor({
                     placeholder="请选择收款日期"
                     value={item.planDate}
                   />
+                  {errors[item.clientKey]?.planDate ? (
+                    <Field.Error>{errors[item.clientKey]?.planDate}</Field.Error>
+                  ) : null}
                 </Field.Root>
 
-                <Field.Root required>
+                <Field.Root required invalid={Boolean(errors[item.clientKey]?.stage)}>
                   <Field.Label>款项阶段</Field.Label>
                   <Select
                     aria-label="款项阶段"
@@ -156,9 +162,12 @@ export function PaymentPlanEditor({
                     options={stageOptions}
                     value={item.stage}
                   />
+                  {errors[item.clientKey]?.stage ? (
+                    <Field.Error>{errors[item.clientKey]?.stage}</Field.Error>
+                  ) : null}
                 </Field.Root>
 
-                <Field.Root required>
+                <Field.Root required invalid={Boolean(errors[item.clientKey]?.method)}>
                   <Field.Label>收款方式</Field.Label>
                   <Select
                     aria-label="收款方式"
@@ -166,9 +175,12 @@ export function PaymentPlanEditor({
                     options={methodOptions}
                     value={item.method}
                   />
+                  {errors[item.clientKey]?.method ? (
+                    <Field.Error>{errors[item.clientKey]?.method}</Field.Error>
+                  ) : null}
                 </Field.Root>
 
-                <Field.Root required>
+                <Field.Root required invalid={Boolean(errors[item.clientKey]?.status)}>
                   <Field.Label>状态</Field.Label>
                   <Select
                     aria-label="状态"
@@ -176,6 +188,9 @@ export function PaymentPlanEditor({
                     options={statusOptions}
                     value={item.status === 'paid' ? 'confirmed' : item.status}
                   />
+                  {errors[item.clientKey]?.status ? (
+                    <Field.Error>{errors[item.clientKey]?.status}</Field.Error>
+                  ) : null}
                 </Field.Root>
 
                 <Field.Root className="payment-plan-editor__remark">

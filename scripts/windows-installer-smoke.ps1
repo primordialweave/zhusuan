@@ -1,62 +1,135 @@
-param([Parameter(Mandatory=$true)][string]$Installer)
+﻿param([Parameter(Mandatory=$true)][string]$Installer)
 $ErrorActionPreference = 'Stop'
-$key = 'HKLM:\Software\Microsoft\Windows\CurrentVersion\Uninstall\PrimordialWeaveZhusuan'
-$legacyKey = 'HKLM:\Software\Microsoft\Windows\CurrentVersion\Uninstall\FruitsAIOrange'
-if ((Test-Path $key) -or (Test-Path $legacyKey)) { throw 'Smoke test requires a clean CI runner without an zhusuan installation.' }
+$registration = 'Software\Microsoft\Windows\CurrentVersion\Uninstall\PrimordialWeaveZhusuan'
+$key = 'HKCU:\' + $registration
+$machineKey = 'HKLM:\' + $registration
+$legacyRegistration = 'Software\Microsoft\Windows\CurrentVersion\Uninstall\FruitsAIOrange'
+$legacyKey = 'HKCU:\' + $legacyRegistration
+$legacyMachineKey = 'HKLM:\' + $legacyRegistration
+foreach ($registrationKey in @($key, $machineKey, $legacyKey, $legacyMachineKey)) {
+    if (Test-Path $registrationKey) { throw 'Smoke test requires a clean CI runner without Orange or zhusuan registration.' }
+}
 $target = Join-Path $env:RUNNER_TEMP 'zhusuan installer smoke with spaces'
+$legacyTarget = Join-Path $env:RUNNER_TEMP 'Orange original installation'
+$machineTarget = Join-Path $env:RUNNER_TEMP 'zhusuan prior machine installation'
+$defaultTarget = Join-Path ([Environment]::GetFolderPath('LocalApplicationData')) 'PrimordialWeave\zhusuan'
+$desktop = [Environment]::GetFolderPath('Desktop')
+$startMenu = [Environment]::GetFolderPath('Programs')
+$productName = [string][char]0x73E0 + [char]0x7B97
+$shortcut = Join-Path $desktop ($productName + '.lnk')
+$startShortcut = Join-Path $startMenu ($productName + '.lnk')
+$legacyShortcut = Join-Path $desktop 'Orange.lnk'
+if ((Test-Path $defaultTarget) -or (Test-Path $legacyShortcut) -or (Test-Path $shortcut)) {
+    throw 'Smoke test requires clean owned directories and shortcuts.'
+}
 $installerPath = (Resolve-Path $Installer).Path
 function Run-Installer([string]$arguments) {
     $process = Start-Process -FilePath $installerPath -ArgumentList $arguments -PassThru -Wait
     return $process.ExitCode
 }
+function Uninstall-Owned([string]$directory, [string]$registrationKey) {
+    $uninstaller = Join-Path $directory 'uninstall.exe'
+    if (Test-Path $uninstaller) {
+        Start-Process -FilePath $uninstaller -ArgumentList '/S' -PassThru -Wait | Out-Null
+        $deadline = [DateTime]::UtcNow.AddSeconds(15)
+        while (((Test-Path $registrationKey) -or (Test-Path (Join-Path $directory 'zhusuan.exe'))) -and [DateTime]::UtcNow -lt $deadline) {
+            Start-Sleep -Milliseconds 100
+        }
+        if ((Test-Path $registrationKey) -or (Test-Path (Join-Path $directory 'zhusuan.exe'))) {
+            throw 'Uninstaller did not remove the owned executable and installation record.'
+        }
+    }
+}
+function Assert-LegacyRetained {
+    if ((Get-FileHash (Join-Path $legacyTarget 'Orange.exe') -Algorithm SHA256).Hash -ne $script:legacyHash) {
+        throw 'New installation changed the legacy Orange executable.'
+    }
+    if ((Get-FileHash (Join-Path $legacyTarget 'uninstall.exe') -Algorithm SHA256).Hash -ne $script:legacyUninstallerHash) {
+        throw 'New installation replaced the old Orange uninstaller.'
+    }
+    if (-not (Test-Path $legacyKey) -or -not (Test-Path $legacyMachineKey) -or -not (Test-Path $legacyShortcut)) {
+        throw 'New installation removed old Orange registration or shortcut.'
+    }
+}
 try {
-    if ((Run-Installer "/S /D=$target") -ne 0) { throw 'Initial silent installation failed.' }
+    # An existing Orange must not select the new application's installation path.
+    New-Item -ItemType Directory -Path $legacyTarget -Force | Out-Null
+    Set-Content -Path (Join-Path $legacyTarget 'Orange.exe') -Value 'legacy Orange executable fixture'
+    Set-Content -Path (Join-Path $legacyTarget 'uninstall.exe') -Value 'legacy Orange uninstaller fixture'
+    $script:legacyHash = (Get-FileHash (Join-Path $legacyTarget 'Orange.exe') -Algorithm SHA256).Hash
+    $script:legacyUninstallerHash = (Get-FileHash (Join-Path $legacyTarget 'uninstall.exe') -Algorithm SHA256).Hash
+    foreach ($registrationKey in @($legacyKey, $legacyMachineKey)) {
+        New-Item -Path $registrationKey -Force | Out-Null
+        New-ItemProperty -Path $registrationKey -Name DisplayName -Value 'Orange' -PropertyType String -Force | Out-Null
+        New-ItemProperty -Path $registrationKey -Name InstallLocation -Value $legacyTarget -PropertyType String -Force | Out-Null
+    }
+    $shell = New-Object -ComObject WScript.Shell
+    $oldLink = $shell.CreateShortcut($legacyShortcut)
+    $oldLink.TargetPath = Join-Path $legacyTarget 'Orange.exe'
+    $oldLink.Save()
+    if ((Run-Installer '/S') -ne 0) { throw 'Default per-user installation failed.' }
+    $defaultExe = Join-Path $defaultTarget 'zhusuan.exe'
+    if (-not (Test-Path $defaultExe)) { throw 'Installer did not use LOCALAPPDATA\PrimordialWeave\zhusuan.' }
+    if ((Get-ItemProperty $key).InstallLocation -ne $defaultTarget -or (Test-Path $machineKey)) {
+        throw 'Default installation did not remain per-user in HKCU.'
+    }
+    if ((Get-ItemProperty $key).DisplayName -ne $productName) { throw 'Chinese product name was decoded incorrectly.' }
+    foreach ($link in @($shortcut, $startShortcut)) {
+        if (-not (Test-Path $link)) { throw 'Chinese current-user shortcut was not created.' }
+        if ($shell.CreateShortcut($link).TargetPath -ne $defaultExe) { throw 'Shortcut target does not reference the new per-user executable.' }
+    }
+    Assert-LegacyRetained
+    if ((Run-Installer "/S /UPDATE /D=$legacyTarget") -eq 0) { throw 'Orange-only directory incorrectly accepted an automated zhusuan update.' }
+    Assert-LegacyRetained
+    Set-Content -Path (Join-Path $defaultTarget 'unrelated-data.txt') -Value 'retained user data'
+    Uninstall-Owned $defaultTarget $key
+    if (-not (Test-Path (Join-Path $defaultTarget 'unrelated-data.txt'))) { throw 'Uninstaller deleted unrelated data.' }
+    Assert-LegacyRetained
+
+    if ((Run-Installer "/S /D=$target") -ne 0) { throw 'Explicit custom per-user installation failed.' }
     $exe = Join-Path $target 'zhusuan.exe'
-    if (-not (Test-Path $exe)) { throw 'Initial installation did not write zhusuan.exe.' }
-    if ((Get-ItemProperty $key).InstallLocation -ne $target) { throw 'InstallLocation was not persisted.' }
-    if ((Run-Installer '/S') -ne 0) { throw 'Reinstallation using the saved path failed.' }
-    if ((Get-ItemProperty $key).InstallLocation -ne $target) { throw 'Reinstallation changed the install path.' }
+    if ((Get-ItemProperty $key).InstallLocation -ne $target) { throw 'Explicit path was not persisted.' }
+    if ((Run-Installer '/S') -ne 0) { throw 'Existing zhusuan path discovery failed.' }
+    if ((Get-ItemProperty $key).InstallLocation -ne $target) { throw 'Reinstallation changed the existing zhusuan path.' }
     Remove-ItemProperty -Path $key -Name InstallLocation
-    # RegistryProvider.GetItem returns a read-only key; explicitly open it for writing.
-    $installationKey = [Microsoft.Win32.Registry]::LocalMachine.OpenSubKey(
-        'Software\Microsoft\Windows\CurrentVersion\Uninstall\PrimordialWeaveZhusuan', $true)
-    if ($null -eq $installationKey) { throw 'Installation registration could not be opened for writing.' }
-    try {
-        $installationKey.DeleteValue('', $false)
-    } finally { $installationKey.Dispose() }
-    if ((Run-Installer '/S') -ne 0) { throw 'Reinstallation using the legacy DisplayIcon path failed.' }
-    if ((Get-ItemProperty $key).InstallLocation -ne $target) { throw 'Legacy installer path was not recovered.' }
-    # Simulate the original Orange identity without starting an application.
-    $legacyExe = Join-Path $target 'Orange.exe'
-    Rename-Item -Path $exe -NewName 'Orange.exe'
-    New-Item -Path $legacyKey -Force | Out-Null
-    New-ItemProperty -Path $legacyKey -Name DisplayName -Value 'Orange' -PropertyType String -Force | Out-Null
-    New-ItemProperty -Path $legacyKey -Name DisplayIcon -Value ('"' + $legacyExe + '"') -PropertyType String -Force | Out-Null
-    New-ItemProperty -Path $legacyKey -Name UninstallString -Value ('"' + (Join-Path $target 'uninstall.exe') + '"') -PropertyType String -Force | Out-Null
-    Remove-Item -Path $key -Recurse -Force
-    $legacyHash = (Get-FileHash $legacyExe -Algorithm SHA256).Hash
-    $legacyLock = [System.IO.File]::Open($legacyExe, [System.IO.FileMode]::Open, [System.IO.FileAccess]::Read, [System.IO.FileShare]::None)
-    try {
-        if ((Run-Installer '/S /UPDATE') -eq 0) { throw 'Locked legacy Orange executable incorrectly upgraded.' }
-    } finally { $legacyLock.Dispose() }
-    if ((Get-FileHash $legacyExe -Algorithm SHA256).Hash -ne $legacyHash) { throw 'Failed migration changed the legacy executable.' }
-    if (-not (Test-Path $legacyKey)) { throw 'Failed migration removed legacy installation registration.' }
-    if ((Run-Installer '/S /UPDATE') -ne 0) { throw 'Legacy Orange upgrade did not complete.' }
-    if (-not (Test-Path $exe)) { throw 'Legacy upgrade did not install zhusuan.exe.' }
-    if (Test-Path $legacyExe) { throw 'Legacy upgrade left two product executables.' }
-    if (Test-Path $legacyKey) { throw 'Legacy upgrade left duplicate uninstall registration.' }
-    if ((Get-ItemProperty $key).InstallLocation -ne $target) { throw 'Legacy upgrade moved the custom install directory.' }
+    $installationKey = [Microsoft.Win32.Registry]::CurrentUser.OpenSubKey($registration, $true)
+    if ($null -eq $installationKey) { throw 'User registration could not be opened for writing.' }
+    try { $installationKey.DeleteValue('', $false) } finally { $installationKey.Dispose() }
+    if ((Run-Installer '/S') -ne 0) { throw 'Existing zhusuan DisplayIcon fallback failed.' }
+    if ((Get-ItemProperty $key).InstallLocation -ne $target) { throw 'DisplayIcon recovery changed the zhusuan path.' }
     $before = (Get-FileHash $exe -Algorithm SHA256).Hash
     $lock = [System.IO.File]::Open($exe, [System.IO.FileMode]::Open, [System.IO.FileAccess]::Read, [System.IO.FileShare]::None)
     try {
-        if ((Run-Installer "/S /UPDATE /D=$target") -eq 0) { throw 'Installer incorrectly reported success for a locked executable.' }
+        if ((Run-Installer "/S /UPDATE /D=$target") -eq 0) { throw 'Locked zhusuan incorrectly reported successful update.' }
     } finally { $lock.Dispose() }
-    if ((Get-FileHash $exe -Algorithm SHA256).Hash -ne $before) { throw 'Failed update changed the existing executable.' }
-    if ((Run-Installer "/S /UPDATE /D=$target") -ne 0) { throw 'Silent update failed after the executable was unlocked.' }
-    if (Test-Path "$exe.update-backup") { throw 'Successful update left a backup executable behind.' }
-    Write-Host 'Passed: custom directory, legacy Orange identity migration, locked-file rollback, new registration and silent update.'
+    if ((Get-FileHash $exe -Algorithm SHA256).Hash -ne $before) { throw 'Failed update changed existing zhusuan.' }
+    if ((Run-Installer "/S /UPDATE /D=$target") -ne 0) { throw 'User-directory update failed after unlocking.' }
+    if (Test-Path "$exe.update-backup") { throw 'Successful update left an executable backup.' }
+    Assert-LegacyRetained
+
+    # Simulate the new 1.0 machine identity in a private writable CI location.
+    New-Item -ItemType Directory -Path $machineTarget -Force | Out-Null
+    Copy-Item $exe (Join-Path $machineTarget 'zhusuan.exe')
+    New-Item -Path $machineKey -Force | Out-Null
+    New-ItemProperty -Path $machineKey -Name DisplayName -Value $productName -PropertyType String -Force | Out-Null
+    New-ItemProperty -Path $machineKey -Name DisplayVersion -Value '1.0.0' -PropertyType String -Force | Out-Null
+    New-ItemProperty -Path $machineKey -Name InstallLocation -Value $machineTarget -PropertyType String -Force | Out-Null
+    Uninstall-Owned $target $key
+    if ((Run-Installer "/S /UPDATE /D=$machineTarget") -ne 0) { throw 'Existing machine zhusuan update failed in the elevated CI context.' }
+    if ((Get-ItemProperty $machineKey).InstallLocation -ne $machineTarget -or (Test-Path $key)) {
+        throw 'Machine update changed path or wrote a duplicate user registration.'
+    }
+    Assert-LegacyRetained
+    Uninstall-Owned $machineTarget $machineKey
+    Write-Host 'Passed: new LOCALAPPDATA default, retained Orange installation, Unicode user shortcuts/HKCU, existing zhusuan path fallback, locked rollback, per-user update and prior machine update.'
 } finally {
-    if (Test-Path $legacyKey) { Remove-Item -Path $legacyKey -Recurse -Force }
-    $uninstaller = Join-Path $target 'uninstall.exe'
-    if (Test-Path $uninstaller) { Start-Process -FilePath $uninstaller -ArgumentList '/S' -Wait }
+    foreach ($registrationKey in @($key, $machineKey, $legacyKey, $legacyMachineKey)) {
+        if (Test-Path $registrationKey) { Remove-Item -Path $registrationKey -Recurse -Force }
+    }
+    foreach ($link in @($shortcut, $startShortcut, $legacyShortcut)) {
+        if (Test-Path $link) { Remove-Item -Path $link -Force }
+    }
+    foreach ($directory in @($target, $legacyTarget, $machineTarget, $defaultTarget)) {
+        if (Test-Path $directory) { Remove-Item -Path $directory -Recurse -Force }
+    }
 }

@@ -2,7 +2,7 @@
 
 仓库已从 FruitsAI/Orange 转移并改名为 [primordialweave/zhusuan](https://github.com/primordialweave/zhusuan)。提交、分支、标签、Issues、PR 与历史 Releases 保留在同一个仓库。旧地址由 GitHub 重定向；不要重新创建 FruitsAI/Orange，否则会破坏该重定向。
 
-当前准备版本为 **1.0.0**，尚未发布。已有旧安装包不会因仓库改名而自动获得迁移代码；以下行为从包含这些实现的珠算版本开始生效。
+**1.0.0** 已发布；本次 **1.0.1** 调整 Windows 安装为新的用户目录，并保留旧 Orange 安装。旧安装包不会因仓库改名而自动获得这些实现；以下安装规则从 1.0.1 起生效。
 
 ## 新名称与标识
 
@@ -10,7 +10,7 @@
 | --- | --- |
 | 产品显示名 | 珠算 |
 | 英文名、Go 模块 | zhusuan / github.com/primordialweave/zhusuan |
-| 应用文件 | zhusuan.app / zhusuan.exe |
+| 应用文件 | 珠算.app / zhusuan.exe |
 | Apple 应用标识 | org.primordialweave.zhusuan |
 | Windows 卸载记录 | PrimordialWeaveZhusuan |
 | 系统凭据服务 | org.primordialweave.zhusuan.login |
@@ -34,7 +34,7 @@
 
 未设置、空或仅空白 DB_PATH 均按默认路径处理，仍会尝试旧库迁移。非空自定义 DB_PATH 保持原值；需要继续使用旧自定义库时保留该配置。MySQL/PostgreSQL 连接继续使用配置的云端库，不复制成 SQLite。
 
-Windows 安装器只接管安装文件、目录与注册记录。安装完成后，**第一次以原 Windows 用户启动珠算才迁移用户数据库**；安装器不直接复制账本，也不在完成页自动启动应用。新旧版本不要同时进行账本写入；迁移后继续使用珠算，旧库作为备份保留。
+Windows 1.0.1 首次安装使用新的用户程序目录 `%LOCALAPPDATA%\PrimordialWeave\zhusuan`，不会查找或继承 Orange 安装目录，也不删除 Orange 程序、卸载记录或快捷方式。程序安装目录与 `%APPDATA%\primordialweave\zhusuan` 账本目录是不同位置。安装完成后，**第一次以原 Windows 用户启动珠算才迁移用户数据库**；安装器不直接复制账本，也不在完成页自动启动应用。新旧版本不要同时进行账本写入；迁移后继续使用珠算，旧库作为备份保留。
 
 迁移发生错误时先检查日志与源库是否可读，保留新旧目录，不通过删库、改名或反复安装来试错。不要手动将仍在使用的 SQLite 单个 db 文件复制到新目录而遗漏 WAL。正式升级前可额外保存一份一致数据库备份。
 
@@ -58,7 +58,11 @@ Windows 在旧 Orange.exe 关闭后，检查同用户旧进程与 LevelDB LOCK�
 
 ## 安装与应用内更新
 
-Windows 安装器兼容新 PrimordialWeaveZhusuan 和旧 FruitsAIOrange 的 HKLM/HKCU、64/32 位记录，并识别 Orange.exe。可继承带空格的自定义安装位置；替换前备份主程序与卸载器，成功后清理旧文件、记录和快捷方式。失败执行回滚，数据库、凭据和无关文件保留，不先运行旧卸载器。
+Windows 1.0.1 的普通首次安装是当前用户安装，无需管理员权限，程序默认位于 `%LOCALAPPDATA%\PrimordialWeave\zhusuan`，新卸载记录位于 HKCU `PrimordialWeaveZhusuan`，开始菜单和桌面快捷方式使用“珠算”。旧 Orange.exe、FruitsAIOrange 注册记录和 Orange 快捷方式保留；旧数据在珠算启动阶段迁入新数据目录，而不是由安装器接管旧程序目录。
+
+重装只复用已有珠算的新注册记录与 zhusuan.exe，可识别 HKCU/HKLM 64/32 位路径以及 InstallLocation/DisplayIcon/UninstallString 记录；不会将 Orange.exe 当作已有珠算。显式 `/D=` 的现有珠算自动更新仍优先，若目标目录包含旧 Orange.exe 则拒绝覆盖，避免改写它的卸载器。
+
+已经安装在 Program Files 或其他机器目录的珠算 1.0，继续按原 HKLM 安装记录更新，并需要管理员权限；更新完成后仍由原用户态 helper 启动新程序。新的用户目录安装走原用户上下文，避免不必要的 UAC 或写入另一管理员的 HKCU。安装失败执行珠算文件回滚，数据库、凭据和无关文件保留。
 
 新包及更新 manifest 使用 zhusuan-vX.Y.Z-*，历史 Orange Release 资产不重写。旧 GITHUB_REPO 配置规范化到新仓库。没有自动更新器的旧版先手动安装珠算，后续版本可在关于页检测、下载、校验、安装并请求重启。
 

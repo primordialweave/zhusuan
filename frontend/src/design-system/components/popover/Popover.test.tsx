@@ -1,7 +1,7 @@
 import type { ReactNode } from 'react'
 import { render, screen, waitFor } from '@testing-library/react'
 import userEvent from '@testing-library/user-event'
-import { describe, expect, it, vi } from 'vitest'
+import { afterEach, describe, expect, it, vi } from 'vitest'
 import { Drawer } from '../drawer'
 import { Modal } from '../modal'
 import { Popover, usePopoverClose } from './Popover'
@@ -16,6 +16,94 @@ function ClosePopoverButton() {
 }
 
 describe('Popover', () => {
+  afterEach(() => {
+    vi.restoreAllMocks()
+    vi.unstubAllGlobals()
+  })
+
+  it('clamps the final untransformed layout box at the lower-right viewport edge', () => {
+    vi.stubGlobal('innerWidth', 1024)
+    vi.stubGlobal('innerHeight', 768)
+    vi.spyOn(HTMLElement.prototype, 'getBoundingClientRect').mockImplementation(function (
+      this: HTMLElement,
+    ) {
+      // The content's entrance animation makes its visible bounds smaller than its layout box.
+      return this.dataset.slot === 'popover'
+        ? new DOMRect(0, 0, 319, 338)
+        : new DOMRect(984, 714, 40, 40)
+    })
+    vi.spyOn(HTMLElement.prototype, 'offsetWidth', 'get').mockImplementation(function (
+      this: HTMLElement,
+    ) {
+      return this.dataset.slot === 'popover' ? 340 : 40
+    })
+    vi.spyOn(HTMLElement.prototype, 'offsetHeight', 'get').mockImplementation(function (
+      this: HTMLElement,
+    ) {
+      return this.dataset.slot === 'popover' ? 360 : 40
+    })
+    render(
+      <Popover.Root defaultOpen placement="top-end">
+        <Popover.Trigger>
+          <button type="button">最近通知</button>
+        </Popover.Trigger>
+        <Popover.Content aria-label="公开测试通知">通知内容</Popover.Content>
+      </Popover.Root>,
+    )
+    const popover = screen.getByRole('dialog', { name: '公开测试通知' })
+    expect(popover).toHaveStyle({ left: '676px', top: '346px' })
+    expect(popover).toHaveAttribute('data-side', 'top')
+    expect(popover).toHaveAttribute('data-align', 'end')
+    expect(popover.style.getPropertyValue('--popover-viewport-width')).toBe('1008px')
+    expect(popover.style.getPropertyValue('--popover-viewport-height')).toBe('752px')
+  })
+
+  it('constrains a narrow visual viewport and recomputes after it moves', () => {
+    const viewport = Object.assign(new EventTarget(), {
+      width: 320,
+      height: 240,
+      offsetLeft: 100,
+      offsetTop: 60,
+    })
+    vi.stubGlobal('visualViewport', viewport)
+    vi.spyOn(HTMLElement.prototype, 'getBoundingClientRect').mockImplementation(function (
+      this: HTMLElement,
+    ) {
+      return this.dataset.slot === 'popover'
+        ? new DOMRect(0, 0, 300, 230)
+        : new DOMRect(390, 260, 30, 30)
+    })
+    vi.spyOn(HTMLElement.prototype, 'offsetWidth', 'get').mockImplementation(function (
+      this: HTMLElement,
+    ) {
+      return this.dataset.slot === 'popover'
+        ? Math.min(340, Number.parseFloat(this.style.getPropertyValue('--popover-viewport-width')))
+        : 30
+    })
+    vi.spyOn(HTMLElement.prototype, 'offsetHeight', 'get').mockImplementation(function (
+      this: HTMLElement,
+    ) {
+      return this.dataset.slot === 'popover'
+        ? Math.min(360, Number.parseFloat(this.style.getPropertyValue('--popover-viewport-height')))
+        : 30
+    })
+    render(
+      <Popover.Root defaultOpen placement="top-end">
+        <Popover.Trigger>
+          <button type="button">最近通知</button>
+        </Popover.Trigger>
+        <Popover.Content aria-label="窄窗口通知">通知内容</Popover.Content>
+      </Popover.Root>,
+    )
+    const popover = screen.getByRole('dialog', { name: '窄窗口通知' })
+    expect(popover).toHaveStyle({ left: '108px', top: '68px' })
+    expect(popover.style.getPropertyValue('--popover-viewport-width')).toBe('304px')
+    expect(popover.style.getPropertyValue('--popover-viewport-height')).toBe('224px')
+    viewport.offsetLeft = 140
+    viewport.dispatchEvent(new Event('scroll'))
+    expect(popover).toHaveStyle({ left: '148px', top: '68px' })
+  })
+
   it('connects trigger and content semantics, then closes through its context action', async () => {
     const onOpenChange = vi.fn()
     const onTriggerClick = vi.fn()

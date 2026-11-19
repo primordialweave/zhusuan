@@ -49,10 +49,10 @@ func detectTarget(platform, executable string) (installTarget, error) {
 			}
 		}
 		if target.path == "" {
-			return target, errors.New("请将 zhusuan.app 安装后再更新")
+			return target, errors.New("请安装珠算后再更新")
 		}
 		if strings.HasPrefix(target.path, "/Volumes/") || strings.Contains(target.path, "/AppTranslocation/") {
-			return target, errors.New("请将 zhusuan.app 移到应用程序文件夹后再更新")
+			return target, errors.New("请将珠算移到应用程序文件夹后再更新")
 		}
 	case "linux":
 		return detectLinuxTarget(executable)

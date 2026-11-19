@@ -18,17 +18,6 @@
   overflow: hidden;
 }
 
-/* Ember bar: the tone's signal, echoing the hero eyebrow pulse. */
-.ods-alert::before {
-  position: absolute;
-  inset-block: var(--ods-space-3);
-  inset-inline-start: 0;
-  width: 3px;
-  border-radius: var(--ods-radius-pill);
-  background: var(--ods-alert-color);
-  content: '';
-}
-
 .ods-alert[data-tone='success'] {
   --ods-alert-color: var(--ods-color-status-success);
   --ods-alert-tint: var(--ods-color-status-success-soft);

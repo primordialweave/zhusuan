@@ -54,7 +54,7 @@ async function fillPayment(
   amount: string,
 ) {
   const group = screen.getByRole('group', { name: `第 ${index} 期收款` })
-  await user.type(within(group).getByRole('spinbutton', { name: /收款金额/ }), amount)
+  await user.type(within(group).getByRole('textbox', { name: /收款金额/ }), amount)
   await user.click(within(group).getByRole('button', { name: '收款日期' }))
   await user.click(
     document.querySelector<HTMLButtonElement>(
@@ -93,11 +93,11 @@ describe('PaymentCreateView design system migration', () => {
     )
     await screen.findByRole('alert')
     expect(screen.getByRole('button', { name: '确认保存' })).toBeDisabled()
-    const amount = screen.getByRole('spinbutton', { name: /收款金额/ })
+    const amount = screen.getByRole('textbox', { name: /收款金额/ })
     await user.type(amount, '1234')
     await user.click(screen.getByRole('button', { name: '重试' }))
     await screen.findByRole('button', { name: '添加分期' })
-    expect(screen.getByRole('spinbutton', { name: /收款金额/ })).toHaveValue(1234)
+    expect(screen.getByRole('textbox', { name: /收款金额/ })).toHaveValue('1234.00')
     expect(screen.getByRole('button', { name: '确认保存' })).toBeEnabled()
     expect(projectApi.get).toHaveBeenCalledTimes(2)
   })
@@ -162,14 +162,14 @@ describe('PaymentCreateView design system migration', () => {
     await fillPayment(user, 1, '30000')
     await user.click(screen.getByRole('button', { name: '确认保存' }))
     await waitFor(() => expect(paymentApi.create).toHaveBeenCalledOnce())
-    const amount = screen.getByRole('spinbutton', { name: /收款金额/ })
+    const amount = screen.getByRole('textbox', { name: /收款金额/ })
     await user.clear(amount)
     await user.type(amount, '40000')
     await act(async () => {
       finish({ data: { data: { id: 7 } } } as never)
     })
     expect(await screen.findByRole('alert')).toHaveTextContent('新修改尚未保存')
-    expect(screen.getByRole('spinbutton', { name: /收款金额/ })).toHaveValue(40000)
+    expect(screen.getByRole('textbox', { name: /收款金额/ })).toHaveValue('40000')
     await user.click(screen.getByRole('button', { name: '确认保存' }))
     await screen.findByRole('heading', { name: '项目详情' })
     expect(paymentApi.create).toHaveBeenCalledOnce()

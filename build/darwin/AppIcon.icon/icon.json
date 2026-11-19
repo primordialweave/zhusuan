@@ -1,0 +1,34 @@
+{
+  "fill": "none",
+  "groups": [
+    {
+      "name": "Artwork",
+      "blur-material": null,
+      "layers": [
+        {
+          "name": "Artwork",
+          "image-name": "Artwork.png",
+          "glass": false,
+          "position": {
+            "scale": 1.18,
+            "translation-in-points": [0, 0]
+          }
+        }
+      ],
+      "shadow": {
+        "kind": "neutral",
+        "opacity": 0
+      },
+      "specular": false,
+      "translucency": {
+        "enabled": false,
+        "value": 0
+      }
+    }
+  ],
+  "supported-platforms": {
+    "squares": [
+      "macOS"
+    ]
+  }
+}

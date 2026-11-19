@@ -21,12 +21,23 @@ export default function NotificationDetailModal({
   const notificationType = typeConfig(notification?.type)
 
   return (
-    <Modal.Root className="notification-detail-modal" onClose={onClose} open={open} size="md">
+    <Modal.Root
+      className="notification-detail-modal"
+      onClose={onClose}
+      open={open}
+      scrollBehavior="inside"
+      size="md"
+    >
       <Modal.Header>通知详情</Modal.Header>
       <Modal.Close label="关闭通知详情" />
       {notification ? (
-        <Modal.Body>
-          <div className="notification-detail-header mb-md flex items-center gap-md">
+        <Modal.Body
+          aria-label="通知内容"
+          className="notification-detail-body"
+          role="region"
+          tabIndex={0}
+        >
+          <div className="notification-detail-header">
             <Chip size="sm" tone={notificationType.tone}>
               {notificationType.label}
             </Chip>
@@ -34,11 +45,11 @@ export default function NotificationDetailModal({
               {notification.is_global === 1 ? '全员通知' : '私信通知'}
             </span>
           </div>
-          <h4 className="text-xl font-medium mb-md">{notification.title}</h4>
-          <div className="content-wrapper mb-lg">
+          <h3 className="notification-detail-title">{notification.title}</h3>
+          <div className="notification-detail-content">
             <p className="text-secondary whitespace-pre-wrap">{notification.content}</p>
           </div>
-          <div className="text-sm text-tertiary">
+          <div className="notification-detail-meta">
             {new Date(notification.create_time).toLocaleString()}
             {notification.sender ? ` · 发送者: ${notification.sender.name}` : ''}
           </div>

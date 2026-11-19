@@ -3,6 +3,8 @@ import { useNavigate, useParams } from 'react-router-dom'
 import { dictionaryApi } from '@/api/dictionary'
 import { projectApi, type Payment, type ProjectRequest } from '@/api/project'
 import { PaymentPlanEditor } from '@/components/project/PaymentPlanEditor'
+import { MoneyInput } from '@/components/project/MoneyInput'
+import { validateProject, validatePaymentPlan } from '@/components/project/formValidation'
 import { createPaymentPlanItem, type PaymentPlanItem } from '@/components/project/paymentPlan'
 import {
   createPaymentPlanSaveState,
@@ -22,7 +24,6 @@ import {
   FormSection,
   IconButton,
   Input,
-  NumberInput,
   PageHeader,
   ProgressBar,
   Select,
@@ -99,6 +100,10 @@ export default function ProjectCreateView() {
   const toastError = useToastStore((state) => state.error)
   const toastSuccess = useToastStore((state) => state.success)
   const [form, setForm] = useState<ProjectRequest>(emptyForm)
+  const [amountText, setAmountText] = useState('')
+  const [validationScope, setValidationScope] = useState<string | null>(null)
+  const showValidation = validationScope === (id ?? 'new')
+  const fieldErrors = showValidation ? validateProject(form, amountText) : {}
   const [projectTypes, setProjectTypes] = useState<SelectOption[]>(defaultProjectTypeOptions)
   const [paymentItems, setPaymentItems] = useState<PaymentPlanItem[]>([createPaymentPlanItem()])
   const paymentSaveStateRef = useRef(createPaymentPlanSaveState())
@@ -120,6 +125,7 @@ export default function ProjectCreateView() {
     form.type && !projectTypes.some((option) => option.value === form.type)
       ? [...projectTypes, { label: form.type, value: form.type }]
       : projectTypes
+  const paymentErrors = showValidation ? validatePaymentPlan(paymentItems) : {}
   const plannedAmount = paymentItems.reduce((sum, item) => sum + (Number(item.amount) || 0), 0)
   const requiredFields = [
     form.name.trim(),
@@ -212,6 +218,7 @@ export default function ProjectCreateView() {
           return
         }
         const project = projectRes.data.data
+        setAmountText(project.total_amount.toFixed(2))
         setForm({
           company: project.company,
           contract_date: project.contract_date || '',
@@ -274,20 +281,14 @@ export default function ProjectCreateView() {
   const handleSubmit = async (event: FormEvent<HTMLFormElement>) => {
     event.preventDefault()
     if (saving || saveRequestRef.current || (isEdit && loadedProjectId !== projectId)) return
-    if (!form.type) {
-      toastError('请选择项目类型')
-      return
-    }
-    if (!form.start_date || !form.end_date) {
-      toastError('请选择项目开始和截止日期')
-      return
-    }
-    if (!form.contract_date) {
-      toastError('请选择合同日期')
-      return
-    }
-    if (paymentItems.some((item) => !item.amount || !item.planDate)) {
-      toastError('请完整填写收款金额和收款日期')
+    const errors = validateProject(form, amountText)
+    const planErrors = validatePaymentPlan(paymentItems)
+    setValidationScope(id ?? 'new')
+    if (Object.keys(errors).length || Object.keys(planErrors).length || !paymentItems.length) {
+      toastError('请检查并填写标红的必填项')
+      requestAnimationFrame(() => {
+        document.querySelector<HTMLElement>('.project-form [aria-invalid="true"]')?.focus()
+      })
       return
     }
 
@@ -373,10 +374,15 @@ export default function ProjectCreateView() {
 
       <div className="project-compose-layout">
         <Card.Root className="project-form-card" padding="none" variant="transparent">
-          <form aria-label="项目编辑表单" className="project-form" onSubmit={handleSubmit}>
+          <form
+            aria-label="项目编辑表单"
+            className="project-form"
+            noValidate
+            onSubmit={handleSubmit}
+          >
             <FormSection className="project-form-section" title="基本信息">
               <FormGrid columns={2}>
-                <Field.Root required>
+                <Field.Root required invalid={Boolean(fieldErrors.name)}>
                   <Field.Label>项目名称</Field.Label>
                   <Input
                     autoCapitalize="off"
@@ -388,9 +394,10 @@ export default function ProjectCreateView() {
                     type="text"
                     value={form.name}
                   />
+                  {fieldErrors.name ? <Field.Error>{fieldErrors.name}</Field.Error> : null}
                 </Field.Root>
 
-                <Field.Root required>
+                <Field.Root required invalid={Boolean(fieldErrors.company)}>
                   <Field.Label>客户名称</Field.Label>
                   <Input
                     autoCapitalize="off"
@@ -402,9 +409,10 @@ export default function ProjectCreateView() {
                     type="text"
                     value={form.company}
                   />
+                  {fieldErrors.company ? <Field.Error>{fieldErrors.company}</Field.Error> : null}
                 </Field.Root>
 
-                <Field.Root required>
+                <Field.Root required invalid={Boolean(fieldErrors.type)}>
                   <Field.Label>项目类型</Field.Label>
                   <Select
                     aria-label="项目类型"
@@ -413,9 +421,10 @@ export default function ProjectCreateView() {
                     placeholder="请选择项目类型"
                     value={form.type}
                   />
+                  {fieldErrors.type ? <Field.Error>{fieldErrors.type}</Field.Error> : null}
                 </Field.Root>
 
-                <Field.Root required>
+                <Field.Root required invalid={Boolean(fieldErrors.status)}>
                   <Field.Label>项目状态</Field.Label>
                   <Select
                     aria-label="项目状态"
@@ -423,9 +432,10 @@ export default function ProjectCreateView() {
                     options={projectStatusOptions}
                     value={form.status}
                   />
+                  {fieldErrors.status ? <Field.Error>{fieldErrors.status}</Field.Error> : null}
                 </Field.Root>
 
-                <Field.Root required>
+                <Field.Root required invalid={Boolean(fieldErrors.start_date)}>
                   <Field.Label>开始日期</Field.Label>
                   <DatePicker
                     aria-label="开始日期"
@@ -433,9 +443,12 @@ export default function ProjectCreateView() {
                     placeholder="请选择开始日期"
                     value={form.start_date}
                   />
+                  {fieldErrors.start_date ? (
+                    <Field.Error>{fieldErrors.start_date}</Field.Error>
+                  ) : null}
                 </Field.Root>
 
-                <Field.Root required>
+                <Field.Root required invalid={Boolean(fieldErrors.end_date)}>
                   <Field.Label>截止日期</Field.Label>
                   <DatePicker
                     aria-label="截止日期"
@@ -444,23 +457,29 @@ export default function ProjectCreateView() {
                     placeholder="请选择截止日期"
                     value={form.end_date}
                   />
+                  {fieldErrors.end_date ? <Field.Error>{fieldErrors.end_date}</Field.Error> : null}
                 </Field.Root>
               </FormGrid>
             </FormSection>
 
             <FormSection className="project-form-section" title="合同信息">
               <FormGrid columns={2}>
-                <Field.Root required>
+                <Field.Root required invalid={Boolean(fieldErrors.total_amount)}>
                   <Field.Label>合同总金额 (¥)</Field.Label>
-                  <NumberInput
-                    min={0}
-                    onValueChange={(value) => updateForm({ total_amount: value })}
-                    step={0.01}
-                    value={form.total_amount}
+                  <MoneyInput
+                    onValueChange={(value) => {
+                      setAmountText(value)
+                      updateForm({ total_amount: Number(value) || 0 })
+                    }}
+                    placeholder="0.00"
+                    value={amountText}
                   />
+                  {fieldErrors.total_amount ? (
+                    <Field.Error>{fieldErrors.total_amount}</Field.Error>
+                  ) : null}
                 </Field.Root>
 
-                <Field.Root required>
+                <Field.Root required invalid={Boolean(fieldErrors.contract_date)}>
                   <Field.Label>合同日期</Field.Label>
                   <DatePicker
                     aria-label="合同日期"
@@ -468,6 +487,9 @@ export default function ProjectCreateView() {
                     placeholder="请选择合同日期"
                     value={form.contract_date || ''}
                   />
+                  {fieldErrors.contract_date ? (
+                    <Field.Error>{fieldErrors.contract_date}</Field.Error>
+                  ) : null}
                 </Field.Root>
 
                 <Field.Root>
@@ -484,7 +506,7 @@ export default function ProjectCreateView() {
                   />
                 </Field.Root>
 
-                <Field.Root required>
+                <Field.Root required invalid={Boolean(fieldErrors.payment_method)}>
                   <Field.Label>付款模式</Field.Label>
                   <Select
                     aria-label="付款模式"
@@ -495,6 +517,9 @@ export default function ProjectCreateView() {
                     options={paymentMethodOptions}
                     value={form.payment_method}
                   />
+                  {fieldErrors.payment_method ? (
+                    <Field.Error>{fieldErrors.payment_method}</Field.Error>
+                  ) : null}
                 </Field.Root>
               </FormGrid>
             </FormSection>
@@ -502,6 +527,7 @@ export default function ProjectCreateView() {
             <PaymentPlanEditor
               className="project-form-section"
               installment={isInstallment}
+              errors={paymentErrors}
               items={paymentItems}
               onItemsChange={setPaymentItems}
               stageOptions={isInstallment ? installmentStageOptions : oneTimeStageOptions}
