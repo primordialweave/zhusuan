@@ -27,6 +27,32 @@ function Run-Installer([string]$arguments) {
     $process = Start-Process -FilePath $installerPath -ArgumentList $arguments -PassThru -Wait
     return $process.ExitCode
 }
+Add-Type -TypeDefinition @'
+using System.Runtime.InteropServices;
+using System.Text;
+public static class ZhusuanSmokePaths {
+    [DllImport("kernel32.dll", CharSet = CharSet.Unicode, ExactSpelling = true, SetLastError = true)]
+    public static extern uint GetLongPathNameW(string path, StringBuilder result, uint size);
+}
+'@
+function Resolve-ExecutablePath([string]$rawPath) {
+    if ([string]::IsNullOrWhiteSpace($rawPath)) { throw 'Shortcut executable path is empty.' }
+    $expanded = [Environment]::ExpandEnvironmentVariables($rawPath)
+    $hasRoot = $expanded -match '^[A-Za-z]:[\\/]' -or $expanded.StartsWith('\\')
+    if ($expanded -match '%[^%]+%' -or -not $hasRoot) {
+        throw "Shortcut executable path is unresolved or relative: '$rawPath'."
+    }
+    $fullPath = [System.IO.Path]::GetFullPath($expanded)
+    if (-not (Test-Path -LiteralPath $fullPath -PathType Leaf)) {
+        throw "Shortcut executable does not exist: '$fullPath'."
+    }
+    $buffer = New-Object System.Text.StringBuilder 32768
+    $length = [ZhusuanSmokePaths]::GetLongPathNameW($fullPath, $buffer, $buffer.Capacity)
+    if ($length -eq 0 -or $length -ge $buffer.Capacity) {
+        throw "Unable to resolve long executable path '$fullPath' (Win32 error $([Runtime.InteropServices.Marshal]::GetLastWin32Error()))."
+    }
+    return $buffer.ToString()
+}
 function Uninstall-Owned([string]$directory, [string]$registrationKey) {
     $uninstaller = Join-Path $directory 'uninstall.exe'
     if (Test-Path $uninstaller) {
@@ -76,7 +102,17 @@ try {
     if ((Get-ItemProperty $key).DisplayName -ne $productName) { throw 'Chinese product name was decoded incorrectly.' }
     foreach ($link in @($shortcut, $startShortcut)) {
         if (-not (Test-Path $link)) { throw 'Chinese current-user shortcut was not created.' }
-        if ($shell.CreateShortcut($link).TargetPath -ne $defaultExe) { throw 'Shortcut target does not reference the new per-user executable.' }
+        $rawTarget = $shell.CreateShortcut($link).TargetPath
+        Write-Host "Shortcut '$link': raw='$rawTarget'; expected='$defaultExe'."
+        $normalizedTarget = Resolve-ExecutablePath $rawTarget
+        $normalizedExpected = Resolve-ExecutablePath $defaultExe
+        Write-Host "Shortcut '$link': normalized='$normalizedTarget'; normalizedExpected='$normalizedExpected'."
+        if (-not [string]::Equals($normalizedTarget, $normalizedExpected, [StringComparison]::OrdinalIgnoreCase)) {
+            throw 'Shortcut target does not reference the new per-user executable.'
+        }
+        if ((Get-FileHash -LiteralPath $normalizedTarget -Algorithm SHA256).Hash -ne (Get-FileHash -LiteralPath $normalizedExpected -Algorithm SHA256).Hash) {
+            throw 'Shortcut target content does not match the installed per-user executable.'
+        }
     }
     Assert-LegacyRetained
     if ((Run-Installer "/S /UPDATE /D=$legacyTarget") -eq 0) { throw 'Orange-only directory incorrectly accepted an automated zhusuan update.' }

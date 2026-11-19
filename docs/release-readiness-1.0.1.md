@@ -28,4 +28,8 @@ macOS 仍是 ad-hoc 签名，未做 Developer ID/公证；Windows 未做 Authent
 
 ## CI 和发布
 
-等待本次 PR/Release 工作流验证，成功后补录运行链接、标签/提交及十个正式附件的远端摘要核对结果。只有三个平台完整产物通过后才公开 latest。
+[PR #21](https://github.com/primordialweave/zhusuan/pull/21) 已合并，发行标签 `v1.0.1` 指向应用提交 `0959eb1516168a22c0cc65d44a798a0d60bcafc8`。
+
+- [PR CI 44558648378](https://github.com/primordialweave/zhusuan/actions/runs/44558648378)：frontend/backend/security 成功，Docker 因 PR 条件跳过。
+- [main CI 44560362947](https://github.com/primordialweave/zhusuan/actions/runs/44560362947)：frontend/backend/security/Docker 四项全部成功。Linux 依赖准备分别 22/32 秒完成，实际使用 Azure HTTPS，未触发 fallback。
+- [Release 44562497173](https://github.com/primordialweave/zhusuan/actions/runs/44562497173)：准备阶段成功，正在三个平台构建和原生安装 smoke。只有完整产物验证后才公开 latest，正式附件核对结果在完成后追加。
