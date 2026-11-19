@@ -43,8 +43,11 @@ README 使用九张 1440×960 的当前界面截图。先在隔离数据库副�
 | 版本/资产/manifest 工具 | 11 用例通过 |
 | actionlint / diff whitespace | 通过 |
 | 增量 golangci | 相对 origin/main 的最终检查通过，0 新增问题 |
+| 全量 golangci | 51 条历史告警；25 revive、9 errcheck、7 gofmt、4 goimports、3 goconst、2 gocyclo、1 staticcheck 简化建议 |
 | npm production dependency audit | 0 已报告漏洞；非完整供应链认证 |
 | NSIS | 使用临时假 executable/bootstrapper 编译通过，没有运行系统安装器 |
+
+全量扫描并未清零。errcheck 项主要是数据库连接关闭、日志 Sync 与鉴权缓存清理的返回值未检查；其余以命名、格式、重复常量和复杂度建议为主。本次没有新增告警，全量报告中没有 gosec/go vet/类型检查问题；这不能替代完整安全认证或目标平台验收。保留现有基线，避免把无关大范围重构混入此次发布准备。
 
 本地证据保存在 /tmp/zhusuan-release-review；最终 GitHub CI 应按 PR 的最新 head SHA 核对，旧 head 的通过记录不能替代当前提交。构建前端会删除/重建 frontend/dist，Go 的 embed 检查必须等构建结束，不能并行；本次发现该竞态后已顺序重跑。
 

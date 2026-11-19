@@ -384,3 +384,5 @@
 - 最终证据与真实平台未验边界见 docs/release-readiness.md：前端115文件591用例；Go136顶层140子测试/16包；race/vet、元数据11、actionlint、生产依赖audit0；真实安装/UAC/签名/完整更新/目标设备性能仍需平台验收。
 
 - 最终相对 main 的增量 lint 发现 UpdateForUser 的事务闭包推高 gocyclo；将合同/比例保存事务提取为独立辅助函数后，service race 和增量 lint（0新增）通过。没有关闭规则或增加忽略。
+
+- 完整 golangci 扫描仍有51历史告警（25 revive、9 errcheck、7 gofmt、4 goimports、3 goconst、2 gocyclo、1 staticcheck简化建议）；增量0不是全量0。主要关闭/cache错误返回值与样式命名基线已记入 release-readiness，未扩大无关重构。
