@@ -5,6 +5,7 @@ import (
 	"errors"
 	"os"
 	"path/filepath"
+	"runtime"
 	"sync"
 	"testing"
 
@@ -91,7 +92,12 @@ func TestPrepareAppDataCopiesWALSnapshotAndKeepsOldData(t *testing.T) {
 	if _, err = os.Stat(filepath.Join(paths.Directory, "initial-credentials.txt")); err != nil {
 		t.Fatal("credential note not inherited")
 	}
-	if info, err := os.Stat(paths.Database); err != nil || info.Mode().Perm() != 0o600 {
+	info, err := os.Stat(paths.Database)
+	if err != nil {
+		t.Fatal(err)
+	}
+	// Windows file modes do not express the POSIX owner-only permission bits.
+	if runtime.GOOS != "windows" && info.Mode().Perm() != 0o600 {
 		t.Fatal("new database has unsafe permissions")
 	}
 }

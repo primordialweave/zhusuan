@@ -5,11 +5,15 @@ import (
 	"encoding/binary"
 	"os"
 	"path/filepath"
+	"runtime"
 	"testing"
 	"unicode/utf16"
 )
 
 func TestLegacyPreferencesIncludesWALWithoutCopyingTokensOrReplacingSource(t *testing.T) {
+	if runtime.GOOS == "windows" {
+		t.Skip("Darwin WebKit SQLite fixture; Windows persistent migration uses the WebView2 profile-copy tests")
+	}
 	home := t.TempDir()
 	path := filepath.Join(home, "Library", "WebKit", "ai.fruits.orange", "WebsiteData", "LocalStorage", "localstorage.sqlite3")
 	if err := os.MkdirAll(filepath.Dir(path), 0o700); err != nil {

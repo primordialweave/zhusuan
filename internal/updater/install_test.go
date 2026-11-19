@@ -8,6 +8,7 @@ import (
 	"errors"
 	"os"
 	"path/filepath"
+	"runtime"
 	"strings"
 	"testing"
 )
@@ -52,6 +53,7 @@ func extractArchive(t *testing.T, directory string, entries ...archiveEntry) err
 }
 
 func TestAppArchiveRejectsTraversalAndSymlinkEscape(t *testing.T) {
+	absoluteLink := filepath.ToSlash(t.TempDir())
 	for _, tc := range []struct {
 		name    string
 		entries []archiveEntry
@@ -59,7 +61,7 @@ func TestAppArchiveRejectsTraversalAndSymlinkEscape(t *testing.T) {
 		{"parent traversal", []archiveEntry{{name: "zhusuan.app/../../outside", content: "bad"}}},
 		{"outside app", []archiveEntry{{name: "another.app/executable", content: "bad"}}},
 		{"backslash path", []archiveEntry{{name: `zhusuan.app\Contents\bad`, content: "bad"}}},
-		{"absolute symlink", []archiveEntry{{name: "zhusuan.app/link", content: "/tmp", mode: os.ModeSymlink | 0o777}}},
+		{"absolute symlink", []archiveEntry{{name: "zhusuan.app/link", content: absoluteLink, mode: os.ModeSymlink | 0o777}}},
 		{"relative symlink escape", []archiveEntry{{name: "zhusuan.app/link", content: "../outside", mode: os.ModeSymlink | 0o777}}},
 		{"write through earlier link", []archiveEntry{
 			{name: "zhusuan.app/link", content: "Contents", mode: os.ModeSymlink | 0o777},
@@ -109,7 +111,11 @@ func TestAppArchiveKeepsInternalFrameworkSymlinksAndExecutablePermissions(t *tes
 		t.Fatalf("framework link = %q, error %v", content, err)
 	}
 	info, err := os.Stat(filepath.Join(root, "zhusuan.app", "Contents", "MacOS", "zhusuan"))
-	if err != nil || info.Mode().Perm() != 0o755 {
+	if err != nil {
+		t.Fatal(err)
+	}
+	// Windows cannot report Unix executable bits; keep the file/link checks above on every OS.
+	if runtime.GOOS != "windows" && info.Mode().Perm() != 0o755 {
 		t.Fatalf("executable permissions = %v, error %v", info, err)
 	}
 }
