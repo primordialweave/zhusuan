@@ -209,6 +209,7 @@ func main() {
 	app := application.New(application.Options{
 		Name:        "珠算",
 		Description: "PrimordialWeave 珠算桌面应用",
+		Icon:        nativeAppIcon,
 		// Wails binding Info logs can contain saved credentials; keep native runtime logs private.
 		LogLevel: slog.LevelWarn,
 		Services: []application.Service{

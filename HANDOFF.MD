@@ -122,6 +122,10 @@
 - 代码已在 codex/zhusuan-migration，迁移提交 efde538，PR https://github.com/primordialweave/zhusuan/pull/2。当前工作版本较main含未合并历史功能；迁移PR包括这些既有实现，先作为draft审查，未发布新桌面版本。
 - main基线实际60项静态阻塞已清理：缓存失败记录但不改变业务成功、分页显式fallback、用户/收款共享同步保序/空ID保护、工具错误检查/必要注释格式。新增回归后全量Go127顶层/137子（16有测试包），race/vet0失败/跳过，针对origin/main的全部增量lint0；frontend112文件/556通过，release工具10/10、NSIS/Windows编译验证仍通过。
 - Docker新用户无默认home目录，因此明确ZHUSUAN_CONFIG_ROOT=/app/data并准备可写data/log目录；自定义DB_PATH与旧挂载兼容。此机器Docker daemon未运行，没有启动Docker或声称容器运行验收。GitHub最终CI重跑结果待补。
+- 最终CI run 44466899382 已success（head 87cc0dc）：frontend/backend/security成功，Build Docker Image按PR场景skipped。首次Linux门禁将utils包名警告归到timerange.go，trend.go行内nolint反而unused；改为仅针对既有utils包名的path+text规则后，本地Darwin/main基线与Linux包检查0，远端通过。不要对任意一个文件豁免包级警告。
+- 用户明确选择“先保留PR，暂不发布”：PR #2保持draft，未合并main、未发桌面release/镜像。代码提交顺序efde538（迁移）、d1977fa（CI旧债修复）、87cc0dc（平台稳定规则），均已推送；本条是CI完成后的本地Handoff记录，未额外推送触发新CI。
+- 2026-11-19 Dock旧图标复核：当前进程实际运行zhusuan.dev.app，bundle ICNS与build新图标一致，非旧程序/旧资源；main未显式设置Options.Icon。新增darwin专用embed ICNS并设置Icon，Wails通过NSApp.setApplicationIconImage更新运行图标，其他平台仍用本地资源。dev热重载后实际Dock区域截图显示新木质玉珠算盘及running圆点；未kill Dock/清系统缓存/改pin。CUA Dock直接绑定曾超时，改用只读screencapture区域核对，证据/tmp/zhusuan-dock-check/visual-review.md。
+- Windows安装器继承安装路径/程序/卸载key；数据库与profile在安装后首次以原用户启动时迁，记住密码首次Load迁，不是NSIS直接复制库，也没有finish自动Exec应用。修复DB_PATH空/全空白导致LookupEnv误判跳过迁移、随后创建新空库的问题；非空自定义路径保持原样。config14顶层/3子与root/main/desktop共35通过事件，race/vet、增量lint及Windows交叉编译通过。新珠算包尚未发布，旧Orange包没有这段代码。
 
 ### 业务页改造清单（第十次会话整理，做完一条勾一条）
 

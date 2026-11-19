@@ -22,6 +22,8 @@
 
 默认数据库变为 `UserConfigDir/primordialweave/zhusuan/zhusuan.db`：macOS 位于 `~/Library/Application Support`，Windows 位于 `%APPDATA%`，Linux 默认位于 `~/.config`。配置了明确 `DB_PATH` 的用户继续使用自己选择的数据库。
 
+Windows 安装器完成安装后不会自动启动新应用；第一次以原 Windows 用户启动珠算时才自动迁移旧默认库。空或仅空白的 `DB_PATH` 按未配置处理，仍会继承旧库；非空自定义路径保留。无需先卸载旧版，原库保留，已有的新默认库不会被覆盖。
+
 旧 `FruitsAI/Orange/orange.db` 通过只读 SQLite `VACUUM INTO` 获取包含 WAL 的一致快照；OS 文件锁防止并发迁移，目标文件独占创建，原库保留。初始密码说明只随旧默认数据库迁入，不混入已存在的新数据库。
 
 新的钥匙串记录不存在时，会读取原服务及旧 scope，成功后写入新服务并保留旧记录。用户明确选择忘记密码时，相关新旧记录一起删除，防止旧密码再次恢复。手动补迁移一个已记住的登录可运行：

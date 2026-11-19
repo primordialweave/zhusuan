@@ -216,11 +216,54 @@ func TestPrepareAppDataHonorsExplicitDatabaseSelection(t *testing.T) {
 		t.Fatal("explicit database selection triggered default database migration")
 	}
 	t.Setenv("ZHUSUAN_CONFIG_ROOT", root)
-	t.Setenv("DB_PATH", filepath.Join(t.TempDir(), "custom.db"))
+	t.Setenv("DB_PATH", filepath.Join(t.TempDir(), "custom with spaces.db"))
 	t.Setenv("JWT_SECRET", "migration-test-secret-32-characters-long")
 	Load()
 	if AppConfig.DBPath != os.Getenv("DB_PATH") || AppConfig.DataDir != paths.Directory {
 		t.Fatal("explicit path or new namespace lost")
+	}
+}
+
+func TestLoadMigratesLegacyDatabaseForBlankDBPath(t *testing.T) {
+	for _, tc := range []struct {
+		name, value string
+	}{
+		{"empty", ""},
+		{"spaces", "   "},
+		{"mixed whitespace", " \t\r\n"},
+	} {
+		t.Run(tc.name, func(t *testing.T) {
+			root := t.TempDir()
+			old, source := legacyDatabase(t, root)
+			t.Setenv("ZHUSUAN_CONFIG_ROOT", root)
+			t.Setenv("DB_PATH", tc.value)
+			t.Setenv("JWT_SECRET", "migration-test-secret-32-characters-long")
+			Load()
+
+			expected := filepath.Join(root, "primordialweave", "zhusuan", "zhusuan.db")
+			if AppConfig.DBPath != expected {
+				t.Fatalf("blank DB_PATH selected %q, want new default %q", AppConfig.DBPath, expected)
+			}
+			migrated, err := sql.Open(sqlite.DriverName, AppConfig.DBPath)
+			if err != nil {
+				t.Fatal(err)
+			}
+			defer func() {
+				if err := migrated.Close(); err != nil {
+					t.Error(err)
+				}
+			}()
+			var name string
+			if err := migrated.QueryRow("SELECT name FROM records").Scan(&name); err != nil || name != "committed-in-wal" {
+				t.Fatalf("legacy WAL record was not inherited: %q, %v", name, err)
+			}
+			if _, err := os.Stat(source); err != nil {
+				t.Fatal("legacy source was removed:", err)
+			}
+			if _, err := old.Exec("INSERT INTO records(name) VALUES ('old-still-writable')"); err != nil {
+				t.Fatal("legacy source was changed or locked:", err)
+			}
+		})
 	}
 }
 

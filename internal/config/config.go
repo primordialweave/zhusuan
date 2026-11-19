@@ -70,6 +70,8 @@ func Load() {
 	defaultDBPath := "zhusuan.db"
 	defaultLogPath := "zhusuan.log"
 	appDir := ""
+	configuredDBPath := os.Getenv("DB_PATH")
+	explicitDatabase := strings.TrimSpace(configuredDBPath) != ""
 
 	// 获取用户配置目录 (User Config Directory)
 	configDir, err := os.UserConfigDir()
@@ -77,7 +79,6 @@ func Load() {
 		configDir, err = override, nil
 	}
 	if err == nil {
-		_, explicitDatabase := os.LookupEnv("DB_PATH")
 		paths, migrationErr := PrepareAppData(configDir, !explicitDatabase)
 		if migrationErr != nil {
 			log.Fatalf("无法初始化珠算用户数据: %v", migrationErr)
@@ -107,11 +108,15 @@ func Load() {
 
 	// 组装配置对象，优先从环境变量读取
 	runtimeMode := getEnv("RUNTIME_MODE", "desktop")
+	selectedDBPath := defaultDBPath
+	if explicitDatabase {
+		selectedDBPath = configuredDBPath
+	}
 	AppConfig = &Config{
 		DataDir: appDir,
 		// 数据库配置
 		DBType:       getEnv("DB_TYPE", "sqlite"),
-		DBPath:       getEnv("DB_PATH", defaultDBPath),
+		DBPath:       selectedDBPath,
 		DBHost:       getEnv("DB_HOST", "localhost"),
 		DBPort:       int(getEnvInt("DB_PORT", 3306)),
 		DBUser:       getEnv("DB_USER", "root"),
