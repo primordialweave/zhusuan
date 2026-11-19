@@ -1,0 +1,94 @@
+version: "2"
+
+run:
+  timeout: 5m
+  tests: true
+
+linters:
+  default: standard
+  enable:
+    - errcheck
+    - govet
+    - ineffassign
+    - staticcheck
+    - unused
+    - misspell
+    - goconst
+    - gocyclo
+    - dupl
+    - gosec
+    - nolintlint
+    - revive
+  settings:
+    errcheck:
+      check-blank: true
+      check-type-assertions: true
+    gocyclo:
+      min-complexity: 15
+    dupl:
+      threshold: 100
+    goconst:
+      min-len: 3
+      min-occurrences: 3
+    misspell:
+      locale: US
+    gosec:
+      excludes:
+        - G104
+        - G304
+    revive:
+      confidence: 0.8
+      rules:
+        - name: blank-imports
+        - name: context-as-argument
+        - name: dot-imports
+        - name: error-return
+        - name: error-strings
+        - name: error-naming
+        - name: exported
+        - name: if-return
+        - name: increment-decrement
+        - name: var-naming
+        - name: var-declaration
+        - name: package-comments
+        - name: range
+        - name: receiver-naming
+        - name: time-naming
+        - name: unexported-return
+        - name: indent-error-flow
+        - name: errorf
+        - name: empty-block
+        - name: superfluous-else
+        - name: unused-parameter
+        - name: unreachable-code
+        - name: redefines-builtin-id
+  exclusions:
+    generated: lax
+    paths:
+      - vendor
+      - third_party
+      - '.*_test\.go'
+    rules:
+      # Keep the established internal helper package name; revive reports it on an arbitrary file.
+      - path: internal/pkg/utils/
+        linters: [revive]
+        text: 'var-naming: avoid meaningless package names'
+      - path: cmd/
+        linters: [gosec]
+        text: G104
+
+formatters:
+  enable: [gofmt, goimports]
+  settings:
+    goimports:
+      local-prefixes: [github.com/primordialweave/zhusuan]
+  exclusions:
+    generated: lax
+    paths:
+      - vendor
+      - third_party
+      - '.*_test\.go'
+
+issues:
+  max-issues-per-linter: 0
+  max-same-issues: 0

@@ -1,15 +1,15 @@
 {
 	"fixed": {
-		"file_version": "0.7.2"
+		"file_version": "1.0.0"
 	},
 	"info": {
 		"0000": {
-			"ProductVersion": "0.7.2",
-			"CompanyName": "FruitsAI",
-			"FileDescription": "FruitsAI Orange Desktop App",
-			"LegalCopyright": "(c) 2026, FruitsAI",
-			"ProductName": "Orange",
-			"Comments": "FruitsAI Orange - Intelligent Desktop Application"
+			"ProductVersion": "1.0.0",
+			"CompanyName": "PrimordialWeave",
+			"FileDescription": "PrimordialWeave 珠算 Desktop App",
+			"LegalCopyright": "(c) 2026, PrimordialWeave",
+			"ProductName": "珠算",
+			"Comments": "PrimordialWeave zhusuan - Intelligent Desktop Application"
 		}
 	}
 }

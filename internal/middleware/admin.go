@@ -1,0 +1,22 @@
+// Package middleware applies request authentication, authorization and limits.
+package middleware
+
+import (
+	"github.com/gin-gonic/gin"
+
+	"github.com/primordialweave/zhusuan/internal/constants"
+	"github.com/primordialweave/zhusuan/internal/pkg/response"
+)
+
+// AdminOnly 管理员权限校验中间件
+// 依赖 JWTAuth 已将 role 注入上下文，非 admin 一律拒绝。
+// 用于替代各 handler 内重复的 `if role != "admin"` 判断，统一鉴权入口。
+func AdminOnly() gin.HandlerFunc {
+	return func(c *gin.Context) {
+		if c.GetString("role") != constants.RoleAdmin {
+			response.Forbidden(c)
+			return
+		}
+		c.Next()
+	}
+}

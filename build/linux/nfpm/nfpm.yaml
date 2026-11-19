@@ -3,26 +3,34 @@
 #
 # The lines below are called `modelines`. See `:help modeline`
 
-name: "Orange"
+name: "zhusuan"
 arch: ${GOARCH}
 platform: "linux"
-version: "0.7.2"
+version: "1.0.0"
 section: "default"
 priority: "extra"
 maintainer: ${GIT_COMMITTER_NAME} <${GIT_COMMITTER_EMAIL}>
-description: "FruitsAI Orange Desktop App"
-vendor: "FruitsAI"
+description: "PrimordialWeave zhusuan Desktop App"
+vendor: "PrimordialWeave"
 homepage: "https://wails.io"
 license: "MIT"
 release: "1"
+replaces:
+  - orange
+conflicts:
+  - orange
 
 contents:
-  - src: "./bin/Orange"
-    dst: "/usr/local/bin/Orange"
-  - src: "./build/appicon.png"
-    dst: "/usr/share/icons/hicolor/128x128/apps/Orange.png"
-  - src: "./build/linux/Orange.desktop"
-    dst: "/usr/share/applications/Orange.desktop"
+  - src: "./bin/zhusuan"
+    dst: "/usr/local/bin/zhusuan"
+  - src: "./build/linux/icons/128/zhusuan.png"
+    dst: "/usr/share/icons/hicolor/128x128/apps/zhusuan.png"
+  - src: "./build/linux/icons/256/zhusuan.png"
+    dst: "/usr/share/icons/hicolor/256x256/apps/zhusuan.png"
+  - src: "./build/linux/icons/512/zhusuan.png"
+    dst: "/usr/share/icons/hicolor/512x512/apps/zhusuan.png"
+  - src: "./build/linux/zhusuan.desktop"
+    dst: "/usr/share/applications/zhusuan.desktop"
 
 # Default dependencies for Debian 12/Ubuntu 22.04+ with WebKit 4.1
 depends:
@@ -33,6 +41,12 @@ depends:
 overrides:
   # RPM packages for RHEL/CentOS/AlmaLinux/Rocky Linux (WebKit 4.0)
   rpm:
+    replaces:
+      - Orange
+      - orange
+    conflicts:
+      - Orange
+      - orange
     depends:
       - gtk3
       - webkit2gtk4.1

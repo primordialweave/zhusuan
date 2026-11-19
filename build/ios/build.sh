@@ -2,8 +2,8 @@
 set -e
 
 # Build configuration
-APP_NAME="Orange"
-BUNDLE_ID="ai.fruits.orange"
+APP_NAME="zhusuan"
+BUNDLE_ID="org.primordialweave.zhusuan"
 VERSION="0.0.1"
 BUILD_NUMBER="0.0.1"
 BUILD_DIR="build/ios"

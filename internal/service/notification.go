@@ -3,8 +3,8 @@ package service
 import (
 	"errors"
 
-	"github.com/FruitsAI/Orange/internal/models"
-	"github.com/FruitsAI/Orange/internal/repository"
+	"github.com/primordialweave/zhusuan/internal/models"
+	"github.com/primordialweave/zhusuan/internal/repository"
 )
 
 // NotificationService 通知与消息服务
@@ -192,4 +192,9 @@ func (s *NotificationService) ListUsers() ([]models.User, error) {
 // Get 获取单个通知详情
 func (s *NotificationService) Get(id int64) (*models.Notification, error) {
 	return s.notificationRepo.FindByID(id)
+}
+
+// GetForUser returns a notification visible to the given user.
+func (s *NotificationService) GetForUser(userID, id int64) (*models.Notification, error) {
+	return s.notificationRepo.FindByIDForUser(id, userID)
 }

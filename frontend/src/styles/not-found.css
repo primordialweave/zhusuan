@@ -1,0 +1,52 @@
+/* Not-found page composition. The page shell is scene-page.css; ODS owns the controls. */
+.not-found__numerals {
+  width: fit-content;
+  margin: 0 auto;
+  background: var(--ods-gradient-text);
+  background-clip: text;
+  color: transparent;
+  font-family: var(--ods-font-family-numeral);
+  font-size: 6.25rem;
+  font-style: italic;
+  font-weight: var(--ods-font-weight-regular);
+  letter-spacing: 0.02em;
+  line-height: 1;
+}
+
+/* The stroke sits under the first two digits, so it starts left of centre. */
+.scene-page__card[data-align='center'] .not-found__numerals + .scene-page__stroke {
+  width: 6rem;
+  height: 0.8125rem;
+  /* The numerals' line box leaves room for descenders they do not have. */
+  margin-block: calc(var(--ods-space-3) * -1) var(--ods-space-4);
+  margin-inline: calc(50% - 4.75rem) 0;
+}
+
+.not-found__actions {
+  display: flex;
+  flex-direction: column;
+  gap: var(--ods-space-4);
+  margin-block-start: var(--ods-space-8);
+}
+
+/* Icon, hairline, then the line of text. */
+.not-found__footer {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: var(--ods-space-3);
+  margin: var(--ods-space-8) 0 0;
+  color: var(--ods-color-fg-muted);
+  font-size: var(--ods-font-size-xs);
+  letter-spacing: 0.08em;
+}
+
+.not-found__footer i {
+  color: var(--ods-color-accent-text);
+  font-size: var(--ods-font-size-xl);
+}
+
+.not-found__footer span {
+  padding-inline-start: var(--ods-space-3);
+  border-inline-start: 1px solid var(--ods-color-border-strong);
+}

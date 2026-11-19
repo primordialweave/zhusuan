@@ -1,8 +1,8 @@
 package repository
 
 import (
-	"github.com/FruitsAI/Orange/internal/database"
-	"github.com/FruitsAI/Orange/internal/models"
+	"github.com/primordialweave/zhusuan/internal/database"
+	"github.com/primordialweave/zhusuan/internal/models"
 	"gorm.io/gorm"
 )
 
@@ -24,6 +24,15 @@ func (r *DictionaryRepository) List() ([]models.Dictionary, error) {
 		return nil, err
 	}
 	return dictionaries, nil
+}
+
+// FindByID 根据主键ID查找字典类型
+func (r *DictionaryRepository) FindByID(id int64) (*models.Dictionary, error) {
+	var dict models.Dictionary
+	if err := r.db.First(&dict, id).Error; err != nil {
+		return nil, err
+	}
+	return &dict, nil
 }
 
 // FindByCode 根据唯一编码查找字典类型

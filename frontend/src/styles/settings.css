@@ -1,0 +1,674 @@
+/* Settings page composition. ODS owns component paint and anatomy. */
+
+/* Categories run down a rail on the left; the open category gets the full panel height. */
+.settings-workspace {
+  display: grid;
+  min-width: 0;
+  flex: 1;
+  grid-template-columns: 10.5rem minmax(0, 1fr);
+  /* Stretch, so the rule between rail and content runs the height of the panel. */
+  align-items: stretch;
+  gap: 0 var(--ods-space-6);
+}
+
+.settings-rail {
+  position: sticky;
+  display: flex;
+  min-width: 0;
+  align-self: start;
+  flex-direction: column;
+  gap: var(--ods-space-4);
+  inset-block-start: 0;
+}
+
+.settings-content {
+  min-width: 0;
+  padding-inline-start: var(--ods-space-6);
+  border-inline-start: 1px solid var(--ods-color-border-default);
+}
+
+.settings-panel-frame {
+  min-width: 0;
+}
+
+/* Every category is a short stack: toolbars, titled cards, tables. */
+.settings-page {
+  display: flex;
+  min-width: 0;
+  flex-direction: column;
+  gap: var(--ods-space-4);
+}
+
+/* A titled card of related settings. */
+.settings-group {
+  display: flex;
+  min-width: 0;
+  flex-direction: column;
+  gap: var(--ods-space-2);
+}
+
+.settings-group__header {
+  display: flex;
+  min-width: 0;
+  min-height: var(--ods-space-6);
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--ods-space-4);
+  /* The title starts where the card's content does. */
+  padding-inline: var(--ods-space-5) var(--ods-space-1);
+}
+
+.settings-group__title,
+.settings-toolbar__title {
+  margin: 0;
+  color: var(--ods-color-fg-muted);
+  font-size: var(--ods-font-size-sm);
+  font-weight: var(--ods-font-weight-medium);
+  line-height: var(--ods-line-height-heading);
+}
+
+.settings-group__actions {
+  display: flex;
+  align-items: center;
+  gap: var(--ods-space-3);
+}
+
+.settings-group__card {
+  min-width: 0;
+  overflow: hidden;
+}
+
+.settings-group__body {
+  min-width: 0;
+  padding: var(--ods-space-4) var(--ods-space-5);
+}
+
+.settings-group__body[data-flush] {
+  padding: 0;
+}
+
+/* The card's own action row: a note may sit at the start, the button is always at the end. */
+.settings-group__footer {
+  display: flex;
+  min-width: 0;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: flex-end;
+  gap: var(--ods-space-3) var(--ods-space-4);
+  padding: var(--ods-space-2) var(--ods-space-5);
+  border-block-start: 1px solid var(--ods-color-border-default);
+  background: var(--ods-color-bg-canvas-subtle);
+}
+
+.settings-group__note,
+.settings-unsaved-indicator {
+  display: inline-flex;
+  min-width: 0;
+  align-items: center;
+  gap: var(--ods-space-2);
+  margin-inline-end: auto;
+  color: var(--ods-color-fg-muted);
+  font-size: var(--ods-font-size-sm);
+  line-height: var(--ods-line-height-body);
+}
+
+.settings-unsaved-indicator {
+  color: var(--ods-color-status-warning);
+  font-weight: var(--ods-font-weight-medium);
+}
+
+/* Label on the left, control on the right, a hairline between rows. */
+.settings-list {
+  display: flex;
+  min-width: 0;
+  flex-direction: column;
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+.settings-row {
+  display: flex;
+  min-width: 0;
+  min-height: 3.25rem;
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--ods-space-4);
+  padding: var(--ods-space-2) var(--ods-space-5);
+}
+
+.settings-row + .settings-row {
+  border-block-start: 1px solid var(--ods-color-border-default);
+}
+
+.settings-row__title {
+  color: var(--ods-color-fg-default);
+  font-size: var(--ods-font-size-sm);
+  line-height: var(--ods-line-height-heading);
+}
+
+.settings-row__value {
+  display: flex;
+  min-width: 0;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: flex-end;
+  gap: var(--ods-space-2);
+  color: var(--ods-color-fg-muted);
+  font-size: var(--ods-font-size-sm);
+}
+
+/* A page that is a list opens with one line: what it is or how to find things on the left,
+   the main action on the right. */
+.settings-toolbar {
+  display: flex;
+  min-width: 0;
+  min-height: var(--ods-control-height-md);
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--ods-space-3) var(--ods-space-4);
+}
+
+.settings-toolbar__title {
+  padding-inline-start: var(--ods-space-4);
+}
+
+.settings-toolbar__actions {
+  display: flex;
+  min-width: 0;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: var(--ods-space-3);
+  margin-inline-start: auto;
+}
+
+.settings-toolbar__search {
+  width: 18rem;
+  max-width: 100%;
+}
+
+.settings-stats {
+  display: flex;
+  min-width: 0;
+  flex-wrap: wrap;
+  gap: var(--ods-space-2) var(--ods-space-8);
+  margin: 0;
+  padding-inline-start: var(--ods-space-1);
+}
+
+.settings-stats > div {
+  display: flex;
+  align-items: baseline;
+  gap: var(--ods-space-2);
+}
+
+.settings-stats dt {
+  color: var(--ods-color-fg-muted);
+  font-size: var(--ods-font-size-sm);
+}
+
+.settings-stats dd {
+  margin: 0;
+  color: var(--ods-color-fg-default);
+  font-size: var(--ods-font-size-lg);
+  font-variant-numeric: tabular-nums;
+  line-height: var(--ods-line-height-heading);
+}
+
+.settings-empty {
+  min-height: 14rem;
+}
+
+/* Tables on settings pages: secondary columns step back, actions hug the end. */
+.settings-table__muted {
+  color: var(--ods-color-fg-muted);
+}
+
+.settings-table__muted[data-warning] {
+  color: var(--ods-color-status-warning);
+}
+
+.settings-table__number {
+  font-variant-numeric: tabular-nums;
+}
+
+.settings-table__stack {
+  display: flex;
+  min-width: 0;
+  flex-direction: column;
+  line-height: var(--ods-line-height-heading);
+}
+
+.settings-table__actions {
+  display: inline-flex;
+  flex: 0 0 auto;
+  align-items: center;
+  justify-content: flex-end;
+  gap: var(--ods-space-1);
+}
+
+.settings-field--full {
+  grid-column: 1 / -1;
+}
+
+.settings-field--wide {
+  grid-column: span 2;
+}
+
+.settings-modal-body {
+  display: grid;
+  gap: var(--ods-space-4);
+}
+
+/* Profile: who is signed in, then what can be changed. */
+.settings-account {
+  display: flex;
+  min-width: 0;
+  align-items: center;
+  gap: var(--ods-space-4);
+}
+
+.settings-account__copy {
+  display: flex;
+  min-width: 0;
+  flex: 1;
+  flex-direction: column;
+  gap: var(--ods-space-1);
+}
+
+.settings-account__name {
+  overflow: hidden;
+  color: var(--ods-color-fg-default);
+  font-size: var(--ods-font-size-lg);
+  font-weight: var(--ods-font-weight-semibold);
+  line-height: var(--ods-line-height-heading);
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.settings-account__meta {
+  display: flex;
+  align-items: center;
+  gap: var(--ods-space-2);
+  color: var(--ods-color-fg-muted);
+  font-size: var(--ods-font-size-sm);
+}
+
+/* Appearance: each theme is a small picture of the window in that theme. */
+.settings-theme {
+  position: relative;
+  display: block;
+  overflow: hidden;
+  aspect-ratio: 16 / 10;
+  border-radius: var(--ods-radius-sm);
+}
+
+.settings-theme__layer {
+  position: absolute;
+  background:
+    linear-gradient(var(--ods-color-scene-veil), var(--ods-color-scene-veil)),
+    url('../assets/jiangnan/scene-business.webp') 50% 45% / cover no-repeat;
+  inset: 0;
+}
+
+/* 跟随系统: the second theme takes the lower-right half. */
+.settings-theme__layer[data-half] {
+  clip-path: polygon(100% 0, 100% 100%, 0 100%);
+}
+
+.settings-theme__panel {
+  position: absolute;
+  border-radius: var(--ods-radius-xs);
+  background: var(--ods-color-bg-surface-raised);
+  box-shadow: 0 0 0 1px var(--ods-color-border-strong);
+  inset: 12% 8% 30%;
+}
+
+.settings-theme__dock {
+  position: absolute;
+  width: 46%;
+  height: 12%;
+  border-radius: var(--ods-radius-pill);
+  background: var(--ods-color-bg-surface-raised);
+  box-shadow: 0 0 0 1px var(--ods-color-border-strong);
+  inset-block-end: 9%;
+  inset-inline-start: 27%;
+}
+
+.settings-theme__name {
+  display: block;
+  margin-block-start: var(--ods-space-2);
+  color: var(--ods-color-fg-default);
+  font-size: var(--ods-font-size-sm);
+  text-align: center;
+}
+
+/* Notifications: fixed columns, so the tags and times line up down the list. Unread rows
+   carry a dot and a heavier title. */
+.notification-row {
+  display: grid;
+  min-height: 4rem;
+  grid-template-columns: 0.5rem minmax(0, 1fr) 6.5rem 9rem auto;
+  gap: var(--ods-space-4);
+}
+
+.notification-row__dot {
+  width: 0.5rem;
+  height: 0.5rem;
+  border-radius: var(--ods-radius-pill);
+}
+
+.notification-row[data-unread] .notification-row__dot {
+  background: var(--ods-color-accent-warm);
+}
+
+.notification-row__copy {
+  display: flex;
+  min-width: 0;
+  flex-direction: column;
+  gap: 2px;
+}
+
+.notification-row__tag {
+  display: flex;
+}
+
+.notification-row__title,
+.notification-row__summary {
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.notification-row__title {
+  color: var(--ods-color-fg-default);
+  font-size: var(--ods-font-size-md);
+  line-height: var(--ods-line-height-heading);
+}
+
+.notification-row[data-unread] .notification-row__title {
+  font-weight: var(--ods-font-weight-semibold);
+}
+
+.notification-row__summary,
+.notification-row__meta {
+  color: var(--ods-color-fg-muted);
+  font-size: var(--ods-font-size-sm);
+  line-height: var(--ods-line-height-body);
+}
+
+.notification-row__meta {
+  text-align: end;
+  white-space: nowrap;
+}
+
+/* Developer tokens: the modal that creates one. */
+.settings-modal-body .dev-expiry-content {
+  display: flex;
+  flex-direction: column;
+  gap: var(--ods-space-1);
+}
+
+.settings-modal-body .dev-expiry-label {
+  color: var(--ods-color-fg-default);
+  font-weight: var(--ods-font-weight-semibold);
+}
+
+.settings-modal-body .dev-expiry-desc,
+.settings-modal-body .dev-success-desc {
+  margin: 0;
+  color: var(--ods-color-fg-muted);
+  font-size: var(--ods-font-size-sm);
+}
+
+.settings-modal-body .dev-token-display {
+  width: 100%;
+}
+
+.settings-modal-body .dev-security-tips {
+  display: grid;
+  gap: var(--ods-space-2);
+}
+
+.settings-modal-body .dev-tip {
+  display: flex;
+  align-items: center;
+  gap: var(--ods-space-2);
+  color: var(--ods-color-fg-muted);
+  font-size: var(--ods-font-size-sm);
+}
+
+/* Data sync */
+.settings-view .sync-config {
+  display: flex;
+  min-width: 0;
+  flex-direction: column;
+  /* The same gap as the form grid below, so the options sit on its columns. */
+  gap: var(--ods-space-5);
+  --radio-group-gap: var(--ods-space-5);
+}
+
+.settings-view .dict-value-column {
+  width: 40%;
+}
+
+.settings-view .dict-sort-column {
+  width: 6rem;
+}
+
+.settings-view .settings-actions-column {
+  width: 8rem;
+}
+
+.settings-view .sync-db-option-content {
+  display: flex;
+  align-items: center;
+  gap: var(--ods-space-2);
+  white-space: nowrap;
+  color: var(--ods-color-fg-default);
+  font-weight: var(--ods-font-weight-medium);
+}
+
+.settings-view .sync-connection {
+  display: flex;
+  min-width: 0;
+  align-items: center;
+  gap: var(--ods-space-3);
+  padding-inline-start: var(--ods-space-1);
+}
+
+.settings-view .sync-table-info {
+  display: flex;
+  min-width: 0;
+  flex-direction: column;
+  gap: 2px;
+}
+
+.settings-view .sync-connection-host,
+.settings-view .sync-table-code {
+  overflow: hidden;
+  color: var(--ods-color-fg-muted);
+  font-family: var(--ods-font-family-mono);
+  font-size: var(--ods-font-size-xs);
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.settings-view .sync-connection-indicator {
+  position: relative;
+  display: inline-flex;
+  width: 0.5rem;
+  height: 0.5rem;
+  flex: 0 0 auto;
+}
+
+.settings-view .sync-pulse,
+.settings-view .sync-dot {
+  position: absolute;
+  border-radius: var(--ods-radius-pill);
+  background: var(--ods-color-status-success);
+  inset: 0;
+}
+
+.settings-view .sync-pulse {
+  animation: settings-sync-pulse 1.5s var(--ods-ease-standard) infinite;
+}
+
+.settings-view .sync-table-name {
+  color: var(--ods-color-fg-default);
+}
+
+.settings-view .sync-result-error {
+  color: var(--ods-color-status-danger);
+}
+
+.settings-view .sync-result-success {
+  color: var(--ods-color-status-success);
+}
+
+.settings-view .sync-result-success,
+.settings-view .sync-result-error {
+  display: inline-flex;
+  align-items: center;
+  gap: var(--ods-space-1);
+  font-size: var(--ods-font-size-sm);
+}
+
+.settings-view .sync-result-pending {
+  color: var(--ods-color-fg-subtle);
+}
+
+/* About */
+.about-hero {
+  display: flex;
+  min-width: 0;
+  align-items: center;
+  gap: var(--ods-space-4);
+}
+
+.about-logo {
+  width: 3.5rem;
+  height: 3.5rem;
+  flex: 0 0 auto;
+  object-fit: contain;
+}
+
+.about-hero__copy {
+  display: flex;
+  min-width: 0;
+  flex: 1;
+  flex-direction: column;
+  gap: var(--ods-space-1);
+}
+
+.about-title {
+  margin: 0;
+  color: var(--ods-color-fg-default);
+  font-family: var(--ods-font-family-display);
+  font-size: var(--ods-font-size-xl);
+  font-weight: var(--ods-font-weight-bold);
+  line-height: var(--ods-line-height-heading);
+}
+
+.about-tagline {
+  color: var(--ods-color-fg-muted);
+  font-size: var(--ods-font-size-sm);
+}
+
+.about-hero__name {
+  display: flex;
+  align-items: center;
+  gap: var(--ods-space-3);
+}
+
+.about-update {
+  display: grid;
+  gap: var(--ods-space-3);
+  margin-block-start: var(--ods-space-4);
+  color: var(--ods-color-fg-muted);
+  font-size: var(--ods-font-size-sm);
+}
+
+.about-update[data-state='error'] {
+  color: var(--ods-color-status-danger);
+}
+
+.about-update__status {
+  display: flex;
+  justify-content: space-between;
+  gap: var(--ods-space-3);
+}
+
+.about-update__cancel {
+  justify-self: end;
+}
+
+@keyframes settings-sync-pulse {
+  75%,
+  100% {
+    opacity: 0;
+    transform: scale(2.5);
+  }
+}
+
+@keyframes settings-content-in {
+  from {
+    opacity: 0;
+    transform: translateY(var(--ods-space-2));
+  }
+}
+
+/* Each card of a page follows the one above it in. */
+@media (prefers-reduced-motion: no-preference) {
+  .settings-page > * {
+    animation: settings-content-in var(--ods-duration-page) var(--ods-ease-emphasized) backwards;
+  }
+
+  .settings-page > :nth-child(2) {
+    animation-delay: 50ms;
+  }
+
+  .settings-page > :nth-child(n + 3) {
+    animation-delay: 100ms;
+  }
+}
+
+/* Narrow windows: the rail becomes a strip of tabs above the content. */
+@media (max-width: 56rem) {
+  .settings-workspace {
+    grid-template-columns: minmax(0, 1fr);
+    gap: var(--ods-space-4);
+  }
+
+  .settings-rail {
+    position: static;
+  }
+
+  .settings-content {
+    padding-inline-start: 0;
+    border-inline-start: 0;
+  }
+}
+
+@media (max-width: 48rem) {
+  .settings-row,
+  .settings-account,
+  .about-hero {
+    flex-wrap: wrap;
+  }
+
+  .settings-field--wide {
+    grid-column: auto;
+  }
+
+  .settings-toolbar__search {
+    width: 100%;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .settings-view .sync-pulse {
+    animation: none;
+  }
+}

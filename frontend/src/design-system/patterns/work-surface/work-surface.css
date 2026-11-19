@@ -1,0 +1,33 @@
+.ods-work-surface {
+  /* The scrolling area's padding. A sticky footer inside offsets by the block value to rest
+     on the panel's own edge instead of stopping short of it. */
+  --ods-work-surface-padding-block: clamp(var(--ods-space-4), 1.9vw, 28px);
+  --ods-work-surface-padding-inline: clamp(var(--ods-space-4), 2.2vw, var(--ods-space-8));
+
+  display: flex;
+  min-width: 0;
+  min-height: 0;
+  flex-direction: column;
+  overflow: hidden;
+}
+
+/* The panel separates from the scene by lightness and its rim, not by a drop shadow. */
+.ods-work-surface[data-variant='raised'] {
+  box-shadow: var(--ods-shadow-soft);
+}
+
+.ods-work-surface__scroll {
+  min-height: 0;
+  flex: 1 1 auto;
+  overflow-x: hidden;
+  /* `scroll`, not `auto`: WebKit only reserves the gutter below while a scrollbar exists, so
+     with `auto` the content sat 6px further left on pages short enough not to scroll. */
+  overflow-y: scroll;
+  overscroll-behavior: contain;
+  padding: var(--ods-work-surface-padding-block) var(--ods-work-surface-padding-inline);
+  scrollbar-gutter: stable both-edges;
+}
+
+.ods-work-surface__scroll:focus {
+  outline: none;
+}

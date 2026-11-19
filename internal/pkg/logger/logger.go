@@ -4,10 +4,11 @@ import (
 	"log/slog"
 	"sync"
 
-	"github.com/FruitsAI/Orange/internal/config"
 	"go.uber.org/zap"
 	"go.uber.org/zap/zapcore"
 	"gopkg.in/natefinch/lumberjack.v2"
+
+	"github.com/primordialweave/zhusuan/internal/config"
 )
 
 var (

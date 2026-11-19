@@ -1,0 +1,131 @@
+/*
+ * Workbench: nothing but the payment summary floats over the scene, centred above the Dock.
+ * Every size below is the approved prototype's measurement at its 1487px width, scaled with the
+ * window and capped at the prototype's own value.
+ */
+.workbench {
+  --workbench-summary-gap: clamp(14px, 2.17vw, 32.3px);
+  position: fixed;
+  z-index: 20;
+  bottom: calc(var(--app-dock-clearance) + var(--workbench-summary-gap));
+  left: 50%;
+  transform: translateX(-50%);
+}
+
+.payment-summary {
+  --payment-summary-pie: clamp(54px, 5.064vw, 75.3px);
+  /* Slightly squarer than a capsule: the ends keep a short straight side. */
+  --surface-radius: clamp(36px, 3.29vw, 48.9px);
+  display: flex;
+  width: max-content;
+  min-width: min(clamp(300px, 27.05vw, 402.2px), calc(100vw - 24px));
+  max-width: calc(100vw - 24px);
+  min-height: clamp(80px, 7.355vw, 109.4px);
+  align-items: center;
+  gap: clamp(18px, 1.964vw, 29.2px);
+  padding: var(--ods-space-3) clamp(22px, 2.73vw, 40.6px);
+}
+
+.payment-summary__pie {
+  width: var(--payment-summary-pie);
+  height: var(--payment-summary-pie);
+  flex: 0 0 auto;
+}
+
+.payment-summary__switch {
+  flex: 0 0 auto;
+}
+
+.payment-summary__pie [data-part='pending'] {
+  fill: var(--ods-data-part-pending);
+}
+
+.payment-summary__pie [data-part='paid'] {
+  fill: none;
+  stroke: var(--ods-data-part-paid);
+  stroke-width: 16;
+  transition: stroke-dasharray var(--ods-duration-hero) var(--ods-ease-emphasized);
+}
+
+.payment-summary__pie [data-part='none'] {
+  fill: none;
+  stroke: var(--ods-color-border-control);
+  stroke-width: 1.5;
+}
+
+@keyframes payment-summary-swap {
+  from {
+    opacity: 0;
+    transform: translateY(var(--ods-space-1));
+  }
+}
+
+@media (prefers-reduced-motion: no-preference) {
+  .payment-summary__pie {
+    transition: transform var(--ods-duration-fast) var(--ods-ease-spring);
+  }
+
+  .payment-summary__switch:hover .payment-summary__pie {
+    transform: scale(1.06);
+  }
+
+  /* The legend is keyed by scope, so a switch replays this. */
+  .payment-summary__legend {
+    animation: payment-summary-swap var(--ods-duration-page) var(--ods-ease-emphasized) backwards;
+  }
+}
+
+.payment-summary__legend {
+  display: grid;
+  flex: 1 1 auto;
+  grid-template-columns: auto auto minmax(0, 1fr);
+  align-items: center;
+  gap: clamp(10px, 1.056vw, 15.7px) clamp(7px, 0.706vw, 10.5px);
+  margin: 0;
+  color: var(--ods-color-fg-default);
+  font-size: clamp(15px, 1.311vw, 19.5px);
+  line-height: var(--ods-line-height-tight);
+}
+
+.payment-summary__row {
+  display: contents;
+}
+
+.payment-summary__dot {
+  width: 0.728em;
+  height: 0.728em;
+  border-radius: var(--ods-radius-pill);
+}
+
+.payment-summary__dot[data-part='paid'] {
+  background: var(--ods-data-part-paid);
+}
+
+.payment-summary__dot[data-part='pending'] {
+  background: var(--ods-data-part-pending);
+}
+
+.payment-summary__label {
+  font-weight: var(--ods-font-weight-regular);
+  white-space: nowrap;
+}
+
+.payment-summary__amount {
+  margin: 0;
+  padding-inline-start: clamp(9px, 1.04vw, 15.5px);
+  font-size: clamp(15.5px, 1.345vw, 20px);
+  font-variant-numeric: tabular-nums;
+  font-weight: var(--ods-font-weight-regular);
+  text-align: end;
+  white-space: nowrap;
+}
+
+.payment-summary__message {
+  display: flex;
+  flex: 1 1 auto;
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--ods-space-3);
+  color: var(--ods-color-fg-default);
+  font-size: var(--ods-font-size-md);
+}

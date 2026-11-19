@@ -1,9 +1,13 @@
 package handler
 
 import (
-	"github.com/FruitsAI/Orange/internal/pkg/response"
-	"github.com/FruitsAI/Orange/internal/service"
+	"strconv"
+
 	"github.com/gin-gonic/gin"
+
+	"github.com/primordialweave/zhusuan/internal/dto"
+	"github.com/primordialweave/zhusuan/internal/pkg/response"
+	"github.com/primordialweave/zhusuan/internal/service"
 )
 
 // DashboardHandler 仪表盘模块接口处理器
@@ -19,21 +23,49 @@ func NewDashboardHandler() *DashboardHandler {
 	}
 }
 
+// calendarPeriod 读取自选的年 / 月。没有 year 参数时 chosen 为 false，走固定周期；
+// 参数不合法时已写入 400 响应，ok 为 false。
+func calendarPeriod(c *gin.Context) (year, month int, chosen, ok bool) {
+	rawYear := c.Query("year")
+	if rawYear == "" {
+		return 0, 0, false, true
+	}
+	year, yearErr := strconv.Atoi(rawYear)
+	month, monthErr := strconv.Atoi(c.DefaultQuery("month", "0"))
+	if yearErr != nil || monthErr != nil || !service.ValidCalendarPeriod(year, month) {
+		response.ParamError(c, "年份或月份无效")
+		return 0, 0, true, false
+	}
+	return year, month, true, true
+}
+
 // Stats 获取核心统计数据
 // @Summary 仪表盘统计卡片数据
 // @Description 获取总金额、已收、待收等核心指标，支持按周期(period)过滤
 // @Tags Dashboard
 // @Security Bearer
 // @Param period query string false "统计周期: week, month, quarter, year, all (默认为all)"
+// @Param year query int false "自选年份；传入后忽略 period"
+// @Param month query int false "自选月份 1-12；不传或 0 表示整年"
 // @Success 200 {object} dto.Stats
 // @Router /api/v1/dashboard/stats [get]
 func (h *DashboardHandler) Stats(c *gin.Context) {
 	userID := c.GetInt64("user_id")
 
-	period := c.Query("period") // 参数为空时，Service层默认视为全局统计
-	stats, err := h.dashboardService.GetStats(userID, period)
+	year, month, chosen, ok := calendarPeriod(c)
+	if !ok {
+		return
+	}
+	var stats *dto.Stats
+	var err error
+	if chosen {
+		stats, err = h.dashboardService.GetStatsForCalendar(userID, year, month)
+	} else {
+		// 参数为空时，Service层默认视为全局统计
+		stats, err = h.dashboardService.GetStats(userID, c.Query("period"))
+	}
 	if err != nil {
-		response.InternalError(c, "获取统计数据失败")
+		response.HandleServiceError(c, err, "获取统计数据失败")
 		return
 	}
 
@@ -46,15 +78,25 @@ func (h *DashboardHandler) Stats(c *gin.Context) {
 // @Tags Dashboard
 // @Security Bearer
 // @Param period query string false "时间维度: week, month, quarter, year (默认month)"
+// @Param year query int false "自选年份；传入后忽略 period"
+// @Param month query int false "自选月份 1-12；不传或 0 表示整年"
 // @Success 200 {object} dto.IncomeTrend
 // @Router /api/v1/dashboard/income-trend [get]
 func (h *DashboardHandler) IncomeTrend(c *gin.Context) {
 	userID := c.GetInt64("user_id")
-	period := c.DefaultQuery("period", "month")
-
-	trend, err := h.dashboardService.GetIncomeTrend(userID, period)
+	year, month, chosen, ok := calendarPeriod(c)
+	if !ok {
+		return
+	}
+	var trend *dto.IncomeTrend
+	var err error
+	if chosen {
+		trend, err = h.dashboardService.GetIncomeTrendForCalendar(userID, year, month)
+	} else {
+		trend, err = h.dashboardService.GetIncomeTrend(userID, c.DefaultQuery("period", "month"))
+	}
 	if err != nil {
-		response.InternalError(c, "获取收入趋势失败")
+		response.HandleServiceError(c, err, "获取收入趋势失败")
 		return
 	}
 
@@ -73,7 +115,7 @@ func (h *DashboardHandler) RecentProjects(c *gin.Context) {
 
 	projects, err := h.dashboardService.GetRecentProjects(userID)
 	if err != nil {
-		response.InternalError(c, "获取最近项目失败")
+		response.HandleServiceError(c, err, "获取最近项目失败")
 		return
 	}
 
@@ -92,7 +134,7 @@ func (h *DashboardHandler) UpcomingPayments(c *gin.Context) {
 
 	payments, err := h.dashboardService.GetUpcomingPayments(userID)
 	if err != nil {
-		response.InternalError(c, "获取即将到期收款失败")
+		response.HandleServiceError(c, err, "获取即将到期收款失败")
 		return
 	}
 

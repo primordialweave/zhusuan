@@ -1,0 +1,235 @@
+.calendar-view {
+  display: flex;
+  flex: 1;
+  flex-direction: column;
+  gap: var(--ods-space-5);
+}
+
+/* Month on the left, the selected day on the right, one hairline between them. */
+.calendar-view__layout {
+  display: grid;
+  flex: 1;
+  grid-template-columns: minmax(0, 2.2fr) minmax(17rem, 1fr);
+  align-items: stretch;
+}
+
+.calendar-board {
+  display: flex;
+  min-width: 0;
+  flex-direction: column;
+  padding-inline-end: var(--ods-space-5);
+}
+
+.calendar-board > * {
+  flex: 1;
+}
+
+/* The month sets the height of the row; a longer day list scrolls inside its own column. */
+.calendar-detail {
+  position: relative;
+  min-width: 0;
+  border-inline-start: 1px solid var(--ods-color-border-default);
+}
+
+.calendar-detail__scroll {
+  position: absolute;
+  display: flex;
+  flex-direction: column;
+  gap: var(--ods-space-8);
+  inset: 0;
+  overflow-y: auto;
+  overscroll-behavior: contain;
+  padding-inline-start: var(--ods-space-8);
+}
+
+.calendar-detail__section {
+  min-width: 0;
+}
+
+.calendar-detail__heading {
+  margin: 0;
+  padding-block-end: var(--ods-space-4);
+  border-block-end: 1px solid var(--ods-color-border-default);
+  color: var(--ods-color-fg-default);
+  font-size: var(--ods-font-size-xl);
+  font-weight: var(--ods-font-weight-semibold);
+  line-height: var(--ods-control-height-md);
+}
+
+.calendar-detail__section:first-child .calendar-detail__heading {
+  font-weight: var(--ods-font-weight-bold);
+}
+
+.calendar-detail__empty {
+  margin: 0;
+  padding-block: var(--ods-space-4);
+  color: var(--ods-color-fg-muted);
+  font-size: var(--ods-font-size-sm);
+}
+
+.calendar-entries,
+.calendar-upcoming {
+  padding: 0;
+  margin: 0;
+  list-style: none;
+}
+
+.calendar-entry {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) auto auto;
+  align-items: center;
+  gap: var(--ods-space-4);
+  padding-block: var(--ods-space-5);
+  border-block-end: 1px solid var(--ods-color-border-default);
+}
+
+.calendar-entry__identity {
+  display: flex;
+  min-width: 0;
+  flex-direction: column;
+  align-items: flex-start;
+  gap: var(--ods-space-1);
+}
+
+.calendar-entry__name {
+  display: -webkit-box;
+  overflow: hidden;
+  -webkit-box-orient: vertical;
+  -webkit-line-clamp: 2;
+  font-size: var(--ods-font-size-md);
+  line-height: var(--ods-line-height-heading);
+}
+
+.calendar-entry__stage {
+  color: var(--ods-color-fg-muted);
+  font-size: var(--ods-font-size-sm);
+}
+
+.calendar-entry__amount {
+  color: var(--ods-color-fg-default);
+  font-size: var(--ods-font-size-md);
+  font-variant-numeric: tabular-nums;
+  font-weight: var(--ods-font-weight-medium);
+  white-space: nowrap;
+}
+
+.calendar-upcoming__item {
+  border-block-end: 1px solid var(--ods-color-border-default);
+}
+
+.calendar-upcoming__link {
+  display: grid;
+  width: 100%;
+  min-height: 3.25rem;
+  grid-template-columns: 5.5rem minmax(0, 1fr);
+  align-items: center;
+  gap: var(--ods-space-3);
+  font-size: var(--ods-font-size-sm);
+  font-weight: var(--ods-font-weight-regular);
+}
+
+.calendar-upcoming__date {
+  font-variant-numeric: tabular-nums;
+}
+
+.calendar-upcoming__name {
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+/* One line per status inside a day cell: dot, status word, amount. */
+.calendar-day-entry {
+  display: flex;
+  max-width: 100%;
+  align-items: center;
+  gap: var(--ods-space-1);
+  color: var(--ods-color-fg-default);
+}
+
+.calendar-day-entry__dot {
+  width: var(--ods-space-2);
+  height: var(--ods-space-2);
+  flex: none;
+  border-radius: var(--ods-radius-pill);
+  background: var(--ods-data-part-paid);
+}
+
+.calendar-day-entry[data-status='pending'] .calendar-day-entry__dot {
+  background: var(--ods-data-part-pending);
+}
+
+.calendar-day-entry[data-status='overdue'] .calendar-day-entry__dot {
+  background: var(--ods-color-status-danger);
+}
+
+.calendar-day-entry__text {
+  overflow: hidden;
+  font-variant-numeric: tabular-nums;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.calendar-day-entry__more {
+  color: var(--ods-color-fg-muted);
+}
+
+.calendar-loading-list {
+  display: flex;
+  flex-direction: column;
+  gap: var(--ods-space-2);
+  padding-block-start: var(--ods-space-4);
+}
+
+@media (prefers-reduced-motion: no-preference) {
+  [data-motion-scope='calendar'] [data-motion='entrance'] {
+    animation: ember-enter-up var(--ods-duration-page) var(--ods-ease-emphasized) both;
+  }
+
+  [data-motion-scope='calendar'] [data-motion-item] {
+    animation: ember-enter-up var(--ods-duration-fast) var(--ods-ease-emphasized) both;
+  }
+
+  [data-motion-scope='calendar'] [data-motion-item]:nth-child(2) {
+    animation-delay: 50ms;
+  }
+
+  [data-motion-scope='calendar'] [data-motion-item]:nth-child(3) {
+    animation-delay: 90ms;
+  }
+}
+
+/* Below this the content area is too narrow for two columns. */
+@media (max-width: 1100px) {
+  .calendar-view__layout {
+    grid-template-columns: minmax(0, 1fr);
+    gap: var(--ods-space-8);
+  }
+
+  .calendar-board {
+    padding-inline-end: 0;
+  }
+
+  .calendar-detail {
+    border-inline-start: 0;
+  }
+
+  .calendar-detail__scroll {
+    position: static;
+    overflow-y: visible;
+    padding-inline-start: 0;
+  }
+}
+
+@media (max-width: 680px) {
+  .calendar-day-entry__text {
+    display: none;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  [data-motion-scope='calendar'] [data-motion='entrance'],
+  [data-motion-scope='calendar'] [data-motion-item] {
+    animation: none;
+  }
+}

@@ -1,0 +1,90 @@
+/* One row: the title, then whatever the page needs within reach. The row is as tall as a
+   control, so a page with actions and a page without start their content at the same height. */
+.ods-page-header {
+  display: grid;
+  grid-template-columns: auto minmax(0, 1fr) auto;
+  align-items: center;
+  gap: var(--ods-space-4);
+  min-width: 0;
+  min-height: var(--ods-control-height-md);
+}
+
+.ods-page-header__leading,
+.ods-page-header__actions {
+  display: flex;
+  align-items: center;
+  gap: var(--ods-space-3);
+}
+
+.ods-page-header__leading {
+  gap: var(--ods-space-2);
+}
+
+.ods-page-header__leading {
+  grid-column: 1;
+}
+
+.ods-page-header__content {
+  grid-column: 2;
+  min-width: 0;
+}
+
+.ods-page-header__eyebrow {
+  display: inline-flex;
+  align-items: center;
+  gap: var(--ods-space-2);
+  margin-block-end: var(--ods-space-2);
+  color: var(--ods-color-fg-subtle);
+  font-family: var(--ods-font-family-mono);
+  font-size: var(--ods-font-size-xs);
+  font-weight: var(--ods-font-weight-semibold);
+  letter-spacing: var(--ods-letter-spacing-wide);
+  line-height: var(--ods-line-height-tight);
+  text-transform: uppercase;
+}
+
+.ods-page-header__title {
+  margin: 0;
+  color: var(--ods-color-fg-default);
+  font-family: var(--ods-font-family-title);
+  font-size: clamp(1.375rem, 2vw, 1.75rem);
+  font-weight: var(--ods-font-weight-title);
+  letter-spacing: var(--ods-letter-spacing-tight);
+  line-height: var(--ods-line-height-heading);
+}
+
+.ods-page-header__description {
+  margin-block-start: var(--ods-space-1);
+  color: var(--ods-color-fg-muted);
+  font-size: var(--ods-font-size-sm);
+  line-height: var(--ods-line-height-body);
+}
+
+.ods-page-header__description > :first-child {
+  margin-block-start: 0;
+}
+
+.ods-page-header__description > :last-child {
+  margin-block-end: 0;
+}
+
+.ods-page-header__actions {
+  grid-column: 3;
+  justify-self: end;
+  flex-wrap: wrap;
+  justify-content: flex-end;
+}
+
+@media (max-width: 42rem) {
+  .ods-page-header {
+    grid-template-columns: auto minmax(0, 1fr);
+    align-items: start;
+  }
+
+  .ods-page-header__actions {
+    grid-column: 1 / -1;
+    width: 100%;
+    justify-self: stretch;
+    justify-content: flex-start;
+  }
+}

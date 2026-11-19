@@ -1,0 +1,254 @@
+.ods-tabs {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr);
+  gap: var(--ods-space-4);
+  min-width: 0;
+}
+
+.ods-tabs__list {
+  align-items: center;
+  background: var(--ods-color-bg-canvas-subtle);
+  border: 1px solid var(--ods-color-border-default);
+  border-radius: var(--ods-radius-pill);
+  box-shadow: inset 0 1px 3px rgba(var(--ods-color-fg-default-rgb), 0.05);
+  display: inline-flex;
+  gap: var(--ods-space-1);
+  padding: var(--ods-space-1);
+  width: fit-content;
+}
+
+.ods-tabs__list[data-orientation='vertical'] {
+  align-items: stretch;
+  border-radius: var(--ods-radius-panel);
+  flex-direction: column;
+}
+
+.ods-tabs__list[data-variant='navigation'] .ods-tabs__tab {
+  display: flex;
+  align-items: center;
+  text-align: start;
+}
+
+.ods-tabs__list[data-variant='navigation'] {
+  width: 100%;
+  align-items: stretch;
+  gap: 0;
+  padding: 0;
+  border: 0;
+  border-radius: 0;
+  background: transparent;
+  box-shadow: none;
+}
+
+/* Accent: an outlined, see-through track; only the chosen tab is filled.
+   The border comes out of the inset, so the track is exactly one medium control tall. */
+.ods-tabs__list[data-variant='accent'] {
+  padding: calc(var(--ods-space-1) - 1px);
+  background: transparent;
+  box-shadow: none;
+}
+
+.ods-tabs__list[data-variant='accent']
+  .ods-tabs__tab:hover:not(:disabled):not([aria-selected='true']) {
+  background: var(--ods-color-accent-soft);
+  color: var(--ods-color-fg-default);
+}
+
+.ods-tabs__list[data-variant='accent'] .ods-tabs__tab[aria-selected='true'] {
+  background: var(--ods-gradient-glow);
+  box-shadow:
+    inset 0 1px 0 rgba(255, 255, 255, 0.5),
+    0 2px 6px rgba(var(--ods-color-accent-rgb), 0.18);
+  color: var(--ods-color-accent-fg);
+}
+
+.ods-tabs__list[data-variant='navigation'] {
+  gap: var(--ods-space-1);
+}
+
+.ods-tabs__list[data-variant='navigation'] .ods-tabs__tab {
+  width: 100%;
+  height: auto;
+  min-height: 2.25rem;
+  justify-content: flex-start;
+  gap: var(--ods-space-3);
+  padding-inline: var(--ods-space-4);
+  border-radius: var(--ods-radius-control);
+  box-shadow: none;
+  color: var(--ods-color-fg-muted);
+}
+
+.ods-tabs__list[data-variant='navigation'] .ods-tabs__tab > i {
+  display: inline-grid;
+  width: 1.125rem;
+  height: 1.125rem;
+  flex: 0 0 1.125rem;
+  place-items: center;
+  font-size: var(--ods-font-size-lg);
+}
+
+.ods-tabs__list[data-variant='navigation']
+  .ods-tabs__tab:hover:not(:disabled):not([aria-selected='true']) {
+  background: var(--ods-color-bg-surface-hover);
+  color: var(--ods-color-fg-default);
+}
+
+.ods-tabs__list[data-variant='navigation'] .ods-tabs__tab[aria-selected='true'] {
+  background: var(--ods-gradient-glow);
+  color: var(--ods-color-accent-fg);
+}
+
+/* Underline: text tabs on one hairline; the chosen tab carries a bar that rests on it.
+   The hairline runs one step past the tabs on both sides, so a tab's bar starts where the
+   page title does. The strip scrolls sideways when the tabs do not fit, fading the edge
+   that hides more. */
+.ods-tabs__list[data-variant='underline'] {
+  width: 100%;
+  align-items: stretch;
+  gap: var(--ods-space-6);
+  overflow-x: auto;
+  padding: 0 var(--ods-space-4);
+  border: 0;
+  border-block-end: 1px solid var(--ods-color-border-default);
+  border-radius: 0;
+  background: transparent;
+  box-shadow: none;
+  scrollbar-width: none;
+}
+
+.ods-tabs__list[data-variant='underline']::-webkit-scrollbar {
+  display: none;
+}
+
+.ods-tabs__list[data-variant='underline'][data-fade='end'] {
+  mask-image: linear-gradient(to right, #000 calc(100% - var(--ods-space-12)), transparent);
+}
+
+.ods-tabs__list[data-variant='underline'][data-fade='start'] {
+  mask-image: linear-gradient(to left, #000 calc(100% - var(--ods-space-12)), transparent);
+}
+
+.ods-tabs__list[data-variant='underline'][data-fade='both'] {
+  mask-image: linear-gradient(
+    to right,
+    transparent,
+    #000 var(--ods-space-12),
+    #000 calc(100% - var(--ods-space-12)),
+    transparent
+  );
+}
+
+.ods-tabs__list[data-variant='underline'] .ods-tabs__tab {
+  position: relative;
+  height: auto;
+  padding: var(--ods-space-3) var(--ods-space-4);
+  border-radius: 0;
+  font-size: var(--ods-font-size-md);
+  font-weight: var(--ods-font-weight-regular);
+}
+
+.ods-tabs__list[data-variant='underline'] .ods-tabs__tab::after {
+  position: absolute;
+  height: 3px;
+  inset-block-end: 0;
+  inset-inline: 0;
+  border-radius: var(--ods-radius-xs) var(--ods-radius-xs) 0 0;
+  background: var(--ods-color-accent-text);
+  content: '';
+  opacity: 0;
+  transform: scaleX(0.4);
+  transition:
+    opacity var(--ods-duration-fast) var(--ods-ease-standard),
+    transform var(--ods-duration-fast) var(--ods-ease-standard);
+}
+
+/* Colour and the bar mark the choice; the weight stays put so no label shifts. */
+.ods-tabs__list[data-variant='underline'] .ods-tabs__tab:hover:not(:disabled),
+.ods-tabs__list[data-variant='underline'] .ods-tabs__tab[aria-selected='true'] {
+  background: transparent;
+  box-shadow: none;
+  color: var(--ods-color-fg-default);
+  font-weight: var(--ods-font-weight-regular);
+}
+
+.ods-tabs__list[data-variant='underline'] .ods-tabs__tab[aria-selected='true']::after {
+  opacity: 1;
+  transform: none;
+}
+
+/* The strip clips what leaves its box, so the focus ring is drawn inside the tab. */
+.ods-tabs__list[data-variant='underline'] .ods-tabs__tab:focus-visible {
+  outline-offset: calc(var(--ods-focus-ring-width) * -1);
+}
+
+.ods-tabs__list[data-variant='underline'] .ods-tabs__tab:active:not(:disabled) {
+  transform: none;
+}
+
+.ods-tabs__tab {
+  flex-shrink: 0;
+  background: transparent;
+  border: 0;
+  border-radius: var(--ods-radius-pill);
+  color: var(--ods-color-fg-muted);
+  cursor: pointer;
+  font-family: var(--ods-font-family-body);
+  font-size: var(--ods-font-size-sm);
+  font-weight: var(--ods-font-weight-medium);
+  height: var(--ods-control-height-sm);
+  line-height: var(--ods-line-height-body);
+  padding-inline: var(--ods-control-padding-inline-sm);
+  white-space: nowrap;
+  transition:
+    background-color var(--ods-duration-fast) var(--ods-ease-standard),
+    box-shadow var(--ods-duration-fast) var(--ods-ease-standard),
+    color var(--ods-duration-fast) var(--ods-ease-standard),
+    transform var(--ods-duration-fast) var(--ods-ease-standard);
+}
+
+.ods-tabs__tab:hover:not(:disabled) {
+  background: var(--ods-color-bg-surface-hover);
+  color: var(--ods-color-fg-default);
+}
+
+.ods-tabs__tab[aria-selected='true'] {
+  background: var(--ods-color-bg-surface-raised);
+  box-shadow:
+    inset 0 1px 0 rgba(255, 255, 255, 0.12),
+    var(--ods-shadow-soft);
+  color: var(--ods-color-fg-default);
+  font-weight: var(--ods-font-weight-semibold);
+}
+
+.ods-tabs__tab:focus-visible {
+  outline: var(--ods-focus-ring-width) solid var(--ods-color-border-focus);
+  outline-offset: var(--ods-focus-ring-offset);
+}
+
+.ods-tabs__tab:active:not(:disabled) {
+  transform: scale(0.97);
+}
+
+.ods-tabs__tab:disabled {
+  color: var(--ods-color-fg-disabled);
+  cursor: not-allowed;
+}
+
+.ods-tabs__panel {
+  color: var(--ods-color-fg-default);
+  font-family: var(--ods-font-family-body);
+  min-width: 0;
+  outline: none;
+}
+
+.ods-tabs__panel:focus-visible {
+  border-radius: var(--ods-radius-sm);
+  outline: var(--ods-focus-ring-width) solid var(--ods-color-border-focus);
+  outline-offset: var(--ods-focus-ring-offset);
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .ods-tabs__list[data-variant='underline'] .ods-tabs__tab::after {
+    transition: none;
+  }
+}

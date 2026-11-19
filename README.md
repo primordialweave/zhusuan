@@ -1,272 +1,100 @@
 <div align="center">
-  <img src="frontend/public/orange.png" alt="Orange Logo" width="120" height="120" />
+  <img src="frontend/public/zhusuan.png" alt="珠算 Logo" width="112" />
 
-# Orange
+# 珠算 · zhusuan
 
-  <p>
-    <strong>一个基于 Wails v3 的现代化跨平台桌面应用</strong>
-  </p>
+项目台账与收款管理桌面应用
 
-  <p>
-    <a href="https://wails.io" target="_blank">
-      <img src="https://img.shields.io/badge/Wails-v3-red?style=flat-square&logo=wails" alt="Wails v3" />
-    </a>
-    <a href="https://go.dev" target="_blank">
-      <img src="https://img.shields.io/badge/Go-1.25+-00ADD8?style=flat-square&logo=go" alt="Go" />
-    </a>
-    <a href="https://vuejs.org" target="_blank">
-      <img src="https://img.shields.io/badge/Vue.js-3.5+-4FC08D?style=flat-square&logo=vue.js" alt="Vue" />
-    </a>
-    <a href="https://tailwindcss.com" target="_blank">
-      <img src="https://img.shields.io/badge/Tailwind-4.0+-38B2AC?style=flat-square&logo=tailwind-css" alt="Tailwind CSS" />
-    </a>
-    <a href="./LICENSE">
-      <img src="https://img.shields.io/badge/License-MIT-yellow.svg?style=flat-square" alt="License" />
-    </a>
-  </p>
+[English](README_EN.md) · [更新记录](CHANGELOG.md) · [迁移说明](docs/migration.md) · [发布说明](docs/release.md)
 
-  <p>
-    <a href="./README_EN.md">🇺🇸 English</a> | 
-    <a href="./README.md">🇨🇳 简体中文</a>
-  </p>
 </div>
 
----
+珠算基于 Wails v3、Go 和 React 构建，管理项目合同、分期收款、待收与逾期款项。原 Orange 仓库已迁入 [Primordial Weave](https://github.com/primordialweave/zhusuan)，当前版本为 **1.0.0**。[下载安装包](https://github.com/primordialweave/zhusuan/releases/tag/v1.0.0)。
 
-## 📖 简介
+## 功能
 
-**Orange** 是一个基于 [Wails v3](https://wails.io) 构建的现代化桌面应用程序，展示了如何使用 Go (后端) 和 Vue 3 (前端) 打造高性能、原生体验的跨平台应用。
+- 工作台：切换全部、本年、本月收款摘要。
+- 项目：维护客户、合同、项目类型和交付日期，查看回款进度。
+- 收款：一次性与分期计划、确认到账、日历跟进。
+- 分析：自然年/月或周期统计，项目表现与 CSV 导出。
+- 设置：个人资料、字典、用户、通知、数据同步、外观偏好。
+- 桌面能力：原生保存对话框、系统凭据存储、应用内下载校验与更新重启。
+- 外观：烟雨/夜雨主题、青瓷算盘图标、可关闭动态与玻璃材质。
 
-该项目集成了一套完整的业务管理功能，包括用户权限管理、项目合同追踪、财务款项管理以及系统字典配置，旨在为企业级桌面应用开发提供最佳实践参考。
+## 界面预览
 
-## ✨ 特性
+以下为当前界面的脱敏截图。项目名称、客户、合同编号、人员与联系信息已打码，金额保留。截图来自隔离的数据库副本，原数据未修改。点击图片可查看完整尺寸。
 
-- **跨平台支持**: 基于 Wails v3，完美运行于 macOS, Windows 和 Linux。
-- **现代化 UI**: 采用 Vue 3 + Tailwind CSS 4.0，配合 Glassmorphism 风格设计，界面精致流畅。
-- **高性能后端**: Go 语言驱动，集成 Gin Web 框架、GORM ORM 库及 SQLite 数据库。
-- **安全可靠**: 内置 JWT 身份认证、Bcrypt 密码加密及中间件鉴权机制。
-- **完整业务流**:
-  - 📊 **仪表盘**: 实时数据可视化与统计分析。
-  - 👥 **用户管理**: 包含角色、部门、职位及多凭证登录支持。
-  - 🚀 **项目管理**: 全生命周期管理，支持状态流转与合同编号自动生成。
-  - 💰 **财务管理**: 详细的款项阶段（首付款/进度款/尾款）追踪与逾期提醒。
-  - 🔔 **通知系统**: 支持全局广播与点对点私信通知。
-  - ⚙️ **系统配置**: 灵活的字典管理与版本更新检测。
+| 工作台 | 项目管理 |
+| --- | --- |
+| ![工作台](docs/screenshots/dashboard.png) | ![项目管理](docs/screenshots/projects.png) |
+| 收款日历 | 数据分析 |
+| ![收款日历](docs/screenshots/calendar.png) | ![数据分析](docs/screenshots/analytics.png) |
+| 字典管理 | 关于 |
+| ![字典管理](docs/screenshots/dictionary.png) | ![关于](docs/screenshots/about.png) |
 
-## 🛠 技术栈
+[项目详情](docs/screenshots/project-detail.png) · [新建项目](docs/screenshots/project-create.png) · [登录页](docs/screenshots/login.png)
 
-<table>
-  <tr>
-    <th width="150" align="center">分类</th>
-    <th align="left">技术选型</th>
-  </tr>
-  <tr>
-    <td align="center"><b>Core</b></td>
-    <td><a href="https://wails.io">Wails v3</a> (Alpha)</td>
-  </tr>
-  <tr>
-    <td align="center"><b>Backend (Go)</b></td>
-    <td>
-      <ul>
-        <li><b>Web Framework</b>: <a href="https://github.com/gin-gonic/gin">Gin</a></li>
-        <li><b>ORM</b>: <a href="https://gorm.io">GORM</a> (SQLite / MySQL / PostgreSQL)</li>
-        <li><b>Logging</b>: <a href="https://github.com/uber-go/zap">Zap</a> + Lumberjack</li>
-        <li><b>Auth</b>: JWT (golang-jwt/v5)</li>
-      </ul>
-    </td>
-  </tr>
-  <tr>
-    <td align="center"><b>Frontend (Vue)</b></td>
-    <td>
-      <ul>
-        <li><b>Framework</b>: Vue 3 (Composition API)</li>
-        <li><b>Build Tool</b>: Vite 7</li>
-        <li><b>Styling</b>: Tailwind CSS 4</li>
-        <li><b>State Management</b>: Pinia</li>
-        <li><b>Routing</b>: Vue Router 4</li>
-        <li><b>Icons</b>: Remix Icon</li>
-        <li><b>Charts</b>: Chart.js</li>
-      </ul>
-    </td>
-  </tr>
-</table>
+## 技术栈
 
-## 🚀 快速开始
+| 层 | 技术 |
+| --- | --- |
+| 桌面 | Wails v3.0.0-alpha.55，系统 WebView |
+| 后端 | Go 1.26、Gin、GORM、SQLite/MySQL/PostgreSQL |
+| 前端 | React 19、TypeScript、Vite 7、React Router、Zustand |
+| 视觉 | ODS 组件与语义令牌、Tailwind 4、Chart.js、Remix Icon |
 
-### 环境依赖
+macOS、Windows、Linux 是当前发布工作流的目标。iOS/Android 保留构建脚手架与图标资产，尚未完成移动端发布验收。
 
-- **Go**: >= 1.25
-- **Node.js**: >= 20
-- **NPM**: >= 10
+## 本地开发
 
-### 安装
+需要 Go 1.26、Node.js 24、npm 与固定版本 Wails/Task。前端兼容范围见 frontend/package.json。Linux 桌面构建还需要 GTK3/WebKit2GTK 4.1 开发库。
 
-1. **克隆仓库**
-
-```bash
-git clone https://github.com/FruitsAI/Orange.git
-cd Orange
+```sh
+git clone https://github.com/primordialweave/zhusuan.git
+cd zhusuan
+go install github.com/wailsapp/wails/v3/cmd/wails3@v3.0.0-alpha.55
+go install github.com/go-task/task/v3/cmd/task@v3.51.1
+cd frontend && npm ci && cd ..
+task dev
 ```
 
-2. **安装前端依赖**
+- `task build`：构建本机应用。
+- `task package`：生成本机安装/分发包。
+- `task server:dev`：启动独立 HTTP 服务。
+- `task icons`：从 build/appicon.png 生成全部平台图标。
 
-```bash
+开发模式的普通 Vite 页面不包含 Wails API 代理。浏览器预览可运行独立后端，然后使用 frontend/vite.preview.config.mts；调试涉及写入时使用数据库副本。
+
+## 数据与旧版升级
+
+默认配置目录为 `UserConfigDir/primordialweave/zhusuan`，数据库为 `zhusuan.db`：
+
+- macOS：`~/Library/Application Support/primordialweave/zhusuan`
+- Windows：`%APPDATA%\primordialweave\zhusuan`
+- Linux：`~/.config/primordialweave/zhusuan`
+
+首次安装的新数据库会生成随机初始密码，保存于该目录的 `initial-credentials.txt`（0600权限）。不要把开发示例密码用于生产。
+
+旧 Orange 默认数据库在首次启动时通过 SQLite 一致快照迁入新目录，原库保留，已有新库不覆盖。非空自定义 `DB_PATH` 继续使用原路径。Windows 安装器继承旧安装位置，完成安装后需要启动一次珠算；保存的登录信息与必要外观设置按新身份迁移。详见 [迁移说明](docs/migration.md)。
+
+`.env` 可配置 `DB_TYPE`、`DB_PATH`、云端数据库连接、`API_SERVER_PORT`、`GITHUB_REPO` 和日志选项。生产环境必须配置随机 `JWT_SECRET`，限制外部 API/metrics 的访问，保持数据库与备份目录只对必要用户可读写。JWT 使用当前用户状态/角色校验；退出登录清除本地会话，不能据此宣称服务端令牌即时撤销。
+
+## 检查与发布
+
+```sh
 cd frontend
-npm install
+node node_modules/eslint/bin/eslint.js src --max-warnings=0
+npm run test:run
+npm run build
 cd ..
+ZHUSUAN_CONFIG_ROOT=/tmp/zhusuan-check go test -race . ./internal/... ./cmd/...
+go vet . ./internal/... ./cmd/...
+python3 scripts/test_release.py
 ```
 
-3. **运行开发模式**
+发布流程在三个平台分别构建校验，再统一上传草稿、核对完整资产、公开 Release。更新器读取静态 update.json 并校验 SHA-256；新版本安装成功后请求重启应用。系统安装、UAC、旧操作系统兼容性与新进程初始化失败回滚的实际范围见 [发布说明](docs/release.md)。
 
-```bash
-#这将启动 Wails 开发服务器，支持热重载
-wails3 dev
-```
+## 贡献与许可证
 
-4. **构建生产版本**
-
-```bash
-wails3 build
-```
-
-构建产物将位于 `bin` 目录下。
-
-### 初始登录
-
-应用启动并进行数据库播种(Seeding)后，使用以下默认管理员账号登录：
-
-- **用户名**: `admin`
-- **密码**: `admin123`
-
-## ⚙️ 配置说明
-
-项目支持使用 `.env` 文件进行配置。你可以复制 `.env.example` 为 `.env` 并根据需要修改：
-
-### 数据库配置
-
-Orange 支持三种数据库：**SQLite** (默认)、**MySQL** 和 **PostgreSQL**。
-
-```ini
-# 数据库类型: sqlite (默认), mysql, postgres
-DB_TYPE=sqlite
-
-# 数据库路径 (默认: 系统用户配置目录下的 orange.db)
-# SQLite 配置 (仅 DB_TYPE=sqlite 时有效)
-DB_PATH=orange.db
-
-# MySQL/PostgreSQL 配置
-DB_HOST=localhost
-DB_PORT=3306          # MySQL: 3306, PostgreSQL: 5432
-DB_USER=root
-DB_PASSWORD=
-DB_NAME=orange
-
-# SSL 连接模式 (PostgreSQL)
-# disable: 本地开发环境
-# require: 云托管数据库 (Nile, Supabase, AWS RDS 等)
-DB_SSL_MODE=disable
-
-# 是否自动创建数据库
-# true: 本地环境，首次连接时自动创建
-# false: 云托管数据库，由服务商预先创建
-DB_AUTO_CREATE=true
-```
-
-> **提示**: 使用云数据库 (如 Nile, Supabase) 时，请设置 `DB_SSL_MODE=require` 和 `DB_AUTO_CREATE=false`。
-
-### 其他配置
-
-```ini
-# JWT Configuration
-# JWT 签名密钥 (生产环境务必修改)
-JWT_SECRET=orange-secret-key-change-in-production
-TOKEN_EXPIRY=24
-
-# Logger Configuration
-# 是否启用文件日志
-LOG_ENABLE=true
-# 日志级别: debug, info, warn, error
-LOG_LEVEL=debug
-# 日志文件路径 (默认: 系统用户配置目录/log/orange.log)
-LOG_PATH=orange.log
-# 单个日志文件最大大小 (MB)
-LOG_MAX_SIZE=10
-# 保留旧日志文件的最大个数
-LOG_MAX_BACKUPS=5
-# 保留旧日志文件的最大天数
-LOG_MAX_AGE=30
-# 是否压缩旧日志文件
-LOG_COMPRESS=true
-
-# GitHub Updates
-# 用于检查更新的仓库地址
-GITHUB_REPO=FruitsAI/Orange
-```
-
-## 📸 界面预览
-
-<div align="center">
-<table>
-<tr>
-<td align="center"><b>工作台</b></td>
-<td align="center"><b>项目管理</b></td>
-<td align="center"><b>收款日历</b></td>
-</tr>
-<tr>
-<td><img src="frontend/public/dashboard.png" alt="工作台" width="400"></td>
-<td><img src="frontend/public/projects.png" alt="项目管理" width="400"></td>
-<td><img src="frontend/public/calendar.png" alt="收款日历" width="400"></td>
-</tr>
-<tr>
-<td align="center"><b>数据分析</b></td>
-<td align="center"><b>字典管理</b></td>
-<td align="center"><b>关于</b></td>
-</tr>
-<tr>
-<td><img src="frontend/public/analytics.png" alt="数据分析" width="400"></td>
-<td><img src="frontend/public/dictionary.png" alt="字典管理" width="400"></td>
-<td><img src="frontend/public/about.png" alt="关于" width="400"></td>
-</tr>
-</table>
-</div>
-
-## 📂 目录结构
-
-```
-Orange/
-├── build/              # Wails 构建相关配置与资源 (AppIcon 等)
-├── cmd/                # Go 应用程序入口
-├── frontend/           # Vue 3 前端源代码
-│   ├── src/
-│   │   ├── components/ # 可复用组件
-│   │   ├── views/      # 页面视图
-│   │   ├── stores/     # Pinia 状态存储
-│   │   └── ...
-├── internal/           # Go 后端业务逻辑 (私有包)
-│   ├── config/         # 配置加载
-│   ├── database/       # 数据库初始化与 Seed
-│   ├── handler/        # HTTP 请求处理器 (Controller)
-│   ├── middleware/     # Gin 中间件 (Auth, Logger)
-│   ├── models/         # GORM 数据模型
-│   ├── pkg/            # 通用工具库 (JWT, Response, Logger)
-│   ├── repository/     # 数据访问层 (DAO)
-│   ├── router/         # 路由定义
-│   └── service/        # 业务逻辑层
-├── main.go             # 应用主入口
-├── go.mod              # Go 依赖定义
-└── wails.json          # Wails 项目配置
-```
-
-## 🤝 贡献
-
-欢迎提交 Pull Request 或 Issue 来帮助改进 Orange！
-
-1. Fork 本仓库
-2. 创建特性分支 (`git checkout -b feature/AmazingFeature`)
-3. 提交更改 (`git commit -m 'Add some AmazingFeature'`)
-4. 推送到分支 (`git push origin feature/AmazingFeature`)
-5. 提交 Pull Request
-
-## 📄 许可证
-
-本项目基于 MIT 许可证开源。详见 [LICENSE](./LICENSE) 文件。
+欢迎提交 Issue 或 Pull Request。变更请附对应测试/构建证据，UI 变更附脱敏截图。遵循 [MIT 许可证](LICENSE)。

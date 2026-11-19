@@ -1,101 +1,15 @@
-# Orange - 财务收款管理系统
+# 珠算前端
 
-<p align="center">
-  <strong>🍊 Orange 是一个现代化的财务收款管理系统原型，采用 Liquid Glass 设计语言，提供优雅的用户体验。</strong>
-</p>
+React 19 + TypeScript + Vite 7，路由使用 React Router，状态使用 Zustand，公共视觉层为 frontend/src/design-system 的 ODS。当前主题是烟雨/夜雨，主色为青绿色。
 
-## ✨ 功能特性
+## 开发
 
-- **📊 工作台** - 概览收款统计、收入趋势图表、近期项目和即将到期收款
-- **📁 项目管理** - 管理项目信息，追踪合同金额和收款进度
-- **📅 收款日历** - 可视化日历展示收款计划和到期提醒
-- **📈 数据分析** - 多维度收款数据分析，收款率、逾期比例等关键指标
-- **⚙️ 系统设置** - 个人信息管理和系统配置
+使用 Node.js 24，`npm ci` 安装锁定依赖。`npm run dev` 仅提供前端开发服务；普通浏览器需要 vite.preview.config.mts 的 API 代理，Wails 使用自己的资源/API处理器。
 
-## 🎨 设计特色
+- `npm run test:run`：Vitest。
+- `node node_modules/eslint/bin/eslint.js src --max-warnings=0`：不自动修改文件的检查。
+- `npm run build`：TypeScript project references 与 production build。
 
-- **Liquid Glass 设计语言** - 毛玻璃效果、微妙阴影、优雅渐变
-- **橙色主题** - 统一的橙色主色调 (#FF9F0A)
-- **响应式布局** - 完美适配桌面、平板和手机
-- **深色模式** - 支持明暗主题切换
+main.tsx 先迁移缺失的旧偏好，再动态载入 bootstrap.tsx 初始化 store/router。新的存储值优先。不要把账号/令牌直接打印到日志。
 
-## 🛠 技术栈
-
-| 类别 | 技术                       |
-| ---- | -------------------------- |
-| 框架 | Vue 3 + TypeScript         |
-| 构建 | Vite 7                     |
-| 路由 | Vue Router 4               |
-| 状态 | Pinia 3                    |
-| 图表 | Chart.js 4                 |
-| 图标 | Remix Icon                 |
-| 样式 | Vanilla CSS (Liquid Glass) |
-
-## 📁 项目结构
-
-```
-src/
-├── assets/          # 样式资源
-│   ├── base.css       # 基础样式和 CSS 变量
-│   ├── liquid-glass.css # Liquid Glass 设计系统
-│   └── main.css       # 主样式入口
-├── components/      # 组件
-│   ├── common/        # 通用组件 (GlassCard, StatusBadge)
-│   ├── dashboard/     # 仪表盘组件 (StatCard, IncomeChart...)
-│   ├── layout/        # 布局组件 (AppHeader, AppSidebar)
-│   └── icons/         # 图标组件
-├── views/           # 页面视图
-│   ├── DashboardView.vue   # 工作台
-│   ├── ProjectsView.vue    # 项目管理
-│   ├── CalendarView.vue    # 收款日历
-│   ├── AnalyticsView.vue   # 数据分析
-│   ├── SettingsView.vue    # 系统设置
-│   └── LoginView.vue       # 登录页
-├── stores/          # Pinia 状态管理
-├── router/          # 路由配置
-└── main.ts          # 应用入口
-```
-
-## 🚀 快速开始
-
-### 环境要求
-
-- Node.js 20.19.0+ 或 22.12.0+
-- npm 或 pnpm
-
-### 安装依赖
-
-```bash
-npm install
-```
-
-### 启动开发服务器
-
-```bash
-npm run dev
-```
-
-### 构建生产版本
-
-```bash
-npm run build
-```
-
-### 代码检查
-
-```bash
-npm run lint
-```
-
-## 📱 响应式断点
-
-| 断点            | 目标设备 | 主要变化              |
-| --------------- | -------- | --------------------- |
-| > 1280px        | 桌面大屏 | 完整布局，侧边栏展开  |
-| 1024px - 1280px | 笔记本   | 侧边栏收起，网格调整  |
-| 768px - 1024px  | 平板     | 单列布局，统计卡片2列 |
-| < 768px         | 手机     | 侧边栏变底部 Dock     |
-
-## 📄 许可证
-
-MIT License
+UI截图、存储路径及发布步骤见仓库根 README 和 docs/migration.md、docs/release.md。

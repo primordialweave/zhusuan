@@ -8,27 +8,27 @@
         AllowPromptForPassword="false">
     </Settings>
     <Installer
-        Path="orange"
+        Path="zhusuan"
         Arguments=""
-        InstallLocation="C:\Program Files\FruitsAI\Orange">
+        InstallLocation="C:\Program Files\PrimordialWeave\zhusuan">
     </Installer>
     <PackageInformation
-        PackageName="Orange"
-        PackageDisplayName="Orange"
-        PublisherName="CN=FruitsAI"
-        PublisherDisplayName="FruitsAI"
-        Version="0.1.0.0"
-        PackageDescription="FruitsAI Orange Desktop App">
+        PackageName="zhusuan"
+        PackageDisplayName="珠算"
+        PublisherName="CN=PrimordialWeave"
+        PublisherDisplayName="PrimordialWeave"
+        Version="1.0.0.0"
+        PackageDescription="PrimordialWeave zhusuan Desktop App">
         <Capabilities>
             <Capability Name="runFullTrust" />
             
         </Capabilities>
         <Applications>
             <Application
-                Id="com.willxue.fruitsai.orange"
-                Description="FruitsAI Orange Desktop App"
-                DisplayName="Orange"
-                ExecutableName="orange"
+                Id="org.primordialweave.zhusuan"
+                Description="PrimordialWeave zhusuan Desktop App"
+                DisplayName="珠算"
+                ExecutableName="zhusuan"
                 EntryPoint="Windows.FullTrustApplication">
                 
             </Application>
@@ -41,13 +41,13 @@
         </Dependencies>
         <Properties>
             <Framework>false</Framework>
-            <DisplayName>Orange</DisplayName>
-            <PublisherDisplayName>FruitsAI</PublisherDisplayName>
-            <Description>FruitsAI Orange Desktop App</Description>
+            <DisplayName>珠算</DisplayName>
+            <PublisherDisplayName>PrimordialWeave</PublisherDisplayName>
+            <Description>PrimordialWeave zhusuan Desktop App</Description>
             <Logo>Assets\AppIcon.png</Logo>
         </Properties>
     </PackageInformation>
-    <SaveLocation PackagePath="orange.msix" />
+    <SaveLocation PackagePath="zhusuan.msix" />
     <PackageIntegrity>
         <CertificatePath></CertificatePath>
     </PackageIntegrity>

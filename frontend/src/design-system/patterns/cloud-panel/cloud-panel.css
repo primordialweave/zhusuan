@@ -1,0 +1,74 @@
+/*
+ * The outline is a nine-slice mask: four scalloped corner blocks and straight edges, so the
+ * pane can take any size. The corner block is 54 units of the mask image, drawn 2.25rem wide.
+ */
+.ods-cloud-panel {
+  position: relative;
+  display: flex;
+  min-width: 0;
+  flex-direction: column;
+  color: var(--ods-color-fg-default);
+  isolation: isolate;
+}
+
+.ods-cloud-panel__pane,
+.ods-cloud-panel__rim {
+  position: absolute;
+  inset: 0;
+  pointer-events: none;
+}
+
+/* A veil over a pre-blurred still, not a live blur: engines do not clip a backdrop blur to a mask. */
+.ods-cloud-panel__pane {
+  overflow: hidden;
+  background:
+    linear-gradient(var(--ods-material-frost-veil), var(--ods-material-frost-veil)),
+    var(--cloud-panel-backdrop, linear-gradient(transparent, transparent));
+  background-color: var(--ods-color-bg-surface);
+  -webkit-mask-box-image: url('./cloud-panel-mask.svg') 54 fill / 2.25rem stretch;
+  mask-border: url('./cloud-panel-mask.svg') 54 fill / 2.25rem stretch;
+}
+
+.ods-cloud-panel__rim {
+  background: var(--ods-material-frost-rim);
+  -webkit-mask-box-image: url('./cloud-panel-rim.svg') 54 fill / 2.25rem stretch;
+  mask-border: url('./cloud-panel-rim.svg') 54 fill / 2.25rem stretch;
+}
+
+/* Controls on the pane are lighter glass with the pane's own rim, not solid fills. */
+.ods-cloud-panel__content {
+  --ods-color-bg-surface: var(--ods-material-frost-control);
+  --ods-color-bg-canvas-subtle: color-mix(
+    in srgb,
+    var(--ods-material-frost-control) 55%,
+    transparent
+  );
+  --ods-color-border-default: var(--ods-material-frost-rim);
+
+  position: relative;
+  display: flex;
+  min-width: 0;
+  flex: 1;
+  flex-direction: column;
+}
+
+.ods-cloud-panel[data-padding='md'] .ods-cloud-panel__content {
+  padding: var(--ods-space-8);
+}
+
+.ods-cloud-panel[data-padding='lg'] .ods-cloud-panel__content {
+  padding: var(--ods-space-12) var(--ods-space-10);
+}
+
+/* Without a nine-slice mask the pane keeps its material and falls back to round corners. */
+@supports not ((-webkit-mask-box-image: none) or (mask-border: none)) {
+  .ods-cloud-panel__pane {
+    border-radius: var(--ods-radius-lg);
+  }
+
+  .ods-cloud-panel__rim {
+    border: 2px solid var(--ods-material-frost-rim);
+    border-radius: var(--ods-radius-lg);
+    background: none;
+  }
+}

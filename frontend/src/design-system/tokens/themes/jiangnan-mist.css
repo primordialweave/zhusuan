@@ -1,0 +1,118 @@
+/* 烟雨 — the light theme. Misty jade ink on rain-washed paper. */
+:root:not([data-theme]),
+[data-theme='light'] {
+  color-scheme: light;
+
+  --ods-color-bg-canvas: var(--ods-ref-color-mist-50);
+  --ods-color-bg-canvas-rgb: 231, 239, 232;
+  --ods-color-bg-canvas-subtle: #e9f2ea;
+  --ods-color-bg-surface: #eef4f0;
+  --ods-color-bg-surface-raised: rgba(235, 243, 237, 0.92);
+  --ods-color-bg-surface-glass: rgba(244, 250, 245, 0.31);
+  --ods-color-bg-surface-glass-dense: rgba(244, 250, 245, 0.45);
+  --ods-color-bg-surface-hover: rgba(45, 101, 74, 0.07);
+  --ods-color-bg-surface-pressed: rgba(45, 101, 74, 0.12);
+  --ods-color-fg-default: var(--ods-ref-color-jade-900);
+  --ods-color-fg-default-rgb: 16, 50, 26;
+  --ods-color-fg-relaxed: rgba(16, 50, 26, 0.88);
+  --ods-color-fg-muted: var(--ods-ref-color-mist-500);
+  --ods-color-fg-subtle: #4d6054;
+  --ods-color-fg-disabled: rgba(16, 50, 26, 0.32);
+  --ods-color-fg-inverse: var(--ods-ref-color-white);
+  --ods-color-fg-brand-surface: #f4faf4;
+  --ods-color-fg-brand-surface-muted: rgba(244, 250, 244, 0.92);
+  --ods-color-fg-brand-surface-subtle: rgba(244, 250, 244, 0.84);
+  --ods-color-fg-brand-surface-danger: #ffd9d0;
+  --ods-color-border-default: var(--ods-ref-color-mist-200);
+  --ods-color-border-strong: var(--ods-ref-color-mist-300);
+  --ods-color-border-control: var(--ods-ref-color-mist-400);
+  --ods-color-border-focus: var(--ods-color-accent-text);
+  --ods-color-border-brand-surface: rgba(255, 255, 255, 0.28);
+  --ods-color-accent: #6fa574;
+  --ods-color-accent-text: var(--ods-ref-color-jade-700);
+  --ods-color-accent-rgb: 104, 155, 105;
+  --ods-color-accent-hover: #7db183;
+  --ods-color-accent-pressed: var(--ods-ref-color-jade-500);
+  --ods-color-accent-soft: rgba(104, 155, 105, 0.26);
+  --ods-color-accent-fg: var(--ods-ref-color-jade-900);
+  --ods-color-accent-secondary: var(--ods-ref-color-gold-600);
+  /* A warm apricot for decorative brush strokes; never a text colour. */
+  --ods-color-accent-warm: var(--ods-ref-color-apricot-400);
+  --ods-color-status-success: #2a6a40;
+  --ods-color-status-success-soft: rgba(98, 149, 105, 0.2);
+  --ods-color-status-warning: var(--ods-ref-color-gold-700);
+  --ods-color-status-warning-soft: rgba(233, 206, 134, 0.42);
+  --ods-color-status-danger: var(--ods-ref-color-rust-600);
+  --ods-color-status-danger-soft: rgba(140, 59, 43, 0.12);
+  --ods-color-status-info: var(--ods-ref-color-lake-600);
+  --ods-color-status-info-soft: rgba(46, 98, 118, 0.12);
+  --ods-color-status-teal: var(--ods-ref-color-teal-500);
+  --ods-color-overlay-scrim: rgba(19, 35, 31, 0.32);
+  --ods-color-ambient-glow: rgba(98, 149, 105, 0.05);
+  --ods-color-selection: rgba(98, 149, 105, 0.3);
+  --ods-color-scene-veil: rgba(231, 239, 232, 0);
+  /* Extra mist over the land and trees behind business pages; the water stays clear. */
+  --ods-color-scene-mist: rgba(231, 239, 232, 0.3);
+  --ods-shadow-soft: 0 2px 8px rgba(24, 57, 44, 0.05);
+  --ods-shadow-panel: 0 10px 30px rgba(24, 57, 44, 0.1);
+  --ods-shadow-modal: 0 30px 90px rgba(24, 57, 44, 0.22), 0 4px 16px rgba(24, 57, 44, 0.1);
+  --ods-shadow-brand-surface: 0 8px 24px rgba(24, 57, 44, 0.16);
+  --ods-shadow-nav-selected: 0 3px 8px rgba(24, 57, 44, 0.16);
+  --ods-gradient-glow: linear-gradient(180deg, #d0ebcc 0%, #bde1bb 100%);
+  /* Lit from the upper left, like the glass it sits on. */
+  --ods-gradient-nav-selected: radial-gradient(
+    75% 90% at 38% 25%,
+    #d7edce 0%,
+    #cce5c4 33%,
+    #c1deba 65%,
+    #bbdbb6 90%
+  );
+  --ods-gradient-text: linear-gradient(135deg, #2d654a 0%, #4b7f58 58%, #629569 100%);
+  --ods-gradient-brand-surface: linear-gradient(135deg, #2d654a 0%, #3a7658 54%, #24553e 100%);
+  --ods-material-glass-blur: 24px;
+  --ods-material-glass-saturation: 115%;
+  --ods-material-glass-brightness: 1.03;
+  --ods-material-glass-contrast: 1;
+  /*
+   * The rim catches light along the top, strongest at the left and gone by the top-right corner,
+   * and again at the bottom-right corner. The sides and the rest of the bottom stay faint.
+   */
+  --ods-material-glass-specular:
+    radial-gradient(
+      75% 40% at 22% 0%,
+      rgba(255, 255, 255, 0.78) 0%,
+      rgba(255, 255, 255, 0.5) 50%,
+      rgba(255, 255, 255, 0.38) 80%,
+      transparent 100%
+    ),
+    radial-gradient(10% 40% at 3% 10%, rgba(255, 255, 255, 0.25), transparent 100%),
+    radial-gradient(18% 55% at 97% 88%, rgba(255, 255, 255, 0.9), transparent 100%),
+    linear-gradient(180deg, rgba(255, 255, 255, 0.1), rgba(255, 255, 255, 0.15));
+  --ods-material-glass-sheen: linear-gradient(
+    168deg,
+    rgba(255, 255, 255, 0.1) 0%,
+    rgba(255, 255, 255, 0) 46%,
+    rgba(16, 50, 26, 0.035) 100%
+  );
+  --ods-material-glass-shadow-outer: 0 8px 24px rgba(24, 57, 44, 0.08);
+  --ods-material-glass-shadow-inner: inset 0 -8px 8px -8px rgba(255, 255, 255, 0.5);
+  /* Dense glass has a crisp rim: no glow inside, and a heavier shadow below. */
+  --ods-material-glass-shadow-dense: 0 10px 28px rgba(24, 57, 44, 0.14);
+  --ods-material-glass-border: 1px solid rgba(255, 255, 255, 0.78);
+  --ods-material-glass-border-subtle: 1px solid rgba(255, 255, 255, 0.55);
+  /* Frost paints a pre-blurred still under this veil instead of blurring live. */
+  --ods-material-frost-veil: rgba(226, 238, 229, 0.76);
+  --ods-material-frost-rim: rgba(249, 252, 248, 0.95);
+  /* Fields and other controls on frost: a lighter pane of the same glass, not a solid fill. */
+  --ods-material-frost-control: rgba(255, 255, 255, 0.34);
+  --ods-data-series-planned: var(--ods-ref-color-gold-600);
+  --ods-data-series-actual: var(--ods-ref-color-jade-500);
+  --ods-data-series-actual-fill: rgba(98, 149, 105, 0.2);
+  --ods-data-part-paid: var(--ods-ref-color-jade-500);
+  --ods-data-part-pending: var(--ods-ref-color-gold-300);
+  --ods-data-grid: rgba(24, 57, 44, 0.1);
+  --ods-data-tooltip-bg: #f6fbf6;
+  --ods-data-tooltip-fg: #10321a;
+  --ods-data-tooltip-border: #cedcd1;
+  --ods-data-point-bg: #f6fbf6;
+}
