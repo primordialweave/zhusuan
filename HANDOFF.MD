@@ -6,7 +6,7 @@
 
 - 用户在上个会话明确选择“使用 1.0.1（推荐）”，本会话继续同一任务；已有合并/发布授权，无需重复确认版本。当前分支 `codex/macos-dmg-packages`，1.0.0 的标签和公开附件保持原样。
 - 范围：Apple Silicon / Intel DMG 与架构 ZIP；macOS Finder/Dock 图标无额外白底、中文包名“珠算”；Windows UTF-8 中文、用户目录新安装路径、不继承 Orange；令牌和通知弹层不溢出、通知详情内边距/固定高度；金额普通输入、最多两位小数、必填中文错误和红框；移除提示左粗线。
-- 已统一源版本为 1.0.1；前端598例/ESLint/build、Go race139顶层154子测试/vet/增量lint0、Python31例/actionlint通过。原生图标和两架构真实源码DMG/ZIP校验通过。ego lite已验1280×800/760×520下令牌、通知、金额必填校验及原始类型/青绿回归，最后CSS调整后的build与定向8例通过。PR #21 已合并为0959eb1；PR CI44558648378与main CI44560362947全部通过，v1.0.1已指向该提交。Release44562497173正在三平台构建，尚未公开；自有3466/9331与ego space8已关闭。最终证据写入 `docs/release-readiness-1.0.1.md`。
+- 已统一源版本为 1.0.1；前端598例/ESLint/build、Go race139顶层154子测试/vet/增量lint0、Python31例/actionlint通过。原生图标和两架构真实源码DMG/ZIP校验通过。ego lite已验1280×800/760×520下令牌、通知、金额必填校验及原始类型/青绿回归，最后CSS调整后的build与定向8例通过。PR #21 已合并为0959eb1；PR CI44558648378与main CI44560362947全部通过，v1.0.1已指向该提交。首轮Release44562497173/Recovery44564873938未公开；修复后最终candidate176c9780通过mainCI44569458459与WindowsCheck44569492188。v1.0.1未公开tag使用lease更新，最终Release44571413947正在三平台构建，无recipe替换；自有3466/9331与ego space8已关闭。最终证据写入 `docs/release-readiness-1.0.1.md`。
 
 ## 1.1 珠算 1.0.0 已正式发布
 
@@ -444,3 +444,5 @@
 - WindowsCheck44568004757原生IShellLinkW验证桌面/开始菜单中文快捷方式完整路径和hash正确，WScript空值是假阴性。后续smoke真实发现显式/D被覆盖：NSIS Main.c已截去$CMDLINE中的/D（官方var.but明确），用GetOptions $CMDLINE检测永远失败，会继承已注册默认路径。需改为基于NSIS预置INSTDIR或读取未截断OS命令行后再决定是否注册发现，不能删该断言。
 
 - /D真实修复：InstallDir头保持空，.onInit只在INSTDIR为空时设置LOCALAPPDATA默认/查询新注册；NSIS预置的显式/D非空保留。源码确认EXEDIR回填仅卸载器分支，故installer可可靠区分。新增普通/UPDATE两种显式Orange目录拒绝、原注册不变、实际exe落指定目录断言；NSIS隔离编译通过。
+
+- 最终Release44571413947 Windows与Linux全job通过，macOS排队15分钟后GitHub自动cancel；annotation明确The job was not acquired by Runner of type hosted... / macOS arm64 capacity constraints，runner_id0无步骤。这不是构建失败。保留同176c9780的两平台artifact，改Intel macOS runner专用workflow验同tag后聚合，不重复已过平台。
