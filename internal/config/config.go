@@ -100,9 +100,7 @@ func Load() {
 	var allowedOrigins []string
 	if allowedOriginsEnv != "" {
 		// 支持逗号分隔的多个域名
-		for _, origin := range splitAndTrim(allowedOriginsEnv, ",") {
-			allowedOrigins = append(allowedOrigins, origin)
-		}
+		allowedOrigins = append(allowedOrigins, splitAndTrim(allowedOriginsEnv, ",")...)
 	} else {
 		allowedOrigins = defaultAllowedOrigins
 	}

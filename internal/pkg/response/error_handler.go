@@ -1,3 +1,4 @@
+// Package response writes consistent JSON responses and maps service errors.
 package response
 
 import (

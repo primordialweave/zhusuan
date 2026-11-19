@@ -4,9 +4,10 @@ import (
 	"fmt"
 	"time"
 
+	"gorm.io/gorm"
+
 	"github.com/primordialweave/zhusuan/internal/database"
 	"github.com/primordialweave/zhusuan/internal/models"
-	"gorm.io/gorm"
 )
 
 // getDateFormatExpr 根据数据库类型返回日期格式化 SQL 表达式
@@ -66,6 +67,7 @@ func (r *PaymentRepository) FindByID(id int64) (*models.Payment, error) {
 	return &payment, nil
 }
 
+// FindByIDForUser finds a payment owned by the given user.
 func (r *PaymentRepository) FindByIDForUser(id, userID int64) (*models.Payment, error) {
 	var payment models.Payment
 	if err := r.db.Where("id = ? AND user_id = ?", id, userID).First(&payment).Error; err != nil {

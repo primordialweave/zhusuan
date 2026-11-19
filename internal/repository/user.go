@@ -1,9 +1,10 @@
 package repository
 
 import (
+	"gorm.io/gorm"
+
 	"github.com/primordialweave/zhusuan/internal/database"
 	"github.com/primordialweave/zhusuan/internal/models"
-	"gorm.io/gorm"
 )
 
 // UserRepository 用户数据仓库
@@ -51,6 +52,7 @@ func (r *UserRepository) ExistsByEmail(email string) bool {
 	return count > 0
 }
 
+// ExistsByEmailExceptID checks whether another user already uses the email.
 func (r *UserRepository) ExistsByEmailExceptID(email string, id int64) bool {
 	var count int64
 	r.db.Model(&models.User{}).Where("email = ? AND id <> ?", email, id).Count(&count)

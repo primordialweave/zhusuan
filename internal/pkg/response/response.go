@@ -166,12 +166,13 @@ func TooManyRequests(c *gin.Context, message ...string) {
 // GetPagination 从请求中解析分页参数
 // 返回 page 和 pageSize，自动处理边界值
 func GetPagination(c *gin.Context) (page, pageSize int) {
-	page, _ = strconv.Atoi(c.DefaultQuery("page", "1"))
-	if page < 1 {
+	var err error
+	page, err = strconv.Atoi(c.DefaultQuery("page", "1"))
+	if err != nil || page < 1 {
 		page = 1
 	}
-	pageSize, _ = strconv.Atoi(c.DefaultQuery("page_size", "10"))
-	if pageSize < 1 {
+	pageSize, err = strconv.Atoi(c.DefaultQuery("page_size", "10"))
+	if err != nil || pageSize < 1 {
 		pageSize = 10
 	}
 	if pageSize > 100 {

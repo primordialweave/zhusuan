@@ -1,3 +1,4 @@
+// Package main hosts the standalone zhusuan HTTP API server.
 package main
 
 import (

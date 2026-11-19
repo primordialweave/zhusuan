@@ -100,11 +100,7 @@ func Seed(db *gorm.DB) error {
 				{Label: "其他", Value: "other", Sort: 5, Status: 1},
 			}},
 		}
-		if err := tx.Create(&dictionaries).Error; err != nil {
-			return err
-		}
-
-		return nil
+		return tx.Create(&dictionaries).Error
 	})
 }
 
@@ -125,7 +121,9 @@ func writeInitialCredentials(adminPassword, userPassword string) string {
 	if err := os.WriteFile(path, []byte(content), 0600); err != nil {
 		slog.Error("failed to write initial credentials file", "error", err)
 		// 清理可能的半写文件，避免残留不完整/过期的凭据误导使用者
-		_ = os.Remove(path)
+		if cleanupErr := os.Remove(path); cleanupErr != nil {
+			slog.Debug("failed to remove incomplete initial credentials", "error", cleanupErr)
+		}
 		return ""
 	}
 	return path
@@ -164,9 +162,9 @@ func generateStrongPassword(length int) string {
 	return string(password)
 }
 
-// randomInt 生成 [0, max) 范围内的随机整数
-func randomInt(max int) int {
-	n, err := rand.Int(rand.Reader, big.NewInt(int64(max)))
+// randomInt 生成 [0, upperBound) 范围内的随机整数
+func randomInt(upperBound int) int {
+	n, err := rand.Int(rand.Reader, big.NewInt(int64(upperBound)))
 	if err != nil {
 		// 如果随机数生成失败，使用备用方案
 		return 0

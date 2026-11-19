@@ -4,6 +4,7 @@ import (
 	"encoding/json"
 	"fmt"
 	"log"
+	"log/slog"
 	"time"
 )
 
@@ -23,7 +24,9 @@ func GetJSON(key string, v interface{}) error {
 
 	if err := json.Unmarshal(data, v); err != nil {
 		// 自动删除损坏的缓存
-		_ = Delete(key)
+		if cleanupErr := Delete(key); cleanupErr != nil {
+			slog.Debug("Unable to remove corrupt cache entry", "error", cleanupErr)
+		}
 		return err
 	}
 

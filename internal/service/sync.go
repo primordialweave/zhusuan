@@ -314,30 +314,11 @@ func (s *SyncService) deleteExtras(ctx context.Context, remoteDB syncExecutor, t
 
 // syncUsers 同步用户表
 func (s *SyncService) syncUsers(ctx context.Context, localDB *gorm.DB, remoteDB syncExecutor, dbType string) (int64, string) {
-	var users []models.User
-	if err := localDB.Find(&users).Error; err != nil {
-		return 0, fmt.Sprintf("读取本地数据失败: %v", err)
-	}
+	return syncRecords(ctx, s, localDB, remoteDB, "users", dbType, userSyncValues)
+}
 
-	var ids []interface{}
-	for _, u := range users {
-		ids = append(ids, u.ID)
-		query, err := s.buildUpsertQuery("users", dbType)
-		if err != nil {
-			return 0, err.Error()
-		}
-		_, err = remoteDB.ExecContext(ctx, query, u.ID, u.Username, u.Password, u.Name, u.Email, u.Phone, u.Avatar, u.Role, u.Department, u.Position, u.Status, u.CreateTime, u.UpdateTime)
-		if err != nil {
-			return 0, fmt.Sprintf("同步失败: %v", err)
-		}
-	}
-
-	// 删除多余数据
-	if err := s.deleteExtras(ctx, remoteDB, "users", ids, dbType); err != nil {
-		return 0, fmt.Sprintf("清理 users 多余数据失败: %v", err)
-	}
-
-	return int64(len(users)), ""
+func userSyncValues(u models.User) (int64, []interface{}) {
+	return u.ID, []interface{}{u.ID, u.Username, u.Password, u.Name, u.Email, u.Phone, u.Avatar, u.Role, u.Department, u.Position, u.Status, u.CreateTime, u.UpdateTime}
 }
 
 // syncProjects 同步项目表
@@ -369,29 +350,34 @@ func (s *SyncService) syncProjects(ctx context.Context, localDB *gorm.DB, remote
 
 // syncPayments 同步收款表
 func (s *SyncService) syncPayments(ctx context.Context, localDB *gorm.DB, remoteDB syncExecutor, dbType string) (int64, string) {
-	var payments []models.Payment
-	if err := localDB.Find(&payments).Error; err != nil {
+	return syncRecords(ctx, s, localDB, remoteDB, "payments", dbType, paymentSyncValues)
+}
+
+func paymentSyncValues(p models.Payment) (int64, []interface{}) {
+	return p.ID, []interface{}{p.ID, p.ProjectID, p.Stage, p.Amount, p.Percentage, p.PlanDate, p.Status, p.ActualDate, p.Method, p.Remark, p.UserID, p.CreateTime, p.UpdateTime}
+}
+
+func syncRecords[T any](ctx context.Context, service *SyncService, localDB *gorm.DB, remoteDB syncExecutor, table, dbType string, row func(T) (int64, []interface{})) (int64, string) {
+	var records []T
+	if err := localDB.Find(&records).Error; err != nil {
 		return 0, fmt.Sprintf("读取本地数据失败: %v", err)
 	}
-
-	var ids []interface{}
-	for _, p := range payments {
-		ids = append(ids, p.ID)
-		query, err := s.buildUpsertQuery("payments", dbType)
+	ids := make([]interface{}, 0, len(records))
+	for _, record := range records {
+		id, args := row(record)
+		ids = append(ids, id)
+		query, err := service.buildUpsertQuery(table, dbType)
 		if err != nil {
 			return 0, err.Error()
 		}
-		_, err = remoteDB.ExecContext(ctx, query, p.ID, p.ProjectID, p.Stage, p.Amount, p.Percentage, p.PlanDate, p.Status, p.ActualDate, p.Method, p.Remark, p.UserID, p.CreateTime, p.UpdateTime)
-		if err != nil {
+		if _, err := remoteDB.ExecContext(ctx, query, args...); err != nil {
 			return 0, fmt.Sprintf("同步失败: %v", err)
 		}
 	}
-
-	if err := s.deleteExtras(ctx, remoteDB, "payments", ids, dbType); err != nil {
-		return 0, fmt.Sprintf("清理 payments 多余数据失败: %v", err)
+	if err := service.deleteExtras(ctx, remoteDB, table, ids, dbType); err != nil {
+		return 0, fmt.Sprintf("清理 %s 多余数据失败: %v", table, err)
 	}
-
-	return int64(len(payments)), ""
+	return int64(len(records)), ""
 }
 
 // syncDictionaries 同步字典表

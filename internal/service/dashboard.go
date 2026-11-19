@@ -2,6 +2,7 @@ package service
 
 import (
 	"fmt"
+	"log/slog"
 	"time"
 
 	"github.com/primordialweave/zhusuan/internal/dto"
@@ -57,7 +58,9 @@ func normalizeDashboardPeriod(period string) string {
 // 供 Payment/Project 服务在数据变更后调用。
 func invalidateDashboardCache(userID int64) {
 	for _, period := range dashboardPeriods {
-		_ = cache.Delete(fmt.Sprintf("dashboard:stats:v1:%d:%s", userID, period))
+		if err := cache.Delete(fmt.Sprintf("dashboard:stats:v1:%d:%s", userID, period)); err != nil {
+			slog.Debug("Unable to invalidate dashboard statistics", "error", err)
+		}
 	}
 }
 
@@ -158,7 +161,9 @@ func (s *DashboardService) GetStats(userID int64, period string) (*dto.Stats, er
 		}
 
 		// 写入缓存
-		_ = cache.SetJSON(cacheKey, result, 1*time.Minute)
+		if err := cache.SetJSON(cacheKey, result, 1*time.Minute); err != nil {
+			slog.Debug("Unable to cache dashboard statistics", "error", err)
+		}
 		return result, nil
 	}
 
@@ -193,7 +198,9 @@ func (s *DashboardService) GetStats(userID int64, period string) (*dto.Stats, er
 	}
 
 	// 写入缓存
-	_ = cache.SetJSON(cacheKey, result, 1*time.Minute)
+	if err := cache.SetJSON(cacheKey, result, 1*time.Minute); err != nil {
+		slog.Debug("Unable to cache dashboard statistics", "error", err)
+	}
 	return result, nil
 }
 

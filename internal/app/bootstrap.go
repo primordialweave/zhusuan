@@ -1,3 +1,4 @@
+// Package app initializes the shared desktop/server application runtime.
 package app
 
 import (
@@ -6,6 +7,8 @@ import (
 	"runtime/debug"
 	"time"
 
+	"github.com/gin-gonic/gin"
+
 	"github.com/primordialweave/zhusuan/internal/config"
 	"github.com/primordialweave/zhusuan/internal/constants"
 	"github.com/primordialweave/zhusuan/internal/database"
@@ -13,7 +16,6 @@ import (
 	"github.com/primordialweave/zhusuan/internal/pkg/jwt"
 	"github.com/primordialweave/zhusuan/internal/pkg/logger"
 	"github.com/primordialweave/zhusuan/internal/router"
-	"github.com/gin-gonic/gin"
 )
 
 // RuntimeMode describes which host process is starting the shared backend.

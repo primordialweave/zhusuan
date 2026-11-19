@@ -3,6 +3,7 @@ package service
 import (
 	"fmt"
 	"log"
+	"log/slog"
 	"time"
 
 	"github.com/primordialweave/zhusuan/internal/models"
@@ -41,7 +42,9 @@ func (s *DictionaryService) List() ([]models.Dictionary, error) {
 	}
 
 	// 写入缓存
-	_ = cache.SetJSON(cacheKey, result, 5*time.Minute)
+	if err := cache.SetJSON(cacheKey, result, 5*time.Minute); err != nil {
+		slog.Debug("Unable to cache dictionary data", "error", err)
+	}
 	return result, nil
 }
 
@@ -69,7 +72,9 @@ func (s *DictionaryService) GetItems(code string) ([]models.DictionaryItem, erro
 	}
 
 	// 写入缓存
-	_ = cache.SetJSON(cacheKey, result, 5*time.Minute)
+	if err := cache.SetJSON(cacheKey, result, 5*time.Minute); err != nil {
+		slog.Debug("Unable to cache dictionary data", "error", err)
+	}
 	return result, nil
 }
 

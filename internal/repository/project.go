@@ -1,9 +1,10 @@
 package repository
 
 import (
+	"gorm.io/gorm"
+
 	"github.com/primordialweave/zhusuan/internal/database"
 	"github.com/primordialweave/zhusuan/internal/models"
-	"gorm.io/gorm"
 )
 
 // ProjectRepository 项目数据仓库
@@ -25,6 +26,7 @@ func (r *ProjectRepository) FindByID(id int64) (*models.Project, error) {
 	return &project, nil
 }
 
+// FindByIDForUser finds a project owned by the given user.
 func (r *ProjectRepository) FindByIDForUser(id, userID int64) (*models.Project, error) {
 	var project models.Project
 	if err := r.db.Where("id = ? AND user_id = ?", id, userID).First(&project).Error; err != nil {

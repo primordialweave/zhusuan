@@ -4,11 +4,15 @@ import (
 	"context"
 	"errors"
 	"log"
+	"log/slog"
 	"strings"
 
 	"crypto/sha256"
 	"encoding/hex"
 	"time"
+
+	"github.com/gin-gonic/gin"
+	"gorm.io/gorm"
 
 	"github.com/primordialweave/zhusuan/internal/database"
 	"github.com/primordialweave/zhusuan/internal/models"
@@ -16,8 +20,6 @@ import (
 	"github.com/primordialweave/zhusuan/internal/pkg/jwt"
 	"github.com/primordialweave/zhusuan/internal/pkg/response"
 	"github.com/primordialweave/zhusuan/internal/repository"
-	"github.com/gin-gonic/gin"
-	"gorm.io/gorm"
 )
 
 // JWTAuth JWT 鉴权中间件
@@ -154,7 +156,7 @@ func currentUserAuthState(userID int64) (active bool, role string) {
 	if err != nil {
 		if errors.Is(err, gorm.ErrRecordNotFound) {
 			// 用户已被删除：拒绝并缓存结果
-			_ = cache.Set(key, []byte("0"), userAuthCacheTTL)
+			cacheUserAuthState(key, []byte("0"))
 			return false, ""
 		}
 		log.Printf("Failed to query user auth state for %d: %v", userID, err)
@@ -162,13 +164,20 @@ func currentUserAuthState(userID int64) (active bool, role string) {
 	}
 
 	if user.Status != 1 {
-		_ = cache.Set(key, []byte("0"), userAuthCacheTTL)
+		cacheUserAuthState(key, []byte("0"))
 		return false, ""
 	}
-	_ = cache.Set(key, []byte("1:"+user.Role), userAuthCacheTTL)
+	cacheUserAuthState(key, []byte("1:"+user.Role))
 	return true, user.Role
 }
 
+func cacheUserAuthState(key string, value []byte) {
+	if err := cache.Set(key, value, userAuthCacheTTL); err != nil {
+		slog.Debug("Unable to cache user auth state", "error", err)
+	}
+}
+
+// GetUserID returns the authenticated user ID from the request context.
 func GetUserID(c *gin.Context) int64 {
 	if userID, exists := c.Get("user_id"); exists {
 		return userID.(int64)

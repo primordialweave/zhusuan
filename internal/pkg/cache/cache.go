@@ -1,7 +1,9 @@
+// Package cache provides memory/Redis caches with business-safe fallback behavior.
 package cache
 
 import (
 	"log"
+	"log/slog"
 	"os"
 	"time"
 )
@@ -22,7 +24,9 @@ func Init() error {
 			log.Printf("Redis连接失败，降级到内存缓存: %v", err)
 			globalCache = NewMemoryCache()
 		} else {
-			_ = redisCache.Delete("_health_check")
+			if err := redisCache.Delete("_health_check"); err != nil {
+				slog.Debug("Unable to remove Redis health check entry", "error", err)
+			}
 			globalCache = redisCache
 		}
 	} else {

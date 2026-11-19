@@ -4,9 +4,10 @@ import (
 	"sync"
 	"time"
 
+	"github.com/gin-gonic/gin"
+
 	"github.com/primordialweave/zhusuan/internal/constants"
 	"github.com/primordialweave/zhusuan/internal/pkg/response"
-	"github.com/gin-gonic/gin"
 )
 
 // RateLimiter 速率限制器

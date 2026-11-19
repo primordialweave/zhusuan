@@ -141,7 +141,7 @@ func (c *MemoryCache) Stats() map[string]interface{} {
 var ErrCacheMiss = &CacheError{Message: "cache miss"}
 
 // CacheError 缓存错误
-type CacheError struct {
+type CacheError struct { //nolint:revive // Existing public API name is retained for cache error compatibility.
 	Message string
 }
 

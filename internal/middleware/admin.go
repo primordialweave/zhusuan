@@ -1,9 +1,11 @@
+// Package middleware applies request authentication, authorization and limits.
 package middleware
 
 import (
+	"github.com/gin-gonic/gin"
+
 	"github.com/primordialweave/zhusuan/internal/constants"
 	"github.com/primordialweave/zhusuan/internal/pkg/response"
-	"github.com/gin-gonic/gin"
 )
 
 // AdminOnly 管理员权限校验中间件

@@ -1,3 +1,4 @@
+// Package constants defines shared domain and request limits.
 package constants
 
 // 分页相关常量

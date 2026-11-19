@@ -1,3 +1,4 @@
+// Package utils supplies existing calendar-range and numeric-format helpers.
 package utils
 
 import "time"

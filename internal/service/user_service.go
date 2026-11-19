@@ -2,6 +2,7 @@ package service
 
 import (
 	"errors"
+	"log/slog"
 
 	"github.com/primordialweave/zhusuan/internal/constants"
 	"github.com/primordialweave/zhusuan/internal/dto"
@@ -129,7 +130,7 @@ func (s *UserService) UpdateUser(id int64, input dto.UpdateUserRequest) error {
 
 	// 任何用户资料变更后都清除鉴权状态缓存（JWT 中间件缓存了状态+角色），
 	// 使禁用/降级尽快生效（并发下最迟一个缓存 TTL）
-	_ = cache.Delete(cache.UserActiveKey(id))
+	invalidateUserAuthCache(id)
 	return nil
 }
 
@@ -139,8 +140,14 @@ func (s *UserService) DeleteUser(id int64) error {
 		return err
 	}
 	// 删除后清除鉴权状态缓存，使该用户的存量 JWT 尽快失效
-	_ = cache.Delete(cache.UserActiveKey(id))
+	invalidateUserAuthCache(id)
 	return nil
+}
+
+func invalidateUserAuthCache(id int64) {
+	if err := cache.Delete(cache.UserActiveKey(id)); err != nil {
+		slog.Debug("Unable to invalidate user auth state", "error", err)
+	}
 }
 
 // ResetPassword 重置用户密码 (管理员)

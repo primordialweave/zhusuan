@@ -1,9 +1,10 @@
 package repository
 
 import (
+	"gorm.io/gorm"
+
 	"github.com/primordialweave/zhusuan/internal/database"
 	"github.com/primordialweave/zhusuan/internal/models"
-	"gorm.io/gorm"
 )
 
 // NotificationRepository 通知数据仓库
@@ -65,6 +66,7 @@ func (r *NotificationRepository) FindByID(id int64) (*models.Notification, error
 	return &notification, nil
 }
 
+// FindByIDForUser finds a global notification or one addressed to the given user.
 func (r *NotificationRepository) FindByIDForUser(id, userID int64) (*models.Notification, error) {
 	var notification models.Notification
 	err := r.db.Preload("Sender").

@@ -14,6 +14,17 @@ func init() {
 }
 
 func TestGetPagination(t *testing.T) {
+	t.Run("数字溢出使用默认值", func(t *testing.T) {
+		c, _ := gin.CreateTestContext(httptest.NewRecorder())
+		request, err := http.NewRequest(http.MethodGet, "/test?page=999999999999999999999999999999&page_size=999999999999999999999999999999", nil)
+		if err != nil {
+			t.Fatal(err)
+		}
+		c.Request = request
+		page, pageSize := GetPagination(c)
+		assert.Equal(t, 1, page)
+		assert.Equal(t, 10, pageSize)
+	})
 	t.Run("默认分页参数", func(t *testing.T) {
 		w := httptest.NewRecorder()
 		c, _ := gin.CreateTestContext(w)

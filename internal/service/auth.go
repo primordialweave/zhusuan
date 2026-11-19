@@ -6,12 +6,13 @@ import (
 	"regexp"
 	"time"
 
+	"gorm.io/gorm"
+
 	"github.com/primordialweave/zhusuan/internal/dto"
 	pkgerrors "github.com/primordialweave/zhusuan/internal/pkg/errors"
 	"github.com/primordialweave/zhusuan/internal/pkg/jwt"
 	"github.com/primordialweave/zhusuan/internal/pkg/password"
 	"github.com/primordialweave/zhusuan/internal/repository"
-	"gorm.io/gorm"
 )
 
 // validatePasswordStrength 验证密码强度

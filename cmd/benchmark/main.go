@@ -1,3 +1,4 @@
+// Package main provides manually invoked service benchmarks against the benchmark database.
 package main
 
 import (
@@ -15,9 +16,9 @@ import (
 	"github.com/primordialweave/zhusuan/internal/service"
 )
 
-// BenchmarkProjectService_Create 项目创建性能测试
-func BenchmarkProjectService_Create(b *testing.B) {
-	setupBenchmarkDB()
+// BenchmarkProjectServiceCreate 项目创建性能测试
+func BenchmarkProjectServiceCreate(b *testing.B) {
+	setupBenchmarkDB(b)
 	svc := service.NewProjectService()
 
 	// 创建测试用户
@@ -29,7 +30,9 @@ func BenchmarkProjectService_Create(b *testing.B) {
 		Status:   1,
 	}
 	db := database.GetDB()
-	db.Create(user)
+	if err := db.Create(user).Error; err != nil {
+		b.Fatalf("create benchmark user: %v", err)
+	}
 
 	req := dto.CreateProjectRequest{
 		Name:           "性能测试项目",
@@ -45,13 +48,15 @@ func BenchmarkProjectService_Create(b *testing.B) {
 	b.ResetTimer()
 	for i := 0; i < b.N; i++ {
 		req.ContractNumber = fmt.Sprintf("BENCH-%d", i)
-		svc.Create(req)
+		if _, err := svc.Create(req); err != nil {
+			b.Fatalf("create benchmark project: %v", err)
+		}
 	}
 }
 
-// BenchmarkProjectService_List 项目列表查询性能测试
-func BenchmarkProjectService_List(b *testing.B) {
-	setupBenchmarkDB()
+// BenchmarkProjectServiceList 项目列表查询性能测试
+func BenchmarkProjectServiceList(b *testing.B) {
+	setupBenchmarkDB(b)
 	svc := service.NewProjectService()
 
 	// 创建测试数据
@@ -63,7 +68,9 @@ func BenchmarkProjectService_List(b *testing.B) {
 		Status:   1,
 	}
 	db := database.GetDB()
-	db.Create(user)
+	if err := db.Create(user).Error; err != nil {
+		b.Fatalf("create benchmark user: %v", err)
+	}
 
 	// 创建100个项目
 	for i := 0; i < 100; i++ {
@@ -77,18 +84,22 @@ func BenchmarkProjectService_List(b *testing.B) {
 			Status:         constants.ProjectStatusOngoing,
 			UserID:         user.ID,
 		}
-		svc.Create(req)
+		if _, err := svc.Create(req); err != nil {
+			b.Fatalf("create benchmark project: %v", err)
+		}
 	}
 
 	b.ResetTimer()
 	for i := 0; i < b.N; i++ {
-		svc.List(user.ID, "", "", 1, 10)
+		if _, err := svc.List(user.ID, "", "", 1, 10); err != nil {
+			b.Fatalf("list benchmark projects: %v", err)
+		}
 	}
 }
 
-// BenchmarkPaymentService_Create 款项创建性能测试
-func BenchmarkPaymentService_Create(b *testing.B) {
-	setupBenchmarkDB()
+// BenchmarkPaymentServiceCreate 款项创建性能测试
+func BenchmarkPaymentServiceCreate(b *testing.B) {
+	setupBenchmarkDB(b)
 	projectSvc := service.NewProjectService()
 	paymentSvc := service.NewPaymentService()
 
@@ -101,7 +112,9 @@ func BenchmarkPaymentService_Create(b *testing.B) {
 		Status:   1,
 	}
 	db := database.GetDB()
-	db.Create(user)
+	if err := db.Create(user).Error; err != nil {
+		b.Fatalf("create benchmark user: %v", err)
+	}
 
 	projectReq := dto.CreateProjectRequest{
 		Name:           "款项测试项目",
@@ -113,7 +126,10 @@ func BenchmarkPaymentService_Create(b *testing.B) {
 		Status:         constants.ProjectStatusOngoing,
 		UserID:         user.ID,
 	}
-	project, _ := projectSvc.Create(projectReq)
+	project, err := projectSvc.Create(projectReq)
+	if err != nil {
+		b.Fatalf("create benchmark parent project: %v", err)
+	}
 
 	req := dto.PaymentRequest{
 		ProjectID: project.ID,
@@ -126,13 +142,15 @@ func BenchmarkPaymentService_Create(b *testing.B) {
 
 	b.ResetTimer()
 	for i := 0; i < b.N; i++ {
-		paymentSvc.Create(req)
+		if _, err := paymentSvc.Create(req); err != nil {
+			b.Fatalf("create benchmark payment: %v", err)
+		}
 	}
 }
 
-// BenchmarkPaymentService_Confirm 款项确认性能测试（含事务）
-func BenchmarkPaymentService_Confirm(b *testing.B) {
-	setupBenchmarkDB()
+// BenchmarkPaymentServiceConfirm 款项确认性能测试（含事务）
+func BenchmarkPaymentServiceConfirm(b *testing.B) {
+	setupBenchmarkDB(b)
 	projectSvc := service.NewProjectService()
 	paymentSvc := service.NewPaymentService()
 
@@ -145,7 +163,9 @@ func BenchmarkPaymentService_Confirm(b *testing.B) {
 		Status:   1,
 	}
 	db := database.GetDB()
-	db.Create(user)
+	if err := db.Create(user).Error; err != nil {
+		b.Fatalf("create benchmark user: %v", err)
+	}
 
 	projectReq := dto.CreateProjectRequest{
 		Name:           "确认测试项目",
@@ -157,7 +177,10 @@ func BenchmarkPaymentService_Confirm(b *testing.B) {
 		Status:         constants.ProjectStatusOngoing,
 		UserID:         user.ID,
 	}
-	project, _ := projectSvc.Create(projectReq)
+	project, err := projectSvc.Create(projectReq)
+	if err != nil {
+		b.Fatalf("create benchmark parent project: %v", err)
+	}
 
 	// 创建N个待确认款项
 	payments := make([]*models.Payment, b.N)
@@ -170,19 +193,24 @@ func BenchmarkPaymentService_Confirm(b *testing.B) {
 			Status:    constants.PaymentStatusPending,
 			UserID:    user.ID,
 		}
-		payment, _ := paymentSvc.Create(req)
+		payment, err := paymentSvc.Create(req)
+		if err != nil {
+			b.Fatalf("create benchmark payment: %v", err)
+		}
 		payments[i] = payment
 	}
 
 	b.ResetTimer()
 	for i := 0; i < b.N; i++ {
-		paymentSvc.ConfirmForUser(user.ID, payments[i].ID, time.Now().Format("2006-01-02"), "bank")
+		if err := paymentSvc.ConfirmForUser(user.ID, payments[i].ID, time.Now().Format("2006-01-02"), "bank"); err != nil {
+			b.Fatalf("confirm benchmark payment: %v", err)
+		}
 	}
 }
 
-// BenchmarkDashboardService_GetStats Dashboard统计性能测试
-func BenchmarkDashboardService_GetStats(b *testing.B) {
-	setupBenchmarkDB()
+// BenchmarkDashboardServiceGetStats Dashboard统计性能测试
+func BenchmarkDashboardServiceGetStats(b *testing.B) {
+	setupBenchmarkDB(b)
 	dashboardSvc := service.NewDashboardService()
 	projectSvc := service.NewProjectService()
 
@@ -195,7 +223,9 @@ func BenchmarkDashboardService_GetStats(b *testing.B) {
 		Status:   1,
 	}
 	db := database.GetDB()
-	db.Create(user)
+	if err := db.Create(user).Error; err != nil {
+		b.Fatalf("create benchmark user: %v", err)
+	}
 
 	// 创建50个项目
 	for i := 0; i < 50; i++ {
@@ -209,22 +239,29 @@ func BenchmarkDashboardService_GetStats(b *testing.B) {
 			Status:         constants.ProjectStatusOngoing,
 			UserID:         user.ID,
 		}
-		projectSvc.Create(req)
+		if _, err := projectSvc.Create(req); err != nil {
+			b.Fatalf("create benchmark dashboard project: %v", err)
+		}
 	}
 
 	b.ResetTimer()
 	for i := 0; i < b.N; i++ {
-		dashboardSvc.GetStats(user.ID, "all")
+		if _, err := dashboardSvc.GetStats(user.ID, "all"); err != nil {
+			b.Fatalf("read benchmark dashboard: %v", err)
+		}
 	}
 }
 
-func setupBenchmarkDB() {
+func setupBenchmarkDB(b *testing.B) {
+	b.Helper()
 	config.AppConfig = &config.Config{
 		DBType: "sqlite",
 		DBPath: "file:benchmark_test?mode=memory&cache=shared",
 	}
 	db := database.GetDB()
-	db.AutoMigrate(&models.User{}, &models.Project{}, &models.Payment{})
+	if err := db.AutoMigrate(&models.User{}, &models.Project{}, &models.Payment{}); err != nil {
+		b.Fatalf("migrate benchmark schema: %v", err)
+	}
 }
 
 // 主函数用于手动运行基准测试
@@ -236,35 +273,35 @@ func main() {
 
 	// 运行项目创建测试
 	fmt.Println("\n1. 项目创建性能:")
-	result := testing.Benchmark(BenchmarkProjectService_Create)
+	result := testing.Benchmark(BenchmarkProjectServiceCreate)
 	fmt.Printf("   迭代次数: %d\n", result.N)
 	fmt.Printf("   每次操作: %v\n", result.NsPerOp())
 	fmt.Printf("   吞吐量: %.0f ops/s\n", float64(result.N)/result.T.Seconds())
 
 	// 运行项目列表查询测试
 	fmt.Println("\n2. 项目列表查询性能:")
-	result = testing.Benchmark(BenchmarkProjectService_List)
+	result = testing.Benchmark(BenchmarkProjectServiceList)
 	fmt.Printf("   迭代次数: %d\n", result.N)
 	fmt.Printf("   每次操作: %v\n", result.NsPerOp())
 	fmt.Printf("   吞吐量: %.0f ops/s\n", float64(result.N)/result.T.Seconds())
 
 	// 运行款项创建测试
 	fmt.Println("\n3. 款项创建性能:")
-	result = testing.Benchmark(BenchmarkPaymentService_Create)
+	result = testing.Benchmark(BenchmarkPaymentServiceCreate)
 	fmt.Printf("   迭代次数: %d\n", result.N)
 	fmt.Printf("   每次操作: %v\n", result.NsPerOp())
 	fmt.Printf("   吞吐量: %.0f ops/s\n", float64(result.N)/result.T.Seconds())
 
 	// 运行款项确认测试
 	fmt.Println("\n4. 款项确认性能(含事务):")
-	result = testing.Benchmark(BenchmarkPaymentService_Confirm)
+	result = testing.Benchmark(BenchmarkPaymentServiceConfirm)
 	fmt.Printf("   迭代次数: %d\n", result.N)
 	fmt.Printf("   每次操作: %v\n", result.NsPerOp())
 	fmt.Printf("   吞吐量: %.0f ops/s\n", float64(result.N)/result.T.Seconds())
 
 	// 运行Dashboard统计测试
 	fmt.Println("\n5. Dashboard统计性能:")
-	result = testing.Benchmark(BenchmarkDashboardService_GetStats)
+	result = testing.Benchmark(BenchmarkDashboardServiceGetStats)
 	fmt.Printf("   迭代次数: %d\n", result.N)
 	fmt.Printf("   每次操作: %v\n", result.NsPerOp())
 	fmt.Printf("   吞吐量: %.0f ops/s\n", float64(result.N)/result.T.Seconds())

@@ -3,11 +3,12 @@ package service
 import (
 	"errors"
 
+	"gorm.io/gorm"
+
 	"github.com/primordialweave/zhusuan/internal/models"
 	pkgerrors "github.com/primordialweave/zhusuan/internal/pkg/errors"
 	"github.com/primordialweave/zhusuan/internal/pkg/password"
 	"github.com/primordialweave/zhusuan/internal/repository"
-	"gorm.io/gorm"
 )
 
 // ProfileService 个人信息管理服务

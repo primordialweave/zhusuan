@@ -194,6 +194,7 @@ func (s *NotificationService) Get(id int64) (*models.Notification, error) {
 	return s.notificationRepo.FindByID(id)
 }
 
+// GetForUser returns a notification visible to the given user.
 func (s *NotificationService) GetForUser(userID, id int64) (*models.Notification, error) {
 	return s.notificationRepo.FindByIDForUser(id, userID)
 }

@@ -119,6 +119,9 @@
 - Mac旧WK偏好逻辑读取白名单（UTF16LE，含WAL），私有one-shot/no-store endpoint在store初始化前补缺失值，新值优先；Windows新profile路径DataDir/WebView2，旧进程/SID与LOCK校验后clone持久文件，缓存/会话不搬。登录会话原本在sessionStorage，不宣称保存会话；Wails native LogLevelWarn防止Info binding输出密码。
 - 隔离初步验收：frontend112文件/556用例，updater28顶层/33子、data/credentials26顶层与scope/profile回归通过；更新器与全部增量lint0、NSIS3.13隔离编译、Windows updater/config/desktop交叉编译通过。完整最终检查仍在汇总。
 - 浏览器QA在ego space4核对浅深1280×800登录/关于、新logo/组织链接、偏好旧→新及新优先，截图无裁剪/溢出；native响应明确fixture，REST登录真实隔离服务。QA space与3466/9331已清理，未停用户3456/9245。记录/tmp/zhusuan-migration/qa.md与docs/migration.md。
+- 代码已在 codex/zhusuan-migration，迁移提交 efde538，PR https://github.com/primordialweave/zhusuan/pull/2。当前工作版本较main含未合并历史功能；迁移PR包括这些既有实现，先作为draft审查，未发布新桌面版本。
+- main基线实际60项静态阻塞已清理：缓存失败记录但不改变业务成功、分页显式fallback、用户/收款共享同步保序/空ID保护、工具错误检查/必要注释格式。新增回归后全量Go127顶层/137子（16有测试包），race/vet0失败/跳过，针对origin/main的全部增量lint0；frontend112文件/556通过，release工具10/10、NSIS/Windows编译验证仍通过。
+- Docker新用户无默认home目录，因此明确ZHUSUAN_CONFIG_ROOT=/app/data并准备可写data/log目录；自定义DB_PATH与旧挂载兼容。此机器Docker daemon未运行，没有启动Docker或声称容器运行验收。GitHub最终CI重跑结果待补。
 
 ### 业务页改造清单（第十次会话整理，做完一条勾一条）
 
