@@ -212,12 +212,14 @@ tasks:
     sources:
       - build/config.yml
       - build/appicon.png
+      - build/ios/AppIcon.appiconset/**/*
     generates:
       - build/ios/xcode/main/main.m
       - build/ios/xcode/main/Assets.xcassets/**/*
       - build/ios/xcode/project.pbxproj
     cmds:
       - wails3 ios xcode:gen -outdir build/ios/xcode -config build/config.yml
+      - cp -R build/ios/AppIcon.appiconset/. build/ios/xcode/main/Assets.xcassets/AppIcon.appiconset/
 
   run:
     summary: Run the application in iOS Simulator

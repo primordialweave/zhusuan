@@ -14,6 +14,11 @@ vars:
   VITE_PORT: '{{.WAILS_VITE_PORT | default 9245}}'
 
 tasks:
+  icons:
+    summary: Regenerates all platform icons from build/appicon.png (requires Pillow).
+    cmds:
+      - python3 scripts/generate_icons.py
+
   bump-version:
     summary: "Updates the application version (usage: task bump-version VERSION=0.1.x)"
     cmds:

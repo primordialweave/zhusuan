@@ -23,8 +23,12 @@ conflicts:
 contents:
   - src: "./bin/zhusuan"
     dst: "/usr/local/bin/zhusuan"
-  - src: "./build/appicon.png"
+  - src: "./build/linux/icons/128/zhusuan.png"
     dst: "/usr/share/icons/hicolor/128x128/apps/zhusuan.png"
+  - src: "./build/linux/icons/256/zhusuan.png"
+    dst: "/usr/share/icons/hicolor/256x256/apps/zhusuan.png"
+  - src: "./build/linux/icons/512/zhusuan.png"
+    dst: "/usr/share/icons/hicolor/512x512/apps/zhusuan.png"
   - src: "./build/linux/zhusuan.desktop"
     dst: "/usr/share/applications/zhusuan.desktop"
 

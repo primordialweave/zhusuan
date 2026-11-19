@@ -126,6 +126,9 @@
 - 用户明确选择“先保留PR，暂不发布”：PR #2保持draft，未合并main、未发桌面release/镜像。代码提交顺序efde538（迁移）、d1977fa（CI旧债修复）、87cc0dc（平台稳定规则），均已推送；本条是CI完成后的本地Handoff记录，未额外推送触发新CI。
 - 2026-11-19 Dock旧图标复核：当前进程实际运行zhusuan.dev.app，bundle ICNS与build新图标一致，非旧程序/旧资源；main未显式设置Options.Icon。新增darwin专用embed ICNS并设置Icon，Wails通过NSApp.setApplicationIconImage更新运行图标，其他平台仍用本地资源。dev热重载后实际Dock区域截图显示新木质玉珠算盘及running圆点；未kill Dock/清系统缓存/改pin。CUA Dock直接绑定曾超时，改用只读screencapture区域核对，证据/tmp/zhusuan-dock-check/visual-review.md。
 - Windows安装器继承安装路径/程序/卸载key；数据库与profile在安装后首次以原用户启动时迁，记住密码首次Load迁，不是NSIS直接复制库，也没有finish自动Exec应用。修复DB_PATH空/全空白导致LookupEnv误判跳过迁移、随后创建新空库的问题；非空自定义路径保持原样。config14顶层/3子与root/main/desktop共35通过事件，race/vet、增量lint及Windows交叉编译通过。新珠算包尚未发布，旧Orange包没有这段代码。
+- 2026-11-19 新图标替换：以用户Zhusuan-Dock-Celadon.png为源（1254²RGBA），build/appicon.png逐字节相同；重生成macOS ICNS、Windows6尺寸ICO/MSIX6PNG、Linux128/256/512、Android10PNG、iOS15PNG+18catalogentries、不透明1024主图及Web/favicon/旧URL兼容图。原用户源图不编辑；Python生成器/scripts requirements已提供，正常构建只消费生成资源。
+- iOS的build/ios/Assets.xcassets其实是JSON模板，actool真实目录由xcode:gen生成且默认从透明master重渲染。因此新增规范AppIcon.appiconset，并在Xcode生成后覆盖不透明版本；只换icon.png不够。Linuxnfpm/AppImage已改用正确尺寸的PNG。
+- 六平台拼图已由子代理看过：Android round未切算盘、iOS青瓷底无黑角、MSIX无拉伸。当前PID7900的Dock真实区域截图也确认新的浅青瓷圆角底算盘与运行圆点，dev ICNS与build一致；未kill Dock/改pin/清缓存/关闭app。证据/tmp/zhusuan-icons/visual-review.md，未扩大到Windows/iOS/Android系统运行验收。
 
 ### 业务页改造清单（第十次会话整理，做完一条勾一条）
 
