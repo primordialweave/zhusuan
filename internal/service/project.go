@@ -98,6 +98,9 @@ func (s *ProjectService) GetForUser(userID, id int64) (*models.Project, error) {
 //   - *models.Project: 创建成功的项目实体
 //   - error: 日期解析失败或数据库写入错误
 func (s *ProjectService) Create(input dto.CreateProjectRequest) (*models.Project, error) {
+	if err := validatePositiveAmount(input.TotalAmount); err != nil {
+		return nil, err
+	}
 	// 1. 检查合同编号是否已存在
 	if input.ContractNumber != "" {
 		exists, err := s.projectRepo.ExistsByContractNumber(input.UserID, input.ContractNumber, 0)
@@ -164,6 +167,9 @@ func (s *ProjectService) Create(input dto.CreateProjectRequest) (*models.Project
 
 // UpdateForUser 更新项目详情（校验归属与合同编号唯一性）
 func (s *ProjectService) UpdateForUser(userID, id int64, input dto.CreateProjectRequest) (*models.Project, error) {
+	if err := validatePositiveAmount(input.TotalAmount); err != nil {
+		return nil, err
+	}
 	project, err := s.projectRepo.FindByIDForUser(id, userID)
 	if err != nil {
 		if err == gorm.ErrRecordNotFound {
@@ -201,19 +207,7 @@ func (s *ProjectService) UpdateForUser(userID, id int64, input dto.CreateProject
 		contractDate = &t
 	}
 
-	project.Name = input.Name
-	project.Company = input.Company
-	project.TotalAmount = input.TotalAmount
-	project.Status = input.Status
-	project.Type = input.Type
-	project.ContractNumber = input.ContractNumber
-	project.ContractDate = contractDate
-	project.PaymentMethod = input.PaymentMethod
-	project.StartDate = startDate
-	project.EndDate = endDate
-	project.Description = input.Description
-
-	if err := s.projectRepo.Update(project); err != nil {
+	if err := updateProjectAndPercentages(project, input, startDate, endDate, contractDate); err != nil {
 		return nil, pkgerrors.Wrap(err, "更新项目失败")
 	}
 
@@ -222,18 +216,37 @@ func (s *ProjectService) UpdateForUser(userID, id int64, input dto.CreateProject
 	return project, nil
 }
 
+// updateProjectAndPercentages preserves aggregates from the locked row and commits the new ratios with the contract.
+func updateProjectAndPercentages(project *models.Project, input dto.CreateProjectRequest, startDate, endDate time.Time, contractDate *time.Time) error {
+	return database.GetDB().Transaction(func(tx *gorm.DB) error {
+		current, err := lockPaymentProjectInTx(tx, project.ID, project.UserID)
+		if err != nil {
+			return err
+		}
+		current.Name, current.Company, current.TotalAmount = input.Name, input.Company, input.TotalAmount
+		current.Status, current.Type, current.ContractNumber = input.Status, input.Type, input.ContractNumber
+		current.ContractDate, current.PaymentMethod = contractDate, input.PaymentMethod
+		current.StartDate, current.EndDate, current.Description = startDate, endDate, input.Description
+		if err := tx.Save(current).Error; err != nil {
+			return err
+		}
+		if err := tx.Model(&models.Payment{}).Where("project_id = ? AND user_id = ?", project.ID, project.UserID).Update("percentage", gorm.Expr("amount * 100.0 / ?", input.TotalAmount)).Error; err != nil {
+			return err
+		}
+		*project = *current
+		return nil
+	})
+}
+
 // DeleteForUser 删除项目及关联数据（校验归属）
 // 事务操作: 同时删除项目本身及其下属的所有款项记录。
 func (s *ProjectService) DeleteForUser(userID, id int64) error {
 	err := database.GetDB().Transaction(func(tx *gorm.DB) error {
-		var project models.Project
-		if err := tx.Where("id = ? AND user_id = ?", id, userID).First(&project).Error; err != nil {
-			if err == gorm.ErrRecordNotFound {
-				return pkgerrors.ErrProjectNotFound
-			}
-			return pkgerrors.Wrap(err, "查询项目失败")
+		// Use the same parent-first order as payment writers, including deletion.
+		if _, err := lockPaymentProjectInTx(tx, id, userID); err != nil {
+			return err
 		}
-		if err := tx.Where("project_id = ?", id).Delete(&models.Payment{}).Error; err != nil {
+		if err := tx.Where("project_id = ? AND user_id = ?", id, userID).Delete(&models.Payment{}).Error; err != nil {
 			return pkgerrors.Wrap(err, "删除关联款项失败")
 		}
 		return tx.Where("id = ? AND user_id = ?", id, userID).Delete(&models.Project{}).Error

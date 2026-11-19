@@ -1,20 +1,21 @@
 import { useCallback, useEffect, useLayoutEffect, useRef, useState, type FormEvent } from 'react'
 import { useNavigate, useParams } from 'react-router-dom'
 import { dictionaryApi } from '@/api/dictionary'
-import {
-  paymentApi,
-  projectApi,
-  type Payment,
-  type PaymentRequest,
-  type ProjectRequest,
-} from '@/api/project'
+import { projectApi, type Payment, type ProjectRequest } from '@/api/project'
 import { PaymentPlanEditor } from '@/components/project/PaymentPlanEditor'
 import { createPaymentPlanItem, type PaymentPlanItem } from '@/components/project/paymentPlan'
+import {
+  createPaymentPlanSaveState,
+  hasUnsavedPaymentPlan,
+  savePaymentPlan,
+} from '@/components/project/paymentPlanSave'
 import { ProjectStatusChip } from '@/components/project/ProjectStatusChip'
 import {
   Button,
+  Alert,
   Card,
   DatePicker,
+  EmptyState,
   Field,
   FormActions,
   FormGrid,
@@ -100,8 +101,15 @@ export default function ProjectCreateView() {
   const [form, setForm] = useState<ProjectRequest>(emptyForm)
   const [projectTypes, setProjectTypes] = useState<SelectOption[]>(defaultProjectTypeOptions)
   const [paymentItems, setPaymentItems] = useState<PaymentPlanItem[]>([createPaymentPlanItem()])
-  const originalPaymentIds = useRef<number[]>([])
+  const paymentSaveStateRef = useRef(createPaymentPlanSaveState())
+  const savedProjectRef = useRef<{ id: number; signature: string } | null>(null)
+  const currentFormRef = useRef(form)
+  const currentPaymentItemsRef = useRef(paymentItems)
+  const saveRequestRef = useRef<object | null>(null)
+  const [saveIssue, setSaveIssue] = useState<string | null>(null)
   const [saving, setSaving] = useState(false)
+  const [loadedProjectId, setLoadedProjectId] = useState<number | null>(null)
+  const [loadErrorProjectId, setLoadErrorProjectId] = useState<number | null>(null)
   const isMountedRef = useRef(false)
   const loadGenerationRef = useRef(0)
   const projectId = id ? Number(id) : null
@@ -140,7 +148,15 @@ export default function ProjectCreateView() {
 
   useLayoutEffect(() => {
     activeProjectIdRef.current = projectId
+    saveRequestRef.current = null
+    savedProjectRef.current = null
+    paymentSaveStateRef.current = createPaymentPlanSaveState()
   }, [projectId])
+
+  useLayoutEffect(() => {
+    currentFormRef.current = form
+    currentPaymentItemsRef.current = paymentItems
+  }, [form, paymentItems])
 
   useEffect(() => {
     let active = true
@@ -179,6 +195,9 @@ export default function ProjectCreateView() {
       if (!isMountedRef.current || activeProjectIdRef.current !== requestedProjectId) return
 
       const loadGeneration = ++loadGenerationRef.current
+      setSaveIssue(null)
+      setLoadedProjectId(null)
+      setLoadErrorProjectId(null)
       setSaving(true)
       try {
         const [projectRes, paymentsRes] = await Promise.all([
@@ -207,12 +226,15 @@ export default function ProjectCreateView() {
           type: project.type || '',
         })
 
-        originalPaymentIds.current = paymentsRes.data.data.map((payment) => payment.id)
+        paymentSaveStateRef.current = createPaymentPlanSaveState(
+          paymentsRes.data.data.map((payment) => payment.id),
+        )
         setPaymentItems(
           paymentsRes.data.data.length
             ? paymentsRes.data.data.map(toPaymentPlanItem)
             : [createPaymentPlanItem()],
         )
+        setLoadedProjectId(requestedProjectId)
       } catch {
         if (
           !isMountedRef.current ||
@@ -221,6 +243,7 @@ export default function ProjectCreateView() {
         ) {
           return
         }
+        setLoadErrorProjectId(requestedProjectId)
         toastError('获取项目详情失败')
       } finally {
         if (
@@ -248,35 +271,9 @@ export default function ProjectCreateView() {
     }
   }, [loadProject, projectId])
 
-  const savePayments = async (projectId: number) => {
-    const currentIds = new Set(
-      paymentItems.map((item) => item.id).filter((itemId): itemId is number => Boolean(itemId)),
-    )
-    const removedIds = originalPaymentIds.current.filter((paymentId) => !currentIds.has(paymentId))
-
-    await Promise.all(removedIds.map((paymentId) => paymentApi.delete(paymentId)))
-
-    const writes = paymentItems.flatMap((item) => {
-      if (!item.amount || !item.planDate) return []
-
-      const payload: PaymentRequest = {
-        amount: Number(item.amount) || 0,
-        method: item.method || 'bank_transfer',
-        plan_date: item.planDate,
-        project_id: projectId,
-        remark: item.remark,
-        stage: item.stage || '款项',
-        status: item.status,
-      }
-
-      return [item.id ? paymentApi.update(item.id, payload) : paymentApi.create(payload)]
-    })
-
-    await Promise.all(writes)
-  }
-
   const handleSubmit = async (event: FormEvent<HTMLFormElement>) => {
     event.preventDefault()
+    if (saving || saveRequestRef.current || (isEdit && loadedProjectId !== projectId)) return
     if (!form.type) {
       toastError('请选择项目类型')
       return
@@ -294,20 +291,57 @@ export default function ProjectCreateView() {
       return
     }
 
+    const request = {}
+    saveRequestRef.current = request
+    const generation = loadGenerationRef.current
+    const isCurrentSave = () =>
+      isMountedRef.current &&
+      loadGenerationRef.current === generation &&
+      saveRequestRef.current === request
+    const submittedForm = { ...form }
+    const submittedItems = paymentItems.map((item) => ({ ...item }))
+    const state = paymentSaveStateRef.current
+    const signature = JSON.stringify(submittedForm)
     setSaving(true)
+    setSaveIssue(null)
     try {
-      const response =
-        isEdit && projectId
-          ? await projectApi.update(projectId, form)
-          : await projectApi.create(form)
-      const savedProjectId = isEdit && projectId ? projectId : response.data.data.id
-      await savePayments(savedProjectId)
+      let savedProjectId = savedProjectRef.current?.id ?? projectId
+      if (savedProjectRef.current?.signature !== signature) {
+        const response = savedProjectId
+          ? await projectApi.update(savedProjectId, submittedForm)
+          : await projectApi.create(submittedForm)
+        if (!isCurrentSave()) return
+        savedProjectId = savedProjectId ?? response.data.data.id
+        savedProjectRef.current = { id: savedProjectId, signature }
+      }
+      if (!savedProjectId) throw new Error('项目保存结果无效，请检查已保存项目')
+      const result = await savePaymentPlan(savedProjectId, submittedItems, state)
+      if (!isCurrentSave()) return
+      setPaymentItems((current) =>
+        current.map((item) => ({ ...item, id: result.ids.get(item.clientKey) ?? item.id })),
+      )
+      if (result.issue) {
+        setSaveIssue(result.issue)
+        toastError('部分收款操作未完成')
+        return
+      }
+      if (
+        JSON.stringify(currentFormRef.current) !== signature ||
+        hasUnsavedPaymentPlan(savedProjectId, currentPaymentItemsRef.current, state)
+      ) {
+        setSaveIssue('已保存提交的内容，期间的新修改尚未保存，请再次保存。')
+        return
+      }
       toastSuccess(isEdit ? '项目与收款已更新' : '项目已创建')
       navigate('/projects')
     } catch (error) {
+      if (!isCurrentSave()) return
       toastError(error instanceof Error ? error.message : '保存项目失败')
     } finally {
-      setSaving(false)
+      if (isCurrentSave()) {
+        saveRequestRef.current = null
+        setSaving(false)
+      }
     }
   }
 
@@ -321,6 +355,21 @@ export default function ProjectCreateView() {
         }
         title={isEdit ? '编辑项目' : '创建项目'}
       />
+
+      {isEdit && loadErrorProjectId === projectId ? (
+        <EmptyState
+          action={<Button onClick={() => void loadProject(projectId)}>重试</Button>}
+          icon={<i className="ri-error-warning-line" />}
+          role="alert"
+          title="项目详情加载失败"
+        />
+      ) : null}
+
+      {saveIssue ? (
+        <Alert title="收款操作尚未完成" tone="warning" role="alert">
+          {saveIssue}
+        </Alert>
+      ) : null}
 
       <div className="project-compose-layout">
         <Card.Root className="project-form-card" padding="none" variant="transparent">
@@ -476,7 +525,11 @@ export default function ProjectCreateView() {
                 <Button onClick={() => navigate(-1)} type="button" variant="ghost">
                   取消
                 </Button>
-                <Button pending={saving} type="submit">
+                <Button
+                  disabled={isEdit && loadedProjectId !== projectId}
+                  pending={saving}
+                  type="submit"
+                >
                   {saving ? '保存中...' : '确认保存'}
                 </Button>
               </FormActions>

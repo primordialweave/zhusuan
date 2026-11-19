@@ -75,6 +75,7 @@ export default function ProjectDetailView() {
   const [project, setProject] = useState<Project | null>(null)
   const [projectTypes, setProjectTypes] = useState<DictionaryItem[]>([])
   const [payments, setPayments] = useState<Payment[]>([])
+  const [loadErrorProjectId, setLoadErrorProjectId] = useState<number | null>(null)
   const positionedPaymentRef = useRef<string | null>(null)
   const isMountedRef = useRef(false)
   const loadGenerationRef = useRef(0)
@@ -126,6 +127,7 @@ export default function ProjectDetailView() {
       if (!isMountedRef.current || activeProjectIdRef.current !== requestedProjectId) return
 
       const loadGeneration = ++loadGenerationRef.current
+      setLoadErrorProjectId(null)
       try {
         const [projectRes, paymentsRes] = await Promise.all([
           projectApi.get(requestedProjectId),
@@ -148,6 +150,7 @@ export default function ProjectDetailView() {
         ) {
           return
         }
+        setLoadErrorProjectId(requestedProjectId)
         toastError('获取项目详情失败')
       }
     },
@@ -194,6 +197,26 @@ export default function ProjectDetailView() {
       if (!isMountedRef.current || activeProjectIdRef.current !== requestedProjectId) return
       toastError('确认收款失败')
     }
+  }
+
+  if (projectId !== null && loadErrorProjectId === projectId) {
+    return (
+      <Card.Root>
+        <EmptyState
+          action={
+            <ButtonGroup>
+              <Button onClick={() => void loadProject(projectId)}>重试</Button>
+              <RouterButton to="/projects" variant="ghost">
+                返回项目列表
+              </RouterButton>
+            </ButtonGroup>
+          }
+          icon={<i className="ri-error-warning-line" />}
+          role="alert"
+          title="项目详情加载失败"
+        />
+      </Card.Root>
+    )
   }
 
   if (!project || project.id !== projectId) {

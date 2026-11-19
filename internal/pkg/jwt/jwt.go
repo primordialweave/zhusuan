@@ -45,7 +45,7 @@ func GenerateToken(userID int64, username, role string) (string, error) {
 			ExpiresAt: jwt.NewNumericDate(time.Now().Add(TokenExpiry)), // 过期时间
 			IssuedAt:  jwt.NewNumericDate(time.Now()),                  // 签发时间
 			NotBefore: jwt.NewNumericDate(time.Now()),                  // 生效时间
-			Issuer:    "orange",                                        // 签发人/应用名
+			Issuer:    "zhusuan",                                       // 签发人/应用名
 		},
 	}
 

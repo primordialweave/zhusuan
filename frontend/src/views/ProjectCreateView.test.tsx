@@ -1,4 +1,4 @@
-import { act, screen, waitFor, within } from '@testing-library/react'
+import { act, fireEvent, screen, waitFor, within } from '@testing-library/react'
 import userEvent from '@testing-library/user-event'
 import { Route, Routes, useNavigate } from 'react-router-dom'
 import { beforeEach, describe, expect, it, vi } from 'vitest'
@@ -114,6 +114,42 @@ function renderEditor() {
   )
 }
 
+async function chooseDate(
+  user: ReturnType<typeof userEvent.setup>,
+  label: string,
+  group?: HTMLElement,
+) {
+  const scope = group ? within(group) : screen
+  await user.click(scope.getByRole('button', { name: label }))
+  await user.click(
+    document.querySelector<HTMLButtonElement>(
+      '[data-slot="popover"] .ods-calendar__day:not(:disabled)',
+    )!,
+  )
+}
+
+async function fillNewProject(user: ReturnType<typeof userEvent.setup>) {
+  await user.type(screen.getByRole('textbox', { name: /项目名称/ }), '新建合同项目')
+  await user.type(screen.getByRole('textbox', { name: /客户名称/ }), '新客户')
+  await user.click(screen.getByRole('button', { name: '项目类型' }))
+  await user.click(screen.getByRole('option', { name: '软件开发' }))
+  await chooseDate(user, '开始日期')
+  await chooseDate(user, '截止日期')
+  await chooseDate(user, '合同日期')
+  const total = screen.getByRole('spinbutton', { name: /合同总金额/ })
+  await user.clear(total)
+  await user.type(total, '100000')
+  await user.click(screen.getByRole('button', { name: '付款模式' }))
+  await user.click(screen.getByRole('option', { name: '分期付款' }))
+  const first = screen.getByRole('group', { name: '第 1 期收款' })
+  await user.type(within(first).getByRole('spinbutton', { name: /收款金额/ }), '30000')
+  await chooseDate(user, '收款日期', first)
+  await user.click(screen.getByRole('button', { name: '添加分期' }))
+  const second = screen.getByRole('group', { name: '第 2 期收款' })
+  await user.type(within(second).getByRole('spinbutton', { name: /收款金额/ }), '70000')
+  await chooseDate(user, '收款日期', second)
+}
+
 describe('ProjectCreateView design system migration', () => {
   beforeEach(() => {
     vi.clearAllMocks()
@@ -125,6 +161,159 @@ describe('ProjectCreateView design system migration', () => {
     vi.mocked(paymentApi.create).mockResolvedValue(apiResponse(payments[0]) as never)
     vi.mocked(paymentApi.delete).mockResolvedValue(apiResponse(null) as never)
     vi.mocked(paymentApi.update).mockResolvedValue(apiResponse(payments[0]) as never)
+  })
+
+  it('keeps the created project and successful installment IDs when retrying a partial new project save', async () => {
+    const user = userEvent.setup()
+    vi.mocked(paymentApi.create)
+      .mockResolvedValueOnce(apiResponse(payments[0]) as never)
+      .mockRejectedValueOnce(new Error('第二期保存失败'))
+      .mockResolvedValueOnce(apiResponse(payments[1]) as never)
+    render(
+      <Routes>
+        <Route element={<ProjectCreateView />} path="/projects/create" />
+        <Route element={<h1>项目列表</h1>} path="/projects" />
+      </Routes>,
+      { initialEntries: ['/projects/create'] },
+    )
+    await fillNewProject(user)
+    const second = screen.getByRole('group', { name: '第 2 期收款' })
+    await user.type(within(second).getByRole('textbox', { name: '备注' }), '保留未完成输入')
+    await user.click(screen.getByRole('button', { name: '确认保存' }))
+    expect(await screen.findByRole('alert')).toHaveTextContent('第 2 期收款未保存')
+    expect(screen.getByRole('textbox', { name: /项目名称/ })).toHaveValue('新建合同项目')
+    expect(within(second).getByRole('textbox', { name: '备注' })).toHaveValue('保留未完成输入')
+    expect(projectApi.create).toHaveBeenCalledOnce()
+    await user.click(screen.getByRole('button', { name: '确认保存' }))
+    await screen.findByRole('heading', { name: '项目列表' })
+    expect(projectApi.create).toHaveBeenCalledOnce()
+    expect(projectApi.update).not.toHaveBeenCalled()
+    expect(paymentApi.create).toHaveBeenCalledTimes(3)
+    expect(vi.mocked(paymentApi.create).mock.calls.map(([payload]) => payload.amount)).toEqual([
+      30000, 70000, 70000,
+    ])
+    expect(paymentApi.update).not.toHaveBeenCalled()
+  })
+
+  it('does not repeat acknowledged deletions or the saved project when a deletion is retried', async () => {
+    const user = userEvent.setup()
+    vi.mocked(projectApi.getPayments).mockResolvedValue(
+      apiResponse([...payments, { ...payments[1], id: 9 }]) as never,
+    )
+    vi.mocked(paymentApi.delete)
+      .mockResolvedValueOnce(apiResponse(null) as never)
+      .mockRejectedValueOnce(new Error('第三期删除失败'))
+      .mockResolvedValueOnce(apiResponse(null) as never)
+    renderEditor()
+    await waitFor(() =>
+      expect(screen.getByRole('textbox', { name: /项目名称/ })).toHaveValue(project.name),
+    )
+    await user.click(screen.getByRole('button', { name: '删除第 3 期' }))
+    await user.click(screen.getByRole('button', { name: '删除第 2 期' }))
+    await user.click(screen.getByRole('button', { name: '确认保存' }))
+    expect(await screen.findByRole('alert')).toHaveTextContent('1 笔收款删除失败')
+    expect(paymentApi.update).not.toHaveBeenCalled()
+    await user.click(screen.getByRole('button', { name: '确认保存' }))
+    await waitFor(() => expect(paymentApi.update).toHaveBeenCalledOnce())
+    expect(vi.mocked(paymentApi.delete).mock.calls.map(([id]) => id)).toEqual([8, 9, 9])
+    expect(projectApi.update).toHaveBeenCalledOnce()
+    expect(projectApi.create).not.toHaveBeenCalled()
+  })
+
+  it('preserves project input changed during creation and updates the created ID on the next save', async () => {
+    const user = userEvent.setup()
+    const creation = createDeferred<Awaited<ReturnType<typeof projectApi.create>>>()
+    vi.mocked(projectApi.create).mockReturnValue(creation.promise)
+    vi.mocked(paymentApi.create)
+      .mockResolvedValueOnce(apiResponse(payments[0]) as never)
+      .mockResolvedValueOnce(apiResponse(payments[1]) as never)
+    render(
+      <Routes>
+        <Route element={<ProjectCreateView />} path="/projects/create" />
+        <Route element={<h1>项目列表</h1>} path="/projects" />
+      </Routes>,
+      { initialEntries: ['/projects/create'] },
+    )
+    await fillNewProject(user)
+    await user.click(screen.getByRole('button', { name: '确认保存' }))
+    await waitFor(() => expect(projectApi.create).toHaveBeenCalledOnce())
+    const name = screen.getByRole('textbox', { name: /项目名称/ })
+    await user.clear(name)
+    await user.type(name, '创建期间的新名称')
+    await act(async () => {
+      creation.resolve(apiResponse(project) as never)
+      await creation.promise
+    })
+    expect(await screen.findByRole('alert')).toHaveTextContent('新修改尚未保存')
+    expect(screen.getByRole('textbox', { name: /项目名称/ })).toHaveValue('创建期间的新名称')
+    await user.click(screen.getByRole('button', { name: '确认保存' }))
+    await screen.findByRole('heading', { name: '项目列表' })
+    expect(projectApi.create).toHaveBeenCalledOnce()
+    expect(projectApi.update).toHaveBeenCalledWith(
+      42,
+      expect.objectContaining({ name: '创建期间的新名称' }),
+    )
+    expect(paymentApi.create).toHaveBeenCalledTimes(2)
+    expect(paymentApi.update).not.toHaveBeenCalled()
+  })
+
+  it.each(['project', 'payments'])(
+    'blocks editing save after a failed %s load and recovers on retry',
+    async (failedRequest) => {
+      const user = userEvent.setup()
+      const failingApi = failedRequest === 'project' ? projectApi.get : projectApi.getPayments
+      vi.mocked(failingApi).mockRejectedValueOnce(new Error('暂时不可用'))
+      renderEditor()
+
+      expect(await screen.findByRole('alert')).toHaveTextContent('项目详情加载失败')
+      expect(screen.getByRole('button', { name: '确认保存' })).toBeDisabled()
+      await user.click(screen.getByRole('button', { name: '确认保存' }))
+      fireEvent.submit(screen.getByRole('form', { name: '项目编辑表单' }))
+      expect(projectApi.update).not.toHaveBeenCalled()
+      expect(paymentApi.update).not.toHaveBeenCalled()
+
+      await user.click(screen.getByRole('button', { name: '重试' }))
+      await waitFor(() => expect(screen.getByLabelText(/项目名称/)).toHaveValue(project.name))
+      expect(screen.queryByRole('alert')).not.toBeInTheDocument()
+      expect(screen.getByRole('button', { name: '确认保存' })).toBeEnabled()
+      await user.click(screen.getByRole('button', { name: '确认保存' }))
+      await waitFor(() =>
+        expect(projectApi.update).toHaveBeenCalledWith(
+          42,
+          expect.objectContaining({
+            description: project.description,
+            payment_method: project.payment_method,
+          }),
+        ),
+      )
+      expect(paymentApi.update).toHaveBeenCalledWith(
+        7,
+        expect.objectContaining({ amount: 30_000, status: 'pending' }),
+      )
+      expect(paymentApi.update).toHaveBeenCalledWith(
+        8,
+        expect.objectContaining({ amount: 70_000, status: 'pending' }),
+      )
+    },
+  )
+
+  it('never submits a previous project form when the next project failed to load', async () => {
+    const user = userEvent.setup()
+    vi.mocked(projectApi.get)
+      .mockResolvedValueOnce(apiResponse(project) as never)
+      .mockRejectedValueOnce(new Error('项目不存在'))
+    renderEditor()
+    await waitFor(() => expect(screen.getByLabelText(/项目名称/)).toHaveValue(project.name))
+
+    await user.click(screen.getByRole('button', { name: '打开其他项目' }))
+    await screen.findByRole('alert')
+    expect(screen.getByRole('button', { name: '确认保存' })).toBeDisabled()
+    fireEvent.submit(screen.getByRole('form', { name: '项目编辑表单' }))
+
+    expect(projectApi.update).not.toHaveBeenCalled()
+    expect(paymentApi.update).not.toHaveBeenCalled()
+    expect(paymentApi.create).not.toHaveBeenCalled()
+    expect(paymentApi.delete).not.toHaveBeenCalled()
   })
 
   it('fills a saved project type before its dictionary arrives, then uses the dictionary label', async () => {

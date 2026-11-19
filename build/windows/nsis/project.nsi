@@ -15,6 +15,7 @@ Unicode true
 !include "wails_tools.nsh"
 !include "MUI.nsh"
 !include "LogicLib.nsh"
+!include "WordFunc.nsh"
 
 VIProductVersion "${INFO_PRODUCTVERSION}.0"
 VIFileVersion "${INFO_PRODUCTVERSION}.0"
@@ -34,6 +35,52 @@ Var ZhusuanLegacyBackup
 Var ZhusuanUninstallerBackup
 Var ZhusuanNewWritten
 Var ZhusuanUninstallerWritten
+
+; Require a usable runtime before replacing any installed application files.
+!macro ZhusuanReadWebView2 ROOT VIEW
+    SetRegView ${VIEW}
+    ReadRegStr $2 ${ROOT} "Software\Microsoft\EdgeUpdate\Clients\{F3017226-FE2A-4295-8BDF-00C3A9A7E4C5}" "pv"
+    ${If} $2 != ""
+        ${VersionCompare} "$2" "0.0.0.0" $3
+        ${If} $3 == "1"
+            StrCpy $0 "1"
+        ${EndIf}
+    ${EndIf}
+!macroend
+
+Function ZhusuanWebView2Present
+    StrCpy $0 "0"
+    !insertmacro ZhusuanReadWebView2 HKLM 32
+    !insertmacro ZhusuanReadWebView2 HKLM 64
+    !insertmacro ZhusuanReadWebView2 HKCU 32
+    !insertmacro ZhusuanReadWebView2 HKCU 64
+    SetRegView 64
+FunctionEnd
+
+Function ZhusuanEnsureWebView2
+    Call ZhusuanWebView2Present
+    ${If} $0 == "1"
+        Return
+    ${EndIf}
+    DetailPrint "Installing: WebView2 Runtime"
+    InitPluginsDir
+    SetOutPath "$PLUGINSDIR\webview2bootstrapper"
+    File "MicrosoftEdgeWebview2Setup.exe"
+    ClearErrors
+    ExecWait '"$PLUGINSDIR\webview2bootstrapper\MicrosoftEdgeWebview2Setup.exe" /silent /install' $1
+    ${If} ${Errors}
+        Abort "WebView2 Runtime setup could not be started."
+    ${EndIf}
+    ${If} $1 != "0"
+    ${AndIf} $1 != "3010"
+        DetailPrint "WebView2 setup returned $1"
+        Abort "WebView2 Runtime setup failed. Check your network and try again."
+    ${EndIf}
+    Call ZhusuanWebView2Present
+    ${If} $0 != "1"
+        Abort "WebView2 Runtime is unavailable after setup. Restart Windows and try again."
+    ${EndIf}
+FunctionEnd
 
 ; Extract a bare path from historical quoted DisplayIcon/UninstallString values.
 Function ZhusuanCommandDirectory
@@ -203,7 +250,7 @@ FunctionEnd
 
 Section
     !insertmacro wails.setShellContext
-    !insertmacro wails.webview2runtime
+    Call ZhusuanEnsureWebView2
     SetOutPath $INSTDIR
 
     ; Back up either identity, refusing replacement while an executable is in use.

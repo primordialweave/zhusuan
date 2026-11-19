@@ -2,9 +2,15 @@ import { FileExporter } from '../../bindings/github.com/primordialweave/zhusuan/
 
 export type CsvValue = number | string | null | undefined
 
-const escapeCsvCell = (value: CsvValue) => `"${String(value ?? '').replace(/"/g, '""')}"`
+const escapeCsvCell = (value: CsvValue) => {
+  const text = String(value ?? '')
+  // Quoting alone does not stop spreadsheet apps from evaluating a formula.
+  const safeText =
+    typeof value === 'string' && /^(?:\s*[=+@-]|\s*[\t\r\n])/.test(text) ? `'${text}` : text
+  return `"${safeText.replace(/"/g, '""')}"`
+}
 
-/** Excel-friendly CSV: a byte-order mark, every cell quoted. */
+/** Excel-friendly CSV: a byte-order mark, quoted cells, and literal user-entered strings. */
 export const buildCsv = (rows: CsvValue[][]) =>
   `\uFEFF${rows.map((row) => row.map(escapeCsvCell).join(',')).join('\n')}`
 

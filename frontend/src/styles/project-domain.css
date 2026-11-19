@@ -254,6 +254,22 @@
   width: min(19rem, 40vw);
 }
 
+.payment-project-trigger {
+  width: 100%;
+  justify-content: space-between;
+}
+
+.payment-project-popover {
+  display: grid;
+  width: min(22rem, calc(100vw - 2rem));
+  gap: var(--ods-space-3);
+}
+
+.payment-project-pages {
+  align-items: center;
+  justify-content: flex-end;
+}
+
 .payment-plan-editor__list {
   display: flex;
   flex-direction: column;

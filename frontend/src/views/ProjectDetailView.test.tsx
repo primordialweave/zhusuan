@@ -115,6 +115,47 @@ describe('ProjectDetailView payment deep links', () => {
     vi.spyOn(HTMLElement.prototype, 'focus').mockImplementation(() => undefined)
   })
 
+  it.each(['project', 'payments'])(
+    'retries after a failed %s load instead of loading forever',
+    async (failedRequest) => {
+      const user = userEvent.setup()
+      const failingApi = failedRequest === 'project' ? projectApi.get : projectApi.getPayments
+      vi.mocked(failingApi).mockRejectedValueOnce(new Error('暂时不可用'))
+      renderProjectDetail('/projects/42')
+
+      expect(await screen.findByRole('alert')).toHaveTextContent('项目详情加载失败')
+      expect(screen.queryByLabelText('正在加载项目详情')).not.toBeInTheDocument()
+      await user.click(screen.getByRole('button', { name: '重试' }))
+
+      expect(await screen.findByRole('heading', { name: project.name })).toBeInTheDocument()
+      expect(screen.queryByRole('alert')).not.toBeInTheDocument()
+      expect(projectApi.get).toHaveBeenCalledTimes(2)
+      expect(projectApi.getPayments).toHaveBeenCalledTimes(2)
+    },
+  )
+
+  it('does not show an old project failure on a newer route', async () => {
+    const user = userEvent.setup()
+    let rejectOldProject!: (reason: Error) => void
+    const oldProject = new Promise((_, reject) => {
+      rejectOldProject = reject
+    })
+    vi.mocked(projectApi.get)
+      .mockReturnValueOnce(oldProject as never)
+      .mockResolvedValue(apiResponse({ ...project, id: 43, name: '新项目' }) as never)
+    renderProjectDetail('/projects/42')
+    await waitFor(() => expect(projectApi.get).toHaveBeenCalledWith(42))
+    await user.click(screen.getByRole('button', { name: '打开其他项目' }))
+    await screen.findByRole('heading', { name: '新项目' })
+
+    await act(async () => {
+      rejectOldProject(new Error('旧项目加载失败'))
+    })
+
+    expect(screen.queryByRole('alert')).not.toBeInTheDocument()
+    expect(screen.getByRole('heading', { name: '新项目' })).toBeInTheDocument()
+  })
+
   it('updates a saved project type to its dictionary name when the dictionary arrives', async () => {
     const dictionary = createDeferred<Awaited<ReturnType<typeof dictionaryApi.getItems>>>()
     vi.mocked(dictionaryApi.getItems).mockReturnValue(dictionary.promise)

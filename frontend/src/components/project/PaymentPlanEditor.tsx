@@ -97,7 +97,7 @@ export function PaymentPlanEditor({
               aria-label={installment ? `第 ${index + 1} 期收款` : '一次性收款'}
               className="payment-plan-editor__item"
               focusWithin
-              key={item.id ?? item.clientKey}
+              key={item.clientKey}
               padding="md"
               role="group"
               variant="inset"

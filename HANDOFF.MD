@@ -2,7 +2,13 @@
 
 接手任何任务前先读这份文档。它只记两类东西：**当前在制品的状态**，和**已经踩过的坑**。踩到新坑就追加到第 2 节，状态变了就改第 1 节。
 
-## 1. 当前任务：烟雨江南界面重构
+## 1. 当前任务：珠算 1.0.0 发布准备
+
+- 分支 codex/zhusuan-migration，草稿 PR #2；用户选择 1.0.0 并要求暂不合并/发布。
+- 文档、版本、九张脱敏截图和全局审查修复已完成；最终检查/限制见 docs/release-readiness.md，坑见 2.7。金额保持源快照数值，真实账本未修改。
+- 最新提交的 CI 状态须按当前 head 查询，不沿用历史成功记录。只提交/更新 draft PR，不触发标签或 main 镜像发布。
+
+## 1.1 历史任务：烟雨江南界面重构
 
 - 分支 `feat/misty-jiangnan-ui`，从 `codex/dashboard-visual-primitives` 切出。切分支前工作区已有 84 个未提交改动，快照存在 `refs/backup/pre-jiangnan-ui`，用 `git diff refs/backup/pre-jiangnan-ui` 可以只看本次重构的改动。
 - 规范 `docs/ORANGE_DESIGN_SYSTEM.md`，原型 `docs/prototypes/01…07`。**工作台按原型完全还原**，其余页面参考原型并按现有能力适配。
@@ -363,3 +369,18 @@
 - 回滚失败时暂存目录的 previous 可能是旧应用的唯一副本，清理不能删除它。测试用独立临时安装目录、TLS fixture 与注入的安装/重启函数，不替换用户真实应用或触碰真实数据库。
 - 旧 Wails CLI 即使扫描成功也会报“application built with go1.25”与项目 go1.26 的版本警告。验证绑定时使用 Go1.26 重编译的固定 CLI（可用 `GOTOOLCHAIN=go1.26.0 go run github.com/wailsapp/wails/v3/cmd/wails3@v3.0.0-alpha.55 ...`），不要用 `go get` 将 CLI 的全部依赖写入应用 go.mod。
 - Wails 开发 watch 会在 Go 源码修改后触发前端依赖重装，另一个 Vite 预览仍握着旧 chunk 路径时会报 `Cannot find ... vite/dist/node/chunks/dist.js`。不要停止用户的桌面 watch；页面 QA 可用冻结 production dist + 独立 Node 静态/API 代理预览，不再依赖被重装的 Vite。
+
+
+### 2.7 珠算 1.0.0 发布准备（2026-11-19）
+
+- 当前分支 codex/zhusuan-migration，PR #2 保持 draft。用户选择 1.0.0，但明确暂不合并或发布；不要创建 tag、运行 Release workflow 或触发 main 的 GHCR 发布。
+- README/英文 README/CHANGELOG 与发布/迁移说明更新，九张截图在 docs/screenshots。先将隔离数据库副本的名称/客户/合同/人员/联系/备注脱敏，再截图；金额/比例与 77 项源账本核对不变。About 的个人介绍/作者/联系须 DOM 遮挡，品牌/repo/version 保留。六张旧 frontend/public 快照移除。根代理不读图，子代理 contact + 七原图验收无可见泄漏；工作台/登录只缩略图、详情/创建下方未验。
+- 财务正数校验、显式逾期、结束日半开范围、SQLite 时区分组、合同金额/比例事务、父项目锁与鉴权查询 fail-closed 已修。所有款项写入及项目删除都先锁父项目，避免孩子先锁造成逆序；SQLite max1 池与 MySQL dry-run SQL 不是 MySQL/Pg 实机并发证明。
+- 异步鉴权要按发起 Token 比对；永不复位的全局过期标志会让后续会话无法过期。CSV quoted 字符串仍可执行公式，转义前须区分字符串/真实负金额。
+- 分期保存必须 allSettled 并保留已成功 ID/删除结果及 stable clientKey，重试不重复已确认成功项；服务端提交后响应丢失仍需要原子/幂等 API，不能把客户端账本说成原子保存。
+- 使用统一 release.py 更新所有平台与 Go AppVersion，旧 bump_version.go 仅保留 wrapper。Android 版本编码必须在任何写入前校验；MSIX Version 正则须有词边界，不能替换 MinVersion。
+- WebView2 bootstrap ExecWait 必须取退出码并重新检查 runtime，不能只下载/运行即报成功；项目自有 NSIS 函数在程序备份之前执行。macOS 本地 NSIS 使用 NSISDIR 指向临时解包 share/nsis，fixture 仅编译不执行。
+- 前端生产 build 会重建/清空 frontend/dist，Go embed 的 test/build/lint 与它有依赖，必须顺序执行；一次并行 lint 因旧 dist 消失 typecheck 失败，待 build 完成后重跑。不停止用户3456/9245的 dev watch。此次自有3466/9331与 ego space6 在完成后关闭。
+- 最终证据与真实平台未验边界见 docs/release-readiness.md：前端115文件591用例；Go136顶层140子测试/16包；race/vet、元数据11、actionlint、生产依赖audit0；真实安装/UAC/签名/完整更新/目标设备性能仍需平台验收。
+
+- 最终相对 main 的增量 lint 发现 UpdateForUser 的事务闭包推高 gocyclo；将合同/比例保存事务提取为独立辅助函数后，service race 和增量 lint（0新增）通过。没有关闭规则或增加忽略。

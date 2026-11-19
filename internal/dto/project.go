@@ -14,7 +14,7 @@ type ProjectListResult struct {
 type CreateProjectRequest struct {
 	Name           string  `json:"name" binding:"required"`
 	Company        string  `json:"company" binding:"required"`
-	TotalAmount    float64 `json:"total_amount" binding:"required"`
+	TotalAmount    float64 `json:"total_amount" binding:"required,gt=0"`
 	Status         string  `json:"status"`
 	Type           string  `json:"type" binding:"required"`
 	ContractNumber string  `json:"contract_number"`

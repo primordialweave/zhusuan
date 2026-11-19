@@ -20,7 +20,7 @@ tasks:
       - python3 scripts/generate_icons.py
 
   bump-version:
-    summary: "Updates the application version (usage: task bump-version VERSION=0.1.x)"
+    summary: "Updates the application version (usage: task bump-version VERSION=1.0.0)"
     cmds:
       - go run scripts/bump_version.go {{.VERSION}}
 

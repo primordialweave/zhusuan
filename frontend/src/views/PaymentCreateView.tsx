@@ -1,9 +1,24 @@
-import { useCallback, useEffect, useMemo, useState, type FormEvent } from 'react'
+import { useCallback, useEffect, useLayoutEffect, useRef, useState, type FormEvent } from 'react'
 import { useNavigate, useParams } from 'react-router-dom'
-import { paymentApi, projectApi, type PaymentRequest, type Project } from '@/api/project'
+import { projectApi, type Project } from '@/api/project'
 import { PaymentPlanEditor } from '@/components/project/PaymentPlanEditor'
+import { ProjectPicker } from '@/components/project/ProjectPicker'
 import { createPaymentPlanItem, type PaymentPlanItem } from '@/components/project/paymentPlan'
-import { Button, Card, Field, FormActions, IconButton, PageHeader, Select } from '@/design-system'
+import {
+  createPaymentPlanSaveState,
+  hasUnsavedPaymentPlan,
+  savePaymentPlan,
+} from '@/components/project/paymentPlanSave'
+import {
+  Alert,
+  Button,
+  Card,
+  EmptyState,
+  Field,
+  FormActions,
+  IconButton,
+  PageHeader,
+} from '@/design-system'
 import { useToastStore } from '@/composables/useToast'
 import '@/styles/project-domain.css'
 
@@ -21,46 +36,96 @@ export default function PaymentCreateView() {
   const toastError = useToastStore((state) => state.error)
   const toastSuccess = useToastStore((state) => state.success)
   const routeProjectId = Number(params.id) || 0
-  const [projects, setProjects] = useState<Project[]>([])
-  const [selectedProjectId, setSelectedProjectId] = useState(routeProjectId)
+  const [selectedProject, setSelectedProject] = useState<Project | undefined>()
+  const selectedProjectId = selectedProject?.id || routeProjectId
   const [paymentItems, setPaymentItems] = useState<PaymentPlanItem[]>([createPaymentPlanItem()])
   const [saving, setSaving] = useState(false)
+  const [loadingProject, setLoadingProject] = useState(true)
+  const [projectLoadFailed, setProjectLoadFailed] = useState(false)
+  const [saveIssue, setSaveIssue] = useState<string | null>(null)
+  const [lockedProjectId, setLockedProjectId] = useState<number | null>(null)
+  const paymentSaveStateRef = useRef(createPaymentPlanSaveState())
+  const currentPaymentItemsRef = useRef(paymentItems)
+  const saveRequestRef = useRef<object | null>(null)
+  const mountedRef = useRef(false)
+  const loadGenerationRef = useRef(0)
+  const activeRouteRef = useRef(routeProjectId)
 
-  const currentProject = useMemo(
-    () => projects.find((project) => project.id === selectedProjectId),
-    [projects, selectedProjectId],
-  )
+  useLayoutEffect(() => {
+    activeRouteRef.current = routeProjectId
+    saveRequestRef.current = null
+    paymentSaveStateRef.current = createPaymentPlanSaveState()
+  }, [routeProjectId])
+  useLayoutEffect(() => {
+    currentPaymentItemsRef.current = paymentItems
+  }, [paymentItems])
+  useEffect(() => {
+    mountedRef.current = true
+    return () => {
+      mountedRef.current = false
+      loadGenerationRef.current += 1
+    }
+  }, [])
+
+  const currentProject =
+    routeProjectId && routeProjectId !== selectedProject?.id ? undefined : selectedProject
   const isInstallment = currentProject?.payment_method === '分期付款'
-  const projectOptions = useMemo(
-    () => projects.map((project) => ({ label: project.name, value: String(project.id) })),
-    [projects],
-  )
 
   const loadProjects = useCallback(async () => {
+    const generation = ++loadGenerationRef.current
+    setSaving(false)
+    setLoadingProject(true)
+    setProjectLoadFailed(false)
+    setLockedProjectId(null)
+    setSaveIssue(null)
     try {
-      const response = await projectApi.list({ page: 1, page_size: 100 })
-      const list = response.data.data.list
+      const list = routeProjectId
+        ? [(await projectApi.get(routeProjectId)).data.data]
+        : (await projectApi.list({ page: 1, page_size: 20 })).data.data.list
+      if (
+        !mountedRef.current ||
+        generation !== loadGenerationRef.current ||
+        activeRouteRef.current !== routeProjectId
+      )
+        return
       const nextProjectId = routeProjectId || list[0]?.id || 0
       const nextProject = list.find((project) => project.id === nextProjectId)
-      setProjects(list)
-      setSelectedProjectId(nextProjectId)
+      setSelectedProject(nextProject)
       setPaymentItems((current) =>
         normalizePaymentItems(current, nextProject?.payment_method === '分期付款'),
       )
     } catch {
+      if (
+        !mountedRef.current ||
+        generation !== loadGenerationRef.current ||
+        activeRouteRef.current !== routeProjectId
+      )
+        return
+      setProjectLoadFailed(true)
       toastError('获取项目列表失败')
+    } finally {
+      if (
+        mountedRef.current &&
+        generation === loadGenerationRef.current &&
+        activeRouteRef.current === routeProjectId
+      )
+        setLoadingProject(false)
     }
   }, [routeProjectId, toastError])
 
   useEffect(() => {
     const timer = window.setTimeout(loadProjects, 0)
-    return () => window.clearTimeout(timer)
+    return () => {
+      window.clearTimeout(timer)
+      loadGenerationRef.current += 1
+    }
   }, [loadProjects])
 
-  const selectProject = (value: string) => {
-    const nextProjectId = Number(value)
-    const nextProject = projects.find((project) => project.id === nextProjectId)
-    setSelectedProjectId(nextProjectId)
+  const selectProject = (nextProject: Project) => {
+    if (saveRequestRef.current || paymentSaveStateRef.current.knownIds.size > 0) return
+    paymentSaveStateRef.current = createPaymentPlanSaveState()
+    setSaveIssue(null)
+    setSelectedProject(nextProject)
     setPaymentItems((current) =>
       normalizePaymentItems(current, nextProject?.payment_method === '分期付款'),
     )
@@ -68,6 +133,7 @@ export default function PaymentCreateView() {
 
   const handleSubmit = async (event: FormEvent<HTMLFormElement>) => {
     event.preventDefault()
+    if (saving || saveRequestRef.current || loadingProject || !currentProject) return
     if (!selectedProjectId) {
       toastError('请选择项目')
       return
@@ -77,27 +143,43 @@ export default function PaymentCreateView() {
       return
     }
 
+    const request = {}
+    saveRequestRef.current = request
+    const state = paymentSaveStateRef.current
+    const submittedItems = paymentItems.map((item) => ({ ...item }))
     setSaving(true)
+    setSaveIssue(null)
+    const generation = loadGenerationRef.current
+    const isCurrentSave = () =>
+      mountedRef.current &&
+      generation === loadGenerationRef.current &&
+      saveRequestRef.current === request
     try {
-      const requests = paymentItems.map(
-        (item): PaymentRequest => ({
-          amount: Number(item.amount) || 0,
-          method: item.method,
-          plan_date: item.planDate,
-          project_id: selectedProjectId,
-          remark: item.remark,
-          stage: item.stage,
-          status: item.status,
-        }),
+      const result = await savePaymentPlan(selectedProjectId, submittedItems, state)
+      if (!isCurrentSave()) return
+      setPaymentItems((current) =>
+        current.map((item) => ({ ...item, id: result.ids.get(item.clientKey) ?? item.id })),
       )
-
-      await Promise.all(requests.map((request) => paymentApi.create(request)))
+      if (state.knownIds.size > 0) setLockedProjectId(selectedProjectId)
+      if (result.issue) {
+        setSaveIssue(result.issue)
+        toastError('部分收款操作未完成')
+        return
+      }
+      if (hasUnsavedPaymentPlan(selectedProjectId, currentPaymentItemsRef.current, state)) {
+        setSaveIssue('已保存提交的内容，期间的新修改尚未保存，请再次保存。')
+        return
+      }
       toastSuccess('收款计划已创建')
       navigate(`/projects/${selectedProjectId}`)
     } catch (error) {
+      if (!isCurrentSave()) return
       toastError(error instanceof Error ? error.message : '创建收款失败')
     } finally {
-      setSaving(false)
+      if (isCurrentSave()) {
+        saveRequestRef.current = null
+        setSaving(false)
+      }
     }
   }
 
@@ -108,12 +190,10 @@ export default function PaymentCreateView() {
           routeProjectId ? null : (
             <Field.Root className="payment-project-selector" required>
               <Field.Label>所属项目</Field.Label>
-              <Select
-                aria-label="选择项目"
+              <ProjectPicker
+                disabled={saving || loadingProject || lockedProjectId !== null}
                 onValueChange={selectProject}
-                options={projectOptions}
-                placeholder="请选择项目"
-                value={selectedProjectId ? String(selectedProjectId) : undefined}
+                value={currentProject}
               />
             </Field.Root>
           )
@@ -128,6 +208,19 @@ export default function PaymentCreateView() {
         title="创建收款计划"
       />
 
+      {projectLoadFailed ? (
+        <EmptyState
+          title="所属项目加载失败"
+          role="alert"
+          action={<Button onClick={() => void loadProjects()}>重试</Button>}
+        />
+      ) : null}
+      {saveIssue ? (
+        <Alert title="收款操作尚未完成" tone="warning" role="alert">
+          {saveIssue}
+        </Alert>
+      ) : null}
+
       <Card.Root className="project-form-card" padding="none" variant="transparent">
         <form className="payment-form" onSubmit={handleSubmit}>
           <PaymentPlanEditor
@@ -140,7 +233,7 @@ export default function PaymentCreateView() {
             <Button onClick={() => navigate(-1)} type="button" variant="ghost">
               取消
             </Button>
-            <Button disabled={!selectedProjectId} pending={saving} type="submit">
+            <Button disabled={loadingProject || !currentProject} pending={saving} type="submit">
               {saving ? '保存中...' : '确认保存'}
             </Button>
           </FormActions>

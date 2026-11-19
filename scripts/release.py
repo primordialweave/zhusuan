@@ -25,6 +25,11 @@ def replace_required(path, pattern, replacement):
 
 def sync_metadata(root, tag):
     version = version_for_tag(tag)
+    parts = [int(part) for part in version.split('.')]
+    android = root/'build/android/app/build.gradle'
+    code = parts[0] * 1000000 + parts[1] * 1000 + parts[2]
+    if android.exists() and (code > 2100000000 or parts[1] >= 1000 or parts[2] >= 1000):
+        raise ValueError('Android version components exceed the supported versionCode range')
     for filename in ['frontend/package.json', 'frontend/package-lock.json']:
         path = root / filename
         document = json.loads(path.read_text(encoding='utf-8'))
@@ -33,12 +38,25 @@ def sync_metadata(root, tag):
             document['packages']['']['version'] = version
         path.write_text(json.dumps(document, indent=2, ensure_ascii=False) + '\n', encoding='utf-8')
     replace_required(root/'build/config.yml', r'(?m)^(  version: )"[^"]+"', rf'\g<1>"{version}"')
+    constants = root/'internal/constants/constants.go'
+    if constants.exists():
+        replace_required(constants, r'const AppVersion = "[^"]+"', f'const AppVersion = "{version}"')
     replace_required(root/'build/linux/nfpm/nfpm.yaml', r'(?m)^(version: )"[^"]+"', rf'\g<1>"{version}"')
     for filename in ['build/darwin/Info.plist', 'build/darwin/Info.dev.plist']:
         for key in ['CFBundleShortVersionString', 'CFBundleVersion']:
             replace_required(root/filename, rf'(<key>{key}</key>\s*<string>)[^<]*(</string>)', rf'\g<1>{version}\g<2>')
     for key in ['file_version', 'ProductVersion']:
         replace_required(root/'build/windows/info.json', rf'("{key}":\s*")[^"]+("\s*)', rf'\g<1>{version}\g<2>')
+    for filename in ['build/ios/Info.plist', 'build/ios/Info.dev.plist']:
+        if (root/filename).exists():
+            for key in ['CFBundleShortVersionString', 'CFBundleVersion']:
+                replace_required(root/filename, rf'(<key>{key}</key>\s*<string>)[^<]*(</string>)', rf'\g<1>{version}\g<2>')
+    for filename in ['build/windows/msix/template.xml', 'build/windows/msix/app_manifest.xml']:
+        if (root/filename).exists():
+            replace_required(root/filename, r'\bVersion="\d+\.\d+\.\d+\.\d+"', f'Version="{version}.0"')
+    if android.exists():
+        replace_required(android, r'versionName\s+"[^"]+"', f'versionName "{version}"')
+        replace_required(android, r'versionCode\s+\d+', f'versionCode {code}')
     return version
 
 

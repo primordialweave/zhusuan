@@ -26,6 +26,26 @@ describe('CSV export', () => {
     ).toBe('\uFEFF"名称","金额"\n"他说 ""好""","1200.5"\n"",""')
   })
 
+  it.each([
+    '=HYPERLINK("https://example.invalid","项目")',
+    '+SUM(1,2)',
+    '-1+2',
+    '@SUM(1,2)',
+    '  =1+2',
+    '\t项目',
+    '\r项目',
+    '\n项目',
+    '  \t项目',
+  ])('exports a spreadsheet-sensitive string as literal text: %j', (value) => {
+    expect(buildCsv([[value]])).toBe(`\uFEFF"'${value.replace(/"/g, '""')}"`)
+  })
+
+  it('preserves numeric amounts including negative values and safe literal strings', () => {
+    expect(buildCsv([[-1200.5, 0, 1200.5, '项目-1', ' 客户', "'备注"]])).toBe(
+      '\uFEFF"-1200.5","0","1200.5","项目-1"," 客户","\'备注"',
+    )
+  })
+
   it('saves through the native dialog in the desktop app', async () => {
     ;(window as WailsWindow)._wails = { environment: { OS: 'darwin' } }
     saveText.mockResolvedValueOnce('/Users/me/报表.csv').mockResolvedValueOnce('')

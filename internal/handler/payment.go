@@ -3,10 +3,11 @@ package handler
 import (
 	"strconv"
 
+	"github.com/gin-gonic/gin"
+
 	"github.com/primordialweave/zhusuan/internal/dto"
 	"github.com/primordialweave/zhusuan/internal/pkg/response"
 	"github.com/primordialweave/zhusuan/internal/service"
-	"github.com/gin-gonic/gin"
 )
 
 // PaymentHandler 款项管理模块接口处理器
@@ -66,7 +67,7 @@ func (h *PaymentHandler) List(c *gin.Context) {
 	if startDate != "" && endDate != "" {
 		payments, err := h.paymentService.ListByDateRange(userID, startDate, endDate)
 		if err != nil {
-			response.InternalError(c, "获取收款列表失败")
+			response.HandleServiceError(c, err, "获取收款列表失败")
 			return
 		}
 		response.Success(c, payments)

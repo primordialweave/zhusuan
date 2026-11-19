@@ -59,6 +59,17 @@ func (s *PaymentService) ListByProjectForUser(userID, projectID int64) ([]models
 //   - []models.Payment: 范围内的款项列表
 //   - error: 数据库查询错误
 func (s *PaymentService) ListByDateRange(userID int64, startDate, endDate string) ([]models.Payment, error) {
+	start, err := time.Parse("2006-01-02", startDate)
+	if err != nil {
+		return nil, pkgerrors.WrapWithCode(err, 400, "开始日期格式错误")
+	}
+	end, err := time.Parse("2006-01-02", endDate)
+	if err != nil {
+		return nil, pkgerrors.WrapWithCode(err, 400, "结束日期格式错误")
+	}
+	if start.After(end) {
+		return nil, pkgerrors.WrapWithCode(errors.New("日期范围错误"), 400, "开始日期不能晚于结束日期")
+	}
 	return s.paymentRepo.ListByDateRange(userID, startDate, endDate)
 }
 
@@ -71,6 +82,9 @@ func (s *PaymentService) ListByDateRange(userID int64, startDate, endDate string
 //   - *models.Payment: 创建成功的款项实体
 //   - error: 业务规则校验失败或数据库错误
 func (s *PaymentService) Create(input dto.PaymentRequest) (*models.Payment, error) {
+	if err := validatePositiveAmount(input.Amount); err != nil {
+		return nil, err
+	}
 	// 外层权限检查
 	if _, err := s.projectRepo.FindByIDForUser(input.ProjectID, input.UserID); err != nil {
 		if err == gorm.ErrRecordNotFound {
@@ -103,6 +117,9 @@ func (s *PaymentService) Create(input dto.PaymentRequest) (*models.Payment, erro
 
 	// 在事务中完成创建 + 规则处理 + 项目金额同步，确保一致性
 	err = database.GetDB().Transaction(func(tx *gorm.DB) error {
+		if _, err := lockPaymentProjectInTx(tx, payment.ProjectID, payment.UserID); err != nil {
+			return err
+		}
 		// 执行核心业务规则校验与处理（如计算百分比、自动填充实际日期逻辑等）
 		if err := s.processPaymentRulesInTx(tx, payment); err != nil {
 			return err
@@ -146,6 +163,9 @@ func (s *PaymentService) UpdateForUser(userID, id int64, input dto.PaymentReques
 // applyUpdate 应用款项更新的公共逻辑（校验 + 赋值 + 事务内规则处理与金额同步）
 // Update 与 UpdateForUser 仅鉴权查询方式不同，其余流程一致，此处统一收敛避免重复。
 func (s *PaymentService) applyUpdate(payment *models.Payment, input dto.PaymentRequest) (*models.Payment, error) {
+	if err := validatePositiveAmount(input.Amount); err != nil {
+		return nil, err
+	}
 	if input.ProjectID != 0 && input.ProjectID != payment.ProjectID {
 		return nil, pkgerrors.WrapWithCode(errors.New("不允许修改款项所属项目"), 400, "不允许修改款项所属项目")
 	}
@@ -155,16 +175,19 @@ func (s *PaymentService) applyUpdate(payment *models.Payment, input dto.PaymentR
 		return nil, pkgerrors.WrapWithCode(err, 400, "计划日期格式错误")
 	}
 
-	// 更新字段
-	payment.Stage = input.Stage
-	payment.Amount = input.Amount
-	payment.PlanDate = planDate
-	payment.Status = input.Status
-	payment.Method = input.Method
-	payment.Remark = input.Remark
-
 	// 在事务中完成规则处理 + 保存 + 项目金额同步
 	err = database.GetDB().Transaction(func(tx *gorm.DB) error {
+		if _, err := lockPaymentProjectInTx(tx, payment.ProjectID, payment.UserID); err != nil {
+			return err
+		}
+		// Read the current actual date after acquiring the common project lock.
+		var current models.Payment
+		if err := tx.Clauses(clause.Locking{Strength: "UPDATE"}).Where("id = ? AND user_id = ?", payment.ID, payment.UserID).First(&current).Error; err != nil {
+			return err
+		}
+		current.Stage, current.Amount, current.PlanDate = input.Stage, input.Amount, planDate
+		current.Status, current.Method, current.Remark = input.Status, input.Method, input.Remark
+		*payment = current
 		// 重新应用业务规则（如重新计算百分比，因为金额可能变了）
 		if err := s.processPaymentRulesInTx(tx, payment); err != nil {
 			return err
@@ -225,6 +248,25 @@ func (s *PaymentService) processPaymentRulesInTx(tx *gorm.DB, payment *models.Pa
 // 统一以该容差判断"金额是否发生实质变化"。
 const amountEpsilon = 0.005
 
+func validatePositiveAmount(amount float64) error {
+	if amount <= 0 || math.IsNaN(amount) || math.IsInf(amount, 0) {
+		return pkgerrors.WrapWithCode(errors.New("金额必须为正数"), 400, "金额必须为正数")
+	}
+	return nil
+}
+
+// All writers acquire the parent before touching payments so an aggregate cannot race another writer.
+func lockPaymentProjectInTx(tx *gorm.DB, projectID, userID int64) (*models.Project, error) {
+	var project models.Project
+	if err := tx.Clauses(clause.Locking{Strength: "UPDATE"}).Where("id = ? AND user_id = ?", projectID, userID).First(&project).Error; err != nil {
+		if errors.Is(err, gorm.ErrRecordNotFound) {
+			return nil, pkgerrors.ErrProjectNotFound
+		}
+		return nil, pkgerrors.Wrap(err, "锁定项目失败")
+	}
+	return &project, nil
+}
+
 // syncProjectReceivedAmountInTx 重新计算并同步项目的"已收款总额"（事务内版本）
 // 此方法应在任何款项金额或状态发生变化后被调用，以确保 Project 表数据的一致性。
 // 全程在同一事务 tx 内读改写，避免读后写竞态导致的 lost update。
@@ -267,6 +309,9 @@ func (s *PaymentService) DeleteForUser(userID, id int64) error {
 	projectID := payment.ProjectID
 
 	err = database.GetDB().Transaction(func(tx *gorm.DB) error {
+		if _, err := lockPaymentProjectInTx(tx, projectID, userID); err != nil {
+			return err
+		}
 		if err := tx.Where("id = ? AND user_id = ?", id, userID).Delete(&models.Payment{}).Error; err != nil {
 			return pkgerrors.Wrap(err, "删除款项失败")
 		}
@@ -290,24 +335,25 @@ func (s *PaymentService) ConfirmForUser(userID, id int64, actualDate, method str
 	if err != nil {
 		return pkgerrors.WrapWithCode(err, 400, "实际日期格式错误")
 	}
+	// This read is outside the transaction. A pre-lock snapshot would be stale under MySQL repeatable-read.
+	ownedPayment, err := s.paymentRepo.FindByIDForUser(id, userID)
+	if err != nil {
+		if errors.Is(err, gorm.ErrRecordNotFound) {
+			return pkgerrors.ErrPaymentNotFound
+		}
+		return pkgerrors.Wrap(err, "查询款项失败")
+	}
 
 	err = database.GetDB().Transaction(func(tx *gorm.DB) error {
+		if _, err := lockPaymentProjectInTx(tx, ownedPayment.ProjectID, userID); err != nil {
+			return err
+		}
 		var payment models.Payment
-		if err := tx.Where("id = ? AND user_id = ?", id, userID).First(&payment).Error; err != nil {
+		if err := tx.Clauses(clause.Locking{Strength: "UPDATE"}).Where("id = ? AND user_id = ?", id, userID).First(&payment).Error; err != nil {
 			if err == gorm.ErrRecordNotFound {
 				return pkgerrors.ErrPaymentNotFound
 			}
 			return pkgerrors.Wrap(err, "查询款项失败")
-		}
-
-		if payment.Status == constants.PaymentStatusConfirmed {
-			return nil
-		}
-
-		if err := tx.Clauses(clause.Locking{Strength: "UPDATE"}).
-			Where("id = ? AND user_id = ?", id, userID).
-			First(&payment).Error; err != nil {
-			return pkgerrors.Wrap(err, "锁定款项失败")
 		}
 
 		if payment.Status == constants.PaymentStatusConfirmed {
@@ -322,22 +368,7 @@ func (s *PaymentService) ConfirmForUser(userID, id int64, actualDate, method str
 			return pkgerrors.Wrap(err, "更新款项状态失败")
 		}
 
-		var totalReceived float64
-		if err := tx.Model(&models.Payment{}).
-			Where("project_id = ? AND user_id = ? AND status = ?", payment.ProjectID, userID, constants.PaymentStatusConfirmed).
-			Select("COALESCE(SUM(amount), 0)").
-			Scan(&totalReceived).Error; err != nil {
-			return pkgerrors.Wrap(err, "计算已收款总额失败")
-		}
-
-		// 主动清除相关缓存
-		if err := tx.Model(&models.Project{}).
-			Where("id = ? AND user_id = ?", payment.ProjectID, userID).
-			Update("received_amount", totalReceived).Error; err != nil {
-			return pkgerrors.Wrap(err, "更新项目已收款金额失败")
-		}
-
-		return nil
+		return s.syncProjectReceivedAmountInTx(tx, payment.ProjectID)
 	})
 
 	// 事务成功后清除 Dashboard 缓存

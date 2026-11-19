@@ -43,7 +43,7 @@ class ReleaseTests(unittest.TestCase):
         self.assertEqual((output/'zhusuan-v1.2.3-windows-amd64-installer.exe').read_bytes(), b'new installer')
 
     def test_syncs_frontend_lock_and_all_native_metadata(self):
-        files = ['frontend/package.json', 'frontend/package-lock.json', 'build/config.yml', 'build/linux/nfpm/nfpm.yaml', 'build/darwin/Info.plist', 'build/darwin/Info.dev.plist', 'build/windows/info.json']
+        files = ['frontend/package.json', 'frontend/package-lock.json', 'build/config.yml', 'build/linux/nfpm/nfpm.yaml', 'build/darwin/Info.plist', 'build/darwin/Info.dev.plist', 'build/windows/info.json', 'build/ios/Info.plist', 'build/ios/Info.dev.plist', 'build/windows/msix/template.xml', 'build/windows/msix/app_manifest.xml', 'build/android/app/build.gradle', 'internal/constants/constants.go']
         for filename in files:
             target = self.directory/filename
             target.parent.mkdir(parents=True, exist_ok=True)
@@ -56,6 +56,21 @@ class ReleaseTests(unittest.TestCase):
             self.assertIn('1.2.3', (self.directory/filename).read_text())
         self.assertIn('org.primordialweave.zhusuan', (self.directory/'build/darwin/Info.plist').read_text())
         self.assertIn('珠算', (self.directory/'build/config.yml').read_text())
+        self.assertIn('versionCode 1002003', (self.directory/'build/android/app/build.gradle').read_text())
+        for filename in ['build/windows/msix/template.xml', 'build/windows/msix/app_manifest.xml']:
+            text = (self.directory/filename).read_text()
+            self.assertIn('Version="1.2.3.0"', text)
+            self.assertIn('MinVersion="10.0.17763.0"', text)
+
+    def test_invalid_android_version_does_not_partially_update_metadata(self):
+        target = self.directory/'build/android/app/build.gradle'
+        target.parent.mkdir(parents=True)
+        shutil.copy2(REPO/'build/android/app/build.gradle', target)
+        before = target.read_bytes()
+        with self.assertRaisesRegex(ValueError, 'Android version'):
+            release.sync_metadata(self.directory, 'v1.1000.0')
+        self.assertEqual(target.read_bytes(), before)
+        self.assertFalse((self.directory/'frontend/package.json').exists())
 
     def test_verifies_all_platforms_and_produces_one_manifest(self):
         self.populate_assets()

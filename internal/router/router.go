@@ -193,7 +193,7 @@ func healthCheck(c *gin.Context) {
 		"code":    0,
 		"message": "ok",
 		"data": gin.H{
-			"service": "Orange API",
+			"service": "Zhusuan API",
 			"version": constants.AppVersion,
 		},
 	})

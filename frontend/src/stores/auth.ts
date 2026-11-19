@@ -65,37 +65,44 @@ export const useAuthStore = create<AuthState>((set, get) => ({
   },
 
   async logout() {
+    const sessionToken = get().token
     try {
       await authApi.logout()
     } catch {
       // Local cleanup must still happen when the server session has already expired.
     }
 
+    if (get().token !== sessionToken) return
     clearAuthStorage()
     set({ ...setAuthSession(null, null), error: null, loading: false })
   },
 
   async refreshUser() {
-    if (!get().token) return
+    const sessionToken = get().token
+    if (!sessionToken) return
 
     try {
       const response = await authApi.getCurrentUser()
+      if (get().token !== sessionToken) return
       saveStoredUser(response.data.data)
       set({ user: response.data.data })
     } catch {
-      await get().logout()
+      // Auth failures are handled centrally; transient errors keep the last valid profile.
     }
   },
 
   async updateProfile(data) {
+    const sessionToken = get().token
     set({ loading: true, error: null })
 
     try {
       const response = await authApi.updateProfile(data)
+      if (get().token !== sessionToken) return false
       saveStoredUser(response.data.data)
       set({ user: response.data.data, loading: false })
       return true
     } catch (err: unknown) {
+      if (get().token !== sessionToken) return false
       set({
         error: err instanceof Error ? err.message : '更新失败',
         loading: false,
@@ -105,6 +112,7 @@ export const useAuthStore = create<AuthState>((set, get) => ({
   },
 
   async changePassword(oldPassword, newPassword) {
+    const sessionToken = get().token
     set({ loading: true, error: null })
 
     try {
@@ -112,9 +120,11 @@ export const useAuthStore = create<AuthState>((set, get) => ({
         old_password: oldPassword,
         new_password: newPassword,
       })
+      if (get().token !== sessionToken) return false
       set({ loading: false })
       return true
     } catch (err: unknown) {
+      if (get().token !== sessionToken) return false
       set({
         error: err instanceof Error ? err.message : '修改失败',
         loading: false,
