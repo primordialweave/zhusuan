@@ -1,0 +1,104 @@
+name: MacOS Package Check
+
+on:
+  workflow_dispatch:
+    inputs:
+      tag:
+        description: Existing application candidate tag
+        required: true
+        default: v1.0.1
+        type: string
+      application_ref:
+        description: Optional full application commit SHA that must match the tag
+        required: false
+        type: string
+
+permissions:
+  contents: read
+
+concurrency:
+  group: macos-package-check-${{ inputs.tag }}
+  cancel-in-progress: false
+
+jobs:
+  macos:
+    # Standard Intel capacity also cross-compiles arm64 with the macOS SDK.
+    runs-on: macos-15-intel
+    timeout-minutes: 45
+    env:
+      RELEASE_TAG: ${{ inputs.tag }}
+      APPLICATION_REF: ${{ inputs.application_ref }}
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: ${{ inputs.tag }}
+          fetch-depth: 0
+      - name: Verify candidate identity and native tools
+        shell: bash
+        run: |
+          [[ "$RELEASE_TAG" =~ ^v(0|[1-9][0-9]*)\.(0|[1-9][0-9]*)\.(0|[1-9][0-9]*)$ ]]
+          [[ -z "$APPLICATION_REF" || "$APPLICATION_REF" =~ ^[0-9a-f]{40}$ ]]
+          TAG_COMMIT=$(git rev-parse "refs/tags/${RELEASE_TAG}^{commit}")
+          test "$(git rev-parse HEAD)" = "$TAG_COMMIT"
+          if [[ -n "$APPLICATION_REF" ]]; then
+            test "$TAG_COMMIT" = "$APPLICATION_REF"
+          fi
+          git merge-base --is-ancestor "$TAG_COMMIT" origin/main
+          printf 'Application source: %s\n' "$TAG_COMMIT"
+          uname -m
+          xcodebuild -version
+          xcrun --sdk macosx --show-sdk-version
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '24.15.0'
+          cache: npm
+          cache-dependency-path: frontend/package-lock.json
+      - uses: actions/setup-go@v5
+        with:
+          go-version-file: go.mod
+          check-latest: false
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.12'
+      - name: Verify release tooling and metadata
+        shell: bash
+        run: |
+          python3 -m unittest discover -s scripts -p 'test_*.py'
+          python3 scripts/release.py metadata "$RELEASE_TAG"
+          git diff --exit-code
+      - name: Install pinned build tools
+        shell: bash
+        run: |
+          go install github.com/wailsapp/wails/v3/cmd/wails3@v3.0.0-alpha.55
+          go install github.com/go-task/task/v3/cmd/task@v3.51.1
+      - name: Verify frontend
+        working-directory: frontend
+        run: |
+          npm ci
+          node node_modules/eslint/bin/eslint.js src --max-warnings=0
+          npm run test:run
+      - name: Build Apple Silicon and Intel macOS packages
+        shell: bash
+        run: |
+          mkdir -p release
+          for arch in arm64 amd64; do
+            task darwin:package:app ARCH="$arch"
+            python3 scripts/build_macos_packages.py --app bin/珠算.app --arch "$arch" --tag "$RELEASE_TAG" --output release
+          done
+      - name: Verify backend
+        shell: bash
+        run: |
+          go test -mod=readonly . ./internal/... ./cmd/...
+          go vet -mod=readonly . ./internal/... ./cmd/...
+          git diff --exit-code -- go.mod go.sum
+      - name: Checksum macOS assets and record source
+        shell: bash
+        run: |
+          python3 scripts/release.py assets "$RELEASE_TAG" darwin
+          git rev-parse HEAD > release/APPLICATION_COMMIT.txt
+      - uses: actions/upload-artifact@v4
+        with:
+          name: release-darwin
+          path: release/*
+          if-no-files-found: error
+          retention-days: 7

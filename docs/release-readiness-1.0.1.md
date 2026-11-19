@@ -36,3 +36,11 @@ macOS 仍是 ad-hoc 签名，未做 Developer ID/公证；Windows 未做 Authent
 - [Recovery 44564873938](https://github.com/primordialweave/zhusuan/actions/runs/44564873938)：应用仍为标签0959eb1，验收脚本来自 main7611099。macOS 两架构正式产物全通过并已本地复验，Assets.car 与仓库提交相同；Windows 诊断明确 WScript 目标为空，继续使用原生 IShellLinkW 核查；Linux 取消测试出现时序失败。只有完整产物验证后才公开 latest，正式附件核对结果在完成后追加。
 
 取消下载回归补充：可控响应在读取开始后等待CancelUpdate/Close，再返回EOF；旧产品两分支稳定失败。修复后两个分支保持available、无launch/quit，未取消的truncated/oversized/digest仍拒绝。定向普通与race各重复100次、各1300通过，完整updater race81通过。
+
+## 最终候选（2026-11-20）
+
+真实修复下载取消 EOF 竞态及 NSIS 显式 /D 覆盖后，未公开的 `v1.0.1` 使用比较旧 ref 的 lease 更新为 `176c9780dbcfb0932370e9c98d5c5e7a9eb08d3a`，旧候选保存于本地 `archive/v1.0.1-candidate-0959eb1`。没有公开过旧候选 Release，公开 1.0.0 不变。
+
+- [最终 main CI 44569458459](https://github.com/primordialweave/zhusuan/actions/runs/44569458459)：frontend/backend/security/Docker 全部通过。
+- [Windows Check 44569492188](https://github.com/primordialweave/zhusuan/actions/runs/44569492188)：应用与 smoke 同为最终候选，完整安装/升级、Go 测试/vet 全部通过。原生 IShellLinkW 证实两个中文快捷方式正确；普通与自动更新的显式 Orange 路径返回非零，旧程序/注册保留，带空格目标、DisplayIcon fallback、锁定回滚、用户更新与 HKLM 更新均通过。
+- [最终 Release 44571413947](https://github.com/primordialweave/zhusuan/actions/runs/44571413947)：从最终标签直接构建，无 build/test recipe 替换，Windows 与 Linux 全job通过；macOS 未取得 runner，排队约15分钟后因 GitHub hosted arm64 capacity constraints 自动取消（runner_id=0、无执行步骤）。保留同源码已过产物，使用专用 Intel macOS runner 完成剩余两架构验证后聚合发布。
