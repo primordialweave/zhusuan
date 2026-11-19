@@ -5,6 +5,10 @@
     [string]$ExpectedUserSid
 )
 $ErrorActionPreference = 'Stop'
+if ($StandardUserWorker -and $ResultPath -and $env:GITHUB_ACTIONS -eq 'true') {
+    @{ passed = $false; phase = 'worker-script-started'; pid = $PID } |
+        ConvertTo-Json | Set-Content -LiteralPath $ResultPath -Encoding utf8
+}
 if ($env:GITHUB_ACTIONS -ne 'true' -or -not $IsWindows) {
     throw 'This installation smoke is restricted to a disposable Windows GitHub runner.'
 }
@@ -177,6 +181,7 @@ if (-not $StandardUserWorker) {
 $identity = [Security.Principal.WindowsIdentity]::GetCurrent()
 $evidence = @{
     passed = $false
+    phase = 'token-verified'
     userSid = $identity.User.Value
     isAdmin = ([Security.Principal.WindowsPrincipal]$identity).IsInRole([Security.Principal.WindowsBuiltInRole]::Administrator)
     integrityRid = [ZhusuanStandardUser]::IntegrityRid()
@@ -205,6 +210,7 @@ try {
         while (-not $interactive.HasExited -and -not [ZhusuanStandardUser]::HasVisibleInstallerDialog($interactive.Id) -and [DateTime]::UtcNow -lt $deadline) { Start-Sleep -Milliseconds 100 }
         if ($interactive.HasExited -or -not [ZhusuanStandardUser]::HasVisibleInstallerDialog($interactive.Id)) { throw 'Ordinary non-admin launch did not show the installer welcome dialog.' }
         $evidence.ordinaryLaunchShowsDialog = $true
+        $evidence.phase = 'ordinary-dialog-visible'
     } finally {
         if (-not $interactive.HasExited) { Stop-Process -Id $interactive.Id -Force; $interactive.WaitForExit() }
     }
@@ -219,6 +225,7 @@ try {
     while (((Test-Path -LiteralPath $key) -or (Test-Path -LiteralPath (Join-Path $target 'zhusuan.exe'))) -and [DateTime]::UtcNow -lt $deadline) { Start-Sleep -Milliseconds 100 }
     if ((Test-Path -LiteralPath $key) -or (Test-Path -LiteralPath (Join-Path $target 'zhusuan.exe'))) { throw 'Non-admin uninstall did not remove the owned executable and registration.' }
     $evidence.passed = $true
+    $evidence.phase = 'complete'
     $evidence.installLocation = $target
     $exitCode = 0
 } catch {
