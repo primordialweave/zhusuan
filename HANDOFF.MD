@@ -7,7 +7,7 @@
 - 用户明确问题是“下载的安装器.exe”普通双击不打开，需要右键管理员；另要求Windows移除系统标题栏，改自定义并能全屏。本任务先修复和验证，不复用上一轮1.0.1发布授权创建新版本，不覆盖公开产物。
 - 已核正式1.0.1 installer PE manifest为asInvoker，真实缺陷是检测到已有HKLM珠算时非管理员.onInit直接Abort，安装页尚未出现即退出。改为仅机器范围目标自动runas，fresh仍普通用户；保留目标参数并等待传播退出码，UAC取消提示原安装不变。fresh无旧记录的下载安全提示未据此视作已复现。
 - Windows原生Frameless仅该平台启用，保留resize/DWM与原生max/min/close。React全局标题栏覆盖登录和业务页，ODS控件、系统青绿，最大化/还原、最小化、全屏/退出/关闭、F11/Esc，事件驱动无空闲轮询。mac/Linux保持原样。
-- 新standarduser CI使用真实restricted同用户Medium token验证无参数欢迎页及默认安装/卸载；nativewindow CI用Win32/UIA/真实鼠标键盘验证标题栏几何、拖动缩放、max/min/restore/fullscreen/F11Esc/关闭，隔离数据。当前本地编译/解析与前端行为检查完成，真实WindowsCI尚待本次featurebranch运行。分支codex/windows-installer-custom-titlebar。
+- 新standarduser CI使用真实restricted同用户Medium token验证无参数欢迎页及默认安装/卸载；nativewindow CI用Win32/UIA/真实鼠标键盘验证标题栏几何、拖动缩放、max/min/restore/fullscreen/F11Esc/关闭，隔离数据。最终WindowsCheck44640534380全job成功，source50b06bb：普通同SID Medium token无参数欢迎页/安装/卸载、原完整升级smoke、真实原生windowcontrol/fullscreen/resize/drag/F11Esc/关闭及后端测试vet全部通过。本地前端608例/Go race141顶层159子测试/16包，lint/build/vet/增量0/Python31通过。证据docs/windows-titlebar-check.md及JSON/截图。分支codex/windows-installer-custom-titlebar。
 
 ## 1.1 珠算 1.0.1 已正式发布
 
@@ -467,3 +467,5 @@
 - 管理员GitHub runner上的安装成功不证明普通用户能双击。应读取实际PE manifest，并在同SID、MediumIL、管理员组deny-only且HKLM写被拒绝的真实token里先无参数显示welcome，再静默安装/卸载。SmartScreen/MOTW和用户接受UAC与此分开验。
 - Wails alpha.55 frameless仍有WS_CAPTION/WS_OVERLAPPEDWINDOW，通过WM_NCCALCSIZE移除系统标题栏；不能用stylebit无caption断言。应核client/window上沿几何和真实边缘拖动。该版本自动5px边/15px角resize，不读最新版--wails-resize。Snaphover布局未实现，不声称支持。
 - 自定义系统窗口操作控件也须走ODS ownership，新增ODS WindowControlButton；页面CSS不能覆盖IconButton外观，也不能绕过Image契约原生img。已有契约抓到后已改为正式组件，未加例外。
+
+- Windows新检查首次Chocolatey feed504（未构建），第二次restricted worker0xC0000142（未运行安装器）。STARTUPINFO显式winsta0/default后真实同SID Medium token成功；TokenElevation元数据true不能说false，实际isAdminfalse和HKLM写拒绝才证明无管理员能力。最终44640534380普通欢迎窗/安装卸载和原生全屏等全通过。
