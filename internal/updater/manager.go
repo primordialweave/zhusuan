@@ -240,7 +240,7 @@ func (m *Manager) runUpdate(ctx context.Context, release Release, asset Asset, d
 		err = m.download(ctx, asset, digest, filepath.Join(work, asset.Name))
 	}
 	if err != nil {
-		if errors.Is(err, context.Canceled) {
+		if errors.Is(ctx.Err(), context.Canceled) || errors.Is(err, context.Canceled) {
 			m.mu.Lock()
 			m.status = Status{State: stateAvailable, Message: "已取消下载"}
 			m.mu.Unlock()
