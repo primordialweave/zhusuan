@@ -107,12 +107,14 @@ public static class ZhusuanStandardUser {
             Check(ConvertStringSidToSid("S-1-16-8192", out medium));
             var label = new SidAndAttributes { Sid = medium, Attributes = 0x20 };
             Check(SetTokenInformation(restricted, 25, ref label, (uint)Marshal.SizeOf(label) + GetLengthSid(medium)));
-            var startup = new StartupInfo { Size = Marshal.SizeOf(typeof(StartupInfo)) };
+            // A reduced token must attach to the interactive desktop explicitly. The
+            // elevated CI service's implicit desktop can reject user32 initialization.
+            var startup = new StartupInfo { Size = Marshal.SizeOf(typeof(StartupInfo)), Desktop = "winsta0\\default", Flags = 1, ShowWindow = 0 };
             var command = new StringBuilder("\"" + executable + "\" " + arguments);
-            bool created = CreateProcessAsUser(restricted, executable, command, IntPtr.Zero, IntPtr.Zero, false, 0x08000000, IntPtr.Zero, directory, ref startup, out process);
+            bool created = CreateProcessAsUser(restricted, executable, command, IntPtr.Zero, IntPtr.Zero, false, 0, IntPtr.Zero, directory, ref startup, out process);
             if (!created && Marshal.GetLastWin32Error() == 1314) {
                 command = new StringBuilder("\"" + executable + "\" " + arguments);
-                created = CreateProcessWithTokenW(restricted, 0, executable, command, 0x08000000, IntPtr.Zero, directory, ref startup, out process);
+                created = CreateProcessWithTokenW(restricted, 0, executable, command, 0, IntPtr.Zero, directory, ref startup, out process);
             }
             Check(created);
             uint wait = WaitForSingleObject(process.Process, 120000);
@@ -159,7 +161,7 @@ if (-not $StandardUserWorker) {
     $arguments = '-NoProfile -NonInteractive -ExecutionPolicy Bypass -File "' + $PSCommandPath + '" -Installer "' + $installerPath + '" -StandardUserWorker -ResultPath "' + $ResultPath + '" -ExpectedUserSid "' + $sid + '"'
     try {
         $code = [ZhusuanStandardUser]::RunRestricted($powershell, $arguments, (Get-Location).Path)
-        if (-not (Test-Path -LiteralPath $ResultPath)) { throw "Standard-user worker returned $code without its evidence report." }
+        if (-not (Test-Path -LiteralPath $ResultPath)) { throw "Standard-user worker returned $code (0x$(([BitConverter]::ToUInt32([BitConverter]::GetBytes([int]$code), 0)).ToString('X8'))) before writing its evidence report; installation results are unknown." }
         $evidence = Get-Content -LiteralPath $ResultPath -Raw | ConvertFrom-Json
         $evidence | ConvertTo-Json -Depth 5 | Write-Host
         if ($code -ne 0 -or -not $evidence.passed) { throw "Standard-user installation failed: $($evidence.error) (exit $code)." }
