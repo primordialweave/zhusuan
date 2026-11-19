@@ -8,6 +8,10 @@ on:
         required: true
         default: v1.0.1
         type: string
+      application_ref:
+        description: Optional full commit SHA to verify before moving an unpublished candidate tag
+        required: false
+        type: string
       test_recipe_ref:
         description: Reviewed main commit SHA for the installation smoke fixture
         required: true
@@ -22,10 +26,11 @@ jobs:
     env:
       RELEASE_TAG: ${{ inputs.tag }}
       TEST_RECIPE_REF: ${{ inputs.test_recipe_ref }}
+      APPLICATION_REF: ${{ inputs.application_ref }}
     steps:
       - uses: actions/checkout@v4
         with:
-          ref: ${{ inputs.tag }}
+          ref: ${{ inputs.application_ref || inputs.tag }}
         env:
           GIT_CONFIG_COUNT: '1'
           GIT_CONFIG_KEY_0: core.autocrlf
@@ -35,6 +40,7 @@ jobs:
         run: |
           [[ "$RELEASE_TAG" =~ ^v[0-9]+\.[0-9]+\.[0-9]+$ ]]
           [[ "$TEST_RECIPE_REF" =~ ^[0-9a-f]{40}$ ]]
+          [[ -z "$APPLICATION_REF" || "$APPLICATION_REF" =~ ^[0-9a-f]{40}$ ]]
           git fetch --no-tags origin '+refs/heads/main:refs/remotes/origin/main' "$TEST_RECIPE_REF"
           git merge-base --is-ancestor "$TEST_RECIPE_REF" origin/main
           git show "${TEST_RECIPE_REF}:scripts/windows-installer-smoke.ps1" > scripts/windows-installer-smoke.ps1
