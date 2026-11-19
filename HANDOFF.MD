@@ -2,11 +2,13 @@
 
 接手任何任务前先读这份文档。它只记两类东西：**当前在制品的状态**，和**已经踩过的坑**。踩到新坑就追加到第 2 节，状态变了就改第 1 节。
 
-## 1. 当前任务：珠算 1.0.1 修复与发布
+## 1. 珠算 1.0.1 已正式发布
 
-- 用户在上个会话明确选择“使用 1.0.1（推荐）”，本会话继续同一任务；已有合并/发布授权，无需重复确认版本。当前分支 `codex/macos-dmg-packages`，1.0.0 的标签和公开附件保持原样。
-- 范围：Apple Silicon / Intel DMG 与架构 ZIP；macOS Finder/Dock 图标无额外白底、中文包名“珠算”；Windows UTF-8 中文、用户目录新安装路径、不继承 Orange；令牌和通知弹层不溢出、通知详情内边距/固定高度；金额普通输入、最多两位小数、必填中文错误和红框；移除提示左粗线。
-- 已统一源版本为 1.0.1；前端598例/ESLint/build、Go race139顶层154子测试/vet/增量lint0、Python31例/actionlint通过。原生图标和两架构真实源码DMG/ZIP校验通过。ego lite已验1280×800/760×520下令牌、通知、金额必填校验及原始类型/青绿回归，最后CSS调整后的build与定向8例通过。PR #21 已合并为0959eb1；PR CI44558648378与main CI44560362947全部通过，v1.0.1已指向该提交。首轮Release44562497173/Recovery44564873938未公开；修复后最终candidate176c9780通过mainCI44569458459与WindowsCheck44569492188。v1.0.1未公开tag使用lease更新，最终Release44571413947正在三平台构建，无recipe替换；自有3466/9331与ego space8已关闭。最终证据写入 `docs/release-readiness-1.0.1.md`。
+- 原会话用户选择发布1.0.1，本会话已接续完成。北京时间2026-11-20 02:34:19公开并设latest：https://github.com/primordialweave/zhusuan/releases/tag/v1.0.1 。应用标签固定于 `176c9780dbcfb0932370e9c98d5c5e7a9eb08d3a`；1.0.0十附件名称/大小/SHA256均保持原样。
+- 已完成两架构DMG/ZIP、macOS中文名和无外板图标、Windows UTF-8中文/用户默认目录/显式路径与旧Orange保留、金额输入/必填校验、令牌/通知弹层；另修真实下载取消EOF竞态。项目详情medicine→医学及小天平青绿已实际回归。
+- 最终mainCI44569458459四job通过；Windows/Linux产物来自Release44571413947各自全过job，Mac原job因hosted arm64容量不足未取得runner取消；Mac使用IntelCheck44583607176全过job，同应用tag、仅3份测试夹具来源93f59779（断言保留、慢机等待优化）。不要称原Release整run全绿。
+- 前端115文件598例，Go全量race140顶层156子测试/16包、vet/增量lint0，Python31例、最新版actionlint通过。Windows原生完整安装升级smoke通过；Mac正式两DMG/ZIP本地挂载/签名/版本/架构/catalog/原生图标复验通过。十附件本地/远端大小与SHA256、匿名latest manifest与全部下载HEAD200验证完成。
+- 最终证据与性能/签名/原生窗口限制见 `docs/release-readiness-1.0.1.md`，公开后机器验收见 `docs/release-verification-1.0.1.json`。自有3466/9331与ego space8已关闭，真实账本/已安装应用/用户dev服务未改；原design-qa.md删除及root node_modules未纳入提交。
 
 ## 1.1 珠算 1.0.0 已正式发布
 
@@ -450,3 +452,5 @@
 - IntelMacCheck44576400310源身份/工具检查成功，前端597/598通过，必填新增用例5069ms触发默认5s（无断言错误）。专用4核Intel runner限制Vitest maxWorkers=2，保留全部用例/断言/5s门限，避免jsdom并发争用；不据此改产品或候选tag。
 
 - Intel44579095153两worker仍593/598，4个交互超时和CalendarView加载aria-busy=true时findByRole默认1s耗尽；其余日期格式通过，不是日期偏移。针对固定3个测试优化夹具输入/语义查询并给多交互流程预算，专用Macworkflow仅覆盖这3个已审test文件、记录fixtureSHA，应用源码tag176c不变；绝不把所有失败泛称产品通过。
+
+- macOS旧Xcode Assets.car重编可能因内部时间戳变成相同尺寸不同hash，dev watch会重新生成；发行复验必须比git show <应用tag>:...，不能拿工作区未提交生成物当正式来源。公开前验证十附件server digest后再draft=false/latest，匿名latest和旧版本不可变性均需发布后再读。

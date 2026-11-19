@@ -1,46 +1,54 @@
 # 珠算 1.0.1 发布检查
 
-检查日期：2026-11-19 至 2026-11-20。用户在原会话明确选择发布 1.0.1，本会话接续执行。1.0.0 的应用标签与公开附件保持不变。1.0.1 在相同仓库 main 与新稳定标签构建，最终公开状态以 [Release](https://github.com/primordialweave/zhusuan/releases/tag/v1.0.1) 为准。
+珠算 1.0.1 已于北京时间 **2026-11-20 02:34:19** 正式公开并设为 latest：[下载 Release](https://github.com/primordialweave/zhusuan/releases/tag/v1.0.1)。原会话已明确授权该版本发布，本会话接续完成。十个正式附件已核对本地与服务端大小、SHA-256，匿名下载入口均返回 200。完整机器验证结果见 [release-verification-1.0.1.json](release-verification-1.0.1.json)。
 
-## 变更范围
+## 发行来源
 
-- macOS 按 Apple Silicon / Intel 分别生成 DMG 与 ZIP；DMG 内为中文“珠算.app”及 Applications 快捷方式，ZIP 保持 ASCII 顶层 zhusuan.app 兼容现有更新器。
-- Finder 与 Dock 使用同一青瓷算盘原画，现代 Icon Composer 调整画布及图层缩放以消除额外外板；旧系统保留透明 ICNS。旧 Xcode 复用 catalog 时核对源图片和 manifest 组合哈希。
-- Windows 使用 Unicode 简体中文安装器及 UTF-8 BOM 源文件。普通首次安装位于 LOCALAPPDATA/PrimordialWeave/zhusuan，使用 HKCU；保留 Orange 安装，新标识的珠算记录才可复用。原 HKLM 机器安装按其原范围更新。
-- 金额改为普通文本输入，只接受数字和最多两位小数；字符串补齐小数位，避免格式化生成科学记数。必填项显示中文提示、红框与首错焦点；提示组件移除粗左线。
-- 令牌/通知弹层限制在视口内，长令牌换行；通知详情固定高度、增加内边距、正文独立滚动。
-- Linux CI 采用临时源 Azure→Canonical 有界切换，保留签名；先下载再离线安装，避免网络timeout中断dpkg。
+发行应用统一来自标签 `v1.0.1`，提交 **176c9780dbcfb0932370e9c98d5c5e7a9eb08d3a**。原候选在未公开前发现下载取消与 NSIS 显式路径产品缺陷，修复后使用旧 ref lease 更新候选；旧候选本地保留在 `archive/v1.0.1-candidate-0959eb1`。已公开 1.0.0 的十个附件名称、大小和摘要均保持不变。
 
-## 本地验证
+| 检查 / 产物 | 运行及结果 |
+| --- | --- |
+| 最终应用 CI | [44569458459](https://github.com/primordialweave/zhusuan/actions/runs/44569458459)，frontend/backend/security/Docker 全部成功 |
+| Windows 完整原生预检 | [44569492188](https://github.com/primordialweave/zhusuan/actions/runs/44569492188)，应用和 smoke 均为最终提交，全部成功 |
+| Windows / Linux 正式产物 | [44571413947](https://github.com/primordialweave/zhusuan/actions/runs/44571413947)，两个平台各自完整 job 成功，无配方覆盖 |
+| macOS 正式产物 | [44583607176](https://github.com/primordialweave/zhusuan/actions/runs/44583607176)，Intel runner 的全部步骤及最终 job 成功 |
+| macOS 工作流与测试来源 | 93f59779bd260f04b94316ea94d1fa868f46b0e4；仅覆盖三份固定前端测试文件，发行 Go / 前端应用源码保持标签原样 |
 
-- 前端：115 文件、598 用例全部通过；ESLint src --max-warnings=0 与 TypeScript/production build 通过。覆盖空提交中文错误与红框、首错焦点、不调用保存API；普通金额输入、非法输入拒绝、两位小数规范化；弹层位置、视口限制、令牌换行和固定详情尺寸。
-- Go：race 全量通过，16 个有测试包、140 个顶层测试及 156 个子测试，测试无失败/跳过；另 10 个包无测试文件。go vet 通过，golangci 相对 origin/main 的增量检查为 0 新问题（全量历史告警基线保留）。
-- Python：31 用例通过，覆盖版本同步、完整资产/摘要/manifest、DMG元数据与架构、图标catalog兼容/过期、Linux镜像切换和失败传播。actionlint 与 git diff --check 通过。
-- Windows：2 顶层 + 8 子测试检查 scope 与注册路径，Windows amd64 updater 测试包交叉编译通过；NSIS 3.13 在临时fixture编译成功，无警告。此项不代替真实 Windows 安装。
-- macOS：NSWorkspace 原生图标渲染确认无额外白灰外层。真实 1.0.1 源码两架构生产程序通过唯一架构、plist 1.0.1/中文名称/标识、ad-hoc 签名、DMG 只读挂载和 ZIP 全量 CRC 验证。Apple Silicon DMG 46,013,893 B / ZIP 41,754,579 B，Intel DMG 48,734,891 B / ZIP 43,825,201 B。私有临时构建总耗时分别 23.71 秒 / 31.16 秒；未启动应用。这些包用于本地验收，正式附件仍由 CI 构建。
-- 页面：使用隔离脱敏数据库与专用 3466/9331 服务进行 ego lite 验证，1280×800 与 760×520 下横向溢出为 0：令牌窗口 512×420，长令牌自动换行；通知详情 512×448，长文内部滚动，底部固定留白 25px；小窗通知弹层 x381.25/y123.72/340×317.19，右/下边均在视口内。空表单中文提示、红框、焦点及普通金额输入已验。详情 type=medicine 显示字典名称“医学”，天平为系统青绿色 rgb(45,101,74)。公开截图见 [通知详情](screenshots/1.0.1/notification-detail-light.png) / [必填校验](screenshots/1.0.1/project-required-light.png)；测试令牌未进入仓库且已在隔离库撤销。未改真实账本、用户服务或已安装应用。
+最终 Release 的原 macOS job 因 GitHub hosted arm64 runner 容量不足，排队约15分钟未取得机器后自动取消，runner_id=0、无执行步骤。因此采用官方 `macos-15-intel` 标准 runner 补齐同标签两架构产物，不重复已通过的 Windows/Linux。不能称原 Release 整个 run 全绿。
 
-## 开销和验收边界
+Intel runner 前两次前端分别为 597/598、593/598，通过项之外存在交互总超时及日历仍 aria-busy 时默认1秒查询到期。三份固定测试夹具减少重复语义查询和非行为验证的逐字录入，显式保留角色、八步键盘导航/焦点、必填错误、保存重试和 API 断言，并给多交互流程30秒/加载条件10秒预算。最终 **115文件、598用例全部通过**，无全局超时放宽，应用源码未替换。来源记录在 artifact 和发行说明中。
 
-本次未新增前端依赖。弹层定位只在打开期间监听事件/尺寸，关闭后清理，不增加闲时网络轮询；金额校验在本地执行。图标为打包静态资源，打包逐架构顺序执行并以流式方式计算摘要。主 JS chunk 为 817.91 KB（gzip 264.18 KB），仍有既有的 500 KB 构建警告，真实设备 CPU/GPU、启动、内存与电池开销尚未测量。
+## 变更与功能验收
 
-macOS 仍是 ad-hoc 签名，未做 Developer ID/公证；Windows 未做 Authenticode。旧 macOS Finder、真实 Windows 安装界面/UAC、实际机器上的应用内更新重启/回滚仍须与 CI fixture 分开验收，不能以编译或模拟通过代替。
+- macOS 按 Apple Silicon / Intel 分别生成 DMG 与 ZIP。DMG 包含“珠算.app”和 Applications 快捷方式；ZIP 顶层保持 zhusuan.app 兼容1.0更新器。现代图标通过无背景画布及原画图层缩放消除额外外板，旧系统保留透明 ICNS；catalog 校验同时覆盖原图片和 manifest。
+- Windows Unicode 简体中文与 UTF-8 BOM。首次安装位于 LOCALAPPDATA/PrimordialWeave/zhusuan、HKCU；保留 Orange，仅复用珠算记录；原 HKLM 安装继续按原范围更新。修复 NSIS 在 .onInit 前移除 /D 导致显式目录被注册记录覆盖，显式目标现在保持优先。
+- 金额普通文本输入，只接受数字和最多两位小数；字符串补齐小数位避免科学记数。必填项中文错误/红框/首错焦点；提示组件移除粗左线。
+- 令牌和通知弹层限制在视口，长令牌换行；通知详情固定高度、正文滚动、底部固定留白。
+- 下载取消与 EOF 同时发生时保留已取消状态，不误报安装包不完整。稳定回归在读取开始后 CancelUpdate/Close 再返回 EOF，旧产品两分支均失败；修复后 available、无 launch/quit，未取消的大小/摘要/完整性错误继续拒绝。
 
-## CI 和发布
+Windows 正式 runner 通过默认LOCALAPPDATA/HKCU/中文注册名、两个中文快捷方式原生完整路径与hash、旧Orange保留、显式Orange目录拒绝、带空格自定义目录、已有路径/DisplayIcon回退、锁文件回滚/解锁更新、HKLM机器更新且无重复HKCU、卸载保留无关数据。WScript读取中文lnk返回空值是假阴性，最终使用 IShellLinkW/IPersistFile Unicode 接口严格验证。
 
-[PR #21](https://github.com/primordialweave/zhusuan/pull/21) 已合并，最初候选标签 `v1.0.1` 指向应用提交 `0959eb1516168a22c0cc65d44a798a0d60bcafc8`；尚未公开。取消竞态证实为产品问题后，最终候选将从修复后的 main 重新构建，最终提交在完成后记录。
+Ego lite 使用隔离脱敏数据库和专用3466/9331服务，在1280×800与760×520下验收：横向溢出为0，令牌窗口512×420且长字符串换行，通知详情512×448、内部滚动并有25px固定底部留白；小窗通知弹层完整在视口内。空表单9必填中文错误、红框、焦点以及普通金额输入已验。项目类型 medicine 实际显示“医学”，天平为系统青绿 rgb(45,101,74)。[通知详情截图](screenshots/1.0.1/notification-detail-light.png) / [必填校验截图](screenshots/1.0.1/project-required-light.png)。测试令牌未进入仓库且已撤销，专用服务和ego space8均已关闭，真实账本与用户服务未改。
 
-- [PR CI 44558648378](https://github.com/primordialweave/zhusuan/actions/runs/44558648378)：frontend/backend/security 成功，Docker 因 PR 条件跳过。
-- [main CI 44560362947](https://github.com/primordialweave/zhusuan/actions/runs/44560362947)：frontend/backend/security/Docker 四项全部成功。Linux 依赖准备分别 22/32 秒完成，实际使用 Azure HTTPS，未触发 fallback。
-- [Release 44562497173](https://github.com/primordialweave/zhusuan/actions/runs/44562497173)：首轮 Linux 构建/后端/产物全通过；Windows 安装编译成功，快捷方式的 WScript 原始读取断言失败，未公开。
-- [Recovery 44564873938](https://github.com/primordialweave/zhusuan/actions/runs/44564873938)：应用仍为标签0959eb1，验收脚本来自 main7611099。macOS 两架构正式产物全通过并已本地复验，Assets.car 与仓库提交相同；Windows 诊断明确 WScript 目标为空，继续使用原生 IShellLinkW 核查；Linux 取消测试出现时序失败。只有完整产物验证后才公开 latest，正式附件核对结果在完成后追加。
+## 测试与正式包复验
 
-取消下载回归补充：可控响应在读取开始后等待CancelUpdate/Close，再返回EOF；旧产品两分支稳定失败。修复后两个分支保持available、无launch/quit，未取消的truncated/oversized/digest仍拒绝。定向普通与race各重复100次、各1300通过，完整updater race81通过。
+- 前端115文件598用例、ESLint、TypeScript/production build通过；三份最终夹具本地单worker全量598通过，最终Intel CI598通过。
+- Go全量race通过：16有测试包、140顶层及156子测试，无测试失败/跳过，另10包无测试文件。vet通过，golangci相对原主分支增量0新问题；全量历史告警基线保留。
+- 取消相关普通和race各重复100次、各1300通过；完整updater race81通过。
+- Python31用例通过，覆盖版本/完整资产/摘要/manifest、DMG元数据/架构、图标catalog兼容与过期、Linux镜像有界切换/失败传播。最新版actionlint及diff检查通过。
+- 正式两DMG再次只读挂载，核对版本1.0.1、标识、唯一arm64/x86_64、严格签名、珠算.app及Applications链接；两ZIP解包同样核验。Assets.car与发行标签逐字节一致，原生NSWorkspace图标确认无白灰外板。
 
-## 最终候选（2026-11-20）
+| 正式资产 | 字节数 |
+| --- | ---: |
+| Apple Silicon DMG / ZIP | 46,550,441 / 42,081,023 |
+| Intel DMG / ZIP | 48,411,641 / 43,709,343 |
+| Windows installer | 37,819,165 |
+| Linux AppImage / deb / rpm | 107,796,984 / 36,576,420 / 37,469,833 |
 
-真实修复下载取消 EOF 竞态及 NSIS 显式 /D 覆盖后，未公开的 `v1.0.1` 使用比较旧 ref 的 lease 更新为 `176c9780dbcfb0932370e9c98d5c5e7a9eb08d3a`，旧候选保存于本地 `archive/v1.0.1-candidate-0959eb1`。没有公开过旧候选 Release，公开 1.0.0 不变。
+三份原平台SHA清单聚合后，release.py verify/manifest/verify全部通过。草稿恰十附件（八载荷+SHA256SUMS+update.json），服务端大小/SHA256与本地逐个相同，发行说明相同后公开。发布后标签解析为最终应用提交、匿名latest update.json1.0.1、内部9条资产/8条载荷摘要一致；十下载HEAD200且Content-Length正确，旧1.0.0十附件名称/大小/digest不变。本地十文件亦重新计算SHA256与服务端一致。
 
-- [最终 main CI 44569458459](https://github.com/primordialweave/zhusuan/actions/runs/44569458459)：frontend/backend/security/Docker 全部通过。
-- [Windows Check 44569492188](https://github.com/primordialweave/zhusuan/actions/runs/44569492188)：应用与 smoke 同为最终候选，完整安装/升级、Go 测试/vet 全部通过。原生 IShellLinkW 证实两个中文快捷方式正确；普通与自动更新的显式 Orange 路径返回非零，旧程序/注册保留，带空格目标、DisplayIcon fallback、锁定回滚、用户更新与 HKLM 更新均通过。
-- [最终 Release 44571413947](https://github.com/primordialweave/zhusuan/actions/runs/44571413947)：从最终标签直接构建，无 build/test recipe 替换，Windows 与 Linux 全job通过；macOS 未取得 runner，排队约15分钟后因 GitHub hosted arm64 capacity constraints 自动取消（runner_id=0、无执行步骤）。保留同源码已过产物，使用专用 Intel macOS runner 完成剩余两架构验证后聚合发布。
+## 开销与验收边界
+
+本次未新增前端依赖。弹层仅打开期间监听尺寸/resize/scroll，关闭清理，无新增闲时网络轮询；金额本地校验。打包逐架构顺序执行并流式计算摘要。主JS chunk817.91KB（gzip264.18KB）仍有既有500KB警告；未以实现预算代替目标设备CPU/GPU、启动、内存或电池验收。
+
+macOS仍为ad-hoc，未做Developer ID/公证；Windows无Authenticode。旧macOS Finder、真实用户UAC/系统提示、Wails原生窗口，以及真实设备完整更新重启/回滚仍须独立验收，CI与浏览器fixture不代替这些边界。
