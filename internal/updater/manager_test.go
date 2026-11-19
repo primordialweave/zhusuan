@@ -4,6 +4,7 @@ import (
 	"context"
 	"encoding/json"
 	"errors"
+	"io"
 	"net/http"
 	"os"
 	"path/filepath"
@@ -230,6 +231,60 @@ func TestUpdateCancellationAndDuplicateOperationsDoNotHandoff(t *testing.T) {
 			waitForUpdate(t, m)
 			if m.Status().State != "available" || launchCount.Load() != 0 || quitCount.Load() != 0 {
 				t.Fatalf("cancelled update handed off: %+v", m.Status())
+			}
+		})
+	}
+}
+
+type cancelledEOFBody struct {
+	ctx     context.Context
+	reading chan struct{}
+}
+
+func (body *cancelledEOFBody) Read([]byte) (int, error) {
+	close(body.reading)
+	<-body.ctx.Done()
+	// A server can close its response as cancellation is observed, yielding EOF.
+	return 0, io.EOF
+}
+
+func (body *cancelledEOFBody) Close() error { return nil }
+
+func TestUpdateCancellationWhileReadingEndOfStreamDoesNotHandoff(t *testing.T) {
+	for _, closeManager := range []bool{false, true} {
+		t.Run(strconv.FormatBool(closeManager), func(t *testing.T) {
+			m, _ := testManager(t, []byte("new application"), func(http.ResponseWriter, *http.Request) {})
+			reading := make(chan struct{})
+			m.downloadClient = &http.Client{Transport: roundTripFunc(func(req *http.Request) (*http.Response, error) {
+				return &http.Response{
+					StatusCode:    http.StatusOK,
+					ContentLength: -1,
+					Body:          &cancelledEOFBody{ctx: req.Context(), reading: reading},
+				}, nil
+			})}
+			var launchCount, quitCount atomic.Int32
+			m.launch = func(installPlan) error { launchCount.Add(1); return nil }
+			m.quit = func() { quitCount.Add(1) }
+			if err := m.StartUpdate(); err != nil {
+				t.Fatal(err)
+			}
+			select {
+			case <-reading:
+			case <-time.After(3 * time.Second):
+				t.Fatal("download did not begin reading the response")
+			}
+			var err error
+			if closeManager {
+				err = m.Close()
+			} else {
+				err = m.CancelUpdate()
+			}
+			if err != nil {
+				t.Fatal(err)
+			}
+			waitForUpdate(t, m)
+			if status := m.Status(); status.State != "available" || launchCount.Load() != 0 || quitCount.Load() != 0 {
+				t.Fatalf("cancelled update did not return to available without handoff: %+v", status)
 			}
 		})
 	}
