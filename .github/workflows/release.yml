@@ -210,7 +210,7 @@ jobs:
             python3 -c "import json; assert json.load(open('existing-release.json'))['isDraft'], 'Refusing to overwrite a published release'"
           fi
       - name: Upload all assets to a draft release
-        uses: softprops/action-gh-release@v2
+        uses: softprops/action-gh-release@v3
         with:
           tag_name: ${{ needs.prepare.outputs.tag }}
           name: 珠算 ${{ needs.prepare.outputs.version }}
