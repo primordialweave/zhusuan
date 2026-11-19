@@ -399,3 +399,5 @@
 - 发布前更新CHANGELOG日期与README下载入口，安装包公开状态以Release页面为准。记录无Developer ID/公证与无Windows Authenticode的分发事实，不以ad-hoc构建声称已公证。
 
 - 正式发布预检发现desktop Name=珠算会让AppImage输出中文文件名，Wails alpha.55却移动zhusuan-x86_64.AppImage，导致Linux包失败。create:appimage设置LINUXDEPLOY_OUTPUT_APP_NAME=zhusuan；保留菜单中文名。实际产物由Release runner验证。
+
+- Windows smoke的Get-Item RegistryKey为只读，调用DeleteValue会UnauthorizedAccess并使Release失败；用Registry.LocalMachine.OpenSubKey(path,true)显式可写句柄并Dispose。只在干净CI runner的安装键操作，未在用户系统执行。

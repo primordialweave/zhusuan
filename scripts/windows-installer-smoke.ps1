@@ -17,7 +17,13 @@ try {
     if ((Run-Installer '/S') -ne 0) { throw 'Reinstallation using the saved path failed.' }
     if ((Get-ItemProperty $key).InstallLocation -ne $target) { throw 'Reinstallation changed the install path.' }
     Remove-ItemProperty -Path $key -Name InstallLocation
-    (Get-Item $key).DeleteValue('', $false)
+    # RegistryProvider.GetItem returns a read-only key; explicitly open it for writing.
+    $installationKey = [Microsoft.Win32.Registry]::LocalMachine.OpenSubKey(
+        'Software\Microsoft\Windows\CurrentVersion\Uninstall\PrimordialWeaveZhusuan', $true)
+    if ($null -eq $installationKey) { throw 'Installation registration could not be opened for writing.' }
+    try {
+        $installationKey.DeleteValue('', $false)
+    } finally { $installationKey.Dispose() }
     if ((Run-Installer '/S') -ne 0) { throw 'Reinstallation using the legacy DisplayIcon path failed.' }
     if ((Get-ItemProperty $key).InstallLocation -ne $target) { throw 'Legacy installer path was not recovered.' }
     # Simulate the original Orange identity without starting an application.
