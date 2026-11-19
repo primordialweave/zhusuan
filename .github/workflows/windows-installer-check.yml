@@ -1,0 +1,85 @@
+name: Windows Installer Check
+
+on:
+  workflow_dispatch:
+    inputs:
+      tag:
+        description: Existing application candidate tag
+        required: true
+        default: v1.0.1
+        type: string
+      test_recipe_ref:
+        description: Reviewed main commit SHA for the installation smoke fixture
+        required: true
+        type: string
+
+permissions:
+  contents: read
+
+jobs:
+  windows:
+    runs-on: windows-2025
+    env:
+      RELEASE_TAG: ${{ inputs.tag }}
+      TEST_RECIPE_REF: ${{ inputs.test_recipe_ref }}
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: ${{ inputs.tag }}
+        env:
+          GIT_CONFIG_COUNT: '1'
+          GIT_CONFIG_KEY_0: core.autocrlf
+          GIT_CONFIG_VALUE_0: 'false'
+      - name: Apply reviewed installation fixture
+        shell: bash
+        run: |
+          [[ "$RELEASE_TAG" =~ ^v[0-9]+\.[0-9]+\.[0-9]+$ ]]
+          [[ "$TEST_RECIPE_REF" =~ ^[0-9a-f]{40}$ ]]
+          git fetch --no-tags origin '+refs/heads/main:refs/remotes/origin/main' "$TEST_RECIPE_REF"
+          git merge-base --is-ancestor "$TEST_RECIPE_REF" origin/main
+          git show "${TEST_RECIPE_REF}:scripts/windows-installer-smoke.ps1" > scripts/windows-installer-smoke.ps1
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '24.15.0'
+          cache: npm
+          cache-dependency-path: frontend/package-lock.json
+      - uses: actions/setup-go@v5
+        with:
+          go-version-file: go.mod
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.12'
+      - name: Install pinned build tools
+        shell: bash
+        run: |
+          go install github.com/wailsapp/wails/v3/cmd/wails3@v3.0.0-alpha.55
+          go install github.com/go-task/task/v3/cmd/task@v3.51.1
+      - name: Install NSIS
+        shell: pwsh
+        run: |
+          choco install nsis --yes --no-progress
+          'C:\Program Files (x86)\NSIS' | Out-File -FilePath $env:GITHUB_PATH -Encoding utf8 -Append
+          'C:\Program Files (x86)\NSIS\Bin' | Out-File -FilePath $env:GITHUB_PATH -Encoding utf8 -Append
+      - name: Build tagged Windows installer
+        shell: bash
+        run: |
+          python scripts/release.py metadata "$RELEASE_TAG"
+          task windows:package ARCH=amd64
+      - name: Verify installation and upgrade
+        shell: pwsh
+        run: ./scripts/windows-installer-smoke.ps1 -Installer bin/zhusuan-amd64-installer.exe
+      - name: Verify backend
+        shell: bash
+        run: |
+          go test -mod=readonly . ./internal/... ./cmd/...
+          go vet -mod=readonly . ./internal/... ./cmd/...
+          git diff --exit-code -- go.mod go.sum
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: windows-installer-check
+          path: |
+            bin/zhusuan-amd64-installer.exe
+            ${{ runner.temp }}/zhusuan-installer-diagnostics/*
+          if-no-files-found: warn
+          retention-days: 7

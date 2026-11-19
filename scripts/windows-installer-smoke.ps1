@@ -28,11 +28,56 @@ function Run-Installer([string]$arguments) {
     return $process.ExitCode
 }
 Add-Type -TypeDefinition @'
+using System;
 using System.Runtime.InteropServices;
+using System.Runtime.InteropServices.ComTypes;
 using System.Text;
+
+[ComImport, Guid("00021401-0000-0000-C000-000000000046")]
+internal class ZhusuanShellLink { }
+
+[ComImport, Guid("000214F9-0000-0000-C000-000000000046"), InterfaceType(ComInterfaceType.InterfaceIsIUnknown)]
+internal interface IZhusuanShellLinkW {
+    [PreserveSig] int GetPath([Out, MarshalAs(UnmanagedType.LPWStr)] StringBuilder path, int capacity, IntPtr findData, uint flags);
+    [PreserveSig] int GetIDList(out IntPtr itemList);
+    [PreserveSig] int SetIDList(IntPtr itemList);
+    [PreserveSig] int GetDescription([Out, MarshalAs(UnmanagedType.LPWStr)] StringBuilder description, int capacity);
+    [PreserveSig] int SetDescription([MarshalAs(UnmanagedType.LPWStr)] string description);
+    [PreserveSig] int GetWorkingDirectory([Out, MarshalAs(UnmanagedType.LPWStr)] StringBuilder directory, int capacity);
+    [PreserveSig] int SetWorkingDirectory([MarshalAs(UnmanagedType.LPWStr)] string directory);
+    [PreserveSig] int GetArguments([Out, MarshalAs(UnmanagedType.LPWStr)] StringBuilder arguments, int capacity);
+    [PreserveSig] int SetArguments([MarshalAs(UnmanagedType.LPWStr)] string arguments);
+    [PreserveSig] int GetHotkey(out short hotkey);
+    [PreserveSig] int SetHotkey(short hotkey);
+    [PreserveSig] int GetShowCmd(out int showCommand);
+    [PreserveSig] int SetShowCmd(int showCommand);
+    [PreserveSig] int GetIconLocation([Out, MarshalAs(UnmanagedType.LPWStr)] StringBuilder iconPath, int capacity, out int iconIndex);
+    [PreserveSig] int SetIconLocation([MarshalAs(UnmanagedType.LPWStr)] string iconPath, int iconIndex);
+    [PreserveSig] int SetRelativePath([MarshalAs(UnmanagedType.LPWStr)] string path, uint reserved);
+    [PreserveSig] int Resolve(IntPtr window, uint flags);
+    [PreserveSig] int SetPath([MarshalAs(UnmanagedType.LPWStr)] string path);
+}
+
 public static class ZhusuanSmokePaths {
     [DllImport("kernel32.dll", CharSet = CharSet.Unicode, ExactSpelling = true, SetLastError = true)]
     public static extern uint GetLongPathNameW(string path, StringBuilder result, uint size);
+
+    public static string ReadShortcutTarget(string shortcut) {
+        object instance = new ZhusuanShellLink();
+        try {
+            // IPersistFile.Load takes a Unicode filename; STGM_READ is zero.
+            ((IPersistFile)instance).Load(shortcut, 0);
+            var buffer = new StringBuilder(32768);
+            int result = ((IZhusuanShellLinkW)instance).GetPath(buffer, buffer.Capacity, IntPtr.Zero, 4);
+            Marshal.ThrowExceptionForHR(result);
+            if (result != 0 || buffer.Length == 0) {
+                throw new InvalidOperationException("IShellLinkW.GetPath returned no target (HRESULT 0x" + result.ToString("X8") + ").");
+            }
+            return buffer.ToString();
+        } finally {
+            if (Marshal.IsComObject(instance)) Marshal.FinalReleaseComObject(instance);
+        }
+    }
 }
 '@
 function Resolve-ExecutablePath([string]$rawPath) {
@@ -52,6 +97,41 @@ function Resolve-ExecutablePath([string]$rawPath) {
         throw "Unable to resolve long executable path '$fullPath' (Win32 error $([Runtime.InteropServices.Marshal]::GetLastWin32Error()))."
     }
     return $buffer.ToString()
+}
+function Write-ShortcutDiagnostics([string]$link) {
+    try {
+        $diagnostics = Join-Path $env:RUNNER_TEMP 'zhusuan-installer-diagnostics'
+        New-Item -ItemType Directory -Path $diagnostics -Force | Out-Null
+        $parent = [System.IO.Path]::GetFileName([System.IO.Path]::GetDirectoryName($link))
+        Copy-Item -LiteralPath $link -Destination (Join-Path $diagnostics ($parent + '-shortcut.lnk')) -Force
+        $bytes = [System.IO.File]::ReadAllBytes($link)
+        $flags = if ($bytes.Length -ge 24) { '0x{0:X8}' -f [BitConverter]::ToUInt32($bytes, 20) } else { '<missing header>' }
+        Write-Host "Shortcut diagnostics: path='$link'; bytes=$($bytes.Length); LinkFlags=$flags."
+        if ($bytes.Length -le 16384) {
+            Write-Host "Shortcut file base64: $([Convert]::ToBase64String($bytes))"
+        } else {
+            Write-Host 'Shortcut base64 omitted because the file exceeds 16 KiB.'
+        }
+    } catch {
+        Write-Host "Unable to read shortcut binary diagnostics: $_"
+    }
+    $shellApplication = $null
+    $folder = $null
+    $item = $null
+    try {
+        $shellApplication = New-Object -ComObject Shell.Application
+        $folder = $shellApplication.Namespace([System.IO.Path]::GetDirectoryName($link))
+        $item = $folder.ParseName([System.IO.Path]::GetFileName($link))
+        Write-Host "Shell.Application TargetParsingPath='$($item.ExtendedProperty('System.Link.TargetParsingPath'))'."
+    } catch {
+        Write-Host "Unable to read Shell.Application shortcut diagnostics: $_"
+    } finally {
+        foreach ($comObject in @($item, $folder, $shellApplication)) {
+            if ($null -ne $comObject -and [Runtime.InteropServices.Marshal]::IsComObject($comObject)) {
+                [void][Runtime.InteropServices.Marshal]::FinalReleaseComObject($comObject)
+            }
+        }
+    }
 }
 function Uninstall-Owned([string]$directory, [string]$registrationKey) {
     $uninstaller = Join-Path $directory 'uninstall.exe'
@@ -104,7 +184,14 @@ try {
         if (-not (Test-Path $link)) { throw 'Chinese current-user shortcut was not created.' }
         $rawTarget = $shell.CreateShortcut($link).TargetPath
         Write-Host "Shortcut '$link': raw='$rawTarget'; expected='$defaultExe'."
-        $normalizedTarget = Resolve-ExecutablePath $rawTarget
+        try {
+            $nativeTarget = [ZhusuanSmokePaths]::ReadShortcutTarget($link)
+        } catch {
+            Write-ShortcutDiagnostics $link
+            throw
+        }
+        Write-Host "Shortcut '$link': IShellLinkW raw='$nativeTarget'."
+        $normalizedTarget = Resolve-ExecutablePath $nativeTarget
         $normalizedExpected = Resolve-ExecutablePath $defaultExe
         Write-Host "Shortcut '$link': normalized='$normalizedTarget'; normalizedExpected='$normalizedExpected'."
         if (-not [string]::Equals($normalizedTarget, $normalizedExpected, [StringComparison]::OrdinalIgnoreCase)) {
