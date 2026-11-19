@@ -13,6 +13,10 @@ on:
         description: Optional reviewed main commit SHA for packaging-only recovery (application source stays at tag)
         required: false
         type: string
+      test_recipe_ref:
+        description: Optional reviewed main commit SHA for platform-correct test fixtures (application source stays at tag)
+        required: false
+        type: string
 
 permissions:
   contents: read
@@ -58,6 +62,7 @@ jobs:
     env:
       RELEASE_TAG: ${{ needs.prepare.outputs.tag }}
       BUILD_RECIPE_REF: ${{ inputs.build_recipe_ref }}
+      TEST_RECIPE_REF: ${{ inputs.test_recipe_ref }}
     steps:
       - uses: actions/checkout@v4
         with:
@@ -76,6 +81,17 @@ jobs:
           git merge-base --is-ancestor "$BUILD_RECIPE_REF" origin/main
           for recipe in build/Taskfile.yml build/darwin/Taskfile.yml build/windows/Taskfile.yml build/linux/Taskfile.yml; do
             git show "${BUILD_RECIPE_REF}:${recipe}" > "$recipe"
+          done
+          git diff --stat
+      - name: Apply reviewed platform test fixtures
+        if: env.TEST_RECIPE_REF != ''
+        shell: bash
+        run: |
+          [[ "$TEST_RECIPE_REF" =~ ^[0-9a-f]{40}$ ]] || { echo 'Test recipe ref must be a complete commit SHA'; exit 1; }
+          git fetch --no-tags origin '+refs/heads/main:refs/remotes/origin/main' "$TEST_RECIPE_REF"
+          git merge-base --is-ancestor "$TEST_RECIPE_REF" origin/main
+          for fixture in internal/app/bootstrap_test.go internal/config/data_migration_test.go internal/desktop/legacy_preferences_test.go internal/updater/install_test.go; do
+            git show "${TEST_RECIPE_REF}:${fixture}" > "$fixture"
           done
           git diff --stat
       - uses: actions/setup-node@v4
@@ -159,6 +175,7 @@ jobs:
       RELEASE_TAG: ${{ needs.prepare.outputs.tag }}
       GH_TOKEN: ${{ github.token }}
       BUILD_RECIPE_REF: ${{ inputs.build_recipe_ref }}
+      TEST_RECIPE_REF: ${{ inputs.test_recipe_ref }}
     steps:
       - uses: actions/checkout@v4
         with:
@@ -174,6 +191,9 @@ jobs:
           python3 scripts/release.py notes "$RELEASE_TAG"
           if [ -n "$BUILD_RECIPE_REF" ]; then
             printf '\n构建来源：应用源码保持在 `%s`；构建配方来自已审查的主分支提交 `%s`。\n' "$RELEASE_TAG" "$BUILD_RECIPE_REF" >> RELEASE_NOTES.md
+          fi
+          if [ -n "$TEST_RECIPE_REF" ]; then
+            printf '\n平台测试夹具来自已审查的主分支提交 `%s`；发行应用源码未替换。\n' "$TEST_RECIPE_REF" >> RELEASE_NOTES.md
           fi
           python3 scripts/release.py manifest "$RELEASE_TAG" --repository "$GITHUB_REPOSITORY"
           python3 scripts/release.py verify "$RELEASE_TAG" --manifest --repository "$GITHUB_REPOSITORY"

@@ -1,12 +1,15 @@
 package app
 
 import (
+	"os"
 	"path/filepath"
+	"runtime"
 	"testing"
 	"time"
 
 	"github.com/glebarez/sqlite"
 	"github.com/stretchr/testify/require"
+	"gopkg.in/natefinch/lumberjack.v2"
 	"gorm.io/gorm"
 
 	"github.com/primordialweave/zhusuan/internal/database"
@@ -55,7 +58,17 @@ func TestBootstrapMigratesLegacyPaymentsBeforeStatsAndEdits(t *testing.T) {
 
 	t.Setenv("DB_TYPE", "sqlite")
 	t.Setenv("DB_PATH", path)
-	t.Setenv("LOG_PATH", filepath.Join(dir, "test.log"))
+	logPath := filepath.Join(dir, "test.log")
+	if runtime.GOOS == "windows" {
+		// Bootstrap's process-wide logger stays open; NUL does not block TempDir cleanup.
+		logPath = os.DevNull
+		probe := &lumberjack.Logger{Filename: logPath}
+		_, writeErr := probe.Write([]byte("bootstrap log fixture\n"))
+		closeErr := probe.Close()
+		require.NoError(t, writeErr)
+		require.NoError(t, closeErr)
+	}
+	t.Setenv("LOG_PATH", logPath)
 	t.Setenv("JWT_SECRET", "bootstrap-test-secret-with-at-least-32-characters")
 	t.Setenv("REDIS_ADDR", "")
 	t.Setenv("ENV", "production")
