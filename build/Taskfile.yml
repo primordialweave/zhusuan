@@ -7,6 +7,13 @@ tasks:
     cmds:
       - go mod tidy
 
+  go:mod:verify:
+    summary: Downloads and verifies pinned Go dependencies without walking frontend files
+    internal: true
+    cmds:
+      - go mod download
+      - go mod verify
+
   install:frontend:deps:
     summary: Install frontend dependencies
     dir: frontend
@@ -31,11 +38,12 @@ tasks:
       - dist/**/*
     deps:
       - task: install:frontend:deps
+    cmds:
+      # npm ci replaces node_modules; Go package loading must run after it finishes.
       - task: generate:bindings
         vars:
           BUILD_FLAGS:
             ref: .BUILD_FLAGS
-    cmds:
       - npm run {{.BUILD_COMMAND}} -q
     env:
       PRODUCTION: '{{if eq .DEV "true"}}false{{else}}true{{end}}'
@@ -83,7 +91,7 @@ tasks:
     label: generate:bindings (BUILD_FLAGS={{.BUILD_FLAGS}})
     summary: Generates bindings for the frontend
     deps:
-      - task: go:mod:tidy
+      - task: go:mod:verify
     sources:
       - "**/*.[jt]s"
       - exclude: frontend/**/*

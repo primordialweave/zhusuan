@@ -29,7 +29,7 @@ tasks:
     summary: Builds the application natively on macOS
     internal: true
     deps:
-      - task: common:go:mod:tidy
+      - task: common:go:mod:verify
       - task: common:build:frontend
         vars:
           BUILD_FLAGS:
@@ -94,7 +94,8 @@ tasks:
 
   build:universal:
     summary: Builds darwin universal binary (arm64 + amd64)
-    deps:
+    # Both builds share generated frontend files, so run architectures sequentially.
+    cmds:
       - task: build
         vars:
           ARCH: amd64
@@ -103,7 +104,6 @@ tasks:
         vars:
           ARCH: arm64
           OUTPUT: "{{.BIN_DIR}}/{{.APP_NAME}}-arm64"
-    cmds:
       - task: '{{if eq OS "darwin"}}build:universal:lipo:native{{else}}build:universal:lipo:go{{end}}'
 
   build:universal:lipo:native:
