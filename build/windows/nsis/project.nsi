@@ -189,7 +189,8 @@ FunctionEnd
 
 Name "${INFO_PRODUCTNAME}"
 OutFile "..\..\..\bin\${INFO_PROJECTNAME}-${ARCH}-installer.exe"
-InstallDir "$LOCALAPPDATA\${INFO_COMPANYNAME}\${INFO_PROJECTNAME}"
+; Leave the header default empty so NSIS's built-in /D can be distinguished in .onInit.
+InstallDir ""
 ShowInstDetails show
 
 Function .onInit
@@ -209,10 +210,10 @@ Function .onInit
         SetSilent silent
     ${EndIf}
 
-    ; NSIS /D overrides detection and must be the unquoted final argument.
-    ClearErrors
-    ${GetOptions} $CMDLINE "/D=" $1
-    ${If} ${Errors}
+    ; NSIS consumes /D before .onInit and removes it from $CMDLINE.
+    ; An explicit /D is already in $INSTDIR; only discover a path when no /D was given.
+    ${If} $INSTDIR == ""
+        StrCpy $INSTDIR "$LOCALAPPDATA\${INFO_COMPANYNAME}\${INFO_PROJECTNAME}"
         StrCpy $0 ""
         !insertmacro ZhusuanReadInstallDir HKCU 64
         !insertmacro ZhusuanReadInstallDir HKCU 32

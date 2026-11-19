@@ -24,7 +24,9 @@ if ((Test-Path $defaultTarget) -or (Test-Path $legacyShortcut) -or (Test-Path $s
 }
 $installerPath = (Resolve-Path $Installer).Path
 function Run-Installer([string]$arguments) {
+    Write-Host "Running installer: '$installerPath' $arguments"
     $process = Start-Process -FilePath $installerPath -ArgumentList $arguments -PassThru -Wait
+    Write-Host "Installer exit code: $($process.ExitCode)"
     return $process.ExitCode
 }
 Add-Type -TypeDefinition @'
@@ -203,6 +205,9 @@ try {
     }
     Assert-LegacyRetained
     if ((Run-Installer "/S /UPDATE /D=$legacyTarget") -eq 0) { throw 'Orange-only directory incorrectly accepted an automated zhusuan update.' }
+    if ((Run-Installer "/S /D=$legacyTarget") -eq 0) { throw 'Orange-only directory incorrectly accepted an explicit installation.' }
+    if (Test-Path (Join-Path $legacyTarget 'zhusuan.exe')) { throw 'Rejected Orange directory received a zhusuan executable.' }
+    if ((Get-ItemProperty $key).InstallLocation -ne $defaultTarget) { throw 'Rejected explicit directory changed the existing user installation record.' }
     Assert-LegacyRetained
     Set-Content -Path (Join-Path $defaultTarget 'unrelated-data.txt') -Value 'retained user data'
     Uninstall-Owned $defaultTarget $key
@@ -211,6 +216,7 @@ try {
 
     if ((Run-Installer "/S /D=$target") -ne 0) { throw 'Explicit custom per-user installation failed.' }
     $exe = Join-Path $target 'zhusuan.exe'
+    if (-not (Test-Path -LiteralPath $exe -PathType Leaf)) { throw 'Explicit path did not receive the zhusuan executable.' }
     if ((Get-ItemProperty $key).InstallLocation -ne $target) { throw 'Explicit path was not persisted.' }
     if ((Run-Installer '/S') -ne 0) { throw 'Existing zhusuan path discovery failed.' }
     if ((Get-ItemProperty $key).InstallLocation -ne $target) { throw 'Reinstallation changed the existing zhusuan path.' }

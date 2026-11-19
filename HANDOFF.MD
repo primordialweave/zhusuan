@@ -440,3 +440,7 @@
 - 恢复run44564873938确认WScript读取Desktop/珠算.lnk的TargetPath为空，排除长短路径表示差异；切换原生IShellLinkW+IPersistFile Unicode读取并保留raw/二进制/flags/Shell.Application诊断，严格目标路径/摘要断言不放松。macOS该run全通过，正式artifact两DMG/ZIP已本地再挂载签名、目录、版本/架构和原生图标检查。Linux该run在取消测试manager_test.go232竞态失败，首轮Linux产物全通过已保留。
 
 - 取消下载EOF竞态已用可控Body.Read稳定复现：Cancel/Close后返回EOF，旧产品报下载不完整。manager.runUpdate失败分支同时检查ctx.Err取消，未取消的完整性错误保留；普通/race定向各count100=1300通过，完整updater race81通过。此为产品修复，不能当fixture覆盖原应用源码；v1.0.1尚未公开，最终更新候选标签后统一重建，公开1.0.0不动。
+
+- WindowsCheck44568004757原生IShellLinkW验证桌面/开始菜单中文快捷方式完整路径和hash正确，WScript空值是假阴性。后续smoke真实发现显式/D被覆盖：NSIS Main.c已截去$CMDLINE中的/D（官方var.but明确），用GetOptions $CMDLINE检测永远失败，会继承已注册默认路径。需改为基于NSIS预置INSTDIR或读取未截断OS命令行后再决定是否注册发现，不能删该断言。
+
+- /D真实修复：InstallDir头保持空，.onInit只在INSTDIR为空时设置LOCALAPPDATA默认/查询新注册；NSIS预置的显式/D非空保留。源码确认EXEDIR回填仅卸载器分支，故installer可可靠区分。新增普通/UPDATE两种显式Orange目录拒绝、原注册不变、实际exe落指定目录断言；NSIS隔离编译通过。
