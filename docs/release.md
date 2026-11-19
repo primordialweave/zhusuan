@@ -93,6 +93,6 @@ npm run build
 
 涉及配置加载、数据库和凭据的本地验证使用隔离目录或 mock；不要连接真实账本或改变系统 Keychain。macOS 本地链接存在 SDK 与旧部署目标不同的提示，旧 macOS 兼容性需实际系统验收。
 
-CI/Release 的 Linux 依赖安装设置 30 秒网络超时、2 次重试和 10 分钟步骤上限，镜像不可用时明确失败。CI 使用锁文件 `npm ci`、固定构建工具和 go.mod 工具链；复用生成的 frontend dist。Linux 桌面需 CGO 与 GTK/WebKit 开发库，macOS CGO universal 构建在 macOS runner 上完成。增量 golangci 门禁以 PR base.sha、push beforeSHA、手动运行父提交为基线，保留全量文本/JSON/SARIF 报告。Gosec 全量扫描报告本身使用原有 no-fail 语义，新增问题由增量门禁检查。
+CI/Release 通过 install-linux-deps.sh 使用 Canonical HTTPS 镜像并省略推荐包，保留 APT 签名校验；Linux 依赖安装设置 30 秒网络超时、2 次重试和 10 分钟步骤上限，镜像不可用时明确失败。CI 使用锁文件 `npm ci`、固定构建工具和 go.mod 工具链；复用生成的 frontend dist。Linux 桌面需 CGO 与 GTK/WebKit 开发库，macOS CGO universal 构建在 macOS runner 上完成。增量 golangci 门禁以 PR base.sha、push beforeSHA、手动运行父提交为基线，保留全量文本/JSON/SARIF 报告。Gosec 全量扫描报告本身使用原有 no-fail 语义，新增问题由增量门禁检查。
 
 当前 1.0.0 的最终测试、构建与 CI 结果以 [release-readiness.md](release-readiness.md) 为准。历史版本或历史 commit 的成功 CI 不代表当前代码已通过，也不代表三个平台的真实安装与原生更新已验收。

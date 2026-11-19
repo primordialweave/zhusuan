@@ -388,3 +388,5 @@
 - 完整 golangci 扫描仍有51历史告警（25 revive、9 errcheck、7 gofmt、4 goimports、3 goconst、2 gocyclo、1 staticcheck简化建议）；增量0不是全量0。主要关闭/cache错误返回值与样式命名基线已记入 release-readiness，未扩大无关重构。
 
 - 最终CI在慢runner上新增重分期行为测试超过默认5秒，下一测试拿到前一个mockRejectedValueOnce队列：clearAllMocks只清调用计数，不清实现/once队列。应完整reset相关API mock、缩短非关键逐字录入并保留等待/断言，不能把这类污染当成产品保存回归。安全runner的APT准备曾停留十余分钟；CI/Release Linux依赖设置30秒连接超时、2次重试和10分钟步骤上限，避免无界等待。
+
+- 取消的CI日志确认区域HTTP镜像 us-east-2.ec2.archive.ubuntu.com 下载69.9MB依赖在9分钟内仍未完成，并多次Ign重试。不能把“步骤仍运行”假设为代码编译失败。CI/Release共用 install-linux-deps.sh，临时runner镜像列表使用Canonical HTTPS、保留APT签名，--no-install-recommends减掉非构建必需推荐包；30秒超时/2次重试/10分钟步骤上限保留。
