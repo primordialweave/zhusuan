@@ -65,7 +65,7 @@ async function fillPayment(
 
 describe('PaymentCreateView design system migration', () => {
   beforeEach(() => {
-    vi.clearAllMocks()
+    vi.resetAllMocks()
     vi.mocked(projectApi.list).mockResolvedValue({
       data: {
         data: {

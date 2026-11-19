@@ -129,30 +129,38 @@ async function chooseDate(
 }
 
 async function fillNewProject(user: ReturnType<typeof userEvent.setup>) {
-  await user.type(screen.getByRole('textbox', { name: /项目名称/ }), '新建合同项目')
-  await user.type(screen.getByRole('textbox', { name: /客户名称/ }), '新客户')
+  // Fixture entry is not the behavior under test; avoid a rerender for every character.
+  fireEvent.change(screen.getByRole('textbox', { name: /项目名称/ }), {
+    target: { value: '新建合同项目' },
+  })
+  fireEvent.change(screen.getByRole('textbox', { name: /客户名称/ }), {
+    target: { value: '新客户' },
+  })
   await user.click(screen.getByRole('button', { name: '项目类型' }))
   await user.click(screen.getByRole('option', { name: '软件开发' }))
   await chooseDate(user, '开始日期')
   await chooseDate(user, '截止日期')
   await chooseDate(user, '合同日期')
   const total = screen.getByRole('spinbutton', { name: /合同总金额/ })
-  await user.clear(total)
-  await user.type(total, '100000')
+  fireEvent.change(total, { target: { value: '100000' } })
   await user.click(screen.getByRole('button', { name: '付款模式' }))
   await user.click(screen.getByRole('option', { name: '分期付款' }))
   const first = screen.getByRole('group', { name: '第 1 期收款' })
-  await user.type(within(first).getByRole('spinbutton', { name: /收款金额/ }), '30000')
+  fireEvent.change(within(first).getByRole('spinbutton', { name: /收款金额/ }), {
+    target: { value: '30000' },
+  })
   await chooseDate(user, '收款日期', first)
   await user.click(screen.getByRole('button', { name: '添加分期' }))
   const second = screen.getByRole('group', { name: '第 2 期收款' })
-  await user.type(within(second).getByRole('spinbutton', { name: /收款金额/ }), '70000')
+  fireEvent.change(within(second).getByRole('spinbutton', { name: /收款金额/ }), {
+    target: { value: '70000' },
+  })
   await chooseDate(user, '收款日期', second)
 }
 
 describe('ProjectCreateView design system migration', () => {
   beforeEach(() => {
-    vi.clearAllMocks()
+    vi.resetAllMocks()
     vi.mocked(dictionaryApi.getItems).mockResolvedValue(apiResponse(projectTypes) as never)
     vi.mocked(projectApi.get).mockResolvedValue(apiResponse(project) as never)
     vi.mocked(projectApi.getPayments).mockResolvedValue(apiResponse(payments) as never)
@@ -178,7 +186,8 @@ describe('ProjectCreateView design system migration', () => {
     )
     await fillNewProject(user)
     const second = screen.getByRole('group', { name: '第 2 期收款' })
-    await user.type(within(second).getByRole('textbox', { name: '备注' }), '保留未完成输入')
+    await user.click(within(second).getByRole('textbox', { name: '备注' }))
+    await user.paste('保留未完成输入')
     await user.click(screen.getByRole('button', { name: '确认保存' }))
     expect(await screen.findByRole('alert')).toHaveTextContent('第 2 期收款未保存')
     expect(screen.getByRole('textbox', { name: /项目名称/ })).toHaveValue('新建合同项目')
@@ -193,7 +202,7 @@ describe('ProjectCreateView design system migration', () => {
       30000, 70000, 70000,
     ])
     expect(paymentApi.update).not.toHaveBeenCalled()
-  })
+  }, 10_000)
 
   it('does not repeat acknowledged deletions or the saved project when a deletion is retried', async () => {
     const user = userEvent.setup()
@@ -239,7 +248,7 @@ describe('ProjectCreateView design system migration', () => {
     await waitFor(() => expect(projectApi.create).toHaveBeenCalledOnce())
     const name = screen.getByRole('textbox', { name: /项目名称/ })
     await user.clear(name)
-    await user.type(name, '创建期间的新名称')
+    await user.paste('创建期间的新名称')
     await act(async () => {
       creation.resolve(apiResponse(project) as never)
       await creation.promise
@@ -255,7 +264,7 @@ describe('ProjectCreateView design system migration', () => {
     )
     expect(paymentApi.create).toHaveBeenCalledTimes(2)
     expect(paymentApi.update).not.toHaveBeenCalled()
-  })
+  }, 10_000)
 
   it.each(['project', 'payments'])(
     'blocks editing save after a failed %s load and recovers on retry',

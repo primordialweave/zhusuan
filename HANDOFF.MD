@@ -386,3 +386,5 @@
 - 最终相对 main 的增量 lint 发现 UpdateForUser 的事务闭包推高 gocyclo；将合同/比例保存事务提取为独立辅助函数后，service race 和增量 lint（0新增）通过。没有关闭规则或增加忽略。
 
 - 完整 golangci 扫描仍有51历史告警（25 revive、9 errcheck、7 gofmt、4 goimports、3 goconst、2 gocyclo、1 staticcheck简化建议）；增量0不是全量0。主要关闭/cache错误返回值与样式命名基线已记入 release-readiness，未扩大无关重构。
+
+- 最终CI在慢runner上新增重分期行为测试超过默认5秒，下一测试拿到前一个mockRejectedValueOnce队列：clearAllMocks只清调用计数，不清实现/once队列。应完整reset相关API mock、缩短非关键逐字录入并保留等待/断言，不能把这类污染当成产品保存回归。安全runner的APT准备曾停留十余分钟；CI/Release Linux依赖设置30秒连接超时、2次重试和10分钟步骤上限，避免无界等待。
