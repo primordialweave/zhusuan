@@ -403,3 +403,7 @@
 - Windows smoke的Get-Item RegistryKey为只读，调用DeleteValue会UnauthorizedAccess并使Release失败；用Registry.LocalMachine.OpenSubKey(path,true)显式可写句柄并Dispose。只在干净CI runner的安装键操作，未在用户系统执行。
 
 - Release44506289477的Linux失败确认npm ci与go mod tidy并行，重建node_modules时Go扫描到消失的JS目录并误查Go模块。构建改为只download/verify固定依赖；npm完成后才生成bindings；macOS两架构顺序构建避免共享输出竞争。应用源码及v1.0.0标签c3af8fe保持不变，通过Release手动输入已合入main的固定build_recipe_ref，仅覆盖四份Taskfile并在发行说明/manifest正文记录来源，避免移动公开标签。初次失败Release已取消，未公开任何半成品。
+
+- Recovery44510099043 Windows CSS契约测试失败（590/591通过）来自Git core.autocrlf把原LF源码变CRLF，正则含\n}与\n\n未匹配。build checkout通过GIT_CONFIG_COUNT/KEY/VALUE仅此步骤禁用autocrlf，不改用户global git配置，也不改CSS或断言；隔离Git夹具复现旧CRLF并验证新检出逐字节保持LF。
+
+- macOS Recovery已成功生成并ad-hoc签名universal二进制，却在lipo校验失败：-verify_arch会把后面的全部参数视作架构名，输入文件必须放前面。改为lipo bin/zhusuan.app/Contents/MacOS/zhusuan -verify_arch arm64 x86_64；不能以打包成功日志代替架构校验通过。

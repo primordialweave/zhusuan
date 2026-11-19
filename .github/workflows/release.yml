@@ -62,6 +62,11 @@ jobs:
       - uses: actions/checkout@v4
         with:
           ref: ${{ needs.prepare.outputs.tag }}
+        env:
+          # Preserve repository bytes on Windows; raw CSS contract tests require LF.
+          GIT_CONFIG_COUNT: '1'
+          GIT_CONFIG_KEY_0: core.autocrlf
+          GIT_CONFIG_VALUE_0: 'false'
       - name: Apply reviewed packaging recipes
         if: env.BUILD_RECIPE_REF != ''
         shell: bash
@@ -114,7 +119,7 @@ jobs:
         if: matrix.platform == 'darwin'
         run: |
           task darwin:package:universal
-          lipo -verify_arch arm64 x86_64 bin/zhusuan.app/Contents/MacOS/zhusuan
+          lipo bin/zhusuan.app/Contents/MacOS/zhusuan -verify_arch arm64 x86_64
           mkdir -p release
           ditto -c -k --sequesterRsrc --keepParent bin/zhusuan.app "release/zhusuan-${RELEASE_TAG}-macOS-universal.zip"
       - name: Build Windows installer
