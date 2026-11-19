@@ -5,11 +5,11 @@
 
 Desktop project ledger and payment tracking
 
-[简体中文](README.md) · [Changelog](CHANGELOG.md) · [Migration](docs/migration.md) · [Release preparation](docs/release.md)
+[简体中文](README.md) · [Changelog](CHANGELOG.md) · [Migration](docs/migration.md) · [Release documentation](docs/release.md)
 
 </div>
 
-Zhusuan is a Wails, Go and React desktop app for project contracts, installment plans, receipts and overdue payments. The original Orange repository now belongs to [Primordial Weave](https://github.com/primordialweave/zhusuan). **1.0.0 is being prepared and has not been published.**
+Zhusuan is a Wails, Go and React desktop app for project contracts, installment plans, receipts and overdue payments. The original Orange repository now belongs to [Primordial Weave](https://github.com/primordialweave/zhusuan). Current version: **1.0.0**. [Download packages](https://github.com/primordialweave/zhusuan/releases/tag/v1.0.0).
 
 ## Features
 

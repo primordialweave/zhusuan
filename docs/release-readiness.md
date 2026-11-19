@@ -1,10 +1,12 @@
 # 珠算 1.0.0 发布准备检查
 
-检查日期：2026-11-19。代码位于 `codex/zhusuan-migration`，草稿 [PR #2](https://github.com/primordialweave/zhusuan/pull/2) 面向 main。此次完成发布准备，不合并、不创建版本标签、不公开 Release，也不推送生产镜像。
+检查日期：2026-11-19。开发代码通过 [PR #2](https://github.com/primordialweave/zhusuan/pull/2) 进入 main，正式版本为 [v1.0.0](https://github.com/primordialweave/zhusuan/releases/tag/v1.0.0)。用户已于同日授权合并和正式发布，取代之前保留草稿的要求。发布工作流分别验证三平台产物，完整上传和核对后公开；实际运行状态以 GitHub Actions/Release 为准。
+
+发布前实现代码 `123f696` 的 [CI](https://github.com/primordialweave/zhusuan/actions/runs/44501085250) 已通过前端、后端与安全检查，Trivy 对 frontend/package-lock.json 和 go.mod 的 HIGH/CRITICAL 修复门禁均报告 0。此文继续保留未完成的实机验证边界，不能将构建/安装脚本通过等同于全面平台验收。
 
 ## 文档、版本和截图
 
-中文/英文 README、前端说明、CHANGELOG、迁移与发布文档已同步。CHANGELOG 保留 0.7.2 及以前历史，1.0.0 标记为未发布。统一版本工具同步 Go AppVersion、前端 package/lockfile、Wails、macOS/iOS、Windows 文件资源/MSIX、Linux 与 Android；MSIX 最低系统版本未改变。旧 bump-version 命令调用同一工具。
+中文/英文 README、前端说明、CHANGELOG、迁移与发布文档已同步。CHANGELOG 保留 0.7.2 及以前历史，1.0.0 使用正式发布日期。统一版本工具同步 Go AppVersion、前端 package/lockfile、Wails、macOS/iOS、Windows 文件资源/MSIX、Linux 与 Android；MSIX 最低系统版本未改变。旧 bump-version 命令调用同一工具。
 
 README 使用九张 1440×960 的当前界面截图。先在隔离数据库副本中屏蔽项目、客户、合同、人员、联系方式与备注，再采集；逐项比较 77 个项目的总额/已收金额及款项金额/比例，金额不变。关于页硬编码个人信息在 DOM 中替换为黑块，登录输入为空。旧 frontend/public 中六张展示截图已移除，避免进入新版安装包。采集方法见 [screenshots/README.md](screenshots/README.md)。
 
@@ -59,11 +61,11 @@ Trivy 的旧配置只报告而不阻断，因此成功 job 曾包含 24 条可�
 
 ## 发布前仍需的目标平台验收
 
-- Windows：真实 Orange 自定义目录升级、新身份首次启动迁库、标准用户/UAC、WebView2 无网络/下载失败、成功更新后以原用户重启。现有 smoke 脚本在 Release runner 执行；本次未触发发布流程。
+- Windows：真实 Orange 自定义目录升级、新身份首次启动迁库、标准用户/UAC、WebView2 无网络/下载失败、成功更新后以原用户重启。现有 smoke 脚本在 Release runner 执行；本次正式发布将运行该检查，结果以 Release workflow 为准。
 - macOS：正式 bundle 的签名/公证策略、旧系统兼容性、原生保存对话框和真实已安装应用更新。现有 SDK 对较低部署目标有链接提示，不能从当前机器构建推断旧系统可运行。
 - Linux：AppImage、deb/rpm 的实际安装与提权、包归属和重启。MySQL/PostgreSQL 的真实并发事务及云同步对比/同步另需集成环境。
 - 更新回滚覆盖文件替换失败和系统拒绝启动；系统接受启动后，新进程初始化或数据库迁移失败没有启动健康确认与自动回滚。
 - 项目加多笔计划仍为多个 API 请求。当前账本只去重收到成功响应的结果；服务端提交但响应丢失、页面卸载/退出后重试仍可能产生重复，须核对记录。完整解决需服务端原子或幂等接口，当前文档不承诺恰好一次保存。
 - 性能验收需记录目标设备启动时间、内存与空闲/动态场景 CPU/GPU；更新需核对大包峰值内存。实现已有场景帧率/像素预算、后台暂停、资源释放、20 项按需分页和流式摘要控制，本次未作原生电池/性能基准。
 
-上述边界应在真正发版前逐项确认。iOS/Android 仅同步脚手架与资源，不作为本次已验收发布平台。
+上述边界属于公开分发和后续验证范围，保留供使用者与维护者核查。iOS/Android 仅同步脚手架与资源，不作为本次已验收发布平台。

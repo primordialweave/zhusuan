@@ -2,11 +2,11 @@
 
 接手任何任务前先读这份文档。它只记两类东西：**当前在制品的状态**，和**已经踩过的坑**。踩到新坑就追加到第 2 节，状态变了就改第 1 节。
 
-## 1. 当前任务：珠算 1.0.0 发布准备
+## 1. 当前任务：珠算 1.0.0 正式发布
 
-- 分支 codex/zhusuan-migration，草稿 PR #2；用户选择 1.0.0 并要求暂不合并/发布。
+- 2026-11-19 用户明确授权“正式发布 1.0 版本”，按已选语义版本 1.0.0 执行，取代之前暂不合并/发布要求。分支 codex/zhusuan-migration，PR #2 合并到 main 后创建 v1.0.0，跟进三个平台完整发布。
 - 文档、版本、九张脱敏截图和全局审查修复已完成；最终检查/限制见 docs/release-readiness.md，坑见 2.7。金额保持源快照数值，真实账本未修改。
-- 最新提交的 CI 状态须按当前 head 查询，不沿用历史成功记录。只提交/更新 draft PR，不触发标签或 main 镜像发布。
+- 发布前代码123f696的CI44501085250全通过。正式文档改动按当前head查询检查；发布工作流完成前不声称附件已公开。macOS仅ad-hoc、Windows未Authenticode，分发说明保留真实签名与原生验收边界。
 
 ## 1.1 历史任务：烟雨江南界面重构
 
@@ -392,3 +392,10 @@
 - 取消的CI日志确认区域HTTP镜像 us-east-2.ec2.archive.ubuntu.com 下载69.9MB依赖在9分钟内仍未完成，并多次Ign重试。不能把“步骤仍运行”假设为代码编译失败。CI/Release共用 install-linux-deps.sh，临时runner镜像列表使用Canonical HTTPS、保留APT签名，--no-install-recommends减掉非构建必需推荐包；30秒超时/2次重试/10分钟步骤上限保留。
 
 - 绿色安全job并不代表无漏洞：Trivy原exit-code0报告了24条可修复HIGH。已升级go-git5.19.2/go-billy5.9.0/x-net0.62.0及其MVS要求的crypto0.58/mod0.41/text0.43等，Go保持1.26.0；不要逐个硬钉扫描表的最小修复版本，x-net要求更高crypto/mod时会冲突。GOTOOLCHAIN=local会回到已安装1.25.5，检查兼容性应显式GOTOOLCHAIN=go1.26.0。Trivy HIGH/CRITICAL改为exit-code1门禁；Gosec SARIF16条规则提示与golangci配置扫描不同，已在release-readiness核查输入边界并保留报告，不能称全量扫描清零。
+
+### 2.8 正式发布1.0.0（2026-11-19）
+
+- 用户新授权覆盖2.7的暂不发布限制。仅发布v1.0.0；保留工作区已有design-qa.md删除，不纳入发布提交。不移动已公开的标签或覆盖公开Release；三平台失败时先定位CI，再按状态修复。
+- 发布前更新CHANGELOG日期与README下载入口，安装包公开状态以Release页面为准。记录无Developer ID/公证与无Windows Authenticode的分发事实，不以ad-hoc构建声称已公证。
+
+- 正式发布预检发现desktop Name=珠算会让AppImage输出中文文件名，Wails alpha.55却移动zhusuan-x86_64.AppImage，导致Linux包失败。create:appimage设置LINUXDEPLOY_OUTPUT_APP_NAME=zhusuan；保留菜单中文名。实际产物由Release runner验证。

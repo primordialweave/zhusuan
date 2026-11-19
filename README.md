@@ -5,11 +5,11 @@
 
 项目台账与收款管理桌面应用
 
-[English](README_EN.md) · [更新记录](CHANGELOG.md) · [迁移说明](docs/migration.md) · [发布准备](docs/release.md)
+[English](README_EN.md) · [更新记录](CHANGELOG.md) · [迁移说明](docs/migration.md) · [发布说明](docs/release.md)
 
 </div>
 
-珠算基于 Wails v3、Go 和 React 构建，管理项目合同、分期收款、待收与逾期款项。原 Orange 仓库已迁入 [Primordial Weave](https://github.com/primordialweave/zhusuan)，当前准备版本为 **1.0.0**，尚未发布。
+珠算基于 Wails v3、Go 和 React 构建，管理项目合同、分期收款、待收与逾期款项。原 Orange 仓库已迁入 [Primordial Weave](https://github.com/primordialweave/zhusuan)，当前版本为 **1.0.0**。[下载安装包](https://github.com/primordialweave/zhusuan/releases/tag/v1.0.0)。
 
 ## 功能
 

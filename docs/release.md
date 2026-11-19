@@ -1,8 +1,10 @@
 # 打包、发布与桌面更新
 
-## 当前版本与发布入口
+## 1.0.0 与发布入口
 
-当前准备版本为 **1.0.0**，草稿 [PR #2](https://github.com/primordialweave/zhusuan/pull/2) 保留审查，尚未合并或发布。README 中的版本号和界面截图表示当前代码状态，不表示安装包已公开。最终检查及未验收范围记录在 [release-readiness.md](release-readiness.md)。
+**1.0.0** 通过 [v1.0.0 Release](https://github.com/primordialweave/zhusuan/releases/tag/v1.0.0) 分发，发布入口为 [PR #2](https://github.com/primordialweave/zhusuan/pull/2) 合并后的 main 与稳定标签。2026-11-19 用户已授权正式发布；安装包公开状态和最新附件以 Release 页面为准。检查证据及未验收范围见 [release-readiness.md](release-readiness.md)。
+
+本版 macOS 包仅采用 ad-hoc 签名，未配置 Developer ID/公证；Windows 安装器未配置 Authenticode 签名。首次打开时可能需要按系统提示允许运行。安装前退出旧应用，首次以原用户启动珠算完成数据迁移，旧数据保留。
 
 稳定版使用 `vMAJOR.MINOR.PATCH` 标签，例如 `v1.0.0`。Windows 版本资源要求每段不超过 65535；Android 的编码要求次版本和补丁版本小于 1000，且 versionCode 不超过 2100000000。分支名与预发布标签不进入此稳定版发布流程。
 
