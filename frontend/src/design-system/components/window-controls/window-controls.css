@@ -1,0 +1,51 @@
+.ods-window-control-button {
+  --wails-draggable: no-drag;
+
+  display: inline-flex;
+  width: 46px;
+  min-height: var(--ods-control-height-md);
+  height: 100%;
+  flex: 0 0 46px;
+  align-items: center;
+  justify-content: center;
+  padding: var(--ods-space-0);
+  border: 1px solid transparent;
+  border-radius: var(--ods-radius-sm);
+  background: transparent;
+  color: inherit;
+  font: inherit;
+  cursor: default;
+  transform: none;
+  transition:
+    background-color var(--ods-duration-fast) var(--ods-ease-standard),
+    color var(--ods-duration-fast) var(--ods-ease-standard);
+}
+
+.ods-window-control-button svg {
+  width: 16px;
+  height: 16px;
+}
+
+.ods-window-control-button:disabled {
+  opacity: 0.4;
+}
+
+@media (hover: hover) {
+  .ods-window-control-button:hover:not(:disabled) {
+    background: var(--ods-color-bg-surface-hover);
+  }
+
+  .ods-window-control-button[data-tone='danger']:hover:not(:disabled) {
+    background: var(--ods-color-status-danger);
+    color: var(--ods-color-fg-inverse);
+  }
+}
+
+.ods-window-control-button:active:not(:disabled) {
+  background: var(--ods-color-bg-surface-pressed);
+}
+
+.ods-window-control-button[data-tone='danger']:active:not(:disabled) {
+  background: color-mix(in srgb, var(--ods-color-status-danger) 88%, black);
+  color: var(--ods-color-fg-inverse);
+}

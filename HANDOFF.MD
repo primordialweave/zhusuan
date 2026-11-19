@@ -2,7 +2,14 @@
 
 接手任何任务前先读这份文档。它只记两类东西：**当前在制品的状态**，和**已经踩过的坑**。踩到新坑就追加到第 2 节，状态变了就改第 1 节。
 
-## 1. 珠算 1.0.1 已正式发布
+## 1. 当前任务：Windows 安装普通启动、自定义标题栏与全屏
+
+- 用户明确问题是“下载的安装器.exe”普通双击不打开，需要右键管理员；另要求Windows移除系统标题栏，改自定义并能全屏。本任务先修复和验证，不复用上一轮1.0.1发布授权创建新版本，不覆盖公开产物。
+- 已核正式1.0.1 installer PE manifest为asInvoker，真实缺陷是检测到已有HKLM珠算时非管理员.onInit直接Abort，安装页尚未出现即退出。改为仅机器范围目标自动runas，fresh仍普通用户；保留目标参数并等待传播退出码，UAC取消提示原安装不变。fresh无旧记录的下载安全提示未据此视作已复现。
+- Windows原生Frameless仅该平台启用，保留resize/DWM与原生max/min/close。React全局标题栏覆盖登录和业务页，ODS控件、系统青绿，最大化/还原、最小化、全屏/退出/关闭、F11/Esc，事件驱动无空闲轮询。mac/Linux保持原样。
+- 新standarduser CI使用真实restricted同用户Medium token验证无参数欢迎页及默认安装/卸载；nativewindow CI用Win32/UIA/真实鼠标键盘验证标题栏几何、拖动缩放、max/min/restore/fullscreen/F11Esc/关闭，隔离数据。当前本地编译/解析与前端行为检查完成，真实WindowsCI尚待本次featurebranch运行。分支codex/windows-installer-custom-titlebar。
+
+## 1.1 珠算 1.0.1 已正式发布
 
 - 原会话用户选择发布1.0.1，本会话已接续完成。北京时间2026-11-20 02:34:19公开并设latest：https://github.com/primordialweave/zhusuan/releases/tag/v1.0.1 。应用标签固定于 `176c9780dbcfb0932370e9c98d5c5e7a9eb08d3a`；1.0.0十附件名称/大小/SHA256均保持原样。
 - 已完成两架构DMG/ZIP、macOS中文名和无外板图标、Windows UTF-8中文/用户默认目录/显式路径与旧Orange保留、金额输入/必填校验、令牌/通知弹层；另修真实下载取消EOF竞态。项目详情medicine→医学及小天平青绿已实际回归。
@@ -454,3 +461,9 @@
 - Intel44579095153两worker仍593/598，4个交互超时和CalendarView加载aria-busy=true时findByRole默认1s耗尽；其余日期格式通过，不是日期偏移。针对固定3个测试优化夹具输入/语义查询并给多交互流程预算，专用Macworkflow仅覆盖这3个已审test文件、记录fixtureSHA，应用源码tag176c不变；绝不把所有失败泛称产品通过。
 
 - macOS旧Xcode Assets.car重编可能因内部时间戳变成相同尺寸不同hash，dev watch会重新生成；发行复验必须比git show <应用tag>:...，不能拿工作区未提交生成物当正式来源。公开前验证十附件server digest后再draft=false/latest，匿名latest和旧版本不可变性均需发布后再读。
+
+### 2.11 Windows普通安装与自定义标题栏（2026-11-20）
+
+- 管理员GitHub runner上的安装成功不证明普通用户能双击。应读取实际PE manifest，并在同SID、MediumIL、管理员组deny-only且HKLM写被拒绝的真实token里先无参数显示welcome，再静默安装/卸载。SmartScreen/MOTW和用户接受UAC与此分开验。
+- Wails alpha.55 frameless仍有WS_CAPTION/WS_OVERLAPPEDWINDOW，通过WM_NCCALCSIZE移除系统标题栏；不能用stylebit无caption断言。应核client/window上沿几何和真实边缘拖动。该版本自动5px边/15px角resize，不读最新版--wails-resize。Snaphover布局未实现，不声称支持。
+- 自定义系统窗口操作控件也须走ODS ownership，新增ODS WindowControlButton；页面CSS不能覆盖IconButton外观，也不能绕过Image契约原生img。已有契约抓到后已改为正式组件，未加例外。

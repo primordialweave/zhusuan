@@ -47,6 +47,7 @@
 @import './components/toast/toast.css';
 @import './components/tooltip/tooltip.css';
 @import './components/user/user.css';
+@import './components/window-controls/window-controls.css';
 @import './patterns/cloud-panel/cloud-panel.css';
 @import './patterns/data-list/data-list.css';
 @import './patterns/form-layout/form-layout.css';

@@ -133,10 +133,15 @@ func newExternalAPIServer(addr string, handler http.Handler) *http.Server {
 }
 
 func mainWindowOptions() application.WebviewWindowOptions {
+	return mainWindowOptionsForPlatform(goruntime.GOOS)
+}
+
+func mainWindowOptionsForPlatform(platform string) application.WebviewWindowOptions {
 	return application.WebviewWindowOptions{
-		Title:  "珠算",
-		Width:  1280,
-		Height: 800,
+		Title:     "珠算",
+		Width:     1280,
+		Height:    800,
+		Frameless: platform == "windows",
 		Mac: application.MacWindow{
 			InvisibleTitleBarHeight: 0,
 			Backdrop:                application.MacBackdropTranslucent,
