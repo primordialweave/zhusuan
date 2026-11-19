@@ -1,4 +1,4 @@
-package utils //nolint:revive // Existing utility package name is kept to avoid an unrelated repository-wide API migration.
+package utils
 
 // CalcPercentageTrend 计算百分比趋势（环比变化率）
 //

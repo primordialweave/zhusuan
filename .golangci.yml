@@ -69,6 +69,10 @@ linters:
       - third_party
       - '.*_test\.go'
     rules:
+      # Keep the established internal helper package name; revive reports it on an arbitrary file.
+      - path: internal/pkg/utils/
+        linters: [revive]
+        text: 'var-naming: avoid meaningless package names'
       - path: cmd/
         linters: [gosec]
         text: G104
