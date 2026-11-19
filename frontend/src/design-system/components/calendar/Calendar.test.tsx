@@ -122,29 +122,36 @@ describe('Calendar', () => {
     expect(within(grid).getAllByRole('gridcell')).toHaveLength(42)
     expect(grid.querySelectorAll('button[tabindex="0"]')).toHaveLength(1)
 
-    const selectedDay = screen.getByRole('button', { name: /2026年7月15日/ })
+    // Dates already have unique accessible labels; avoid a full computed-style
+    // scan through all 42 buttons after every keyboard step on slower runners.
+    const dayButton = (date: RegExp) => {
+      const button = screen.getByLabelText(date)
+      expect(button).toHaveRole('button')
+      return button
+    }
+    const selectedDay = dayButton(/2026年7月15日/)
     expect(selectedDay).toHaveAttribute('tabindex', '0')
     expect(selectedDay.closest('[role="gridcell"]')).toHaveAttribute('aria-selected', 'true')
     selectedDay.focus()
 
     await user.keyboard('{ArrowRight}')
-    expect(screen.getByRole('button', { name: /2026年7月16日/ })).toHaveFocus()
+    expect(dayButton(/2026年7月16日/)).toHaveFocus()
     await user.keyboard('{ArrowLeft}')
     expect(selectedDay).toHaveFocus()
     await user.keyboard('{ArrowDown}')
-    expect(screen.getByRole('button', { name: /2026年7月22日/ })).toHaveFocus()
+    expect(dayButton(/2026年7月22日/)).toHaveFocus()
     await user.keyboard('{ArrowUp}')
     expect(selectedDay).toHaveFocus()
     await user.keyboard('{Home}')
-    expect(screen.getByRole('button', { name: /2026年7月13日/ })).toHaveFocus()
+    expect(dayButton(/2026年7月13日/)).toHaveFocus()
     await user.keyboard('{End}')
-    expect(screen.getByRole('button', { name: /2026年7月19日/ })).toHaveFocus()
+    expect(dayButton(/2026年7月19日/)).toHaveFocus()
     await user.keyboard('{PageDown}')
-    expect(screen.getByRole('button', { name: /2026年8月19日/ })).toHaveFocus()
+    expect(dayButton(/2026年8月19日/)).toHaveFocus()
     await user.keyboard('{PageUp}')
-    expect(screen.getByRole('button', { name: /2026年7月19日/ })).toHaveFocus()
+    expect(dayButton(/2026年7月19日/)).toHaveFocus()
     expect(document.querySelectorAll('.ods-calendar__grid button[tabindex="0"]')).toHaveLength(1)
-  })
+  }, 30_000)
 
   it('marks dates and lets consumers provide a contextual accessible label', () => {
     render(

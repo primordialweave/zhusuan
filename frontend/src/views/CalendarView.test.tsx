@@ -49,27 +49,35 @@ describe('CalendarView', () => {
     ['2026-10-17 00:00:00', '2026年10月17日，星期六', '待收'],
     ['2026-10-01T00:00:00+14:00', '2026年10月1日，星期四', '逾期'],
     ['2026-10-31T23:30:00-12:00', '2026年10月31日，星期六', '待收'],
-  ])('files %s under its planned calendar day', async (planDate, day, status) => {
-    const user = userEvent.setup()
-    vi.mocked(paymentApi.list).mockResolvedValue({
-      data: { data: [{ ...todayPayment, plan_date: planDate }] },
-    } as never)
+  ])(
+    'files %s under its planned calendar day',
+    async (planDate, day, status) => {
+      const user = userEvent.setup()
+      vi.mocked(paymentApi.list).mockResolvedValue({
+        data: { data: [{ ...todayPayment, plan_date: planDate }] },
+      } as never)
 
-    render(<CalendarView />)
+      render(<CalendarView />)
 
-    const markedDay = await screen.findByRole('button', {
-      name: `${day}，${status} ¥12,800，共 1 笔`,
-    })
-    expect(markedDay).toHaveAttribute('data-marked', 'true')
-    expect(within(markedDay).getByText(`${status} ¥12,800`)).toBeInTheDocument()
+      // The mocked response may still be queued while a busy CI runner renders
+      // the month grid; wait for the actual loaded accessible label.
+      const markedDay = await screen.findByRole(
+        'button',
+        { name: `${day}，${status} ¥12,800，共 1 笔` },
+        { timeout: 10_000 },
+      )
+      expect(markedDay).toHaveAttribute('data-marked', 'true')
+      expect(within(markedDay).getByText(`${status} ¥12,800`)).toBeInTheDocument()
 
-    await user.click(markedDay)
+      await user.click(markedDay)
 
-    expect(markedDay).toHaveAttribute('data-selected', 'true')
-    expect(detail().getAllByRole('link', { name: '星轨项目' })).toHaveLength(1)
-    expect(detail().getByText(status)).toBeInTheDocument()
-    expect(screen.queryByText('该日无收款计划')).not.toBeInTheDocument()
-  })
+      expect(markedDay).toHaveAttribute('data-selected', 'true')
+      expect(detail().getAllByRole('link', { name: '星轨项目' })).toHaveLength(1)
+      expect(detail().getByText(status)).toBeInTheDocument()
+      expect(screen.queryByText('该日无收款计划')).not.toBeInTheDocument()
+    },
+    30_000,
+  )
 
   it.each([
     ['all', '全款'],

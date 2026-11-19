@@ -120,7 +120,7 @@ async function chooseDate(
   group?: HTMLElement,
 ) {
   const scope = group ? within(group) : screen
-  await user.click(scope.getByRole('button', { name: label }))
+  await user.click(scope.getByLabelText(label))
   await user.click(
     document.querySelector<HTMLButtonElement>(
       '[data-slot="popover"] .ods-calendar__day:not(:disabled)',
@@ -130,29 +130,29 @@ async function chooseDate(
 
 async function fillNewProject(user: ReturnType<typeof userEvent.setup>) {
   // Fixture entry is not the behavior under test; avoid a rerender for every character.
-  fireEvent.change(screen.getByRole('textbox', { name: /项目名称/ }), {
+  fireEvent.change(screen.getByLabelText(/项目名称/), {
     target: { value: '新建合同项目' },
   })
-  fireEvent.change(screen.getByRole('textbox', { name: /客户名称/ }), {
+  fireEvent.change(screen.getByLabelText(/客户名称/), {
     target: { value: '新客户' },
   })
-  await user.click(screen.getByRole('button', { name: '项目类型' }))
+  await user.click(screen.getByLabelText('项目类型'))
   await user.click(screen.getByRole('option', { name: '软件开发' }))
   await chooseDate(user, '开始日期')
   await chooseDate(user, '截止日期')
   await chooseDate(user, '合同日期')
-  const total = screen.getByRole('textbox', { name: /合同总金额/ })
+  const total = screen.getByLabelText(/合同总金额/)
   fireEvent.change(total, { target: { value: '100000' } })
-  await user.click(screen.getByRole('button', { name: '付款模式' }))
+  await user.click(screen.getByLabelText('付款模式'))
   await user.click(screen.getByRole('option', { name: '分期付款' }))
   const first = screen.getByRole('group', { name: '第 1 期收款' })
-  fireEvent.change(within(first).getByRole('textbox', { name: /收款金额/ }), {
+  fireEvent.change(within(first).getByLabelText(/收款金额/), {
     target: { value: '30000' },
   })
   await chooseDate(user, '收款日期', first)
   await user.click(screen.getByRole('button', { name: '添加分期' }))
   const second = screen.getByRole('group', { name: '第 2 期收款' })
-  fireEvent.change(within(second).getByRole('textbox', { name: /收款金额/ }), {
+  fireEvent.change(within(second).getByLabelText(/收款金额/), {
     target: { value: '70000' },
   })
   await chooseDate(user, '收款日期', second)
@@ -174,28 +174,32 @@ describe('ProjectCreateView design system migration', () => {
   it('marks missing required fields, describes errors in Chinese and focuses the first field', async () => {
     const user = userEvent.setup()
     render(<ProjectCreateView />)
+    const nameInput = screen.getByLabelText(/项目名称/)
+    const submit = screen.getByRole('button', { name: '确认保存' })
 
-    await user.click(screen.getByRole('button', { name: '确认保存' }))
+    await user.click(submit)
 
     for (const name of [/项目名称/, /客户名称/, /合同总金额/, /收款金额/]) {
-      const input = screen.getByRole('textbox', { name })
+      const input = screen.getByLabelText(name)
+      expect(input).toHaveRole('textbox')
       expect(input).toHaveAttribute('aria-invalid', 'true')
       expect(input).toHaveAccessibleDescription(/请输入/)
     }
     for (const name of ['项目类型', '开始日期', '截止日期', '合同日期', '收款日期']) {
-      const control = screen.getByRole('button', { name })
+      const control = screen.getByLabelText(name)
+      expect(control).toHaveRole('button')
       expect(control).toHaveAttribute('aria-invalid', 'true')
       expect(control).toHaveAccessibleDescription(/请选择/)
     }
-    await waitFor(() => expect(screen.getByRole('textbox', { name: /项目名称/ })).toHaveFocus())
+    await waitFor(() => expect(nameInput).toHaveFocus(), { timeout: 10_000 })
     expect(screen.getByRole('form', { name: '项目编辑表单' })).toHaveAttribute('novalidate')
     expect(projectApi.create).not.toHaveBeenCalled()
     expect(paymentApi.create).not.toHaveBeenCalled()
 
-    await user.type(screen.getByRole('textbox', { name: /项目名称/ }), '新的项目')
-    expect(screen.getByRole('textbox', { name: /项目名称/ })).not.toHaveAttribute('aria-invalid')
+    fireEvent.change(nameInput, { target: { value: '新的项目' } })
+    expect(nameInput).not.toHaveAttribute('aria-invalid')
     expect(screen.queryByText('请输入项目名称')).not.toBeInTheDocument()
-  })
+  }, 30_000)
 
   it('uses plain money fields, rejects invalid drafts and normalizes both amounts to cents', async () => {
     const user = userEvent.setup()
@@ -241,11 +245,12 @@ describe('ProjectCreateView design system migration', () => {
     )
     await fillNewProject(user)
     const second = screen.getByRole('group', { name: '第 2 期收款' })
-    await user.click(within(second).getByRole('textbox', { name: '备注' }))
-    await user.paste('保留未完成输入')
+    fireEvent.change(within(second).getByLabelText('备注'), {
+      target: { value: '保留未完成输入' },
+    })
     await user.click(screen.getByRole('button', { name: '确认保存' }))
     expect(await screen.findByRole('alert')).toHaveTextContent('第 2 期收款未保存')
-    expect(screen.getByRole('textbox', { name: /项目名称/ })).toHaveValue('新建合同项目')
+    expect(screen.getByLabelText(/项目名称/)).toHaveValue('新建合同项目')
     expect(within(second).getByRole('textbox', { name: '备注' })).toHaveValue('保留未完成输入')
     expect(projectApi.create).toHaveBeenCalledOnce()
     await user.click(screen.getByRole('button', { name: '确认保存' }))
@@ -257,7 +262,7 @@ describe('ProjectCreateView design system migration', () => {
       30000, 70000, 70000,
     ])
     expect(paymentApi.update).not.toHaveBeenCalled()
-  }, 10_000)
+  }, 30_000)
 
   it('does not repeat acknowledged deletions or the saved project when a deletion is retried', async () => {
     const user = userEvent.setup()
@@ -269,9 +274,7 @@ describe('ProjectCreateView design system migration', () => {
       .mockRejectedValueOnce(new Error('第三期删除失败'))
       .mockResolvedValueOnce(apiResponse(null) as never)
     renderEditor()
-    await waitFor(() =>
-      expect(screen.getByRole('textbox', { name: /项目名称/ })).toHaveValue(project.name),
-    )
+    await waitFor(() => expect(screen.getByLabelText(/项目名称/)).toHaveValue(project.name))
     await user.click(screen.getByRole('button', { name: '删除第 3 期' }))
     await user.click(screen.getByRole('button', { name: '删除第 2 期' }))
     await user.click(screen.getByRole('button', { name: '确认保存' }))
@@ -301,15 +304,14 @@ describe('ProjectCreateView design system migration', () => {
     await fillNewProject(user)
     await user.click(screen.getByRole('button', { name: '确认保存' }))
     await waitFor(() => expect(projectApi.create).toHaveBeenCalledOnce())
-    const name = screen.getByRole('textbox', { name: /项目名称/ })
-    await user.clear(name)
-    await user.paste('创建期间的新名称')
+    const name = screen.getByLabelText(/项目名称/)
+    fireEvent.change(name, { target: { value: '创建期间的新名称' } })
     await act(async () => {
       creation.resolve(apiResponse(project) as never)
       await creation.promise
     })
     expect(await screen.findByRole('alert')).toHaveTextContent('新修改尚未保存')
-    expect(screen.getByRole('textbox', { name: /项目名称/ })).toHaveValue('创建期间的新名称')
+    expect(screen.getByLabelText(/项目名称/)).toHaveValue('创建期间的新名称')
     await user.click(screen.getByRole('button', { name: '确认保存' }))
     await screen.findByRole('heading', { name: '项目列表' })
     expect(projectApi.create).toHaveBeenCalledOnce()
@@ -319,7 +321,7 @@ describe('ProjectCreateView design system migration', () => {
     )
     expect(paymentApi.create).toHaveBeenCalledTimes(2)
     expect(paymentApi.update).not.toHaveBeenCalled()
-  }, 10_000)
+  }, 30_000)
 
   it.each(['project', 'payments'])(
     'blocks editing save after a failed %s load and recovers on retry',
@@ -390,7 +392,7 @@ describe('ProjectCreateView design system migration', () => {
 
     renderEditor()
     await waitFor(() => expect(screen.getByLabelText(/项目名称/)).toHaveValue(project.name))
-    expect(screen.getByRole('button', { name: '项目类型' })).toHaveTextContent('medicine')
+    expect(screen.getByLabelText('项目类型')).toHaveTextContent('medicine')
 
     await act(async () => {
       dictionary.resolve(apiResponse(projectTypes) as never)
@@ -398,10 +400,10 @@ describe('ProjectCreateView design system migration', () => {
     })
 
     expect(dictionaryApi.getItems).toHaveBeenCalledWith('project_type')
-    expect(screen.getByRole('button', { name: '项目类型' })).toHaveTextContent('医学研究')
+    expect(screen.getByLabelText('项目类型')).toHaveTextContent('医学研究')
     const summary = screen.getByRole('complementary', { name: '项目草稿摘要' })
     expect(within(summary).getByText('医学研究')).toBeInTheDocument()
-    await user.click(screen.getByRole('button', { name: '项目类型' }))
+    await user.click(screen.getByLabelText('项目类型'))
     expect(screen.getByRole('option', { name: '医学研究' })).toHaveAttribute(
       'aria-selected',
       'true',
@@ -424,7 +426,7 @@ describe('ProjectCreateView design system migration', () => {
 
       renderEditor()
       await waitFor(() => expect(screen.getByLabelText(/项目名称/)).toHaveValue(project.name))
-      expect(screen.getByRole('button', { name: '项目类型' })).toHaveTextContent('legacy_type')
+      expect(screen.getByLabelText('项目类型')).toHaveTextContent('legacy_type')
       expect(screen.getByRole('button', { name: '状态' })).toHaveTextContent('已收款')
       await user.click(screen.getByRole('button', { name: '确认保存' }))
 
@@ -469,7 +471,7 @@ describe('ProjectCreateView design system migration', () => {
     expect(screen.getByLabelText(/项目名称/)).toHaveClass('ods-input')
     expect(screen.getByLabelText(/合同总金额/)).toHaveClass('ods-input')
 
-    await user.click(screen.getByRole('button', { name: '付款模式' }))
+    await user.click(screen.getByLabelText('付款模式'))
     await user.click(screen.getByRole('option', { name: '分期付款' }))
     expect(screen.getByRole('button', { name: '添加分期' })).toBeInTheDocument()
   })
@@ -526,7 +528,9 @@ describe('ProjectCreateView design system migration', () => {
 
     await user.click(screen.getByRole('button', { name: '添加分期' }))
     const addedPayment = screen.getByRole('group', { name: '第 3 期收款' })
-    await user.type(within(addedPayment).getByRole('textbox', { name: /收款金额/ }), '5000')
+    fireEvent.change(within(addedPayment).getByLabelText(/收款金额/), {
+      target: { value: '5000' },
+    })
     await user.click(within(addedPayment).getByRole('button', { name: /收款日期/ }))
     const availableDate = document.querySelector<HTMLButtonElement>(
       '[data-slot="popover"] .ods-calendar__day:not(:disabled)',

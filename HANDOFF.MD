@@ -448,3 +448,5 @@
 - 最终Release44571413947 Windows与Linux全job通过，macOS排队15分钟后GitHub自动cancel；annotation明确The job was not acquired by Runner of type hosted... / macOS arm64 capacity constraints，runner_id0无步骤。这不是构建失败。保留同176c9780的两平台artifact，改Intel macOS runner专用workflow验同tag后聚合，不重复已过平台。
 
 - IntelMacCheck44576400310源身份/工具检查成功，前端597/598通过，必填新增用例5069ms触发默认5s（无断言错误）。专用4核Intel runner限制Vitest maxWorkers=2，保留全部用例/断言/5s门限，避免jsdom并发争用；不据此改产品或候选tag。
+
+- Intel44579095153两worker仍593/598，4个交互超时和CalendarView加载aria-busy=true时findByRole默认1s耗尽；其余日期格式通过，不是日期偏移。针对固定3个测试优化夹具输入/语义查询并给多交互流程预算，专用Macworkflow仅覆盖这3个已审test文件、记录fixtureSHA，应用源码tag176c不变；绝不把所有失败泛称产品通过。

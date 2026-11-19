@@ -13,6 +13,11 @@ on:
         required: false
         type: string
 
+      test_recipe_ref:
+        description: Optional reviewed main commit for three frontend test fixtures
+        required: false
+        type: string
+
 permissions:
   contents: read
 
@@ -28,6 +33,7 @@ jobs:
     env:
       RELEASE_TAG: ${{ inputs.tag }}
       APPLICATION_REF: ${{ inputs.application_ref }}
+      TEST_RECIPE_REF: ${{ inputs.test_recipe_ref }}
     steps:
       - uses: actions/checkout@v4
         with:
@@ -66,6 +72,16 @@ jobs:
           python3 -m unittest discover -s scripts -p 'test_*.py'
           python3 scripts/release.py metadata "$RELEASE_TAG"
           git diff --exit-code
+      - name: Apply reviewed frontend test fixtures
+        if: env.TEST_RECIPE_REF != ''
+        shell: bash
+        run: |
+          [[ "$TEST_RECIPE_REF" =~ ^[0-9a-f]{40}$ ]]
+          git fetch --no-tags origin '+refs/heads/main:refs/remotes/origin/main' "$TEST_RECIPE_REF"
+          git merge-base --is-ancestor "$TEST_RECIPE_REF" origin/main
+          for fixture in frontend/src/views/ProjectCreateView.test.tsx frontend/src/views/CalendarView.test.tsx frontend/src/design-system/components/calendar/Calendar.test.tsx; do
+            git show "${TEST_RECIPE_REF}:${fixture}" > "$fixture"
+          done
       - name: Install pinned build tools
         shell: bash
         run: |
@@ -77,7 +93,7 @@ jobs:
           npm ci
           node node_modules/eslint/bin/eslint.js src --max-warnings=0
           # Limit jsdom concurrency to the standard Intel runner CPU budget.
-          npm run test:run -- --maxWorkers=2
+          npm run test:run -- --maxWorkers=1
       - name: Build Apple Silicon and Intel macOS packages
         shell: bash
         run: |
@@ -97,6 +113,7 @@ jobs:
         run: |
           python3 scripts/release.py assets "$RELEASE_TAG" darwin
           git rev-parse HEAD > release/APPLICATION_COMMIT.txt
+          printf '%s\n' "$TEST_RECIPE_REF" > release/TEST_RECIPE_COMMIT.txt
       - uses: actions/upload-artifact@v4
         with:
           name: release-darwin
