@@ -7,7 +7,9 @@
 		<key>CFBundleGetInfoString</key>
 		<string>PrimordialWeave zhusuan - Intelligent Desktop Application</string>
 		<key>CFBundleIconFile</key>
-		<string>icons</string>
+		<string>icons.icns</string>
+		<key>CFBundleIconName</key>
+		<string>AppIcon</string>
 		<key>CFBundleIdentifier</key>
 		<string>org.primordialweave.zhusuan</string>
 		<key>CFBundleDisplayName</key>
@@ -17,9 +19,9 @@
 		<key>CFBundlePackageType</key>
 		<string>APPL</string>
 		<key>CFBundleShortVersionString</key>
-		<string>1.0.0</string>
+		<string>1.0.1</string>
 		<key>CFBundleVersion</key>
-		<string>1.0.0</string>
+		<string>1.0.1</string>
 		<key>LSMinimumSystemVersion</key>
 		<string>10.15.0</string>
 		<key>NSAppTransportSecurity</key>

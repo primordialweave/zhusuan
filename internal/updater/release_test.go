@@ -198,6 +198,60 @@ func TestReleaseAssetSelectionAndRepositoryMatch(t *testing.T) {
 	}
 }
 
+func TestMacUpdateSelectsZIPPayloadWhenDMGInstallersArePresent(t *testing.T) {
+	for _, tc := range []struct {
+		name, arch, want string
+		payloads         []string
+	}{
+		{
+			name: "Apple Silicon prefers native ZIP", arch: "arm64", want: "zhusuan-v1.1.0-macOS-arm64.zip",
+			payloads: []string{"zhusuan-v1.1.0-macOS-amd64.zip", "zhusuan-v1.1.0-macOS-universal.zip", "zhusuan-v1.1.0-macOS-arm64.zip"},
+		},
+		{
+			name: "Intel prefers native ZIP", arch: "amd64", want: "zhusuan-v1.1.0-macOS-amd64.zip",
+			payloads: []string{"zhusuan-v1.1.0-macOS-arm64.zip", "zhusuan-v1.1.0-macOS-universal.zip", "zhusuan-v1.1.0-macOS-amd64.zip"},
+		},
+		{
+			name: "opposite architecture falls back to universal", arch: "arm64", want: "zhusuan-v1.1.0-macOS-universal.zip",
+			payloads: []string{"zhusuan-v1.1.0-macOS-amd64.zip", "zhusuan-v1.1.0-macOS-universal.zip"},
+		},
+		{
+			name: "legacy universal remains compatible", arch: "amd64", want: "Orange-v1.1.0-macOS-universal.zip",
+			payloads: []string{"zhusuan-v1.1.0-macOS-arm64.zip", "Orange-v1.1.0-macOS-universal.zip"},
+		},
+		{name: "DMG only is not an automatic update", arch: "arm64"},
+		{
+			name: "wrong architecture ZIP is not an automatic update", arch: "amd64",
+			payloads: []string{"zhusuan-v1.1.0-macOS-arm64.zip"},
+		},
+	} {
+		t.Run(tc.name, func(t *testing.T) {
+			release := fixtureRelease()
+			// Installers are deliberately listed first; automatic updates must use ZIPs.
+			release.Assets = []Asset{
+				fixtureAsset("zhusuan-v1.1.0-macOS-arm64.dmg", []byte("manual installer")),
+				fixtureAsset("zhusuan-v1.1.0-macOS-amd64.dmg", []byte("manual installer")),
+			}
+			for _, name := range tc.payloads {
+				release.Assets = append(release.Assets, fixtureAsset(name, []byte("update payload")))
+			}
+			got, err := selectAsset(release, kindDarwin, tc.arch)
+			if tc.want == "" {
+				if err == nil {
+					t.Fatalf("accepted unsupported update payload: %+v", got)
+				}
+				return
+			}
+			if err != nil || got.Name != tc.want {
+				t.Fatalf("selected %q, error %v; want %q", got.Name, err, tc.want)
+			}
+			if err := validateAssetURL(got, release, defaultRepository); err != nil {
+				t.Fatal(err)
+			}
+		})
+	}
+}
+
 func TestUpdaterRejectsRedirectsOutsideGitHubHTTPS(t *testing.T) {
 	for _, address := range []string{"http://github.com/asset", "https://github.com:444/asset", "https://user@github.com/asset", "https://evil.example/asset"} {
 		u, err := url.Parse(address)

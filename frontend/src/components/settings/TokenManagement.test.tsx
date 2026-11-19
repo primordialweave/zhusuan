@@ -1,4 +1,5 @@
 import userEvent from '@testing-library/user-event'
+import { act } from '@testing-library/react'
 import { beforeEach, describe, expect, it, vi } from 'vitest'
 import { tokenApi } from '@/api/token'
 import { fireEvent, render, screen, waitFor, within } from '@/test/render'
@@ -20,7 +21,7 @@ const emptyTokenResponse = { data: { data: [] } }
 
 describe('TokenManagement modal', () => {
   beforeEach(() => {
-    vi.clearAllMocks()
+    vi.resetAllMocks()
     vi.mocked(tokenApi.list).mockResolvedValue(emptyTokenResponse as never)
   })
 
@@ -56,7 +57,9 @@ describe('TokenManagement modal', () => {
     await user.keyboard('{Enter}{Enter}')
 
     expect(tokenApi.create).toHaveBeenCalledTimes(1)
-    resolveCreate?.({ data: { data: { token: 'orange-secret' } } })
+    await act(async () => {
+      resolveCreate?.({ data: { data: { token: 'orange-secret' } } })
+    })
   })
 
   it('keeps the one-time token visible when the modal scrim is clicked', async () => {
@@ -74,5 +77,28 @@ describe('TokenManagement modal', () => {
     const dialog = await screen.findByRole('dialog', { name: '令牌生成成功' })
     fireEvent.click(dialog.parentElement!)
     expect(dialog).toBeInTheDocument()
+  })
+
+  it('wraps a long one-time token while copying the exact value', async () => {
+    const user = userEvent.setup()
+    const publicFixture = 'pat_public_fixture_' + 'a'.repeat(256)
+    const copy = vi.spyOn(navigator.clipboard, 'writeText').mockResolvedValue(undefined)
+    vi.mocked(tokenApi.create).mockResolvedValue({
+      data: { data: { token: publicFixture } },
+    } as never)
+    render(<TokenManagement />)
+    await user.click(await screen.findByRole('button', { name: '生成新令牌' }))
+    fireEvent.change(screen.getByRole('textbox', { name: /令牌名称/ }), {
+      target: { value: '公开测试令牌' },
+    })
+    await user.click(screen.getByRole('button', { name: '生成令牌' }))
+    const dialog = await screen.findByRole('dialog', { name: '令牌生成成功' })
+    const snippet = dialog.querySelector('[data-slot="snippet"]')
+    expect(snippet).toHaveAttribute('data-wrap', 'true')
+    expect(snippet?.querySelector('[data-slot="content"]')?.textContent).toBe(publicFixture)
+    await user.click(within(dialog).getByRole('button', { name: '复制令牌' }))
+    expect(copy).toHaveBeenCalledWith(publicFixture)
+    await user.click(within(dialog).getByRole('button', { name: '我已保存' }))
+    expect(screen.queryByRole('dialog', { name: '令牌生成成功' })).not.toBeInTheDocument()
   })
 })

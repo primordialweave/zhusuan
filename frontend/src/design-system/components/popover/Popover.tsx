@@ -31,7 +31,7 @@ const assignRef = <T,>(ref: Ref<T> | undefined, node: T | null) => {
   else if (ref) (ref as MutableRefObject<T | null>).current = node
 }
 
-export type PopoverPlacement = 'bottom-start' | 'bottom-end' | 'top-start'
+export type PopoverPlacement = 'bottom-start' | 'bottom-end' | 'top-start' | 'top-end'
 export type PopoverPadding = 'none' | 'sm' | 'md'
 
 interface PopoverContextValue {
@@ -212,41 +212,76 @@ export const PopoverContent = forwardRef<HTMLDivElement, PopoverContentProps>(
         const margin = 8
         const gap = 8
         const triggerRect = trigger.getBoundingClientRect()
-        const contentRect = content.getBoundingClientRect()
-        const viewportWidth = window.innerWidth
-        const viewportHeight = window.innerHeight
-        const alignEnd = placement === 'bottom-end'
-        const preferTop = placement === 'top-start'
-        let left = alignEnd ? triggerRect.right - contentRect.width : triggerRect.left
-        let top = preferTop ? triggerRect.top - contentRect.height - gap : triggerRect.bottom + gap
+        const viewport = window.visualViewport
+        const viewportLeft = viewport?.offsetLeft ?? 0
+        const viewportTop = viewport?.offsetTop ?? 0
+        const viewportWidth = viewport?.width ?? window.innerWidth
+        const viewportHeight = viewport?.height ?? window.innerHeight
+        const viewportRight = viewportLeft + viewportWidth
+        const viewportBottom = viewportTop + viewportHeight
 
-        if (!preferTop && top + contentRect.height > viewportHeight - margin) {
-          const flippedTop = triggerRect.top - contentRect.height - gap
-          if (flippedTop >= margin) top = flippedTop
-        } else if (preferTop && top < margin) {
+        content.style.setProperty(
+          '--popover-viewport-width',
+          `${Math.max(0, viewportWidth - margin * 2)}px`,
+        )
+        content.style.setProperty(
+          '--popover-viewport-height',
+          `${Math.max(0, viewportHeight - margin * 2)}px`,
+        )
+        // Entrance transforms scale getBoundingClientRect; use the final layout box instead.
+        const contentWidth = content.offsetWidth
+        const contentHeight = content.offsetHeight
+        const alignEnd = placement.endsWith('-end')
+        const preferTop = placement.startsWith('top-')
+        let left = alignEnd ? triggerRect.right - contentWidth : triggerRect.left
+        let top = preferTop ? triggerRect.top - contentHeight - gap : triggerRect.bottom + gap
+        let side = preferTop ? 'top' : 'bottom'
+
+        if (!preferTop && top + contentHeight > viewportBottom - margin) {
+          const flippedTop = triggerRect.top - contentHeight - gap
+          if (flippedTop >= viewportTop + margin) {
+            top = flippedTop
+            side = 'top'
+          }
+        } else if (preferTop && top < viewportTop + margin) {
           const flippedBottom = triggerRect.bottom + gap
-          if (flippedBottom + contentRect.height <= viewportHeight - margin) top = flippedBottom
+          if (flippedBottom + contentHeight <= viewportBottom - margin) {
+            top = flippedBottom
+            side = 'bottom'
+          }
         }
 
         left = Math.max(
-          margin,
-          Math.min(left, Math.max(margin, viewportWidth - contentRect.width - margin)),
+          viewportLeft + margin,
+          Math.min(left, Math.max(viewportLeft + margin, viewportRight - contentWidth - margin)),
         )
         top = Math.max(
-          margin,
-          Math.min(top, Math.max(margin, viewportHeight - contentRect.height - margin)),
+          viewportTop + margin,
+          Math.min(top, Math.max(viewportTop + margin, viewportBottom - contentHeight - margin)),
         )
 
         content.style.left = `${left}px`
         content.style.top = `${top}px`
+        content.dataset.side = side
+        content.dataset.align = alignEnd ? 'end' : 'start'
       }
 
       updatePosition()
+      const observer =
+        typeof ResizeObserver === 'undefined' ? null : new ResizeObserver(updatePosition)
+      if (contentRef.current) observer?.observe(contentRef.current)
+      const trigger = getTrigger()
+      if (trigger) observer?.observe(trigger)
       window.addEventListener('resize', updatePosition)
       window.addEventListener('scroll', updatePosition, true)
+      window.visualViewport?.addEventListener('resize', updatePosition)
+      window.visualViewport?.addEventListener('scroll', updatePosition)
       return () => {
+        observer?.disconnect()
         window.removeEventListener('resize', updatePosition)
         window.removeEventListener('scroll', updatePosition, true)
+        window.visualViewport?.removeEventListener('resize', updatePosition)
+        window.visualViewport?.removeEventListener('scroll', updatePosition)
       }
     }, [getTrigger, open, placement])
 

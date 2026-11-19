@@ -48,7 +48,7 @@ describe('NotificationDetailModal', () => {
     await waitFor(() => expect(close).toHaveFocus())
   })
 
-  it('keeps Tab focus inside when the close button is the only control', async () => {
+  it('lets the keyboard reach the scrollable content and keeps Tab focus inside', async () => {
     const user = userEvent.setup()
     render(<NotificationModalHarness />)
     await user.click(screen.getByRole('button', { name: '查看项目通知' }))
@@ -56,9 +56,29 @@ describe('NotificationDetailModal', () => {
     await waitFor(() => expect(close).toHaveFocus())
 
     await user.tab()
+    expect(screen.getByRole('region', { name: '通知内容' })).toHaveFocus()
+    await user.tab()
     expect(close).toHaveFocus()
     await user.tab({ shift: true })
-    expect(close).toHaveFocus()
+    expect(screen.getByRole('region', { name: '通知内容' })).toHaveFocus()
+  })
+
+  it('preserves long notification content in an internally scrolling dialog', () => {
+    const content = Array.from({ length: 80 }, (_, index) => `公开测试通知第 ${index + 1} 行`).join(
+      '\n',
+    )
+    render(
+      <NotificationDetailModal
+        notification={{ ...notification, title: 'PublicLongTitle'.repeat(20), content }}
+        onClose={() => undefined}
+        open
+      />,
+    )
+    const dialog = screen.getByRole('dialog', { name: '通知详情' })
+    const body = screen.getByRole('region', { name: '通知内容' })
+    expect(dialog).toHaveAttribute('data-scroll-behavior', 'inside')
+    expect(body).toHaveAttribute('tabindex', '0')
+    expect(body.querySelector('.notification-detail-content p')?.textContent).toBe(content)
   })
 
   it('closes on Escape and restores focus to the opener', async () => {

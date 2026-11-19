@@ -141,18 +141,18 @@ async function fillNewProject(user: ReturnType<typeof userEvent.setup>) {
   await chooseDate(user, '开始日期')
   await chooseDate(user, '截止日期')
   await chooseDate(user, '合同日期')
-  const total = screen.getByRole('spinbutton', { name: /合同总金额/ })
+  const total = screen.getByRole('textbox', { name: /合同总金额/ })
   fireEvent.change(total, { target: { value: '100000' } })
   await user.click(screen.getByRole('button', { name: '付款模式' }))
   await user.click(screen.getByRole('option', { name: '分期付款' }))
   const first = screen.getByRole('group', { name: '第 1 期收款' })
-  fireEvent.change(within(first).getByRole('spinbutton', { name: /收款金额/ }), {
+  fireEvent.change(within(first).getByRole('textbox', { name: /收款金额/ }), {
     target: { value: '30000' },
   })
   await chooseDate(user, '收款日期', first)
   await user.click(screen.getByRole('button', { name: '添加分期' }))
   const second = screen.getByRole('group', { name: '第 2 期收款' })
-  fireEvent.change(within(second).getByRole('spinbutton', { name: /收款金额/ }), {
+  fireEvent.change(within(second).getByRole('textbox', { name: /收款金额/ }), {
     target: { value: '70000' },
   })
   await chooseDate(user, '收款日期', second)
@@ -169,6 +169,61 @@ describe('ProjectCreateView design system migration', () => {
     vi.mocked(paymentApi.create).mockResolvedValue(apiResponse(payments[0]) as never)
     vi.mocked(paymentApi.delete).mockResolvedValue(apiResponse(null) as never)
     vi.mocked(paymentApi.update).mockResolvedValue(apiResponse(payments[0]) as never)
+  })
+
+  it('marks missing required fields, describes errors in Chinese and focuses the first field', async () => {
+    const user = userEvent.setup()
+    render(<ProjectCreateView />)
+
+    await user.click(screen.getByRole('button', { name: '确认保存' }))
+
+    for (const name of [/项目名称/, /客户名称/, /合同总金额/, /收款金额/]) {
+      const input = screen.getByRole('textbox', { name })
+      expect(input).toHaveAttribute('aria-invalid', 'true')
+      expect(input).toHaveAccessibleDescription(/请输入/)
+    }
+    for (const name of ['项目类型', '开始日期', '截止日期', '合同日期', '收款日期']) {
+      const control = screen.getByRole('button', { name })
+      expect(control).toHaveAttribute('aria-invalid', 'true')
+      expect(control).toHaveAccessibleDescription(/请选择/)
+    }
+    await waitFor(() => expect(screen.getByRole('textbox', { name: /项目名称/ })).toHaveFocus())
+    expect(screen.getByRole('form', { name: '项目编辑表单' })).toHaveAttribute('novalidate')
+    expect(projectApi.create).not.toHaveBeenCalled()
+    expect(paymentApi.create).not.toHaveBeenCalled()
+
+    await user.type(screen.getByRole('textbox', { name: /项目名称/ }), '新的项目')
+    expect(screen.getByRole('textbox', { name: /项目名称/ })).not.toHaveAttribute('aria-invalid')
+    expect(screen.queryByText('请输入项目名称')).not.toBeInTheDocument()
+  })
+
+  it('uses plain money fields, rejects invalid drafts and normalizes both amounts to cents', async () => {
+    const user = userEvent.setup()
+    render(<ProjectCreateView />)
+
+    for (const name of [/合同总金额/, /收款金额/]) {
+      const input = screen.getByRole('textbox', { name })
+      expect(input).toHaveAttribute('type', 'text')
+      expect(input).toHaveAttribute('inputmode', 'decimal')
+      fireEvent.change(input, { target: { value: '120.5' } })
+      for (const invalidValue of ['120.567', '-20', '1e3', 'abc', '12,000']) {
+        fireEvent.change(input, { target: { value: invalidValue } })
+        expect(input).toHaveValue('120.5')
+      }
+      await user.click(input)
+      await user.tab()
+      expect(input).toHaveValue('120.50')
+      for (const [draft, normalized] of [
+        ['100.', '100.00'],
+        ['.5', '0.50'],
+        ['1000000000000000000000.25', '1000000000000000000000.25'],
+      ]) {
+        fireEvent.change(input, { target: { value: draft } })
+        fireEvent.blur(input)
+        expect(input).toHaveValue(normalized)
+      }
+    }
+    expect(screen.queryByRole('spinbutton')).not.toBeInTheDocument()
   })
 
   it('keeps the created project and successful installment IDs when retrying a partial new project save', async () => {
@@ -412,7 +467,7 @@ describe('ProjectCreateView design system migration', () => {
     expect(screen.getByText('档案完整度')).toBeInTheDocument()
     expect(screen.getByText('计划金额')).toBeInTheDocument()
     expect(screen.getByLabelText(/项目名称/)).toHaveClass('ods-input')
-    expect(screen.getByLabelText(/合同总金额/)).toHaveClass('ods-number-input__field')
+    expect(screen.getByLabelText(/合同总金额/)).toHaveClass('ods-input')
 
     await user.click(screen.getByRole('button', { name: '付款模式' }))
     await user.click(screen.getByRole('option', { name: '分期付款' }))
@@ -471,7 +526,7 @@ describe('ProjectCreateView design system migration', () => {
 
     await user.click(screen.getByRole('button', { name: '添加分期' }))
     const addedPayment = screen.getByRole('group', { name: '第 3 期收款' })
-    await user.type(within(addedPayment).getByRole('spinbutton', { name: /收款金额/ }), '5000')
+    await user.type(within(addedPayment).getByRole('textbox', { name: /收款金额/ }), '5000')
     await user.click(within(addedPayment).getByRole('button', { name: /收款日期/ }))
     const availableDate = document.querySelector<HTMLButtonElement>(
       '[data-slot="popover"] .ods-calendar__day:not(:disabled)',

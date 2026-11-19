@@ -9,7 +9,9 @@
 
 </div>
 
-珠算基于 Wails v3、Go 和 React 构建，管理项目合同、分期收款、待收与逾期款项。原 Orange 仓库已迁入 [Primordial Weave](https://github.com/primordialweave/zhusuan)，当前版本为 **1.0.0**。[下载安装包](https://github.com/primordialweave/zhusuan/releases/tag/v1.0.0)。
+珠算基于 Wails v3、Go 和 React 构建，管理项目合同、分期收款、待收与逾期款项。原 Orange 仓库已迁入 [Primordial Weave](https://github.com/primordialweave/zhusuan)，当前版本为 **1.0.1**。[下载安装包](https://github.com/primordialweave/zhusuan/releases/tag/v1.0.1)。
+
+macOS 下载：[Apple Silicon（M 系列）DMG](https://github.com/primordialweave/zhusuan/releases/download/v1.0.1/zhusuan-v1.0.1-macOS-arm64.dmg) · [Intel DMG](https://github.com/primordialweave/zhusuan/releases/download/v1.0.1/zhusuan-v1.0.1-macOS-amd64.dmg)。打开后将珠算拖入 Applications，再从应用程序文件夹启动。
 
 ## 功能
 
@@ -60,7 +62,9 @@ task dev
 ```
 
 - `task build`：构建本机应用。
-- `task package`：生成本机安装/分发包。
+- `task package`：生成本机安装/分发包；macOS 输出本机架构 DMG 和 ZIP 更新载荷。
+- `task darwin:package ARCH=arm64` / `ARCH=amd64`：分别生成 Apple Silicon / Intel 包。
+- `task darwin:package:app`：仅生成 macOS app bundle。
 - `task server:dev`：启动独立 HTTP 服务。
 - `task icons`：从 build/appicon.png 生成全部平台图标。
 
@@ -76,7 +80,7 @@ task dev
 
 首次安装的新数据库会生成随机初始密码，保存于该目录的 `initial-credentials.txt`（0600权限）。不要把开发示例密码用于生产。
 
-旧 Orange 默认数据库在首次启动时通过 SQLite 一致快照迁入新目录，原库保留，已有新库不覆盖。非空自定义 `DB_PATH` 继续使用原路径。Windows 安装器继承旧安装位置，完成安装后需要启动一次珠算；保存的登录信息与必要外观设置按新身份迁移。详见 [迁移说明](docs/migration.md)。
+旧 Orange 默认数据库在首次启动时通过 SQLite 一致快照迁入新目录，原库保留，已有新库不覆盖。非空自定义 `DB_PATH` 继续使用原路径。Windows 首次安装使用新的用户目录，不继承 Orange 安装位置；完成安装后需要以原用户启动一次珠算；保存的登录信息与必要外观设置按新身份迁移。详见 [迁移说明](docs/migration.md)。
 
 `.env` 可配置 `DB_TYPE`、`DB_PATH`、云端数据库连接、`API_SERVER_PORT`、`GITHUB_REPO` 和日志选项。生产环境必须配置随机 `JWT_SECRET`，限制外部 API/metrics 的访问，保持数据库与备份目录只对必要用户可读写。JWT 使用当前用户状态/角色校验；退出登录清除本地会话，不能据此宣称服务端令牌即时撤销。
 

@@ -9,7 +9,9 @@ Desktop project ledger and payment tracking
 
 </div>
 
-Zhusuan is a Wails, Go and React desktop app for project contracts, installment plans, receipts and overdue payments. The original Orange repository now belongs to [Primordial Weave](https://github.com/primordialweave/zhusuan). Current version: **1.0.0**. [Download packages](https://github.com/primordialweave/zhusuan/releases/tag/v1.0.0).
+Zhusuan is a Wails, Go and React desktop app for project contracts, installment plans, receipts and overdue payments. The original Orange repository now belongs to [Primordial Weave](https://github.com/primordialweave/zhusuan). Current version: **1.0.1**. [Download packages](https://github.com/primordialweave/zhusuan/releases/tag/v1.0.1).
+
+macOS downloads: [Apple Silicon DMG](https://github.com/primordialweave/zhusuan/releases/download/v1.0.1/zhusuan-v1.0.1-macOS-arm64.dmg) · [Intel DMG](https://github.com/primordialweave/zhusuan/releases/download/v1.0.1/zhusuan-v1.0.1-macOS-amd64.dmg). Drag Zhusuan into Applications and launch it from that folder.
 
 ## Features
 
@@ -54,13 +56,13 @@ cd frontend && npm ci && cd ..
 task dev
 ```
 
-`task build` builds the current platform; `task package` creates its distribution package. `task server:dev` starts the standalone HTTP server. Browser testing can use frontend/vite.preview.config.mts with an isolated backend/database. `task icons` regenerates platform icons from build/appicon.png.
+`task build` builds the current platform; `task package` creates its distribution package (native-architecture DMG plus ZIP updater payload on macOS). Use `task darwin:package ARCH=arm64` or `ARCH=amd64` for Apple Silicon or Intel; `task darwin:package:app` creates only the app bundle. `task server:dev` starts the standalone HTTP server. Browser testing can use frontend/vite.preview.config.mts with an isolated backend/database. `task icons` regenerates platform icons from build/appicon.png.
 
 ## Storage and upgrade
 
 The default directory is `UserConfigDir/primordialweave/zhusuan`, containing `zhusuan.db`. Fresh databases receive generated initial passwords in `initial-credentials.txt` (0600 permissions). Never use development example credentials in production.
 
-On first launch, the legacy Orange database is copied using a consistent SQLite snapshot. The original is kept and existing new data is never overwritten. Explicit nonempty `DB_PATH` remains authoritative. Windows installers discover the existing installation; users need to launch Zhusuan once after installation to migrate default data. See [migration details](docs/migration.md).
+On first launch, the legacy Orange database is copied using a consistent SQLite snapshot. The original is kept and existing new data is never overwritten. Explicit nonempty `DB_PATH` remains authoritative. Windows uses a new per-user installation directory and keeps the Orange installation. Launch Zhusuan once as the original user after installation to migrate default data. See [migration details](docs/migration.md).
 
 Set a random production `JWT_SECRET` and restrict external API/metrics access. Logout clears local sessions; it is not a server-side immediate token revocation guarantee.
 

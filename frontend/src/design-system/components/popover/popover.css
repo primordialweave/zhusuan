@@ -7,7 +7,12 @@
 .ods-popover {
   position: fixed;
   z-index: var(--ods-z-dropdown);
-  min-width: 12rem;
+  min-width: min(12rem, var(--popover-viewport-width, calc(100vw - 16px)));
+  max-width: var(--popover-viewport-width, calc(100vw - 16px));
+  max-height: var(--popover-viewport-height, calc(100dvh - 16px));
+  overflow-y: auto;
+  overscroll-behavior: contain;
+  overflow-wrap: anywhere;
   border: var(--ods-material-glass-border-subtle);
   border-radius: var(--ods-radius-panel);
   background: var(--ods-color-bg-surface-raised);
@@ -30,16 +35,20 @@
   padding: var(--ods-space-4);
 }
 
-.ods-popover[data-placement='bottom-start'] {
+.ods-popover[data-side='bottom'][data-align='start'] {
   transform-origin: top left;
 }
 
-.ods-popover[data-placement='bottom-end'] {
+.ods-popover[data-side='bottom'][data-align='end'] {
   transform-origin: top right;
 }
 
-.ods-popover[data-placement='top-start'] {
+.ods-popover[data-side='top'][data-align='start'] {
   transform-origin: bottom left;
+}
+
+.ods-popover[data-side='top'][data-align='end'] {
+  transform-origin: bottom right;
 }
 
 @keyframes ods-popover-in {

@@ -5,6 +5,7 @@ import json
 from pathlib import Path
 import shutil
 import subprocess
+import sys
 
 from PIL import Image, ImageChops, ImageDraw
 
@@ -78,6 +79,8 @@ def generate(source_path, native=True):
         subprocess.run(['wails3', 'generate', 'icons', '-input', str(master),
                         '-macfilename', str(ROOT / 'build/darwin/icons.icns'),
                         '-windowsfilename', str(ROOT / 'build/windows/icon.ico')], check=True)
+        if sys.platform == 'darwin':
+            subprocess.run([sys.executable, str(ROOT/'scripts/build_macos_icon.py'), '--input', str(master), '--output', str(ROOT/'build/darwin/icons.icns')], check=True)
     print('Generated macOS/Windows/Web/Linux/Android and opaque iOS icons from', source_path.name)
 
 

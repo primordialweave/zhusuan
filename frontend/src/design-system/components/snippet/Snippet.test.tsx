@@ -38,6 +38,20 @@ describe('Snippet', () => {
     expect(screen.getByRole('button', { name: '复制' })).not.toHaveAttribute('data-copied')
   })
 
+  it('keeps the exact copy payload when wrapping long content', async () => {
+    const value = 'public_fixture_' + 'x'.repeat(240)
+    const writeText = vi.fn().mockResolvedValue(undefined)
+    setClipboard(writeText)
+    const { container } = render(
+      <Snippet copyValue={value} hideSymbol wrap>
+        {value}
+      </Snippet>,
+    )
+    expect(container.querySelector('[data-slot="snippet"]')).toHaveAttribute('data-wrap', 'true')
+    await userEvent.click(screen.getByRole('button', { name: '复制' }))
+    expect(writeText).toHaveBeenCalledWith(value)
+  })
+
   it('only applies feedback from the latest copy request', async () => {
     let resolveFirst: (() => void) | undefined
     let resolveSecond: (() => void) | undefined

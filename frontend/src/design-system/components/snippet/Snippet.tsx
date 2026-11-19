@@ -21,6 +21,7 @@ export interface SnippetProps extends Omit<HTMLAttributes<HTMLDivElement>, 'chil
   onCopySuccess?: (value: string) => void
   size?: SnippetSize
   symbol?: string
+  wrap?: boolean
 }
 
 const COPY_RESET_MS = 1600
@@ -38,6 +39,7 @@ export const Snippet = forwardRef<HTMLDivElement, SnippetProps>(function Snippet
     onCopySuccess,
     size = 'md',
     symbol = '$',
+    wrap = false,
     ...props
   },
   ref,
@@ -80,6 +82,7 @@ export const Snippet = forwardRef<HTMLDivElement, SnippetProps>(function Snippet
       className={['ods-snippet', className].filter(Boolean).join(' ')}
       data-size={size}
       data-slot="snippet"
+      data-wrap={wrap || undefined}
       ref={ref}
     >
       {hideSymbol ? null : (

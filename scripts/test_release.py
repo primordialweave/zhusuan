@@ -74,8 +74,8 @@ class ReleaseTests(unittest.TestCase):
 
     def test_verifies_all_platforms_and_produces_one_manifest(self):
         self.populate_assets()
-        self.assertEqual(len(release.verify_assets(self.directory, self.tag)), 5)
-        self.assertEqual(len((self.directory/'SHA256SUMS').read_text().splitlines()), 5)
+        self.assertEqual(len(release.verify_assets(self.directory, self.tag)), 8)
+        self.assertEqual(len((self.directory/'SHA256SUMS').read_text().splitlines()), 8)
 
     def test_rejects_changed_asset(self):
         self.populate_assets()
@@ -105,6 +105,52 @@ class ReleaseTests(unittest.TestCase):
         with self.assertRaisesRegex(ValueError, 'Missing or empty'):
             release.prepare_assets(self.directory, self.directory/'release', self.tag, 'windows')
 
+    def test_prepares_macos_dmg_installers_and_matching_zip_updates(self):
+        output = self.directory/'release'
+        output.mkdir()
+        names = release.names_for_platform(self.tag, 'darwin')
+        self.assertEqual(set(names), {
+            'zhusuan-v1.2.3-macOS-arm64.dmg',
+            'zhusuan-v1.2.3-macOS-amd64.dmg',
+            'zhusuan-v1.2.3-macOS-arm64.zip',
+            'zhusuan-v1.2.3-macOS-amd64.zip',
+        })
+        for name in names:
+            (output/name).write_bytes(name.encode())
+        release.prepare_assets(self.directory, output, self.tag, 'darwin')
+        entries = (output/'SHA256SUMS.darwin').read_text().splitlines()
+        self.assertEqual(len(entries), 4)
+        self.assertEqual({entry.split('  ', 1)[1] for entry in entries}, set(names))
+
+    def test_macos_preparation_requires_every_installer_and_update_architecture(self):
+        names = release.names_for_platform(self.tag, 'darwin')
+        for index, missing in enumerate(names):
+            with self.subTest(missing=missing):
+                output = self.directory/f'macos-{index}'
+                output.mkdir()
+                for name in names:
+                    if name != missing:
+                        (output/name).write_bytes(b'package payload')
+                with self.assertRaisesRegex(ValueError, 'Missing or empty'):
+                    release.prepare_assets(self.directory, output, self.tag, 'darwin')
+                self.assertFalse((output/'SHA256SUMS.darwin').exists())
+
+    def test_legacy_universal_zip_cannot_replace_architecture_updates(self):
+        output = self.directory/'release'
+        output.mkdir()
+        for name in release.names_for_platform(self.tag, 'darwin'):
+            if name.endswith('.dmg'):
+                (output/name).write_bytes(b'installer')
+        (output/'zhusuan-v1.2.3-macOS-universal.zip').write_bytes(b'legacy update')
+        with self.assertRaisesRegex(ValueError, 'Missing or empty'):
+            release.prepare_assets(self.directory, output, self.tag, 'darwin')
+
+    def test_changed_macos_installer_fails_aggregate_verification(self):
+        self.populate_assets()
+        (self.directory/'zhusuan-v1.2.3-macOS-arm64.dmg').write_bytes(b'changed installer')
+        with self.assertRaisesRegex(ValueError, 'Checksum mismatch'):
+            release.verify_assets(self.directory, self.tag)
+
     def create_manifest(self):
         self.populate_assets()
         notes = self.directory/'RELEASE_NOTES.md'
@@ -120,7 +166,7 @@ class ReleaseTests(unittest.TestCase):
         self.assertEqual(manifest['body'], '新版更新说明\n')
         self.assertFalse(manifest['draft'])
         self.assertFalse(manifest['prerelease'])
-        self.assertEqual(len(manifest['assets']), 6)
+        self.assertEqual(len(manifest['assets']), 9)
         self.assertNotIn('update.json', [asset['name'] for asset in manifest['assets']])
         for asset in manifest['assets']:
             path = self.directory/asset['name']

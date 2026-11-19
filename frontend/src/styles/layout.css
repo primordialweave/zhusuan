@@ -139,21 +139,27 @@
 
 .app-notification-entry__menu {
   --wails-draggable: no-drag;
+  display: flex;
+  flex-direction: column;
   overflow: hidden;
-  width: min(340px, calc(100vw - 28px));
+  width: min(21.25rem, calc(100vw - var(--ods-space-4)));
 }
 
 .app-notification-entry__header {
   display: flex;
   align-items: center;
   justify-content: space-between;
+  flex: 0 0 auto;
+  gap: var(--ods-space-3);
   padding: var(--ods-space-3) var(--ods-space-4);
   color: var(--ods-color-fg-muted);
   font-size: var(--ods-font-size-sm);
 }
 
 .app-notification-entry__list {
-  max-height: 320px;
+  flex: 0 1 auto;
+  min-height: 0;
+  max-height: 20rem;
   overflow-y: auto;
 }
 
@@ -162,6 +168,7 @@
 }
 
 .app-notification-entry__item {
+  min-width: 0;
   flex-direction: column;
   align-items: stretch;
   text-align: left;
@@ -169,12 +176,14 @@
 
 .app-notification-entry__title {
   display: flex;
+  min-width: 0;
   align-items: center;
   gap: var(--ods-space-2);
   font-size: var(--ods-font-size-sm);
 }
 
 .app-notification-entry__title > :last-child {
+  min-width: 0;
   overflow: hidden;
   color: var(--ods-color-fg-default);
   font-weight: var(--ods-font-weight-semibold);

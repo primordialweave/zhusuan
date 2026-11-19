@@ -40,10 +40,18 @@ jobs:
         id: version
         env:
           RELEASE_TAG: ${{ inputs.tag || github.ref_name }}
+          GH_TOKEN: ${{ github.token }}
         run: |
-          python3 scripts/test_release.py
+          python3 -m unittest discover -s scripts -p "test_*.py"
           VERSION=$(python3 scripts/release.py metadata "$RELEASE_TAG")
           git show-ref --verify --quiet "refs/tags/$RELEASE_TAG"
+          if gh release view "$RELEASE_TAG" --json isDraft > existing-release.json 2> release-lookup.error; then
+            python3 -c "import json; assert json.load(open('existing-release.json'))['isDraft'], 'Refusing to rebuild a published release'"
+          elif ! grep -q 'release not found' release-lookup.error; then
+            cat release-lookup.error
+            exit 1
+          fi
+          test -f scripts/build_macos_packages.py || { echo 'Tag does not contain the architecture-specific macOS package builder'; exit 1; }
           printf 'tag=%s\nversion=%s\n' "$RELEASE_TAG" "$VERSION" >> "$GITHUB_OUTPUT"
 
   build:
@@ -131,13 +139,14 @@ jobs:
           npm ci
           node node_modules/eslint/bin/eslint.js src --max-warnings=0
           npm run test:run
-      - name: Build macOS universal app
+      - name: Build Apple Silicon and Intel macOS packages
         if: matrix.platform == 'darwin'
         run: |
-          task darwin:package:universal
-          lipo bin/zhusuan.app/Contents/MacOS/zhusuan -verify_arch arm64 x86_64
           mkdir -p release
-          ditto -c -k --sequesterRsrc --keepParent bin/zhusuan.app "release/zhusuan-${RELEASE_TAG}-macOS-universal.zip"
+          for arch in arm64 amd64; do
+            task darwin:package:app ARCH="$arch"
+            python3 scripts/build_macos_packages.py --app bin/珠算.app --arch "$arch" --tag "$RELEASE_TAG" --output release
+          done
       - name: Build Windows installer
         if: matrix.platform == 'windows'
         run: task windows:package ARCH=amd64
@@ -204,6 +213,7 @@ jobs:
         uses: softprops/action-gh-release@v2
         with:
           tag_name: ${{ needs.prepare.outputs.tag }}
+          name: 珠算 ${{ needs.prepare.outputs.version }}
           draft: true
           body_path: RELEASE_NOTES.md
           fail_on_unmatched_files: true

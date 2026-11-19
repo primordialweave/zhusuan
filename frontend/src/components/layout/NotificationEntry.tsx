@@ -156,7 +156,7 @@ export default function NotificationEntry() {
             if (nextOpen) void refreshNotifications()
           }}
           open={open}
-          placement="top-start"
+          placement="top-end"
         >
           <Popover.Trigger>
             <IconButton

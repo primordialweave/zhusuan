@@ -1,30 +1,32 @@
 # 打包、发布与桌面更新
 
-## 1.0.0 与发布入口
+## 1.0.1 与发布入口
 
-**1.0.0** 通过 [v1.0.0 Release](https://github.com/primordialweave/zhusuan/releases/tag/v1.0.0) 分发，发布入口为 [PR #2](https://github.com/primordialweave/zhusuan/pull/2) 合并后的 main 与稳定标签。2026-11-19 用户已授权正式发布；安装包公开状态和最新附件以 Release 页面为准。检查证据及未验收范围见 [release-readiness.md](release-readiness.md)。
+**1.0.1** 包含 macOS 两种芯片的 DMG、中文应用名与图标修复、Windows 用户目录安装和中文修复，以及金额表单、令牌与通知弹层修复。发布入口为 main 与稳定标签；安装包公开状态和附件以 [v1.0.1 Release](https://github.com/primordialweave/zhusuan/releases/tag/v1.0.1) 为准。检查证据及未验收范围见 [release-readiness-1.0.1.md](release-readiness-1.0.1.md)。
 
-本版 macOS 包仅采用 ad-hoc 签名，未配置 Developer ID/公证；Windows 安装器未配置 Authenticode 签名。首次打开时可能需要按系统提示允许运行。安装前退出旧应用，首次以原用户启动珠算完成数据迁移，旧数据保留。
+macOS 下载入口改为 Apple Silicon（arm64）和 Intel（amd64）两个 DMG。打开映像后将珠算拖入 Applications，再从应用程序文件夹启动。包仍采用 ad-hoc 签名，未配置 Developer ID/公证；Windows 安装器未配置 Authenticode 签名。首次打开时可能需要按系统提示允许运行。安装前退出旧应用，首次以原用户启动珠算完成数据迁移，旧数据保留。
+
+已公开的 1.0.0 原 universal ZIP、SHA256SUMS 和 update.json 保留，新增 DMG 使用独立校验清单，避免改变现有更新载荷。后续标签按下面的新资产清单构建。
 
 稳定版使用 `vMAJOR.MINOR.PATCH` 标签，例如 `v1.0.0`。Windows 版本资源要求每段不超过 65535；Android 的编码要求次版本和补丁版本小于 1000，且 versionCode 不超过 2100000000。分支名与预发布标签不进入此稳定版发布流程。
 
 先统一源代码版本：
 
 ```sh
-python3 scripts/release.py metadata v1.0.0
+python3 scripts/release.py metadata v1.0.1
 # 等价入口
-task bump-version VERSION=1.0.0
+task bump-version VERSION=1.0.1
 ```
 
-命令同步前端 package/lockfile、后端 `AppVersion`、Wails build/config、macOS/iOS plist、Windows 文件资源及 MSIX、Linux 包与 Android versionName/versionCode。MSIX 使用 `1.0.0.0`，Android versionCode 使用 `1000000`；系统最低版本要求独立保留。NSIS 从 build/config.yml 读取版本，避免生成 include 中的默认版本漂移。CI 在自己的工作副本执行相同同步。
+命令同步前端 package/lockfile、后端 `AppVersion`、Wails build/config、macOS/iOS plist、Windows 文件资源及 MSIX、Linux 包与 Android versionName/versionCode。MSIX 使用 `1.0.1.0`，Android versionCode 使用 `1000001`；系统最低版本要求独立保留。NSIS 从 build/config.yml 读取版本，避免生成 include 中的默认版本漂移。CI 在自己的工作副本执行相同同步。
 
-发布工作流由推送稳定版本标签触发，也可在 GitHub Actions 的 Release 手动选择已有标签。手动运行必须填写 `tag`；构建该标签对应的代码。公开 Release 是单独的发布操作，准备文档、提交或更新草稿 PR 不会运行此标签发布流程。默认分支合并还可能触发 GHCR 镜像构建，合并前应确认发布意图。
+发布工作流由推送稳定版本标签触发，也可在 GitHub Actions 的 Release 手动选择已有标签。手动运行必须填写 `tag`；构建该标签对应的代码。准备阶段先拒绝已公开 Release，避免重建和覆盖正式版本；公开 Release 是单独的发布操作，准备文档、提交或更新草稿 PR 不会运行此标签发布流程。默认分支合并还可能触发 GHCR 镜像构建，合并前应确认发布意图。
 
 ## 已有标签的构建配方恢复
 
 首次 1.0.0 打包发现 Task 同时重装 node_modules 并扫描 Go 包的竞争。应用源码及公开标签保持不变，构建调整为先完成前端安装，再生成绑定；只下载/校验固定 Go 依赖，macOS 两个架构顺序构建。
 
-手动 Release 可填写完整的 `build_recipe_ref` 提交 SHA。该提交必须已包含在 main，流程只读取四份桌面 Taskfile，不替换 Go/前端应用源码、版本或资源；应用仍从 tag 构建，配方来源写入发行说明和 update.json 正文。后续标签包含修复后的配方时无需填写。
+手动 Release 可填写完整的 `build_recipe_ref` 提交 SHA。该提交必须已包含在 main，流程只读取四份桌面 Taskfile，不替换 Go/前端应用源码、版本或资源；应用仍从 tag 构建，配方来源写入发行说明和 update.json 正文。后续标签包含修复后的配方时无需填写。新的 DMG 工作流要求标签内包含 scripts/build_macos_packages.py；已经公开的 1.0.0 不通过此工作流重建，附加 DMG 由原已校验 bundle 转换并保持原载荷及 manifest 不变。
 
 Windows 原生测试如需修复平台夹具，可另外指定 `test_recipe_ref`，同样要求完整 SHA 且已合入 main，只覆盖四份固定 `_test.go` 文件。它用于 POSIX 权限位、Darwin WebKit、日志临时文件等测试边界；保留实际数据库快照、路径穿越和回滚断言，不替换发行应用代码。来源也写入发行说明与 manifest 正文。
 
@@ -36,14 +38,17 @@ gh workflow run release.yml --ref main -f tag=v1.0.0 -f build_recipe_ref=<40位�
 
 1. `prepare` 校验已有版本标签、版本编码与发布工具回归用例。
 2. `build` 在 macOS、Windows、Linux runner 分别校验前端、构建应用并运行 Go 测试与静态检查。
-3. macOS 构建 arm64 + amd64 universal 应用，以 `lipo -verify_arch` 验证后打 zip；Windows 编译 NSIS 并在临时目录进行安装/覆盖升级检查；Linux 构建 AppImage、deb 与 rpm。
+3. macOS 在同一 runner 顺序构建 arm64、amd64 两个应用，由 scripts/build_macos_packages.py 校验版本与架构后生成各自 DMG 和 ZIP；Windows 编译 NSIS 并在临时目录进行安装/覆盖升级检查；Linux 构建 AppImage、deb 与 rpm。
 4. 各平台检查必需产物，生成 SHA256 清单并上传 Actions artifact。缺失、空文件、重复资产直接使流程失败。
 5. 单一 `publish` job 汇总全部平台产物，重新核对摘要，生成 `SHA256SUMS` 与静态 `update.json`。
 6. 完整产物先上传草稿 Release，核对远端文件名和大小与本地清单一致后才公开并设为 latest。构建或上传失败时不会把缺包版本设为最新；已公开版本拒绝覆盖。
 
 | 用途 | 资产名 |
 | --- | --- |
-| macOS Intel / Apple Silicon | `zhusuan-vX.Y.Z-macOS-universal.zip` |
+| macOS Apple Silicon 手动安装 | `zhusuan-vX.Y.Z-macOS-arm64.dmg` |
+| macOS Intel 手动安装 | `zhusuan-vX.Y.Z-macOS-amd64.dmg` |
+| macOS Apple Silicon 应用内更新 | `zhusuan-vX.Y.Z-macOS-arm64.zip` |
+| macOS Intel 应用内更新 | `zhusuan-vX.Y.Z-macOS-amd64.zip` |
 | Windows amd64 安装/更新 | `zhusuan-vX.Y.Z-windows-amd64-installer.exe` |
 | Linux amd64 AppImage | `zhusuan-vX.Y.Z-linux-x86_64.AppImage` |
 | Debian/Ubuntu | `zhusuan-vX.Y.Z-linux-amd64.deb` |
@@ -51,21 +56,27 @@ gh workflow run release.yml --ref main -f tag=v1.0.0 -f build_recipe_ref=<40位�
 | 所有安装/更新文件的 SHA256 | `SHA256SUMS` |
 | 应用内更新的版本与资产信息 | `update.json` |
 
-更新检查优先读取 `https://github.com/primordialweave/zhusuan/releases/latest/download/update.json`，避免每次依赖匿名 GitHub API 额度。旧版本没有此文件时，404 回退到 Release API。manifest 记录版本、更新说明、五个分发资产及 SHA256SUMS 的 URL、大小和 `digest: "sha256:..."`；不引用自身。下载地址须属于当前仓库，且大小、摘要和当前系统/架构匹配。前端与原生服务禁止降级。
+更新检查优先读取 `https://github.com/primordialweave/zhusuan/releases/latest/download/update.json`，避免每次依赖匿名 GitHub API 额度。旧版本没有此文件时，404 回退到 Release API。新 manifest 记录版本、更新说明、八个分发/更新资产及 SHA256SUMS 的 URL、大小和 `digest: "sha256:..."`，共九个资产条目；加上 update.json，本次发布共十个文件，不引用自身。下载地址须属于当前仓库，且大小、摘要和当前系统/架构匹配。前端与原生服务禁止降级。
+
+本机使用 `task darwin:package ARCH=arm64` 或 `task darwin:package ARCH=amd64` 生成该架构的 DMG/ZIP；`task darwin:package:app` 仅构建 app bundle，供 CI 逐架构校验后调用打包脚本。
+
+DMG 是 macOS 手动安装入口；ZIP 保留为对应架构的应用内更新载荷，兼容已发布的 1.0 更新器。更新器按自身运行架构优先选择匹配 ZIP，并兼容历史 universal ZIP，不将 DMG 直接当作 ZIP 解压。
 
 macOS、Windows、Linux 是当前发布目标。iOS/Android 已同步名称、图标与版本，保留构建脚手架，尚未完成移动端分发验收。图标生成和平台资源说明见 [icons.md](icons.md)。
 
 ## 从 Orange 升级
 
-产品名为“珠算”，应用文件为 zhusuan.exe / zhusuan.app，应用标识为 `org.primordialweave.zhusuan`，Windows 卸载键为 `PrimordialWeaveZhusuan`。仓库、Go 模块、镜像与新发布资产使用 primordialweave/zhusuan。历史 Releases 与 Orange 资产名保留，不重写旧版本。
+产品名为“珠算”，应用文件为 zhusuan.exe / 珠算.app，应用标识为 `org.primordialweave.zhusuan`，Windows 卸载键为 `PrimordialWeaveZhusuan`。仓库、Go 模块、镜像与新发布资产使用 primordialweave/zhusuan。历史 Releases 与 Orange 资产名保留，不重写旧版本。
 
-Windows 覆盖安装读取新旧卸载记录并识别 Orange.exe；成功后才清理旧应用与安装记录。数据库、登录信息和必要外观设置在新应用首次以原用户启动或首次加载凭据时迁移，新数据优先，旧记录保留。安装器本身不复制数据库，也不自动启动应用。完整路径、迁移条件与备份范围见 [migration.md](migration.md)。
+Windows 1.0.1 首次安装使用新的用户目录，不读取 Orange 安装记录，也不删除旧程序；珠算重装只复用已有 zhusuan.exe 对应的新记录。数据库、登录信息和必要外观设置在新应用首次以原用户启动或首次加载凭据时迁移，新数据优先，旧记录保留。安装器本身不复制数据库，也不自动启动应用。完整路径、迁移条件与备份范围见 [migration.md](migration.md)。
 
 更新器将旧 `GITHUB_REPO=FruitsAI/Orange` 配置规范化到新仓库，兼容历史 Orange 资产名、bundle 及 helper flag；新包优先使用 zhusuan-*。旧 Orange 更新结果只导入一次，不覆盖新结果。没有自动更新器的旧版需先手动安装一次珠算，再使用后续应用内更新。
 
 ## Windows 安装契约
 
-普通安装按 HKLM/HKCU、64/32 位检查新 `PrimordialWeaveZhusuan` 和旧 `FruitsAIOrange` 卸载记录，读取 InstallLocation、历史默认值、DisplayIcon / UninstallString。目录中存在 zhusuan.exe 或 Orange.exe 时才采用，避免过期注册表指向错误目录。成功后持久保存 InstallLocation 和兼容默认值。
+Windows 1.0.1 普通首次安装使用 `%LOCALAPPDATA%\PrimordialWeave\zhusuan`，无需管理员权限，在 HKCU 写入 `PrimordialWeaveZhusuan` 卸载记录并创建当前用户的“珠算”快捷方式。NSIS 源文件使用 UTF-8 BOM，Unicode 安装器配套简体中文界面，避免系统 ACP 将名称解码成乱码。
+
+自动发现仅检查 HKCU/HKLM 64/32 位的新 `PrimordialWeaveZhusuan` 记录，读取 InstallLocation、历史默认值、DisplayIcon / UninstallString；目录中存在 zhusuan.exe 时才复用。Orange 的目录、程序、卸载记录与快捷方式均保留，数据通过应用首次启动迁移。已有珠算 1.0 的机器范围安装仍按其 HKLM 记录和原路径更新；没有管理员权限时明确失败，不静默改为另一用户安装。
 
 显式 `/D=` 优先于自动发现，必须是命令行最后一项；目录不加引号，即使包含空格。这是 NSIS 的参数格式，不通过 shell 拼接运行。
 
@@ -73,11 +84,11 @@ Windows 覆盖安装读取新旧卸载记录并识别 Orange.exe；成功后才�
 installer.exe /S /UPDATE /D=C:\Custom directory\zhusuan
 ```
 
-`/UPDATE` 使用静默模式且必须找到已有安装。用户态 helper 等待旧应用退出，按需提升权限运行安装器并等待退出码；安装器成功后由原用户态 helper 请求启动新应用，避免新应用继承管理员权限。NSIS 不自行重启应用。
+`/UPDATE` 使用静默模式且必须找到已有珠算，不能把 Orange-only 目录作为目标。用户态 helper 等待旧应用退出，用户目录安装使用原用户上下文，机器目录安装按需提升权限运行安装器并等待退出码；安装器成功后由原用户态 helper 请求启动新应用，避免新应用继承管理员权限。NSIS 不自行重启应用。
 
 安装前检查 WebView2 Runtime，缺失时启动 bootstrapper；检查启动/退出状态并重新读取有效 runtime 版本后，才进入主程序备份与替换。依赖安装失败返回非零状态。NSIS 拒绝覆盖仍被占用的 executable，替换前备份主程序与卸载器，复制或注册失败时执行回滚。用户数据库、凭据和安装目录中的无关文件保留，不先运行旧卸载器。
 
-Windows runner 的 `scripts/windows-installer-smoke.ps1` 覆盖带空格的自定义目录、重装找回位置、历史注册表路径回退、锁定文件时更新失败且旧文件摘要不变、解锁后静默更新成功。这些场景和真实用户电脑上的 UAC、权限、WebView2 下载失败仍需分别验收。
+Windows runner 的 `scripts/windows-installer-smoke.ps1` 覆盖新 LOCALAPPDATA 默认路径、旧 Orange 程序/记录保留、中文 HKCU/快捷方式、带空格的现有珠算自定义目录、DisplayIcon 路径回退、锁定文件回滚、用户目录静默更新与已安装机器版本兼容更新。这些场景和真实用户电脑上的 UAC、权限、WebView2 下载失败仍需分别验收。
 
 ## 更新、回滚与开销
 
@@ -107,6 +118,6 @@ npm run build
 
 涉及配置加载、数据库和凭据的本地验证使用隔离目录或 mock；不要连接真实账本或改变系统 Keychain。macOS 本地链接存在 SDK 与旧部署目标不同的提示，旧 macOS 兼容性需实际系统验收。
 
-CI/Release 通过 install-linux-deps.sh 使用 Canonical HTTPS 镜像并省略推荐包，保留 APT 签名校验；Linux 依赖安装设置 30 秒网络超时、2 次重试和 10 分钟步骤上限，镜像不可用时明确失败。CI 使用锁文件 `npm ci`、固定构建工具和 go.mod 工具链；复用生成的 frontend dist。Linux 桌面需 CGO 与 GTK/WebKit 开发库，macOS CGO universal 构建在 macOS runner 上完成。增量 golangci 门禁以 PR base.sha、push beforeSHA、手动运行父提交为基线，保留全量文本/JSON/SARIF 报告。Gosec 保留原始 no-fail 模式报告并结合输入边界复核；Trivy 对已有修复版本的 HIGH/CRITICAL 依赖漏洞返回非零，阻断 CI 及 main 镜像发布。
+CI/Release 通过 install-linux-deps.sh 使用临时 Ubuntu sources，优先 Azure HTTPS，失败再切换 Canonical HTTPS，并省略推荐包、保留 Ubuntu archive keyring 签名校验。两个镜像各有 50 秒索引与 130 秒下载预算，完整下载后才进入最长 180 秒的本地安装；总预算 565 秒，低于 10 分钟步骤上限。索引部分失败也会明确报错，网络超时不会中断 dpkg。CI 使用锁文件 `npm ci`、固定构建工具和 go.mod 工具链；复用生成的 frontend dist。Linux 桌面需 CGO 与 GTK/WebKit 开发库，macOS CGO arm64/amd64 构建在同一 macOS runner 上顺序完成。增量 golangci 门禁以 PR base.sha、push beforeSHA、手动运行父提交为基线，保留全量文本/JSON/SARIF 报告。Gosec 保留原始 no-fail 模式报告并结合输入边界复核；Trivy 对已有修复版本的 HIGH/CRITICAL 依赖漏洞返回非零，阻断 CI 及 main 镜像发布。
 
-当前 1.0.0 的最终测试、构建与 CI 结果以 [release-readiness.md](release-readiness.md) 为准。历史版本或历史 commit 的成功 CI 不代表当前代码已通过，也不代表三个平台的真实安装与原生更新已验收。
+1.0.1 的测试、构建与 CI 结果见 [release-readiness-1.0.1.md](release-readiness-1.0.1.md)，1.0.0 的历史证据保留在 [release-readiness.md](release-readiness.md)。历史版本或历史 commit 的成功 CI 不代表当前代码已通过，也不代表三个平台的真实安装与原生更新已验收。

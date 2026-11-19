@@ -5,6 +5,7 @@ package updater
 import (
 	"errors"
 	"fmt"
+	"log/slog"
 	"os"
 	"os/exec"
 	"path/filepath"
@@ -13,6 +14,7 @@ import (
 	"unsafe"
 
 	"golang.org/x/sys/windows"
+	"golang.org/x/sys/windows/registry"
 )
 
 func detach(cmd *exec.Cmd) {
@@ -56,11 +58,40 @@ type shellExecuteInfo struct {
 	process    windows.Handle
 }
 
+func windowsMachineInstallDirectories() []string {
+	const uninstallKey = `Software\Microsoft\Windows\CurrentVersion\Uninstall\PrimordialWeaveZhusuan`
+	var directories []string
+	for _, view := range []uint32{registry.WOW64_64KEY, registry.WOW64_32KEY} {
+		key, err := registry.OpenKey(registry.LOCAL_MACHINE, uninstallKey, registry.QUERY_VALUE|view)
+		if err != nil {
+			continue
+		}
+		for _, name := range []string{"InstallLocation", ""} {
+			if value, _, readErr := key.GetStringValue(name); readErr == nil && value != "" {
+				directories = append(directories, value)
+			}
+		}
+		for _, name := range []string{"DisplayIcon", "UninstallString"} {
+			if value, _, readErr := key.GetStringValue(name); readErr == nil {
+				if directory := windowsRegistrationCommandDirectory(value); directory != "" {
+					directories = append(directories, directory)
+				}
+			}
+		}
+		if closeErr := key.Close(); closeErr != nil {
+			slog.Warn("Unable to close Windows installer registration", "error", closeErr)
+		}
+	}
+	return directories
+}
+
 func runInstaller(plan installPlan) error {
 	if plan.Kind != kindWindows {
 		return errors.New("不支持此安装包类型")
 	}
-	verb, _ := windows.UTF16PtrFromString("runas")
+	verb, _ := windows.UTF16PtrFromString(windowsInstallerVerb(plan.Target, windowsMachineInstallDirectories(), []string{
+		os.Getenv("ProgramW6432"), os.Getenv("ProgramFiles"), os.Getenv("ProgramFiles(x86)"),
+	}))
 	file, err := windows.UTF16PtrFromString(plan.Package)
 	if err != nil {
 		return err
