@@ -28,7 +28,7 @@ task bump-version VERSION=1.0.1
 
 手动 Release 可填写完整的 `build_recipe_ref` 提交 SHA。该提交必须已包含在 main，流程只读取四份桌面 Taskfile，不替换 Go/前端应用源码、版本或资源；应用仍从 tag 构建，配方来源写入发行说明和 update.json 正文。后续标签包含修复后的配方时无需填写。新的 DMG 工作流要求标签内包含 scripts/build_macos_packages.py；已经公开的 1.0.0 不通过此工作流重建，附加 DMG 由原已校验 bundle 转换并保持原载荷及 manifest 不变。
 
-Windows 原生测试如需修复平台夹具，可另外指定 `test_recipe_ref`，同样要求完整 SHA 且已合入 main，只覆盖四份固定 `_test.go` 文件。它用于 POSIX 权限位、Darwin WebKit、日志临时文件等测试边界；保留实际数据库快照、路径穿越和回滚断言，不替换发行应用代码。来源也写入发行说明与 manifest 正文。
+Windows 原生测试如需修复平台夹具，可另外指定 `test_recipe_ref`，同样要求完整 SHA 且已合入 main，只覆盖四份固定 `_test.go` 文件和 `scripts/windows-installer-smoke.ps1` 安装验收夹具。它用于 POSIX 权限位、Darwin WebKit、日志临时文件等测试边界；保留实际数据库快照、路径穿越和回滚断言，不替换发行应用代码。来源也写入发行说明与 manifest 正文。
 
 ```sh
 gh workflow run release.yml --ref main -f tag=v1.0.0 -f build_recipe_ref=<40位已审查提交SHA>

@@ -6,7 +6,7 @@
 
 - 用户在上个会话明确选择“使用 1.0.1（推荐）”，本会话继续同一任务；已有合并/发布授权，无需重复确认版本。当前分支 `codex/macos-dmg-packages`，1.0.0 的标签和公开附件保持原样。
 - 范围：Apple Silicon / Intel DMG 与架构 ZIP；macOS Finder/Dock 图标无额外白底、中文包名“珠算”；Windows UTF-8 中文、用户目录新安装路径、不继承 Orange；令牌和通知弹层不溢出、通知详情内边距/固定高度；金额普通输入、最多两位小数、必填中文错误和红框；移除提示左粗线。
-- 已统一源版本为 1.0.1；前端598例/ESLint/build、Go race139顶层154子测试/vet/增量lint0、Python31例/actionlint通过。原生图标和两架构真实源码DMG/ZIP校验通过。ego lite已验1280×800/760×520下令牌、通知、金额必填校验及原始类型/青绿回归，最后CSS调整后的build与定向8例通过。正在提交PR/CI与三个平台正式产物校验；自有3466/9331与ego space8已关闭。最终证据写入 `docs/release-readiness-1.0.1.md`。
+- 已统一源版本为 1.0.1；前端598例/ESLint/build、Go race139顶层154子测试/vet/增量lint0、Python31例/actionlint通过。原生图标和两架构真实源码DMG/ZIP校验通过。ego lite已验1280×800/760×520下令牌、通知、金额必填校验及原始类型/青绿回归，最后CSS调整后的build与定向8例通过。PR #21 已合并为0959eb1；PR CI44558648378与main CI44560362947全部通过，v1.0.1已指向该提交。Release44562497173正在三平台构建，尚未公开；自有3466/9331与ego space8已关闭。最终证据写入 `docs/release-readiness-1.0.1.md`。
 
 ## 1.1 珠算 1.0.0 已正式发布
 
@@ -434,3 +434,5 @@
 - Linux旧CI连续卡在Canonical逐包超时；改为命令级临时deb822 sources（Azure→Canonical），不写/etc，继续Signed-By。APT update默认可能部分失败仍exit0，必须Error-Mode=any。先download-only再no-download安装，把网络timeout限制在dpkg之前；两次50s索引+130s下载、180s安装及kill grace总预算565s，低于job10分钟。stub6项通过不是runner实机验证。
 
 - 金额输入失焦不能直接Number(value).toFixed(2)：>=1e21会变科学记数且大整数丢精度；本次用字符串补零保持草稿数值文本。通知详情padding随内容滚动不能保证底部视觉留白，给滚动viewport外固定24px底margin。截图须等入场动画/Toast结束，不能拿过渡态当验收图。
+
+- 1.0.1首轮Release44562497173 Windows安装编译、默认路径/HKCU/中文名/快捷方式存在检查通过，但WScript.TargetPath直接字符串比较失败，原日志未打印实际值，不能归咎产品。smoke路径必须展开环境变量、规范化长短路径后严格比较目标目录并核对文件摘要，同时输出raw/expected诊断；test_recipe_ref只增加此固定smoke fixture，应用tag0959eb1不移动。
