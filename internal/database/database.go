@@ -8,13 +8,14 @@ import (
 	"sync"
 	"time"
 
-	"github.com/FruitsAI/Orange/internal/config"
 	"github.com/glebarez/sqlite"
 	_ "github.com/jackc/pgx/v5/stdlib" // 注册 pgx 驱动到 database/sql
 	"gorm.io/driver/mysql"
 	"gorm.io/driver/postgres"
 	"gorm.io/gorm"
 	"gorm.io/gorm/logger"
+
+	"github.com/primordialweave/zhusuan/internal/config"
 )
 
 var (

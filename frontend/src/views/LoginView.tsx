@@ -124,7 +124,6 @@ export default function LoginView() {
           欢迎回来
         </h1>
         <BrushStroke />
-        <p className="scene-page__text">登录后继续查看项目与收款进度</p>
       </header>
 
       <form className="login-form" onSubmit={handleLogin}>

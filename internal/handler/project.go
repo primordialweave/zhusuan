@@ -3,9 +3,9 @@ package handler
 import (
 	"strconv"
 
-	"github.com/FruitsAI/Orange/internal/dto"
-	"github.com/FruitsAI/Orange/internal/pkg/response"
-	"github.com/FruitsAI/Orange/internal/service"
+	"github.com/primordialweave/zhusuan/internal/dto"
+	"github.com/primordialweave/zhusuan/internal/pkg/response"
+	"github.com/primordialweave/zhusuan/internal/service"
 	"github.com/gin-gonic/gin"
 )
 

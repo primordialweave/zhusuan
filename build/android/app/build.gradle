@@ -11,7 +11,7 @@ android {
     }
 
     defaultConfig {
-        applicationId "com.wails.app"
+        applicationId "org.primordialweave.zhusuan"
         minSdk 21
         targetSdk 34
         versionCode 1

@@ -4,10 +4,11 @@ import (
 	"log/slog"
 	"time"
 
-	"github.com/FruitsAI/Orange/internal/config"
-	"github.com/FruitsAI/Orange/internal/pkg/logger"
 	"github.com/gin-gonic/gin"
 	"go.uber.org/zap"
+
+	"github.com/primordialweave/zhusuan/internal/config"
+	"github.com/primordialweave/zhusuan/internal/pkg/logger"
 )
 
 // Logger records request metadata without capturing response bodies.

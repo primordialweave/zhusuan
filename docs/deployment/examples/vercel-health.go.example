@@ -4,7 +4,7 @@ import (
 	"encoding/json"
 	"net/http"
 
-	"github.com/FruitsAI/Orange/internal/constants"
+	"github.com/primordialweave/zhusuan/internal/constants"
 )
 
 func Handler(w http.ResponseWriter, r *http.Request) {

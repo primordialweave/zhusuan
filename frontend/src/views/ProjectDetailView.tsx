@@ -8,6 +8,7 @@ import {
   type CSSProperties,
 } from 'react'
 import { useNavigate, useParams, useSearchParams } from 'react-router-dom'
+import { dictionaryApi, type DictionaryItem } from '@/api/dictionary'
 import { paymentApi, projectApi, type Payment, type Project } from '@/api/project'
 import { PaymentStatusChip, ProjectStatusChip } from '@/components/project/ProjectStatusChip'
 import {
@@ -24,6 +25,7 @@ import {
   Surface,
   Tabs,
 } from '@/design-system'
+import { useProjectExport } from '@/components/project/useProjectExport'
 import { useToastStore } from '@/composables/useToast'
 import { formatCurrency, formatDate } from '@/utils/format'
 import '@/styles/project-domain.css'
@@ -45,9 +47,13 @@ const paymentMethodLabels: Record<string, string> = {
 
 const projectTypeLabels: Record<string, string> = {
   consulting: '技术咨询',
+  design: 'UI设计',
+  mobile: '移动应用',
   other: '其他',
+  saas: 'SaaS系统',
   service: '运营服务',
   software: '软件开发',
+  web: 'Web开发',
 }
 
 const isPaymentSettled = (payment: Payment) =>
@@ -64,9 +70,10 @@ export default function ProjectDetailView() {
   const requestedTab = searchParams.get('tab')
   const requestedPayment = searchParams.get('payment')
   const toastError = useToastStore((state) => state.error)
-  const toastInfo = useToastStore((state) => state.info)
   const toastSuccess = useToastStore((state) => state.success)
+  const { exportProject } = useProjectExport()
   const [project, setProject] = useState<Project | null>(null)
+  const [projectTypes, setProjectTypes] = useState<DictionaryItem[]>([])
   const [payments, setPayments] = useState<Payment[]>([])
   const positionedPaymentRef = useRef<string | null>(null)
   const isMountedRef = useRef(false)
@@ -85,6 +92,21 @@ export default function ProjectDetailView() {
     return () => {
       isMountedRef.current = false
       loadGenerationRef.current += 1
+    }
+  }, [])
+
+  useEffect(() => {
+    let active = true
+    void dictionaryApi
+      .getItems('project_type')
+      .then((response) => {
+        if (active) setProjectTypes(response.data.data)
+      })
+      .catch(() => {
+        // A dictionary failure must not prevent viewing the project or its payment plan.
+      })
+    return () => {
+      active = false
     }
   }, [])
 
@@ -184,6 +206,11 @@ export default function ProjectDetailView() {
   }
 
   const paidAmount = Math.max(project.received_amount || 0, 0)
+  const projectTypeLabel =
+    projectTypes.find(({ value }) => value === project.type)?.label ||
+    projectTypeLabels[project.type] ||
+    project.type ||
+    '-'
   const remainingAmount = Math.max(project.total_amount - paidAmount, 0)
   const progress = project.total_amount
     ? Math.min(100, Math.max(0, Math.round((paidAmount / project.total_amount) * 100)))
@@ -220,7 +247,7 @@ export default function ProjectDetailView() {
             </IconButton>
             <IconButton
               label={`导出项目：${project.name}`}
-              onClick={() => toastInfo('导出功能开发中')}
+              onClick={() => void exportProject(project, payments)}
               title="导出项目"
               variant="ghost"
             >
@@ -355,7 +382,7 @@ export default function ProjectDetailView() {
                     <dl className="project-record-list">
                       <div>
                         <dt>项目类型</dt>
-                        <dd>{projectTypeLabels[project.type] || project.type || '-'}</dd>
+                        <dd>{projectTypeLabel}</dd>
                       </div>
                       <div>
                         <dt>付款方式</dt>

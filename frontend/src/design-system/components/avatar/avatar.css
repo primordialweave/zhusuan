@@ -47,7 +47,7 @@
 
 .ods-avatar[data-tone='accent'] {
   --ods-avatar-color: var(--ods-color-accent-soft);
-  --ods-avatar-fg: var(--ods-color-accent);
+  --ods-avatar-fg: var(--ods-color-accent-text);
 }
 
 .ods-avatar[data-tone='success'] {

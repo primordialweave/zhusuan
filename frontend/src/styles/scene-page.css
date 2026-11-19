@@ -29,6 +29,20 @@
     no-repeat;
 }
 
+.scene-page__layer {
+  position: absolute;
+  width: 100%;
+  max-width: none;
+  height: 100%;
+  inset: 0;
+  opacity: 0;
+  transition: opacity var(--ods-duration-hero) var(--ods-ease-standard);
+}
+
+.scene-page__layer[data-active] {
+  opacity: 1;
+}
+
 /* 夜雨 dims the same painting. */
 .scene-page__still::after {
   position: absolute;

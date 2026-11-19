@@ -1,0 +1,102 @@
+/*
+ * The girl on the bridge. Her box is given in fractions of the still, so it is placed with the
+ * same arithmetic the still's own background uses; keep the two crops in step with
+ * scene.css (cover, 50% 45%) and scene-page.css (56% 40%, at least 120% wide).
+ */
+.scene-greeter {
+  --scene-aspect: 1.4055;
+  position: absolute;
+  top: calc((100vh - var(--scene-h)) * var(--scene-focus-y) + var(--scene-h) * 0.32626);
+  left: calc((100vw - var(--scene-w)) * var(--scene-focus-x) + var(--scene-w) * 0.2434);
+  width: calc(var(--scene-w) * 0.09016);
+  height: calc(var(--scene-h) * 0.09942);
+  pointer-events: none;
+}
+
+.scene-greeter[data-crop='cover'] {
+  --scene-w: max(100vw, calc(100vh * var(--scene-aspect)));
+  --scene-h: calc(var(--scene-w) / var(--scene-aspect));
+  --scene-focus-x: 0.5;
+  --scene-focus-y: 0.45;
+}
+
+.scene-greeter[data-crop='page'] {
+  --scene-w: max(120vw, calc(100vh * var(--scene-aspect)));
+  --scene-h: calc(var(--scene-w) / var(--scene-aspect));
+  --scene-focus-x: 0.56;
+  --scene-focus-y: 0.4;
+}
+
+.scene-greeter__pose {
+  position: absolute;
+  background: center / 100% 100% no-repeat;
+  /* No CSS filter here: WebKit runs a filter on a pose that is not animating through a
+     software path at 1x, so she would turn soft whenever she stands still. All three poses
+     stay on their own layers for the same reason: one rendering path, moving or not. */
+  will-change: opacity;
+  inset: 0;
+}
+
+.scene-greeter__pose[data-pose='rest'] {
+  background-image: url('../assets/jiangnan/greeter-rest.webp');
+}
+
+.scene-greeter__pose[data-pose='wave-a'] {
+  background-image: url('../assets/jiangnan/greeter-wave-a.webp');
+  opacity: 0;
+}
+
+.scene-greeter__pose[data-pose='wave-b'] {
+  background-image: url('../assets/jiangnan/greeter-wave-b.webp');
+  opacity: 0;
+}
+
+/* One greeting every nine seconds: the arm comes up, swings four times, and goes back down.
+   The swings cut over quickly so two poses are never seen half-blended. */
+@keyframes scene-greeter-arm {
+  0%,
+  4% {
+    opacity: 0;
+  }
+  6%,
+  30% {
+    opacity: 1;
+  }
+  32%,
+  100% {
+    opacity: 0;
+  }
+}
+
+@keyframes scene-greeter-swing {
+  0%,
+  10% {
+    opacity: 0;
+  }
+  11%,
+  15% {
+    opacity: 1;
+  }
+  16%,
+  20% {
+    opacity: 0;
+  }
+  21%,
+  25% {
+    opacity: 1;
+  }
+  26%,
+  100% {
+    opacity: 0;
+  }
+}
+
+@media (prefers-reduced-motion: no-preference) {
+  .scene-greeter[data-waving] [data-pose='wave-a'] {
+    animation: scene-greeter-arm 9s linear 0.6s infinite;
+  }
+
+  .scene-greeter[data-waving] [data-pose='wave-b'] {
+    animation: scene-greeter-swing 9s linear 0.6s infinite;
+  }
+}

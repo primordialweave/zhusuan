@@ -4,9 +4,7 @@ import { DEFAULT_PAGE_SIZE } from '@/constants/pagination'
 import { useConfirm } from '@/composables/useConfirm'
 import { useToastStore } from '@/composables/useToast'
 import {
-  Avatar,
   Button,
-  Card,
   Chip,
   EmptyState,
   Field,
@@ -19,6 +17,8 @@ import {
   SearchField,
   Select,
   Spinner,
+  Table,
+  User as UserBadge,
 } from '@/design-system'
 
 interface UserForm {
@@ -67,8 +67,6 @@ export default function UserManagement() {
   const submitInFlightRef = useRef(false)
   const resetInFlightRef = useRef(false)
 
-  const adminCount = users.filter((user) => user.role === 'admin').length
-  const userCount = users.filter((user) => user.role !== 'admin').length
   const totalPages = Math.ceil(total / pageSize)
   const paginationInfo = useMemo(() => {
     if (total === 0) return '暂无数据'
@@ -214,179 +212,149 @@ export default function UserManagement() {
   }
 
   return (
-    <div className="user-management">
+    <div className="user-management settings-page">
       <div className="settings-toolbar">
-        <dl className="settings-stats">
-          <div>
-            <dt>总用户</dt>
-            <dd>{total}</dd>
-          </div>
-          <div>
-            <dt>管理员</dt>
-            <dd>{adminCount}</dd>
-          </div>
-          <div>
-            <dt>普通用户</dt>
-            <dd>{userCount}</dd>
-          </div>
-        </dl>
-        <div className="settings-toolbar__actions">
-          <SearchField
-            aria-label="搜索用户"
-            className="settings-toolbar__search"
-            autoCapitalize="off"
-            autoComplete="off"
-            autoCorrect="off"
-            onClear={handleClearSearch}
-            onValueChange={setKeyword}
-            onKeyUp={(event) => {
-              if (event.key === 'Enter') handleSearch()
-            }}
-            placeholder="搜索用户名或姓名..."
-            spellCheck={false}
-            value={keyword}
-          />
-          <Button onClick={openAddModal}>
-            <i aria-hidden="true" className="ri-add-line" />
-            <span>新增用户</span>
-          </Button>
-        </div>
+        <SearchField
+          aria-label="搜索用户"
+          autoCapitalize="off"
+          autoComplete="off"
+          autoCorrect="off"
+          className="settings-toolbar__search"
+          onClear={handleClearSearch}
+          onKeyUp={(event) => {
+            if (event.key === 'Enter') handleSearch()
+          }}
+          onValueChange={setKeyword}
+          placeholder="搜索用户名或姓名"
+          spellCheck={false}
+          value={keyword}
+        />
+        <Button onClick={openAddModal}>
+          <i aria-hidden="true" className="ri-add-line" />
+          <span>新增用户</span>
+        </Button>
       </div>
 
-      <div className="dev-content">
-        {loading ? (
-          <Spinner className="dev-loading" label="正在加载用户列表" size="lg" />
-        ) : users.length === 0 ? (
-          <EmptyState
-            className="dev-empty"
-            description="点击「新增用户」添加"
-            icon={<i className="ri-user-unfollow-line" />}
-            size="lg"
-            title="暂无用户"
-          />
-        ) : (
-          <div className="user-list">
+      {loading && users.length === 0 ? (
+        <Spinner className="settings-empty" label="正在加载用户列表" size="lg" />
+      ) : users.length === 0 ? (
+        <EmptyState
+          className="settings-empty"
+          icon={<i className="ri-user-unfollow-line" />}
+          size="lg"
+          title={searchKeyword ? '没有符合条件的用户' : '暂无用户'}
+        />
+      ) : (
+        <Table.Root aria-busy={loading} aria-label="用户列表" className="settings-table">
+          <Table.Header>
+            <Table.Row>
+              <Table.Column>用户</Table.Column>
+              <Table.Column>角色</Table.Column>
+              <Table.Column>部门与职位</Table.Column>
+              <Table.Column>联系方式</Table.Column>
+              <Table.Column>状态</Table.Column>
+              <Table.Column align="end">
+                <span className="ods-sr-only">操作</span>
+              </Table.Column>
+            </Table.Row>
+          </Table.Header>
+          <Table.Body>
             {users.map((user) => (
-              <Card.Root
-                className="user-card"
-                gap="sm"
-                key={user.id}
-                orientation="horizontal"
-                padding="sm"
-                variant="tertiary"
-              >
-                <Avatar
-                  fallback={
-                    <i className={user.role === 'admin' ? 'ri-shield-user-fill' : 'ri-user-fill'} />
-                  }
-                  name={user.name || user.username}
-                  tone={user.role === 'admin' ? 'accent' : 'neutral'}
-                />
-
-                <div className="user-info">
-                  <div className="user-name-row">
-                    <span className="user-name">{user.name || user.username}</span>
-                    <Chip size="sm" tone={user.role === 'admin' ? 'accent' : 'neutral'}>
-                      {user.role === 'admin' ? '管理员' : '普通用户'}
-                    </Chip>
-                    <Chip size="sm" tone={user.status === 1 ? 'success' : 'danger'}>
-                      {user.status === 1 ? '正常' : '禁用'}
-                    </Chip>
-                  </div>
-                  <div className="user-meta">
-                    <span className="meta-item">
-                      <i className="ri-at-line" /> {user.username}
-                    </span>
-                    {user.department ? (
-                      <span className="meta-item">
-                        <i className="ri-building-line" /> {user.department}
-                      </span>
-                    ) : null}
-                    {user.position ? (
-                      <span className="meta-item">
-                        <i className="ri-briefcase-line" /> {user.position}
-                      </span>
-                    ) : null}
-                  </div>
-                  {user.email || user.phone ? (
-                    <div className="user-contact">
-                      {user.email ? (
-                        <span className="contact-item">
-                          <i className="ri-mail-line" /> {user.email}
-                        </span>
-                      ) : null}
-                      {user.phone ? (
-                        <span className="contact-item">
-                          <i className="ri-phone-line" /> {user.phone}
-                        </span>
-                      ) : null}
-                    </div>
-                  ) : null}
-                </div>
-
-                <div className="user-actions">
-                  <IconButton
-                    label="编辑用户"
-                    onClick={() => openEditModal(user)}
-                    size="sm"
-                    title="编辑"
-                    variant="ghost"
-                  >
-                    <i className="ri-edit-line" />
-                  </IconButton>
-                  <IconButton
-                    label="重置用户密码"
-                    onClick={() => {
-                      setResetPasswordUser(user)
-                      setNewPassword('')
+              <Table.Row key={user.id}>
+                <Table.Cell>
+                  <UserBadge
+                    avatarProps={{
+                      name: user.name || user.username,
+                      size: 'sm',
+                      tone: user.role === 'admin' ? 'accent' : 'neutral',
                     }}
-                    size="sm"
-                    title="重置密码"
-                    variant="ghost"
-                  >
-                    <i className="ri-key-line" />
-                  </IconButton>
-                  <IconButton
-                    label="删除用户"
-                    onClick={() => void handleDelete(user)}
-                    size="sm"
-                    title="删除"
-                    tone="danger"
-                    variant="ghost"
-                  >
-                    <i className="ri-delete-bin-line" />
-                  </IconButton>
-                </div>
-              </Card.Root>
+                    description={user.username}
+                    name={user.name || user.username}
+                  />
+                </Table.Cell>
+                <Table.Cell>{user.role === 'admin' ? '管理员' : '普通用户'}</Table.Cell>
+                <Table.Cell>
+                  <span className="settings-table__muted">
+                    {[user.department, user.position].filter(Boolean).join(' · ') || '—'}
+                  </span>
+                </Table.Cell>
+                <Table.Cell>
+                  <div className="settings-table__stack settings-table__muted">
+                    {user.email ? <span>{user.email}</span> : null}
+                    {user.phone ? <span>{user.phone}</span> : null}
+                    {!user.email && !user.phone ? <span>—</span> : null}
+                  </div>
+                </Table.Cell>
+                <Table.Cell>
+                  <Chip size="sm" tone={user.status === 1 ? 'success' : 'danger'}>
+                    {user.status === 1 ? '正常' : '禁用'}
+                  </Chip>
+                </Table.Cell>
+                <Table.Cell align="end">
+                  <div className="settings-table__actions">
+                    <IconButton
+                      label="编辑用户"
+                      onClick={() => openEditModal(user)}
+                      size="sm"
+                      title="编辑"
+                      variant="ghost"
+                    >
+                      <i className="ri-edit-line" />
+                    </IconButton>
+                    <IconButton
+                      label="重置用户密码"
+                      onClick={() => {
+                        setResetPasswordUser(user)
+                        setNewPassword('')
+                      }}
+                      size="sm"
+                      title="重置密码"
+                      variant="ghost"
+                    >
+                      <i className="ri-lock-password-line" />
+                    </IconButton>
+                    <IconButton
+                      label="删除用户"
+                      onClick={() => void handleDelete(user)}
+                      size="sm"
+                      title="删除"
+                      tone="danger"
+                      variant="ghost"
+                    >
+                      <i className="ri-delete-bin-line" />
+                    </IconButton>
+                  </div>
+                </Table.Cell>
+              </Table.Row>
             ))}
-          </div>
-        )}
+          </Table.Body>
+        </Table.Root>
+      )}
 
-        {users.length > 0 ? (
-          <PaginationBar
-            info={paginationInfo}
-            onPageChange={setCurrentPage}
-            page={currentPage}
-            pageCount={totalPages}
-            separated
-            trailing={
-              <Select
-                aria-label="每页条数"
-                onValueChange={(value) => {
-                  setPageSize(Number(value))
-                  setCurrentPage(1)
-                }}
-                options={[
-                  { label: '5条/页', value: '5' },
-                  { label: '10条/页', value: '10' },
-                ]}
-                size="sm"
-                value={String(pageSize)}
-              />
-            }
-          />
-        ) : null}
-      </div>
+      {total > pageSize || currentPage > 1 ? (
+        <PaginationBar
+          info={paginationInfo}
+          onPageChange={setCurrentPage}
+          page={currentPage}
+          pageCount={totalPages}
+          trailing={
+            <Select
+              aria-label="每页条数"
+              onValueChange={(value) => {
+                setPageSize(Number(value))
+                setCurrentPage(1)
+              }}
+              options={[
+                { label: '5条/页', value: '5' },
+                { label: '10条/页', value: '10' },
+              ]}
+              size="sm"
+              value={String(pageSize)}
+              width="content"
+            />
+          }
+        />
+      ) : null}
 
       <Modal.Root
         dismissable={!submitting}

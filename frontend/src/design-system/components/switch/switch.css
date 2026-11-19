@@ -50,7 +50,7 @@
   padding: var(--ods-switch-pad);
   border-radius: var(--ods-radius-pill);
   /* A tint alone loses the off state on a pale panel and on the night one. */
-  background: var(--ods-color-border-strong);
+  background: var(--ods-color-border-control);
   transition: background-color var(--ods-duration-fast) var(--ods-ease-standard);
 }
 

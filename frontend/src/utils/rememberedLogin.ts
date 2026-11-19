@@ -1,8 +1,8 @@
-import { CredentialStore } from '../../bindings/github.com/FruitsAI/Orange/internal/desktop'
+import { CredentialStore } from '../../bindings/github.com/primordialweave/zhusuan/internal/desktop'
 import { API_BASE_URL } from '@/config/api'
 import type { LoginRequest } from '@/api/auth'
 
-const scope = `${API_BASE_URL || 'orange-desktop'}/api/v1`
+const scope = `${API_BASE_URL || 'zhusuan-desktop'}/api/v1`
 
 export const rememberedLogin = {
   isAvailable() {

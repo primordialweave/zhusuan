@@ -5,19 +5,20 @@ import { useToastStore } from '@/composables/useToast'
 import {
   Alert,
   Button,
-  Card,
   Chip,
   EmptyState,
   Field,
   FormActions,
+  IconButton,
   Input,
   Modal,
   Radio,
   RadioGroup,
   Snippet,
   Spinner,
+  Table,
 } from '@/design-system'
-import { formatRelativeTime } from '@/utils/format'
+import { formatDate, formatRelativeTime } from '@/utils/format'
 
 const expiryOptions = [
   { desc: '短期测试', label: '7天', value: 7 },
@@ -161,20 +162,9 @@ export default function TokenManagement({ actions }: TokenManagementProps) {
   }
 
   return (
-    <div className="developer-settings">
+    <div className="developer-settings settings-page">
       <div className="settings-toolbar">
-        {tokens.length > 0 ? (
-          <dl className="settings-stats">
-            <div>
-              <dt>有效令牌</dt>
-              <dd>{activeTokens.length}</dd>
-            </div>
-            <div>
-              <dt>已撤销</dt>
-              <dd>{revokedTokens.length}</dd>
-            </div>
-          </dl>
-        ) : null}
+        <h2 className="settings-toolbar__title">访问令牌</h2>
         <div className="settings-toolbar__actions">
           {actions}
           <Button onClick={openCreateModal}>
@@ -184,141 +174,88 @@ export default function TokenManagement({ actions }: TokenManagementProps) {
         </div>
       </div>
 
-      <div className="dev-content">
-        {loading ? (
-          <Spinner className="dev-loading" label="正在加载令牌列表" size="lg" />
-        ) : tokens.length === 0 ? (
-          <EmptyState
-            className="dev-empty"
-            description="个人访问令牌 (PAT) 用于 API 认证"
-            icon={<i className="ri-key-2-line" />}
-            size="lg"
-            title="暂无访问令牌"
-          />
-        ) : (
-          <div className="dev-token-list">
-            {activeTokens.length > 0 ? (
-              <div className="dev-token-section">
-                <h3 className="dev-section-title">
-                  <i className="ri-shield-check-line" />
-                  有效令牌
-                  <Chip size="sm" tone="success">
-                    {activeTokens.length}
-                  </Chip>
-                </h3>
-                <div className="dev-token-grid">
-                  {activeTokens.map((token) => (
-                    <Card.Root
-                      className="dev-token-card"
-                      gap="sm"
-                      key={token.id}
-                      padding="sm"
-                      tone="success"
+      {loading && tokens.length === 0 ? (
+        <Spinner className="settings-empty" label="正在加载令牌列表" size="lg" />
+      ) : tokens.length === 0 ? (
+        <EmptyState
+          className="settings-empty"
+          description="个人访问令牌 (PAT) 用于 API 认证"
+          icon={<i className="ri-key-2-line" />}
+          size="lg"
+          title="暂无访问令牌"
+        />
+      ) : (
+        <Table.Root aria-label="访问令牌" className="settings-table">
+          <Table.Header>
+            <Table.Row>
+              <Table.Column>名称</Table.Column>
+              <Table.Column>创建时间</Table.Column>
+              <Table.Column>最后使用</Table.Column>
+              <Table.Column>有效期</Table.Column>
+              <Table.Column>状态</Table.Column>
+              <Table.Column align="end">
+                <span className="ods-sr-only">操作</span>
+              </Table.Column>
+            </Table.Row>
+          </Table.Header>
+          <Table.Body>
+            {[...activeTokens, ...revokedTokens].map((token) => {
+              const active = token.status === 1
+              return (
+                <Table.Row key={token.id}>
+                  <Table.Cell>{token.name}</Table.Cell>
+                  <Table.Cell>
+                    <span className="settings-table__muted">{formatDate(token.create_time)}</span>
+                  </Table.Cell>
+                  <Table.Cell>
+                    <span className="settings-table__muted">
+                      {formatLastUsed(token.last_used_at)}
+                    </span>
+                  </Table.Cell>
+                  <Table.Cell>
+                    <span
+                      className="settings-table__muted"
+                      data-warning={(active && isExpiringSoon(token.expires_at)) || undefined}
                     >
-                      <div className="dev-token-header">
-                        <div className="dev-token-name">
-                          <i className="ri-key-line" />
-                          <span>{token.name}</span>
-                        </div>
-                        <Chip size="sm" tone="success">
-                          有效
-                        </Chip>
-                      </div>
-
-                      <div className="dev-token-meta">
-                        <div className="dev-meta-item">
-                          <i className="ri-time-line" />
-                          <span>最后使用: {formatLastUsed(token.last_used_at)}</span>
-                        </div>
-                        <div
-                          className={`dev-meta-item ${isExpiringSoon(token.expires_at) ? 'text-warning' : ''}`}
-                        >
-                          <i className="ri-calendar-line" />
-                          <span>{formatExpiryDate(token.expires_at)}</span>
-                        </div>
-                      </div>
-
-                      <div className="dev-token-actions">
-                        <Button
+                      {active ? formatExpiryDate(token.expires_at) : '已失效'}
+                    </span>
+                  </Table.Cell>
+                  <Table.Cell>
+                    <Chip size="sm" tone={active ? 'success' : 'neutral'}>
+                      {active ? '有效' : '已撤销'}
+                    </Chip>
+                  </Table.Cell>
+                  <Table.Cell align="end">
+                    <div className="settings-table__actions">
+                      {active ? (
+                        <IconButton
+                          label={`撤销令牌：${token.name}`}
                           onClick={() => void handleRevoke(token)}
                           size="sm"
-                          variant="secondary"
+                          title="撤销"
+                          variant="ghost"
                         >
                           <i className="ri-forbid-line" />
-                          撤销
-                        </Button>
-                        <Button
-                          onClick={() => void handleDelete(token)}
-                          size="sm"
-                          tone="danger"
-                          variant="outline"
-                        >
-                          <i className="ri-delete-bin-line" />
-                          删除
-                        </Button>
-                      </div>
-                    </Card.Root>
-                  ))}
-                </div>
-              </div>
-            ) : null}
-
-            {revokedTokens.length > 0 ? (
-              <div className="dev-token-section">
-                <h3 className="dev-section-title revoked">
-                  <i className="ri-forbid-line" />
-                  已撤销令牌
-                  <Chip size="sm">{revokedTokens.length}</Chip>
-                </h3>
-                <div className="dev-token-grid">
-                  {revokedTokens.map((token) => (
-                    <Card.Root
-                      className="dev-token-card"
-                      gap="sm"
-                      key={token.id}
-                      padding="sm"
-                      tone="danger"
-                    >
-                      <div className="dev-token-header">
-                        <div className="dev-token-name">
-                          <i className="ri-key-line" />
-                          <span>{token.name}</span>
-                        </div>
-                        <Chip size="sm" tone="danger">
-                          已撤销
-                        </Chip>
-                      </div>
-
-                      <div className="dev-token-meta">
-                        <div className="dev-meta-item">
-                          <i className="ri-time-line" />
-                          <span>最后使用: {formatLastUsed(token.last_used_at)}</span>
-                        </div>
-                        <div className="dev-meta-item revoked">
-                          <i className="ri-forbid-line" />
-                          <span>已失效</span>
-                        </div>
-                      </div>
-
-                      <div className="dev-token-actions">
-                        <Button
-                          onClick={() => void handleDelete(token)}
-                          size="sm"
-                          tone="danger"
-                          variant="outline"
-                        >
-                          <i className="ri-delete-bin-line" />
-                          彻底删除
-                        </Button>
-                      </div>
-                    </Card.Root>
-                  ))}
-                </div>
-              </div>
-            ) : null}
-          </div>
-        )}
-      </div>
+                        </IconButton>
+                      ) : null}
+                      <IconButton
+                        label={`删除令牌：${token.name}`}
+                        onClick={() => void handleDelete(token)}
+                        size="sm"
+                        title={active ? '删除' : '彻底删除'}
+                        tone="danger"
+                        variant="ghost"
+                      >
+                        <i className="ri-delete-bin-line" />
+                      </IconButton>
+                    </div>
+                  </Table.Cell>
+                </Table.Row>
+              )
+            })}
+          </Table.Body>
+        </Table.Root>
+      )}
 
       <Modal.Root
         dismissable={!creating}

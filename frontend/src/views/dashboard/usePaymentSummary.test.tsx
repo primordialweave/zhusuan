@@ -114,4 +114,26 @@ describe('usePaymentSummary', () => {
 
     expect(result.current).toMatchObject({ paid: 900, pending: 100, status: 'data' })
   })
+
+  it('asks for this calendar year or month when the scope narrows', async () => {
+    vi.mocked(dashboardApi.getStats).mockResolvedValue(statsResponse(1, 2))
+    const today = new Date()
+
+    const { rerender, result } = renderHook(({ scope }) => usePaymentSummary(scope), {
+      initialProps: { scope: 'year' as 'month' | 'year' },
+    })
+    await waitFor(() => expect(result.current.status).toBe('data'))
+    expect(dashboardApi.getStats).toHaveBeenLastCalledWith(
+      { month: 0, year: today.getFullYear() },
+      expect.any(AbortSignal),
+    )
+
+    rerender({ scope: 'month' })
+    await waitFor(() =>
+      expect(dashboardApi.getStats).toHaveBeenLastCalledWith(
+        { month: today.getMonth() + 1, year: today.getFullYear() },
+        expect.any(AbortSignal),
+      ),
+    )
+  })
 })

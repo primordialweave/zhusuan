@@ -8,11 +8,12 @@ import (
 	"strings"
 	"time"
 
-	"github.com/FruitsAI/Orange/internal/database"
-	"github.com/FruitsAI/Orange/internal/models"
 	_ "github.com/go-sql-driver/mysql"
 	_ "github.com/jackc/pgx/v5/stdlib"
 	"gorm.io/gorm"
+
+	"github.com/primordialweave/zhusuan/internal/database"
+	"github.com/primordialweave/zhusuan/internal/models"
 )
 
 // 允许同步的固定表结构白名单

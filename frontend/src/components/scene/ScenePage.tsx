@@ -1,6 +1,11 @@
 import { useId, type ReactNode } from 'react'
 import { handleWindowDragRegionDoubleClick } from '@/components/layout/windowDrag'
 import { CloudPanel } from '@/design-system'
+import { useReducedMotion } from '@/hooks/useReducedMotion'
+import { getScenePageCrop } from '@/scene/sceneFrame'
+import { useAppearanceStore } from '@/stores/appearance'
+import SceneGreeter from './SceneGreeter'
+import { useSceneRuntime } from './useSceneRuntime'
 import '@/styles/scene-page.css'
 
 export interface ScenePageProps {
@@ -12,13 +17,34 @@ export interface ScenePageProps {
 }
 
 /**
- * A page outside the app shell: the sharp scene still with one frosted card in the right
- * column. No Dock and no scene animation.
+ * A page outside the app shell: the scene with one frosted card in the right column and no
+ * Dock. The scene moves as it does on the workbench, and the girl on the bridge waves.
  */
 export default function ScenePage({ align = 'start', children, labelledBy }: ScenePageProps) {
+  const sceneMotion = useAppearanceStore((state) => state.sceneMotion)
+  const reducedMotion = useReducedMotion()
+  const animate = sceneMotion && !reducedMotion
+  const { glCanvasRef, layers, rainCanvasRef } = useSceneRuntime(animate, getScenePageCrop)
+
   return (
     <main className="scene-page">
-      <div aria-hidden="true" className="scene-page__still" />
+      <div aria-hidden="true" className="scene-page__still">
+        {animate ? (
+          <>
+            <canvas
+              className="scene-page__layer"
+              data-active={layers.gl || undefined}
+              ref={glCanvasRef}
+            />
+            <canvas
+              className="scene-page__layer"
+              data-active={layers.rain || undefined}
+              ref={rainCanvasRef}
+            />
+          </>
+        ) : null}
+        <SceneGreeter crop="page" waving={animate} />
+      </div>
       <div className="app-titlebar-drag-region" onDoubleClick={handleWindowDragRegionDoubleClick} />
       <CloudPanel
         aria-labelledby={labelledBy}

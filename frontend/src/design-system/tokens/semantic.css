@@ -58,7 +58,7 @@
   --ods-radius-panel: var(--ods-ref-radius-16);
   --ods-radius-shell: var(--ods-ref-radius-20);
   --ods-radius-lg: var(--ods-ref-radius-24);
-  --ods-radius-surface: clamp(var(--ods-ref-radius-24), 2.7vw, var(--ods-ref-radius-40));
+  --ods-radius-surface: clamp(var(--ods-ref-radius-20), 2vw, 28px);
   --ods-radius-pill: var(--ods-ref-radius-full);
   --ods-control-height-sm: var(--ods-ref-control-height-sm);
   --ods-control-height-md: var(--ods-ref-control-height-md);
@@ -91,13 +91,14 @@
   --ods-z-toast: var(--ods-ref-z-toast);
 
   /*
-   * Desktop shell. The Dock follows the approved workbench prototype (1487px wide): it scales
-   * with the window and stops growing at the prototype's own size.
+   * Desktop shell. The Dock keeps the approved workbench prototype's proportions (1487px wide):
+   * it scales with the window and stops growing at the prototype's own size. It rests close to
+   * the window's bottom edge so the work panel above it gets the height.
    */
   --ods-shell-titlebar-clearance: 44px;
   --ods-shell-dock-width: clamp(560px, 46.36vw, 689px);
   --ods-shell-dock-height: clamp(76px, 6.9vw, 102.5px);
-  --ods-shell-dock-offset: clamp(20px, 2.91vw, 43px);
+  --ods-shell-dock-offset: clamp(10px, 1.1vw, 16px);
   --ods-shell-dock-padding: clamp(10px, 0.89vw, 13.25px);
   --ods-shell-dock-gap: clamp(4px, 0.39vw, 5.75px);
   --ods-shell-dock-icon-size: clamp(28px, 2.42vw, 36px);

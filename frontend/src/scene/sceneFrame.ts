@@ -31,6 +31,25 @@ export function getSceneCrop(width: number, height: number): SceneCrop {
   }
 }
 
+/**
+ * Mirrors the sign-in and not-found crop in styles/scene-page.css:
+ * `background: 56% 40% / max(120%, calc(100vh * 1.4055)) auto`.
+ */
+export function getScenePageCrop(width: number, height: number): SceneCrop {
+  const paintedWidth = Math.max(width * 1.2, height * SCENE_ASPECT)
+  const paintedHeight = paintedWidth / SCENE_ASPECT
+  const scaleX = width / paintedWidth
+  const scaleY = Math.min(1, height / paintedHeight)
+  return {
+    offsetX: (1 - scaleX) * 0.56,
+    offsetY: (1 - scaleY) * 0.4,
+    scaleX,
+    scaleY,
+  }
+}
+
+export type SceneCropFn = (width: number, height: number) => SceneCrop
+
 export type SceneQuality = 'standard' | 'low'
 
 export interface SceneQualityProfile {
@@ -41,8 +60,8 @@ export interface SceneQualityProfile {
 }
 
 export const SCENE_QUALITY: Record<SceneQuality, SceneQualityProfile> = {
-  low: { maxPixelRatio: 1, maxPixels: 1_400_000, rainCount: 48, rippleCount: 3 },
-  standard: { maxPixelRatio: 1.5, maxPixels: 2_400_000, rainCount: 96, rippleCount: 6 },
+  low: { maxPixelRatio: 1, maxPixels: 1_400_000, rainCount: 48, rippleCount: 5 },
+  standard: { maxPixelRatio: 1.5, maxPixels: 2_400_000, rainCount: 96, rippleCount: 12 },
 }
 
 /** Backing-store scale for a canvas of the given CSS size under a quality profile. */

@@ -6,11 +6,11 @@ import (
 	"testing"
 	"time"
 
-	"github.com/FruitsAI/Orange/internal/config"
-	"github.com/FruitsAI/Orange/internal/constants"
-	"github.com/FruitsAI/Orange/internal/database"
-	"github.com/FruitsAI/Orange/internal/models"
-	"github.com/FruitsAI/Orange/internal/pkg/utils"
+	"github.com/primordialweave/zhusuan/internal/config"
+	"github.com/primordialweave/zhusuan/internal/constants"
+	"github.com/primordialweave/zhusuan/internal/database"
+	"github.com/primordialweave/zhusuan/internal/models"
+	"github.com/primordialweave/zhusuan/internal/pkg/utils"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 )
@@ -466,4 +466,62 @@ func TestDashboardService_DataIsolation(t *testing.T) {
 		require.NoError(t, err)
 		assert.Len(t, projects1, 1)
 	})
+}
+
+func TestDashboardService_CalendarPeriod(t *testing.T) {
+	setupDashboardTestDB(t)
+	db := database.GetDB()
+	const userID = int64(2002)
+	db.Where("user_id = ?", userID).Delete(&models.Payment{})
+	// Dates arrive from the API as plain days and are stored at UTC midnight.
+	day := func(year int, month time.Month, d int) time.Time {
+		return time.Date(year, month, d, 0, 0, 0, 0, time.UTC)
+	}
+	payments := []models.Payment{
+		{UserID: userID, ProjectID: 9, Stage: "二月到账", Amount: 300, Status: constants.PaymentStatusConfirmed, PlanDate: day(2024, 2, 29), ActualDate: ptrTime(day(2024, 2, 29))},
+		{UserID: userID, ProjectID: 9, Stage: "二月待收", Amount: 200, Status: constants.PaymentStatusPending, PlanDate: day(2024, 2, 1)},
+		{UserID: userID, ProjectID: 9, Stage: "一月到账", Amount: 100, Status: constants.PaymentStatusConfirmed, PlanDate: day(2024, 1, 31), ActualDate: ptrTime(day(2024, 1, 31))},
+		{UserID: userID, ProjectID: 9, Stage: "年末到账", Amount: 50, Status: constants.PaymentStatusConfirmed, PlanDate: day(2024, 12, 31), ActualDate: ptrTime(day(2024, 12, 31))},
+		{UserID: userID, ProjectID: 9, Stage: "次年", Amount: 999, Status: constants.PaymentStatusConfirmed, PlanDate: day(2025, 1, 1), ActualDate: ptrTime(day(2025, 1, 1))},
+		{UserID: userID, ProjectID: 9, Stage: "上年", Amount: 400, Status: constants.PaymentStatusConfirmed, PlanDate: day(2023, 6, 1), ActualDate: ptrTime(day(2023, 6, 1))},
+	}
+	for _, p := range payments {
+		require.NoError(t, db.Create(&p).Error)
+	}
+	service := NewDashboardService()
+
+	month, err := service.GetStatsForCalendar(userID, 2024, 2)
+	require.NoError(t, err)
+	assert.Equal(t, 500.0, month.TotalAmount)
+	assert.Equal(t, 300.0, month.PaidAmount)
+	assert.Equal(t, 200.0, month.PendingAmount)
+	assert.Equal(t, 200.0, month.OverdueAmount)
+	assert.Equal(t, 200.0, month.PaidTrend, "February is compared with January")
+
+	year, err := service.GetStatsForCalendar(userID, 2024, 0)
+	require.NoError(t, err)
+	assert.Equal(t, 650.0, year.TotalAmount, "both ends of the year count, the next year does not")
+	assert.Equal(t, 450.0, year.PaidAmount)
+	assert.Equal(t, 12.5, year.PaidTrend, "2024 is compared with 2023")
+
+	monthTrend, err := service.GetIncomeTrendForCalendar(userID, 2024, 2)
+	require.NoError(t, err)
+	assert.Len(t, monthTrend.Labels, 29, "a leap February has 29 days")
+	assert.Equal(t, "02-01", monthTrend.Labels[0])
+	assert.Equal(t, "02-29", monthTrend.Labels[28])
+	assert.Equal(t, 300.0, monthTrend.ActualValues[28])
+	assert.Equal(t, 200.0, monthTrend.ExpectedValues[0])
+	assert.Equal(t, "2024-02-01", monthTrend.StartDate)
+	assert.Equal(t, "2024-02-29", monthTrend.EndDate)
+
+	yearTrend, err := service.GetIncomeTrendForCalendar(userID, 2024, 0)
+	require.NoError(t, err)
+	assert.Len(t, yearTrend.Labels, 12)
+	assert.Equal(t, "2024-01", yearTrend.Labels[0])
+	assert.Equal(t, []float64{100, 300}, yearTrend.ActualValues[:2])
+	assert.Equal(t, 50.0, yearTrend.ActualValues[11])
+
+	assert.True(t, ValidCalendarPeriod(2024, 0))
+	assert.False(t, ValidCalendarPeriod(2024, 13))
+	assert.False(t, ValidCalendarPeriod(1999, 1))
 }

@@ -4,11 +4,11 @@ import (
 	"fmt"
 	"time"
 
-	"github.com/FruitsAI/Orange/internal/dto"
-	"github.com/FruitsAI/Orange/internal/models"
-	"github.com/FruitsAI/Orange/internal/pkg/cache"
-	"github.com/FruitsAI/Orange/internal/pkg/utils"
-	"github.com/FruitsAI/Orange/internal/repository"
+	"github.com/primordialweave/zhusuan/internal/dto"
+	"github.com/primordialweave/zhusuan/internal/models"
+	"github.com/primordialweave/zhusuan/internal/pkg/cache"
+	"github.com/primordialweave/zhusuan/internal/pkg/utils"
+	"github.com/primordialweave/zhusuan/internal/repository"
 )
 
 // DashboardService 仪表盘服务
@@ -35,7 +35,12 @@ func NewDashboardService() *DashboardService {
 }
 
 // dashboardPeriods GetStats 支持的统计周期，同时是缓存键与缓存失效的唯一依据
-var dashboardPeriods = []string{"all", "week", "month", "quarter", "year"}
+const (
+	calendarUnitDay   = "day"
+	calendarUnitMonth = "month"
+)
+
+var dashboardPeriods = []string{"all", "week", calendarUnitMonth, "quarter", "year"}
 
 // normalizeDashboardPeriod 归一化客户端传入的统计周期
 // 空值与未知值一律归为 "all"，保证缓存键有界且失效列表完全覆盖
@@ -192,6 +197,80 @@ func (s *DashboardService) GetStats(userID int64, period string) (*dto.Stats, er
 	return result, nil
 }
 
+// ValidCalendarPeriod 判断自选的年 / 月是否可用于统计（month 为 0 表示整年）
+func ValidCalendarPeriod(year, month int) bool {
+	return year >= 2000 && year <= 2100 && month >= 0 && month <= 12
+}
+
+// GetStatsForCalendar 获取某一自然年或自然月的统计数据
+// 口径与按周期统计一致（基于款项），趋势对比紧邻的上一年 / 上一月。
+// 自选范围的组合太多，不进缓存：缓存失效列表只覆盖固定周期。
+//
+// 参数:
+//   - userID: 当前登录用户的ID
+//   - year: 四位年份
+//   - month: 1-12 表示该年的某个月；0 表示整年
+func (s *DashboardService) GetStatsForCalendar(userID int64, year, month int) (*dto.Stats, error) {
+	current, previous := utils.GetCalendarRange(year, month)
+	currTotal, currPaid, currPending, currOverdue, currAvgDays, err := s.paymentRepo.GetStatsByPeriod(userID, current.StartDate, current.EndDate)
+	if err != nil {
+		return nil, err
+	}
+	prevTotal, prevPaid, prevPending, prevOverdue, prevAvgDays, err := s.paymentRepo.GetStatsByPeriod(userID, previous.StartDate, previous.EndDate)
+	if err != nil {
+		return nil, err
+	}
+	return &dto.Stats{
+		TotalAmount:            currTotal,
+		PaidAmount:             currPaid,
+		PendingAmount:          currPending,
+		OverdueAmount:          currOverdue,
+		AvgCollectionDays:      currAvgDays,
+		TotalTrend:             utils.CalcPercentageTrend(currTotal, prevTotal),
+		PaidTrend:              utils.CalcPercentageTrend(currPaid, prevPaid),
+		PendingTrend:           utils.CalcPercentageTrend(currPending, prevPending),
+		OverdueTrend:           utils.CalcPercentageTrend(currOverdue, prevOverdue),
+		AvgCollectionDaysTrend: utils.CalcPercentageTrend(currAvgDays, prevAvgDays),
+	}, nil
+}
+
+// GetIncomeTrendForCalendar 获取某一自然年（按月聚合）或自然月（按天聚合）的收入趋势
+//
+// 参数:
+//   - userID: 用户ID
+//   - year: 四位年份
+//   - month: 1-12 表示该年的某个月；0 表示整年
+func (s *DashboardService) GetIncomeTrendForCalendar(userID int64, year, month int) (*dto.IncomeTrend, error) {
+	current, _ := utils.GetCalendarRange(year, month)
+	interval := calendarUnitDay
+	if month == 0 {
+		interval = calendarUnitMonth
+	}
+	expected, actual, err := s.paymentRepo.GetIncomeStats(userID, current.StartDate, current.EndDate, interval)
+	if err != nil {
+		return nil, err
+	}
+
+	trend := &dto.IncomeTrend{StartDate: current.StartDate, EndDate: current.EndDate[:10]}
+	add := func(key, label string) {
+		trend.Labels = append(trend.Labels, label)
+		trend.ActualValues = append(trend.ActualValues, actual[key])
+		trend.ExpectedValues = append(trend.ExpectedValues, expected[key])
+	}
+	if month == 0 {
+		for m := time.January; m <= time.December; m++ {
+			key := time.Date(year, m, 1, 0, 0, 0, 0, time.Local).Format("2006-01")
+			add(key, key)
+		}
+		return trend, nil
+	}
+	first := time.Date(year, time.Month(month), 1, 0, 0, 0, 0, time.Local)
+	for date := first; date.Month() == first.Month(); date = date.AddDate(0, 0, 1) {
+		add(date.Format("2006-01-02"), date.Format("01-02"))
+	}
+	return trend, nil
+}
+
 // GetIncomeTrend 获取收入趋势图表数据
 // 根据指定的时间段返回用于绘制折线图的标签和数值。
 //
@@ -203,10 +282,10 @@ func (s *DashboardService) GetStats(userID int64, period string) (*dto.Stats, er
 //   - *dto.IncomeTrend: 包含 Labels (X轴), ActualValues (实际收入), ExpectedValues (预计收入)
 //   - error: 错误信息
 func (s *DashboardService) GetIncomeTrend(userID int64, period string) (*dto.IncomeTrend, error) {
-	periodDays := map[string]int{"week": 7, "month": 30, "quarter": 90, "year": 365}
+	periodDays := map[string]int{"week": 7, calendarUnitMonth: 30, "quarter": 90, "year": 365}
 	days, valid := periodDays[period]
 	if !valid {
-		period, days = "month", 30
+		period, days = calendarUnitMonth, 30
 	}
 	// Metrics and charts must query the same rolling period, including partial months.
 	periodRange := utils.GetPeriodRange(period, 0)
@@ -219,9 +298,9 @@ func (s *DashboardService) GetIncomeTrend(userID int64, period string) (*dto.Inc
 	if err != nil {
 		return nil, fmt.Errorf("parse income trend end: %w", err)
 	}
-	interval, months := "day", 0
+	interval, months := calendarUnitDay, 0
 	if period == "quarter" || period == "year" {
-		interval = "month"
+		interval = calendarUnitMonth
 		months = (loopEnd.Year()-loopStart.Year())*12 + int(loopEnd.Month()-loopStart.Month()) + 1
 		loopStart = time.Date(loopStart.Year(), loopStart.Month(), 1, 0, 0, 0, 0, loopStart.Location())
 	}
@@ -237,7 +316,7 @@ func (s *DashboardService) GetIncomeTrend(userID int64, period string) (*dto.Inc
 	var expectedValues []float64
 
 	// 数据补全: 数据库只返回有数据的日期，需要遍历完整时间轴填补0值
-	if interval == "day" {
+	if interval == calendarUnitDay {
 		for i := 0; i < days; i++ {
 			date := loopStart.AddDate(0, 0, i)
 			key := date.Format("2006-01-02") // 数据库返回的Key格式

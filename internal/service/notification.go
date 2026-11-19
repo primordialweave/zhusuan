@@ -3,8 +3,8 @@ package service
 import (
 	"errors"
 
-	"github.com/FruitsAI/Orange/internal/models"
-	"github.com/FruitsAI/Orange/internal/repository"
+	"github.com/primordialweave/zhusuan/internal/models"
+	"github.com/primordialweave/zhusuan/internal/repository"
 )
 
 // NotificationService 通知与消息服务

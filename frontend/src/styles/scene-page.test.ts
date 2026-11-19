@@ -35,9 +35,23 @@ describe('scene page contract (sign-in and not-found)', () => {
     )
   })
 
-  it('is a still page: no looping animation and no live blur', () => {
+  it('keeps the card itself still and never blurs live', () => {
     expect(pageCss).not.toMatch(/infinite/)
     expect(pageCss).not.toMatch(/backdrop-filter\s*:/)
+  })
+
+  it('places the greeter with the same crops the two stills use', () => {
+    const greeterCss = read('src/styles/scene-greeter.css')
+
+    expect(greeterCss).toMatch(
+      /\[data-crop='page'\]\s*\{[^}]*max\(120vw[^}]*--scene-focus-x: 0\.56;[^}]*--scene-focus-y: 0\.4;/,
+    )
+    expect(greeterCss).toMatch(
+      /\[data-crop='cover'\]\s*\{[^}]*max\(100vw[^}]*--scene-focus-x: 0\.5;[^}]*--scene-focus-y: 0\.45;/,
+    )
+    expect(read('src/styles/scene.css')).toContain('background-position: 50% 45%')
+    // A CSS filter softens only the pose that is standing still in WebKit.
+    expect(greeterCss).not.toMatch(/(?:^|[;{\s])filter\s*:/)
   })
 
   it('leaves the card and its controls to ODS', () => {

@@ -1,14 +1,14 @@
 package handler
 
 import (
-	"encoding/json"
-	"fmt"
 	"net/http"
 	"time"
 
-	"github.com/FruitsAI/Orange/internal/config"
-	"github.com/FruitsAI/Orange/internal/pkg/response"
 	"github.com/gin-gonic/gin"
+
+	"github.com/primordialweave/zhusuan/internal/config"
+	"github.com/primordialweave/zhusuan/internal/pkg/response"
+	"github.com/primordialweave/zhusuan/internal/updater"
 )
 
 // SystemHandler 系统级功能处理器
@@ -26,9 +26,10 @@ func NewSystemHandler() *SystemHandler {
 
 // CheckUpdateResponse 版本检查响应结构
 type CheckUpdateResponse struct {
-	TagName string `json:"tag_name"` // 版本标签 (如 v1.0.1)
-	HtmlUrl string `json:"html_url"` // 发布页面链接
-	Body    string `json:"body"`     // 更新日志内容
+	TagName string          `json:"tag_name"` // 版本标签 (如 v1.0.1)
+	HTMLURL string          `json:"html_url"` // 发布页面链接
+	Body    string          `json:"body"`     // 更新日志内容
+	Assets  []updater.Asset `json:"assets"`
 }
 
 // CheckUpdate 检查是否有新版本
@@ -42,25 +43,10 @@ func (h *SystemHandler) CheckUpdate(c *gin.Context) {
 	if repo == "" {
 		repo = "FruitsAI/Orange" // Fallback
 	}
-	url := fmt.Sprintf("https://api.github.com/repos/%s/releases/latest", repo)
-
-	resp, err := updateHTTPClient.Get(url)
+	releaseInfo, err := updater.FetchLatest(c.Request.Context(), updateHTTPClient, repo)
 	if err != nil {
-		response.InternalError(c, "Failed to fetch update info")
+		response.InternalError(c, "检查更新失败，请稍后重试")
 		return
 	}
-	defer resp.Body.Close()
-
-	if resp.StatusCode != http.StatusOK {
-		response.InternalError(c, "Failed to fetch update info from GitHub")
-		return
-	}
-
-	var releaseInfo CheckUpdateResponse
-	if err := json.NewDecoder(resp.Body).Decode(&releaseInfo); err != nil {
-		response.InternalError(c, "Failed to parse GitHub response")
-		return
-	}
-
 	response.Success(c, releaseInfo)
 }

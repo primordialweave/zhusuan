@@ -11,8 +11,14 @@
   align-items: center;
   display: flex;
   flex-wrap: wrap;
-  gap: var(--ods-space-4);
+  gap: var(--ods-space-3);
   justify-content: flex-end;
+}
+
+.analytics-calendar {
+  display: flex;
+  align-items: center;
+  gap: var(--ods-space-3);
 }
 
 .analytics-period-tab {
@@ -41,7 +47,12 @@
   min-width: 0;
   flex-direction: column;
   gap: var(--ods-space-2);
-  padding-inline: clamp(var(--ods-space-8), 22%, var(--ods-space-16)) var(--ods-space-4);
+  padding-inline: var(--ods-space-8) var(--ods-space-4);
+}
+
+/* The first figure and the first chart start under the page title. */
+.analytics-metric:first-child {
+  padding-inline-start: var(--ods-space-4);
 }
 
 .analytics-metric + .analytics-metric::before {
@@ -88,7 +99,7 @@
   min-height: 0;
   flex-direction: column;
   gap: var(--ods-space-4);
-  padding-inline-end: var(--ods-space-8);
+  padding-inline: var(--ods-space-4) var(--ods-space-8);
 }
 
 .analytics-chart--structure {
@@ -197,7 +208,7 @@
 
 .analytics-structure__legend {
   display: flex;
-  width: min(100%, 18rem);
+  width: 100%;
   flex-direction: column;
   gap: var(--ods-space-3);
   margin: 0;
@@ -233,7 +244,7 @@
 
 .analytics-structure__row .analytics-structure__note {
   color: var(--ods-color-status-danger);
-  font-size: var(--ods-font-size-xs);
+  font-size: var(--ods-font-size-sm);
   font-weight: var(--ods-font-weight-regular);
   grid-column: 2 / -1;
 }

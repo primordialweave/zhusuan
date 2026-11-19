@@ -1,6 +1,7 @@
 import { useCallback, useEffect, useRef, useState } from 'react'
 import { dashboardApi } from '@/api/dashboard'
 import type { PaymentSummaryStatus } from '@/components/dashboard/PaymentSummary'
+import type { PaymentSummaryScope } from '@/components/dashboard/paymentSummaryScope'
 
 interface PaymentSummaryState {
   paid: number
@@ -8,13 +9,19 @@ interface PaymentSummaryState {
   status: PaymentSummaryStatus
 }
 
+const requestScope = (scope: PaymentSummaryScope) => {
+  if (scope === 'all') return undefined
+  const today = new Date()
+  return { month: scope === 'month' ? today.getMonth() + 1 : 0, year: today.getFullYear() }
+}
+
 /**
- * All-time collected and outstanding amounts for the workbench.
+ * Collected and outstanding amounts for the workbench: all time, this year or this month.
  *
- * The unscoped stats already count overdue money inside `pending_amount`, so the two values
- * are the whole picture and must not be combined with `overdue_amount`.
+ * The stats already count overdue money inside `pending_amount`, so the two values are the
+ * whole picture and must not be combined with `overdue_amount`.
  */
-export function usePaymentSummary() {
+export function usePaymentSummary(scope: PaymentSummaryScope = 'all') {
   const [state, setState] = useState<PaymentSummaryState>({
     paid: 0,
     pending: 0,
@@ -29,7 +36,7 @@ export function usePaymentSummary() {
     setState((current) => (current.status === 'data' ? current : { ...current, status: 'loading' }))
 
     try {
-      const response = await dashboardApi.getStats(undefined, controller.signal)
+      const response = await dashboardApi.getStats(requestScope(scope), controller.signal)
       if (controller.signal.aborted) return
       const stats = response.data.data
       setState({ paid: stats.paid_amount, pending: stats.pending_amount, status: 'data' })
@@ -37,10 +44,10 @@ export function usePaymentSummary() {
       if (controller.signal.aborted) return
       setState((current) => ({ ...current, status: 'error' }))
     }
-  }, [])
+  }, [scope])
 
   useEffect(() => {
-    // Mounting again (returning from another page) is the refresh trigger.
+    // Mounting again (returning from another page) and changing scope both load afresh.
     const timer = window.setTimeout(load, 0)
     return () => {
       window.clearTimeout(timer)

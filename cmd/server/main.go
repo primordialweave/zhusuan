@@ -13,8 +13,8 @@ import (
 	"syscall"
 	"time"
 
-	"github.com/FruitsAI/Orange/internal/app"
-	"github.com/FruitsAI/Orange/internal/config"
+	"github.com/primordialweave/zhusuan/internal/app"
+	"github.com/primordialweave/zhusuan/internal/config"
 )
 
 func main() {

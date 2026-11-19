@@ -5,19 +5,19 @@
 !include "FileFunc.nsh"
 
 !ifndef INFO_PROJECTNAME
-    !define INFO_PROJECTNAME "Orange"
+    !define INFO_PROJECTNAME "zhusuan"
 !endif
 !ifndef INFO_COMPANYNAME
-    !define INFO_COMPANYNAME "FruitsAI"
+    !define INFO_COMPANYNAME "PrimordialWeave"
 !endif
 !ifndef INFO_PRODUCTNAME
-    !define INFO_PRODUCTNAME "Orange"
+    !define INFO_PRODUCTNAME "zhusuan"
 !endif
 !ifndef INFO_PRODUCTVERSION
     !define INFO_PRODUCTVERSION "0.0.1"
 !endif
 !ifndef INFO_COPYRIGHT
-    !define INFO_COPYRIGHT "(c) 2026, FruitsAI"
+    !define INFO_COPYRIGHT "(c) 2026, PrimordialWeave"
 !endif
 !ifndef PRODUCT_EXECUTABLE
     !define PRODUCT_EXECUTABLE "${INFO_PROJECTNAME}.exe"

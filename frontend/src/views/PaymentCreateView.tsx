@@ -119,13 +119,7 @@ export default function PaymentCreateView() {
           )
         }
         // The selector already names the chosen project; only a fixed project needs saying.
-        description={
-          routeProjectId
-            ? currentProject?.name
-            : currentProject
-              ? undefined
-              : '选择项目后添加收款节点'
-        }
+        description={routeProjectId ? currentProject?.name : undefined}
         leading={
           <IconButton label="返回上一页" onClick={() => navigate(-1)} variant="ghost">
             <i aria-hidden="true" className="ri-arrow-left-line" />

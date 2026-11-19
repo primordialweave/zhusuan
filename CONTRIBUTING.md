@@ -24,7 +24,7 @@
 
 ### 报告 Bug
 
-如果你发现了 bug，请通过 [GitHub Issues](https://github.com/FruitsAI/Orange/issues) 提交报告。
+如果你发现了 bug，请通过 [GitHub Issues](https://github.com/primordialweave/zhusuan/issues) 提交报告。
 
 **Bug 报告应包含：**
 
@@ -62,7 +62,7 @@ git clone https://github.com/YOUR_USERNAME/Orange.git
 cd Orange
 
 # 添加上游仓库
-git remote add upstream https://github.com/FruitsAI/Orange.git
+git remote add upstream https://github.com/primordialweave/zhusuan.git
 ```
 
 ### 2. 创建分支
@@ -345,7 +345,7 @@ go tool cover -html=coverage.out
 如果你有任何问题，可以：
 
 1. 查看 [文档](./docs)
-2. 搜索 [Issues](https://github.com/FruitsAI/Orange/issues)
+2. 搜索 [Issues](https://github.com/primordialweave/zhusuan/issues)
 3. 创建新的 Issue 提问
 
 ---

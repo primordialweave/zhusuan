@@ -1,8 +1,8 @@
 import { afterEach, describe, expect, it, vi } from 'vitest'
-import { CredentialStore } from '../../bindings/github.com/FruitsAI/Orange/internal/desktop'
+import { CredentialStore } from '../../bindings/github.com/primordialweave/zhusuan/internal/desktop'
 import { rememberedLogin } from './rememberedLogin'
 
-vi.mock('../../bindings/github.com/FruitsAI/Orange/internal/desktop', () => ({
+vi.mock('../../bindings/github.com/primordialweave/zhusuan/internal/desktop', () => ({
   CredentialStore: { Load: vi.fn(), Save: vi.fn(), Clear: vi.fn() },
 }))
 
@@ -27,8 +27,8 @@ describe('rememberedLogin', () => {
     await rememberedLogin.save(credentials)
     expect(await rememberedLogin.load()).toEqual(credentials)
     await rememberedLogin.clear()
-    expect(CredentialStore.Save).toHaveBeenCalledWith('orange-desktop/api/v1', credentials)
-    expect(CredentialStore.Load).toHaveBeenCalledWith('orange-desktop/api/v1')
-    expect(CredentialStore.Clear).toHaveBeenCalledWith('orange-desktop/api/v1')
+    expect(CredentialStore.Save).toHaveBeenCalledWith('zhusuan-desktop/api/v1', credentials)
+    expect(CredentialStore.Load).toHaveBeenCalledWith('zhusuan-desktop/api/v1')
+    expect(CredentialStore.Clear).toHaveBeenCalledWith('zhusuan-desktop/api/v1')
   })
 })

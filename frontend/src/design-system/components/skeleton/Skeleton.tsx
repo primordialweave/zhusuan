@@ -11,15 +11,7 @@ export interface SkeletonProps extends Omit<HTMLAttributes<HTMLDivElement>, 'ari
 }
 
 export const Skeleton = forwardRef<HTMLDivElement, SkeletonProps>(function Skeleton(
-  {
-    animation = 'shimmer',
-    className,
-    height,
-    shape = 'rect',
-    style,
-    width,
-    ...props
-  },
+  { animation = 'shimmer', className, height, shape = 'rect', style, width, ...props },
   ref,
 ) {
   return (

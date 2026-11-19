@@ -4,13 +4,14 @@ import { useConfirm } from '@/composables/useConfirm'
 import { useToastStore } from '@/composables/useToast'
 import {
   Button,
+  Code,
   EmptyState,
   Field,
   FormActions,
   IconButton,
   Input,
   Modal,
-  SectionHeader,
+  Table,
   Tabs,
 } from '@/design-system'
 
@@ -178,79 +179,82 @@ export default function DictionaryManagement() {
   }
 
   return (
-    <div className="dict-management">
+    <div className="dict-management settings-page">
       <Tabs.Root className="dict-layout" onValueChange={setActiveDictId} value={activeDictId}>
-        <Tabs.List
-          aria-label="字典分类"
-          className="dict-sidebar"
-          orientation="vertical"
-          variant="navigation"
-        >
-          <div className="dict-sidebar-title">字典分类</div>
-          {dictionaries.map((dictionary) => (
-            <Tabs.Tab key={dictionary.id} value={dictionary.code}>
-              <i aria-hidden="true" className="ri-folder-2-line" />
-              <span>{dictionary.name}</span>
-            </Tabs.Tab>
-          ))}
-        </Tabs.List>
+        <div className="settings-toolbar">
+          <Tabs.List aria-label="字典分类" variant="accent">
+            {dictionaries.map((dictionary) => (
+              <Tabs.Tab key={dictionary.id} value={dictionary.code}>
+                {dictionary.name}
+              </Tabs.Tab>
+            ))}
+          </Tabs.List>
+          <Button disabled={!activeDictId} onClick={openAddModal}>
+            <i aria-hidden="true" className="ri-add-line" />
+            <span>新增条目</span>
+          </Button>
+        </div>
 
         <Tabs.Panel value={activeDictId}>
-          <div className="dict-content">
-            <SectionHeader
-              actions={
-                <Button disabled={!activeDictId} onClick={openAddModal}>
-                  <i aria-hidden="true" className="ri-add-line" />
-                  <span>新增条目</span>
-                </Button>
-              }
-              title={activeDictName || '字典条目'}
-              description={`共 ${activeDictItems.length} 个条目`}
-              headingLevel={2}
-              density="compact"
+          {activeDictItems.length === 0 ? (
+            <EmptyState
+              className="settings-empty"
+              icon={<i aria-hidden="true" className="ri-file-list-3-line" />}
+              size="md"
+              title={`${activeDictName || '字典'}还没有条目`}
             />
-            {activeDictItems.length === 0 ? (
-              <EmptyState
-                className="dict-empty"
-                description="点击右上角按钮添加新条目"
-                icon={<i aria-hidden="true" className="ri-file-list-3-line" />}
-                size="md"
-                title="暂无数据"
-              />
-            ) : (
-              <ul className="dict-list">
+          ) : (
+            <Table.Root aria-label={`${activeDictName}条目`} className="settings-table">
+              <Table.Header>
+                <Table.Row>
+                  <Table.Column>名称</Table.Column>
+                  <Table.Column className="dict-value-column">值</Table.Column>
+                  <Table.Column align="end" className="dict-sort-column">
+                    排序
+                  </Table.Column>
+                  <Table.Column align="end" className="settings-actions-column">
+                    <span className="ods-sr-only">操作</span>
+                  </Table.Column>
+                </Table.Row>
+              </Table.Header>
+              <Table.Body>
                 {activeDictItems.map((item) => (
-                  <li className="dict-item" key={item.id}>
-                    <div className="dict-item-info">
-                      <span className="dict-item-label">{item.label}</span>
-                      <span className="dict-item-value">{item.value}</span>
-                    </div>
-                    <div className="dict-item-actions">
-                      <IconButton
-                        label="编辑字典条目"
-                        onClick={(event) => openEditModal(item, event)}
-                        size="sm"
-                        title="编辑"
-                        variant="ghost"
-                      >
-                        <i aria-hidden="true" className="ri-edit-line" />
-                      </IconButton>
-                      <IconButton
-                        label="删除字典条目"
-                        onClick={() => void deleteDictItem(item.id)}
-                        size="sm"
-                        title="删除"
-                        variant="ghost"
-                        tone="danger"
-                      >
-                        <i aria-hidden="true" className="ri-delete-bin-line" />
-                      </IconButton>
-                    </div>
-                  </li>
+                  <Table.Row key={item.id}>
+                    <Table.Cell>{item.label}</Table.Cell>
+                    <Table.Cell>
+                      <Code>{item.value}</Code>
+                    </Table.Cell>
+                    <Table.Cell align="end" className="settings-table__number">
+                      {item.sort}
+                    </Table.Cell>
+                    <Table.Cell align="end">
+                      <div className="settings-table__actions">
+                        <IconButton
+                          label="编辑字典条目"
+                          onClick={(event) => openEditModal(item, event)}
+                          size="sm"
+                          title="编辑"
+                          variant="ghost"
+                        >
+                          <i aria-hidden="true" className="ri-edit-line" />
+                        </IconButton>
+                        <IconButton
+                          label="删除字典条目"
+                          onClick={() => void deleteDictItem(item.id)}
+                          size="sm"
+                          title="删除"
+                          tone="danger"
+                          variant="ghost"
+                        >
+                          <i aria-hidden="true" className="ri-delete-bin-line" />
+                        </IconButton>
+                      </div>
+                    </Table.Cell>
+                  </Table.Row>
                 ))}
-              </ul>
-            )}
-          </div>
+              </Table.Body>
+            </Table.Root>
+          )}
         </Tabs.Panel>
       </Tabs.Root>
 

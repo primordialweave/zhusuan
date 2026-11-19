@@ -1,20 +1,54 @@
 import dayjs from 'dayjs'
 import type { ChartConfiguration, ScriptableContext } from 'chart.js'
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react'
-import { dashboardApi, type DashboardStats, type IncomeTrend } from '@/api/dashboard'
+import {
+  dashboardApi,
+  type DashboardScope,
+  type DashboardStats,
+  type IncomeTrend,
+} from '@/api/dashboard'
 import Chart from '@/config/chart'
 import { useReducedMotion } from '@/hooks/useReducedMotion'
-import { Button, EmptyState, PageHeader, Skeleton, Table, Tabs } from '@/design-system'
+import { Button, EmptyState, PageHeader, Select, Skeleton, Table, Tabs } from '@/design-system'
 import { useToastStore } from '@/composables/useToast'
 import { useThemeStore } from '@/stores/theme'
-import { downloadCsv } from '@/utils/csv'
+import { exportCsv } from '@/utils/csv'
 import { getCollectionTimingLabel, getPeriodLabel } from '@/views/dashboard/dashboardModel'
 import { formatAmount, formatCurrency } from '@/utils/format'
 import '@/styles/analytics.css'
 
-type Period = 'week' | 'month' | 'quarter' | 'year'
+// Four rolling windows, then a calendar year or month of the user's choosing.
+type Period = 'week' | 'month' | 'quarter' | 'year' | 'custom'
 
-const periods: Period[] = ['week', 'month', 'quarter', 'year']
+const periods: Period[] = ['week', 'month', 'quarter', 'year', 'custom']
+
+interface CalendarChoice {
+  /** 1–12, or 0 for the whole year. */
+  month: number
+  year: number
+}
+
+const thisYear = new Date().getFullYear()
+// Plans reach into next year; history goes back as far as anyone is likely to look.
+const yearOptions = Array.from({ length: 12 }, (_, index) => {
+  const year = thisYear + 1 - index
+  return { label: `${year}年`, value: String(year) }
+})
+const monthOptions = [
+  { label: '全年', value: '0' },
+  ...Array.from({ length: 12 }, (_, index) => ({
+    label: `${index + 1}月`,
+    value: String(index + 1),
+  })),
+]
+
+const calendarName = ({ month, year }: CalendarChoice) =>
+  month ? `${year}年${month}月` : `${year}年`
+
+const calendarRange = ({ month, year }: CalendarChoice) => {
+  const start = dayjs(new Date(year, month ? month - 1 : 0, 1))
+  return [start, start.endOf(month ? 'month' : 'year')].map((date) => date.format('YYYY-MM-DD'))
+}
 
 const emptyStats: DashboardStats = {
   avg_collection_days: 0,
@@ -39,7 +73,8 @@ const periodLabel = (period: Period) => {
   if (period === 'week') return '周'
   if (period === 'month') return '月'
   if (period === 'quarter') return '季'
-  return '年'
+  if (period === 'year') return '年'
+  return '自选'
 }
 
 const formatAxisAmount = (amount: number) => {
@@ -101,9 +136,16 @@ function StructureDonut({ paid, pending }: { paid: number; pending: number }) {
 
 export default function AnalyticsView() {
   const toastError = useToastStore((state) => state.error)
+  const toastSuccess = useToastStore((state) => state.success)
   const effectiveTheme = useThemeStore((state) => state.effectiveTheme)
   const reducedMotion = useReducedMotion()
   const [activePeriod, setActivePeriod] = useState<Period>('month')
+  const [calendar, setCalendar] = useState<CalendarChoice>({ month: 0, year: thisYear })
+  const [exporting, setExporting] = useState(false)
+  const scope = useMemo<DashboardScope>(
+    () => (activePeriod === 'custom' ? calendar : activePeriod),
+    [activePeriod, calendar],
+  )
   const [stats, setStats] = useState<DashboardStats>(emptyStats)
   const [trend, setTrend] = useState<IncomeTrend>(emptyTrend)
   const [isLoading, setIsLoading] = useState(true)
@@ -135,14 +177,20 @@ export default function AnalyticsView() {
 
   const hasStructureData = paidAmount + pendingAmount > 0
 
-  const periodDays = { week: 7, month: 30, quarter: 90, year: 365 }[activePeriod]
-  const periodName = getPeriodLabel(activePeriod)
-  const rangeLabel = `${
-    (!isLoading && !loadError && trend.start_date) ||
-    dayjs()
-      .subtract(periodDays - 1, 'day')
-      .format('YYYY-MM-DD')
-  } — ${(!isLoading && !loadError && trend.end_date) || dayjs().format('YYYY-MM-DD')}`
+  const periodName =
+    activePeriod === 'custom' ? calendarName(calendar) : getPeriodLabel(activePeriod)
+  const [fallbackStart, fallbackEnd] =
+    activePeriod === 'custom'
+      ? calendarRange(calendar)
+      : [
+          dayjs()
+            .subtract({ week: 7, month: 30, quarter: 90, year: 365 }[activePeriod] - 1, 'day')
+            .format('YYYY-MM-DD'),
+          dayjs().format('YYYY-MM-DD'),
+        ]
+  const rangeLabel = `${(!isLoading && !loadError && trend.start_date) || fallbackStart} — ${
+    (!isLoading && !loadError && trend.end_date) || fallbackEnd
+  }`
 
   const colors = useMemo(() => {
     const isDark = effectiveTheme === 'dark'
@@ -251,15 +299,15 @@ export default function AnalyticsView() {
   }, [colors, reducedMotion])
 
   const fetchAnalytics = useCallback(
-    async (period: Period, signal?: AbortSignal) => {
+    async (target: DashboardScope, signal?: AbortSignal) => {
       const requestGeneration = ++requestGenerationRef.current
       setIsLoading(true)
       setLoadError(false)
 
       try {
         const [statsResponse, trendResponse] = await Promise.all([
-          dashboardApi.getStats(period, signal),
-          dashboardApi.getIncomeTrend(period, signal),
+          dashboardApi.getStats(target, signal),
+          dashboardApi.getIncomeTrend(target, signal),
         ])
         if (
           signal?.aborted ||
@@ -310,14 +358,14 @@ export default function AnalyticsView() {
   useEffect(() => {
     const controller = new AbortController()
     const timer = window.setTimeout(() => {
-      void fetchAnalytics(activePeriod, controller.signal)
+      void fetchAnalytics(scope, controller.signal)
     }, 0)
     return () => {
       window.clearTimeout(timer)
       controller.abort()
       requestGenerationRef.current += 1
     }
-  }, [activePeriod, fetchAnalytics])
+  }, [fetchAnalytics, scope])
 
   useEffect(() => {
     const chart = trendChart.current
@@ -344,15 +392,21 @@ export default function AnalyticsView() {
     setActivePeriod(period)
   }
 
+  const chooseCalendar = (change: Partial<CalendarChoice>) => {
+    setIsLoading(true)
+    setLoadError(false)
+    setCalendar((current) => ({ ...current, ...change }))
+  }
+
   const retryAction = (
-    <Button onClick={() => void fetchAnalytics(activePeriod)} size="sm" variant="secondary">
+    <Button onClick={() => void fetchAnalytics(scope)} size="sm" variant="secondary">
       重新加载
     </Button>
   )
 
-  const handleExport = useCallback(() => {
+  const handleExport = useCallback(async () => {
     const rows: Array<Array<number | string>> = [
-      ['Orange 数据分析'],
+      ['珠算 数据分析'],
       ['统计周期', periodName],
       ['日期范围', rangeLabel],
       ['平均到账偏差（天，提前为负）', stats.avg_collection_days],
@@ -370,8 +424,16 @@ export default function AnalyticsView() {
         trend.expected_values[index] ?? '',
       ]),
     ]
-    downloadCsv(`Orange-${activePeriod}-${new Date().toISOString().slice(0, 10)}.csv`, rows)
-  }, [activePeriod, periodName, rangeLabel, stats, trend])
+    setExporting(true)
+    try {
+      const result = await exportCsv(`珠算-数据分析-${periodName}.csv`, rows)
+      if (result.status === 'saved') toastSuccess('报表已导出')
+    } catch {
+      toastError('导出失败，请重试')
+    } finally {
+      if (isMountedRef.current) setExporting(false)
+    }
+  }, [periodName, rangeLabel, stats, toastError, toastSuccess, trend])
 
   return (
     <Tabs.Root
@@ -390,10 +452,29 @@ export default function AnalyticsView() {
                 </Tabs.Tab>
               ))}
             </Tabs.List>
+            {activePeriod === 'custom' ? (
+              <div className="analytics-calendar">
+                <Select
+                  aria-label="统计年份"
+                  onValueChange={(value) => chooseCalendar({ year: Number(value) })}
+                  options={yearOptions}
+                  value={String(calendar.year)}
+                  width="content"
+                />
+                <Select
+                  aria-label="统计月份"
+                  onValueChange={(value) => chooseCalendar({ month: Number(value) })}
+                  options={monthOptions}
+                  value={String(calendar.month)}
+                  width="content"
+                />
+              </div>
+            ) : null}
             <Button
               className="analytics-export-button"
               disabled={isLoading || loadError}
-              onClick={handleExport}
+              onClick={() => void handleExport()}
+              pending={exporting}
               variant="outline"
             >
               <i aria-hidden="true" className="ri-download-line" />
@@ -402,7 +483,6 @@ export default function AnalyticsView() {
           </div>
         }
         data-motion="entrance"
-        description="了解收款进度与资金结构"
         title="数据分析"
       />
 

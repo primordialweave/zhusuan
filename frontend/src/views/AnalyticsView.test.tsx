@@ -23,6 +23,10 @@ const createDeferred = <T,>() => {
   return { promise, reject, resolve }
 }
 
+const exportCsv = vi.hoisted(() => vi.fn())
+
+vi.mock('@/utils/csv', () => ({ exportCsv }))
+
 vi.mock('@/api/dashboard', () => ({
   dashboardApi: {
     getIncomeTrend: vi.fn(),
@@ -98,15 +102,15 @@ describe('AnalyticsView', () => {
     const periodTabs = screen.getByRole('tablist', { name: '统计周期' })
     expect(periodTabs).toHaveAttribute('data-variant', 'accent')
     expect(screen.getByRole('tab', { name: '月' })).toHaveAttribute('aria-selected', 'true')
-    expect(screen.getAllByRole('tabpanel', { hidden: true })).toHaveLength(4)
+    expect(screen.getAllByRole('tabpanel', { hidden: true })).toHaveLength(5)
     expect(screen.getByRole('tabpanel', { name: '月' })).toBeVisible()
-    expect(container.querySelectorAll('.ods-tabs__tab')).toHaveLength(4)
+    expect(container.querySelectorAll('.ods-tabs__tab')).toHaveLength(5)
     expect(screen.getByRole('button', { name: '导出报表' })).toHaveAttribute(
       'data-variant',
       'outline',
     )
     // The header says what the page is for; the period lives in the tabs and on the chart axis.
-    expect(screen.getByText('了解收款进度与资金结构')).toBeInTheDocument()
+    expect(document.querySelector('.ods-page-header__description, .scene-page__text')).toBeNull()
     expect(container.querySelector('.ods-page-header__eyebrow')).not.toBeInTheDocument()
     // Open sections, no cards.
     expect(container.querySelector('.ods-card')).not.toBeInTheDocument()
@@ -317,5 +321,37 @@ describe('AnalyticsView', () => {
     expect(await screen.findByText('本期暂无回款趋势')).toBeInTheDocument()
     expect(screen.getByText('本期暂无收款结构')).toBeInTheDocument()
     expect(container.querySelectorAll('canvas')).toHaveLength(0)
+  })
+
+  it('reports a chosen calendar year or month and exports what is on screen', async () => {
+    const user = userEvent.setup()
+    const thisYear = new Date().getFullYear()
+    exportCsv.mockResolvedValue({ path: '/tmp/report.csv', status: 'saved' })
+    render(<AnalyticsView />)
+    await waitFor(() => expect(dashboardApi.getStats).toHaveBeenCalled())
+    expect(screen.queryByRole('button', { name: '统计年份' })).not.toBeInTheDocument()
+
+    await user.click(screen.getByRole('tab', { name: '自选' }))
+    await waitFor(() =>
+      expect(dashboardApi.getStats).toHaveBeenLastCalledWith(
+        { month: 0, year: thisYear },
+        expect.any(AbortSignal),
+      ),
+    )
+
+    await user.click(screen.getByRole('button', { name: '统计月份' }))
+    await user.click(await screen.findByRole('option', { name: '3月' }))
+    await waitFor(() =>
+      expect(dashboardApi.getIncomeTrend).toHaveBeenLastCalledWith(
+        { month: 3, year: thisYear },
+        expect.any(AbortSignal),
+      ),
+    )
+
+    await user.click(screen.getByRole('button', { name: '导出报表' }))
+    await waitFor(() => expect(exportCsv).toHaveBeenCalledOnce())
+    const [filename, rows] = exportCsv.mock.calls[0]
+    expect(filename).toBe(`珠算-数据分析-${thisYear}年3月.csv`)
+    expect(rows).toContainEqual(['统计周期', `${thisYear}年3月`])
   })
 })

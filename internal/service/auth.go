@@ -6,11 +6,11 @@ import (
 	"regexp"
 	"time"
 
-	"github.com/FruitsAI/Orange/internal/dto"
-	pkgerrors "github.com/FruitsAI/Orange/internal/pkg/errors"
-	"github.com/FruitsAI/Orange/internal/pkg/jwt"
-	"github.com/FruitsAI/Orange/internal/pkg/password"
-	"github.com/FruitsAI/Orange/internal/repository"
+	"github.com/primordialweave/zhusuan/internal/dto"
+	pkgerrors "github.com/primordialweave/zhusuan/internal/pkg/errors"
+	"github.com/primordialweave/zhusuan/internal/pkg/jwt"
+	"github.com/primordialweave/zhusuan/internal/pkg/password"
+	"github.com/primordialweave/zhusuan/internal/repository"
 	"gorm.io/gorm"
 )
 

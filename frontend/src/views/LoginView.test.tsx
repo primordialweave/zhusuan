@@ -243,7 +243,7 @@ describe('LoginView', () => {
     const card = screen.getByRole('region', { name: '欢迎回来' })
     expect(card).toHaveClass('ods-cloud-panel')
     expect(screen.getByRole('heading', { level: 1, name: '欢迎回来' })).toBeInTheDocument()
-    expect(screen.getByText('登录后继续查看项目与收款进度')).toBeInTheDocument()
+    expect(document.querySelector('.ods-page-header__description, .scene-page__text')).toBeNull()
     expect(container.querySelector('.scene-page__still')).toHaveAttribute('aria-hidden', 'true')
     expect(screen.queryByRole('img')).not.toBeInTheDocument()
     expect(screen.queryByRole('button', { name: /主题/ })).not.toBeInTheDocument()

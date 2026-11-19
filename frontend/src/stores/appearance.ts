@@ -4,7 +4,7 @@
  */
 import { create } from 'zustand'
 
-export const APPEARANCE_STORAGE_KEY = 'orange.appearance.v1'
+export const APPEARANCE_STORAGE_KEY = 'zhusuan.appearance.v1'
 
 export interface AppearancePreferences {
   /** 在工作台播放雨丝、水波和柳枝动画。 */

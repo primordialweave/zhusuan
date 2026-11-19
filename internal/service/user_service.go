@@ -3,13 +3,13 @@ package service
 import (
 	"errors"
 
-	"github.com/FruitsAI/Orange/internal/constants"
-	"github.com/FruitsAI/Orange/internal/dto"
-	"github.com/FruitsAI/Orange/internal/models"
-	"github.com/FruitsAI/Orange/internal/pkg/cache"
-	pkgerrors "github.com/FruitsAI/Orange/internal/pkg/errors"
-	"github.com/FruitsAI/Orange/internal/pkg/password"
-	"github.com/FruitsAI/Orange/internal/repository"
+	"github.com/primordialweave/zhusuan/internal/constants"
+	"github.com/primordialweave/zhusuan/internal/dto"
+	"github.com/primordialweave/zhusuan/internal/models"
+	"github.com/primordialweave/zhusuan/internal/pkg/cache"
+	pkgerrors "github.com/primordialweave/zhusuan/internal/pkg/errors"
+	"github.com/primordialweave/zhusuan/internal/pkg/password"
+	"github.com/primordialweave/zhusuan/internal/repository"
 )
 
 // UserService 用户管理服务

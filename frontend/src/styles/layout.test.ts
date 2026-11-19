@@ -1,3 +1,5 @@
+import { readFileSync } from 'node:fs'
+import { resolve } from 'node:path'
 import { describe, expect, test } from 'vitest'
 
 import './layout.css'
@@ -133,5 +135,18 @@ describe('desktop shell window interaction boundaries', () => {
       .join('\n')
 
     expect(selectors).not.toMatch(/\.app-topbar|\.theme-selector|\.app-background/)
+  })
+
+  test('keeps the project list header and pagination in place while only the rows scroll', () => {
+    const projectCss = readFileSync(resolve('src/styles/project-domain.css'), 'utf8')
+    const projectsSource = readFileSync(resolve('src/views/ProjectsView.tsx'), 'utf8')
+    const block = (selector: string) =>
+      new RegExp(`${selector.replace('.', '\\.')}\\s*\\{([^}]*)\\}`).exec(projectCss)?.[1] ?? ''
+
+    expect(block('.projects-view')).toContain('min-height: 0')
+    expect(block('.projects-workspace')).toContain('flex: 1 1 0')
+    expect(block('.project-table-scroll')).toContain('overflow-y: auto')
+    expect(projectsSource).toMatch(/<Table\.Root[^>]*\bstickyHeader\b/s)
+    expect(projectsSource).toContain('wrapperClassName="project-table-scroll"')
   })
 })

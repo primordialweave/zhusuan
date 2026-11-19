@@ -42,4 +42,13 @@ describe('Orange Design System foundations', () => {
     expect(source).toMatch(/::selection[\s\S]*var\(--ods-color-selection\)/)
     expect(source).toMatch(/::-webkit-scrollbar-thumb[\s\S]*var\(--ods-color-border-strong\)/)
   })
+
+  it('gives icon-font glyphs a square box so centring them is exact', () => {
+    const rule = /\[class\^='ri-'\],\s*\[class\*=' ri-'\]\s*\{([^}]*)\}/.exec(
+      readFoundation('typography'),
+    )?.[1]
+
+    expect(rule).toContain('line-height: 1')
+    expect(rule).toContain('display: inline-flex')
+  })
 })

@@ -1,6 +1,6 @@
 package dto
 
-import "github.com/FruitsAI/Orange/internal/models"
+import "github.com/primordialweave/zhusuan/internal/models"
 
 // ProjectListResult 项目列表结果
 type ProjectListResult struct {

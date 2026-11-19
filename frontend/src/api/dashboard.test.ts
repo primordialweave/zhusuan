@@ -28,4 +28,19 @@ describe('dashboardApi cancellation', () => {
       ['/dashboard/upcoming-payments', expect.objectContaining({ signal })],
     ])
   })
+
+  it('sends a chosen calendar year or month instead of a rolling period', () => {
+    dashboardApi.getStats({ month: 0, year: 2025 })
+    dashboardApi.getIncomeTrend({ month: 3, year: 2025 })
+    dashboardApi.getStats('week')
+
+    const params = vi
+      .mocked(api.get)
+      .mock.calls.map(([, config]) => config?.params as Record<string, unknown>)
+    expect(params[0]).toMatchObject({ year: 2025 })
+    expect(params[0].month).toBeUndefined()
+    expect(params[0].period).toBeUndefined()
+    expect(params[1]).toMatchObject({ month: 3, year: 2025 })
+    expect(params[2]).toMatchObject({ period: 'week' })
+  })
 })

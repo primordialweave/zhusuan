@@ -5,12 +5,12 @@ import (
 	"math"
 	"time"
 
-	"github.com/FruitsAI/Orange/internal/constants"
-	"github.com/FruitsAI/Orange/internal/database"
-	"github.com/FruitsAI/Orange/internal/dto"
-	"github.com/FruitsAI/Orange/internal/models"
-	pkgerrors "github.com/FruitsAI/Orange/internal/pkg/errors"
-	"github.com/FruitsAI/Orange/internal/repository"
+	"github.com/primordialweave/zhusuan/internal/constants"
+	"github.com/primordialweave/zhusuan/internal/database"
+	"github.com/primordialweave/zhusuan/internal/dto"
+	"github.com/primordialweave/zhusuan/internal/models"
+	pkgerrors "github.com/primordialweave/zhusuan/internal/pkg/errors"
+	"github.com/primordialweave/zhusuan/internal/repository"
 	"gorm.io/gorm"
 	"gorm.io/gorm/clause"
 )

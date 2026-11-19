@@ -134,7 +134,9 @@ describe('input primitives', () => {
     render(<Input aria-label="密码" type="password" />)
 
     expect(screen.getByLabelText('密码')).toHaveAttribute('type', 'password')
-    expect(inputCss).toMatch(/\.ods-input\[type='password'\]\s*\{[\s\S]*letter-spacing:\s*0(?:;|\s)/)
+    expect(inputCss).toMatch(
+      /\.ods-input\[type='password'\]\s*\{[\s\S]*letter-spacing:\s*0(?:;|\s)/,
+    )
   })
 
   it('provides textarea and native select variants with forwarded native behavior', () => {

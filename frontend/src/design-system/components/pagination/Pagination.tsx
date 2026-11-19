@@ -58,7 +58,7 @@ export const Pagination = forwardRef<HTMLElement, PaginationProps>(function Pagi
         onClick={() => onPageChange(currentPage - 1)}
         type="button"
       >
-        <span aria-hidden="true">‹</span>
+        <i aria-hidden="true" className="ri-arrow-left-s-line" />
       </button>
       <span className="ods-pagination__pages" data-slot="pages">
         {pages.map((item) =>
@@ -76,7 +76,7 @@ export const Pagination = forwardRef<HTMLElement, PaginationProps>(function Pagi
             </button>
           ) : (
             <span aria-hidden="true" className="ods-pagination__ellipsis" key={item}>
-              …
+              <i className="ri-more-fill" />
             </span>
           ),
         )}
@@ -88,7 +88,7 @@ export const Pagination = forwardRef<HTMLElement, PaginationProps>(function Pagi
         onClick={() => onPageChange(currentPage + 1)}
         type="button"
       >
-        <span aria-hidden="true">›</span>
+        <i aria-hidden="true" className="ri-arrow-right-s-line" />
       </button>
     </nav>
   )

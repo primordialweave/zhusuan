@@ -113,7 +113,7 @@ export const AccordionItem = forwardRef<HTMLDivElement, AccordionItemProps>(func
             {subtitle ? <span className="ods-accordion__subtitle">{subtitle}</span> : null}
           </span>
           <span aria-hidden="true" className="ods-accordion__indicator" data-slot="indicator">
-            ›
+            <i className="ri-arrow-right-s-line" />
           </span>
         </button>
       </h3>

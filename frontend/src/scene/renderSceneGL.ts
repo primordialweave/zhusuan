@@ -53,27 +53,29 @@ void main() {
   vec2 masks = texture(uMasks, uv).rg;
 
   // Willow: each strand sways on its own phase; the tips lead and the boughs stay put.
+  // A slow gust travels across the tree, so the sway swells and settles instead of ticking.
+  float gust = 0.62 + 0.38 * sin(uTime * 0.31 + uv.x * 2.4);
   float strand = uv.x * 21.0;
   float sway =
     sin(uTime * 0.95 + strand) * 0.55 +
     sin(uTime * 0.57 + strand * 2.3 + uv.y * 5.0) * 0.3 +
     sin(uTime * 1.7 + strand * 0.6) * 0.15;
-  vec2 willow = vec2(sway * 0.0052, abs(sway) * -0.0009) * masks.g;
+  vec2 willow = vec2(sway * 0.0082, abs(sway) * -0.0014) * gust * masks.g;
 
   // Water: thin horizontal ripples that widen towards the viewer.
   float depth = smoothstep(0.58, 1.0, uv.y);
   float near = mix(0.55, 1.7, depth);
   float rippleX =
-    sin(uv.y * 240.0 / near - uTime * 1.25 + noise(uv * 9.0) * 4.0) * 0.0011 +
-    sin(uv.y * 96.0 / near + uTime * 0.72 + uv.x * 5.0) * 0.0013;
-  float rippleY = sin(uv.y * 150.0 / near - uTime * 0.9 + uv.x * 3.0) * 0.0005;
+    sin(uv.y * 240.0 / near - uTime * 1.25 + noise(uv * 9.0) * 4.0) * 0.0016 +
+    sin(uv.y * 96.0 / near + uTime * 0.72 + uv.x * 5.0) * 0.0019;
+  float rippleY = sin(uv.y * 150.0 / near - uTime * 0.9 + uv.x * 3.0) * 0.0008;
   vec2 water = vec2(rippleX, rippleY) * near * masks.r;
 
   vec3 color = texture(uScene, uv - willow + water).rgb;
 
   // A faint moving sheen on the water, then slow mist drifting across the far bank.
   float sheen = fbm(vec2(uv.x * 5.0 + uTime * 0.03, uv.y * 30.0 - uTime * 0.05));
-  color += (sheen - 0.5) * 0.035 * masks.r;
+  color += (sheen - 0.5) * 0.05 * masks.r;
 
   float band = smoothstep(0.26, 0.46, uv.y) * (1.0 - smoothstep(0.56, 0.72, uv.y));
   float mist = fbm(vec2(uv.x * 2.6 - uTime * 0.014, uv.y * 5.0 + uTime * 0.004));

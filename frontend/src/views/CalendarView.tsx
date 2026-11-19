@@ -273,7 +273,7 @@ export default function CalendarView() {
 
   return (
     <div className="calendar-view" data-motion-scope="calendar">
-      <PageHeader description="查看计划收款与到账安排" title="收款日历" />
+      <PageHeader title="收款日历" />
 
       <div className="calendar-view__layout" data-motion="entrance">
         <section aria-label="月历" className="calendar-board">

@@ -1,12 +1,20 @@
 import { createRainRenderer, type RainRenderer } from './renderRain2D'
 import { createSceneGLRenderer, type SceneGLRenderer } from './renderSceneGL'
-import { getRenderScale, getSceneCrop, SCENE_QUALITY, type SceneQuality } from './sceneFrame'
+import {
+  getRenderScale,
+  getSceneCrop,
+  SCENE_QUALITY,
+  type SceneCropFn,
+  type SceneQuality,
+} from './sceneFrame'
 
 export interface SceneRuntimeOptions {
   glCanvas: HTMLCanvasElement
   rainCanvas: HTMLCanvasElement
   masksUrl: string
   sceneUrl: string
+  /** How the still is cropped into the stage; defaults to the app shell's cover crop. */
+  crop?: SceneCropFn
   /** Called once the first animated frame is on screen, and again when a layer is lost or back. */
   onActiveChange: (layers: { gl: boolean; rain: boolean }) => void
   /** Aborting before start-up finishes prevents any GPU resource from being created. */
@@ -49,6 +57,7 @@ const loadImage = (url: string) =>
  */
 export async function startSceneRuntime(options: SceneRuntimeOptions): Promise<SceneRuntime> {
   const { glCanvas, masksUrl, onActiveChange, rainCanvas, sceneUrl, signal } = options
+  const cropFor = options.crop ?? getSceneCrop
   const stage = glCanvas.parentElement
   let disposed = false
   let quality: SceneQuality = 'standard'
@@ -87,7 +96,7 @@ export async function startSceneRuntime(options: SceneRuntimeOptions): Promise<S
     if (width === 0 || height === 0) return
     const profile = SCENE_QUALITY[quality]
     const scale = getRenderScale(width, height, window.devicePixelRatio, profile)
-    const crop = getSceneCrop(width, height)
+    const crop = cropFor(width, height)
     gl?.resize(Math.round(width * scale), Math.round(height * scale), crop)
     if (appliedQuality !== quality) {
       rain?.setDensity(profile.rainCount, profile.rippleCount)

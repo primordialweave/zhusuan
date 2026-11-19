@@ -6,7 +6,7 @@ import (
 	"strings"
 	"testing"
 
-	"github.com/FruitsAI/Orange/internal/config"
+	"github.com/primordialweave/zhusuan/internal/config"
 	"github.com/gin-gonic/gin"
 	"github.com/stretchr/testify/require"
 )

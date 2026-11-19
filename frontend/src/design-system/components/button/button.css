@@ -216,6 +216,15 @@
   box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.16);
 }
 
+/* Bare: the content is the control. It keeps the focus ring and the press response only. */
+.ods-button[data-variant='bare'] {
+  height: auto;
+  padding: var(--ods-space-0);
+  border: 0;
+  border-radius: var(--ods-radius-pill);
+  font: inherit;
+}
+
 .ods-button[data-variant]:active:not(:disabled) {
   --ods-button-transform-duration: var(--ods-duration-press);
   transform: scale(0.97);
@@ -257,12 +266,22 @@
   width: var(--ods-control-height-lg);
 }
 
+/* The glyph is sized for the button, not for the label text a button of that size carries. */
 .ods-icon-button__icon {
   align-items: center;
   color: var(--ods-icon-button-fg, currentColor);
   display: inline-flex;
+  font-size: var(--ods-font-size-lg);
   justify-content: center;
   transition: color var(--ods-duration-fast) var(--ods-ease-standard);
+}
+
+.ods-icon-button[data-size='sm'] .ods-icon-button__icon {
+  font-size: var(--ods-font-size-md);
+}
+
+.ods-icon-button[data-size='lg'] .ods-icon-button__icon {
+  font-size: var(--ods-font-size-xl);
 }
 
 .ods-button[aria-expanded] .ods-icon-button__icon {

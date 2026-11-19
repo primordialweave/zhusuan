@@ -3,9 +3,10 @@ package response
 import (
 	"log/slog"
 
-	"github.com/FruitsAI/Orange/internal/pkg/errors"
 	"github.com/gin-gonic/gin"
 	"gorm.io/gorm"
+
+	"github.com/primordialweave/zhusuan/internal/pkg/errors"
 )
 
 // HandleServiceError 统一处理Service层返回的错误

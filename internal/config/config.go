@@ -6,7 +6,6 @@ import (
 	"fmt"
 	"log"
 	"os"
-	"path/filepath"
 	"strconv"
 	"strings"
 
@@ -16,6 +15,7 @@ import (
 // Config 应用全局配置结构体
 // 包含数据库、安全、日志及第三方服务的所有配置项。
 type Config struct {
+	DataDir string // 珠算配置与用户辅助数据目录
 	// 数据库配置
 	DBType       string // 数据库类型: sqlite (默认), mysql, postgres
 	DBPath       string // SQLite 文件路径 (仅 sqlite 有效)
@@ -57,7 +57,7 @@ var AppConfig *Config
 // Load 初始化并加载应用配置
 // 加载优先级: 环境变量 > .env 文件 > 系统默认值
 // 默认值逻辑:
-// - 数据库路径: macOS (~/Library/Application Support/FruitsAI/Orange/orange.db), Windows (%APPDATA%/FruitsAI/Orange/orange.db)
+// - 数据库路径: UserConfigDir/primordialweave/zhusuan/zhusuan.db
 // - 日志路径: 同上，位于 log 子目录下
 func Load() {
 	// 尝试加载 .env 文件，如果不存在则忽略错误（使用默认值或环境变量）
@@ -67,28 +67,22 @@ func Load() {
 	}
 
 	// 计算默认数据库路径和日志路径
-	defaultDBPath := "orange.db"
-	defaultLogPath := "orange.log"
+	defaultDBPath := "zhusuan.db"
+	defaultLogPath := "zhusuan.log"
+	appDir := ""
 
 	// 获取用户配置目录 (User Config Directory)
 	configDir, err := os.UserConfigDir()
+	if override, exists := os.LookupEnv("ZHUSUAN_CONFIG_ROOT"); exists {
+		configDir, err = override, nil
+	}
 	if err == nil {
-		// macOS: ~/Library/Application Support/FruitsAI/Orange
-		// Windows: %APPDATA%\FruitsAI\Orange
-		appDir := filepath.Join(configDir, "FruitsAI", "Orange")
-		if err := os.MkdirAll(appDir, 0700); err == nil {
-			defaultDBPath = filepath.Join(appDir, "orange.db")
-
-			// 日志放到 log 子目录
-			logDir := filepath.Join(appDir, "log")
-			if err := os.MkdirAll(logDir, 0700); err == nil {
-				defaultLogPath = filepath.Join(logDir, "orange.log")
-			} else {
-				defaultLogPath = filepath.Join(appDir, "orange.log")
-			}
-		} else {
-			log.Printf("Warning: Failed to create app config dir: %v\n", err)
+		_, explicitDatabase := os.LookupEnv("DB_PATH")
+		paths, migrationErr := PrepareAppData(configDir, !explicitDatabase)
+		if migrationErr != nil {
+			log.Fatalf("无法初始化珠算用户数据: %v", migrationErr)
 		}
+		appDir, defaultDBPath, defaultLogPath = paths.Directory, paths.Database, paths.Log
 	} else {
 		log.Printf("Warning: Failed to get user config dir: %v\n", err)
 	}
@@ -116,6 +110,7 @@ func Load() {
 	// 组装配置对象，优先从环境变量读取
 	runtimeMode := getEnv("RUNTIME_MODE", "desktop")
 	AppConfig = &Config{
+		DataDir: appDir,
 		// 数据库配置
 		DBType:       getEnv("DB_TYPE", "sqlite"),
 		DBPath:       getEnv("DB_PATH", defaultDBPath),
@@ -123,7 +118,7 @@ func Load() {
 		DBPort:       int(getEnvInt("DB_PORT", 3306)),
 		DBUser:       getEnv("DB_USER", "root"),
 		DBPassword:   getEnv("DB_PASSWORD", ""),
-		DBName:       getEnv("DB_NAME", "orange"),
+		DBName:       getEnv("DB_NAME", "zhusuan"),
 		DBSSLMode:    getEnv("DB_SSL_MODE", "disable"),
 		DBAutoCreate: getEnvBool("DB_AUTO_CREATE", true),
 
@@ -138,7 +133,7 @@ func Load() {
 		TokenExpiry:    getEnvInt("TOKEN_EXPIRY", 24),
 		LogEnable:      getEnvBool("LOG_ENABLE", true),
 		LogLevel:       getEnv("LOG_LEVEL", "info"),
-		GitHubRepo:     getEnv("GITHUB_REPO", "FruitsAI/Orange"),
+		GitHubRepo:     getEnv("GITHUB_REPO", "primordialweave/zhusuan"),
 		LogPath:        getEnv("LOG_PATH", defaultLogPath),
 		LogMaxSize:     int(getEnvInt("LOG_MAX_SIZE", 10)),   // 10MB
 		LogMaxBackups:  int(getEnvInt("LOG_MAX_BACKUPS", 5)), // 5 files
@@ -179,7 +174,11 @@ func validateProductionDatabasePolicy(cfg *Config, env string, allowProductionSQ
 var knownWeakSecrets = []string{
 	"orange-secret-key-change-in-production",
 	"orange-runtime-secret-fallback-change-me",
+	"zhusuan-secret-key-change-in-production",
+	"zhusuan-runtime-secret-fallback-change-me",
 }
+
+func logMigrationCleanup(err error) { log.Printf("珠算迁移临时资源清理失败: %v", err) }
 
 // loadJWTSecret 加载 JWT 密钥
 // 优先取环境变量 JWT_SECRET；未配置时生成一次性随机密钥（重启后旧 Token 全部失效）。

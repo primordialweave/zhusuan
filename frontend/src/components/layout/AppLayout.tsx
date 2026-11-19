@@ -27,7 +27,7 @@ export default function AppLayout() {
           <Outlet />
         ) : (
           <WorkSurface className="app-work-surface" scrollRef={scrollRef} tabIndex={-1}>
-            <div className="app-view-content ods-motion-fade-in" key={pathname}>
+            <div className="app-view-content" key={pathname}>
               <Outlet />
             </div>
           </WorkSurface>

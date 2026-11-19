@@ -87,15 +87,7 @@ export default function DesignSystemView() {
 
   return (
     <div className="design-showcase">
-      <PageHeader
-        className="design-showcase__header"
-        description={
-          <>
-            所有组件来自 <Code>@/design-system</Code>，随烟雨与夜雨两套主题切换
-          </>
-        }
-        title="Orange 设计系统"
-      />
+      <PageHeader className="design-showcase__header" title="珠算 设计系统" />
 
       <ShowcaseSection
         title="按钮 Button"
@@ -298,7 +290,7 @@ export default function DesignSystemView() {
           <Kbd keys={['command', 'shift']}>K</Kbd>
         </div>
         <div className="design-showcase__row">
-          <Snippet>npm install @fruitsai/orange-design</Snippet>
+          <Snippet>npm install @primordialweave/zhusuan-design</Snippet>
         </div>
       </ShowcaseSection>
 

@@ -1,3 +1,4 @@
+import type { CSSProperties } from 'react'
 import { useLocation } from 'react-router-dom'
 import { RouterNavLink, Surface } from '@/design-system'
 import DockIcon from './DockIcon'
@@ -6,6 +7,7 @@ import { getActiveNavigationKey, primaryNavigationItems } from './primaryNavigat
 export default function AppDock() {
   const { pathname } = useLocation()
   const activeKey = getActiveNavigationKey(pathname)
+  const activeIndex = primaryNavigationItems.findIndex((item) => item.key === activeKey)
 
   return (
     <Surface
@@ -17,6 +19,13 @@ export default function AppDock() {
       radius="pill"
       variant="glass"
     >
+      {activeIndex >= 0 ? (
+        <span
+          aria-hidden="true"
+          className="app-dock__indicator"
+          style={{ '--app-dock-index': activeIndex } as CSSProperties}
+        />
+      ) : null}
       {primaryNavigationItems.map((item) => (
         <RouterNavLink
           active={item.key === activeKey}

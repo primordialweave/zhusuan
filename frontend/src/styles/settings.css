@@ -1,22 +1,123 @@
 /* Settings page composition. ODS owns component paint and anatomy. */
+
+/* Categories run down a rail on the left; the open category gets the full panel height. */
 .settings-workspace {
+  display: grid;
+  min-width: 0;
+  flex: 1;
+  grid-template-columns: 10.5rem minmax(0, 1fr);
+  /* Stretch, so the rule between rail and content runs the height of the panel. */
+  align-items: stretch;
+  gap: 0 var(--ods-space-6);
+}
+
+.settings-rail {
+  position: sticky;
   display: flex;
   min-width: 0;
+  align-self: start;
   flex-direction: column;
-  gap: var(--ods-space-6);
+  gap: var(--ods-space-4);
+  inset-block-start: 0;
 }
 
-/* The tab strip's hairline is the top edge of whatever panel is open. */
-.settings-view {
-  gap: 0;
+.settings-content {
+  min-width: 0;
+  padding-inline-start: var(--ods-space-6);
+  border-inline-start: 1px solid var(--ods-color-border-default);
 }
 
-.settings-content,
 .settings-panel-frame {
   min-width: 0;
 }
 
-/* Label on the left, control on the right, one hairline under every row. */
+/* Every category is a short stack: toolbars, titled cards, tables. */
+.settings-page {
+  display: flex;
+  min-width: 0;
+  flex-direction: column;
+  gap: var(--ods-space-4);
+}
+
+/* A titled card of related settings. */
+.settings-group {
+  display: flex;
+  min-width: 0;
+  flex-direction: column;
+  gap: var(--ods-space-2);
+}
+
+.settings-group__header {
+  display: flex;
+  min-width: 0;
+  min-height: var(--ods-space-6);
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--ods-space-4);
+  /* The title starts where the card's content does. */
+  padding-inline: var(--ods-space-5) var(--ods-space-1);
+}
+
+.settings-group__title,
+.settings-toolbar__title {
+  margin: 0;
+  color: var(--ods-color-fg-muted);
+  font-size: var(--ods-font-size-sm);
+  font-weight: var(--ods-font-weight-medium);
+  line-height: var(--ods-line-height-heading);
+}
+
+.settings-group__actions {
+  display: flex;
+  align-items: center;
+  gap: var(--ods-space-3);
+}
+
+.settings-group__card {
+  min-width: 0;
+  overflow: hidden;
+}
+
+.settings-group__body {
+  min-width: 0;
+  padding: var(--ods-space-4) var(--ods-space-5);
+}
+
+.settings-group__body[data-flush] {
+  padding: 0;
+}
+
+/* The card's own action row: a note may sit at the start, the button is always at the end. */
+.settings-group__footer {
+  display: flex;
+  min-width: 0;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: flex-end;
+  gap: var(--ods-space-3) var(--ods-space-4);
+  padding: var(--ods-space-2) var(--ods-space-5);
+  border-block-start: 1px solid var(--ods-color-border-default);
+  background: var(--ods-color-bg-canvas-subtle);
+}
+
+.settings-group__note,
+.settings-unsaved-indicator {
+  display: inline-flex;
+  min-width: 0;
+  align-items: center;
+  gap: var(--ods-space-2);
+  margin-inline-end: auto;
+  color: var(--ods-color-fg-muted);
+  font-size: var(--ods-font-size-sm);
+  line-height: var(--ods-line-height-body);
+}
+
+.settings-unsaved-indicator {
+  color: var(--ods-color-status-warning);
+  font-weight: var(--ods-font-weight-medium);
+}
+
+/* Label on the left, control on the right, a hairline between rows. */
 .settings-list {
   display: flex;
   min-width: 0;
@@ -29,32 +130,21 @@
 .settings-row {
   display: flex;
   min-width: 0;
-  min-height: 4rem;
+  min-height: 3.25rem;
   align-items: center;
   justify-content: space-between;
-  gap: var(--ods-space-6);
-  padding: var(--ods-space-4) var(--ods-space-2) var(--ods-space-4) var(--ods-space-4);
-  border-block-end: 1px solid var(--ods-color-border-default);
+  gap: var(--ods-space-4);
+  padding: var(--ods-space-2) var(--ods-space-5);
 }
 
-.settings-row__copy {
-  display: flex;
-  min-width: 0;
-  flex-direction: column;
-  gap: var(--ods-space-1);
+.settings-row + .settings-row {
+  border-block-start: 1px solid var(--ods-color-border-default);
 }
 
 .settings-row__title {
   color: var(--ods-color-fg-default);
-  font-size: var(--ods-font-size-md);
-  font-weight: var(--ods-font-weight-regular);
-  line-height: var(--ods-line-height-heading);
-}
-
-.settings-row__description {
-  color: var(--ods-color-fg-muted);
   font-size: var(--ods-font-size-sm);
-  line-height: var(--ods-line-height-body);
+  line-height: var(--ods-line-height-heading);
 }
 
 .settings-row__value {
@@ -63,95 +153,39 @@
   flex-wrap: wrap;
   align-items: center;
   justify-content: flex-end;
-  gap: var(--ods-space-3);
-  color: var(--ods-color-fg-default);
-  font-size: var(--ods-font-size-md);
-}
-
-/* Forms and fact lists take the same column as the appearance rows (the 1.97 : 1 split
-   of that grid), so the content edge does not move when the tab changes. */
-.settings-form,
-.settings-about,
-.settings-view .sync-config {
-  width: calc((100% - var(--ods-space-10)) * 1.97 / 2.97);
-}
-
-.settings-form,
-.settings-view .sync-config {
-  display: flex;
-  flex-direction: column;
-  gap: var(--ods-space-5);
-  padding-inline-start: var(--ods-space-4);
-}
-
-.settings-form {
-  padding-block-start: var(--ods-space-6);
-}
-
-.settings-note {
-  display: flex;
-  min-width: 0;
-  align-items: center;
   gap: var(--ods-space-2);
-  margin: 0;
   color: var(--ods-color-fg-muted);
   font-size: var(--ods-font-size-sm);
-  line-height: var(--ods-line-height-body);
 }
 
-.settings-form__actions {
-  display: flex;
-  flex-wrap: wrap;
-  gap: var(--ods-space-3);
-}
-
-.settings-form > .settings-list {
-  margin-inline-start: calc(var(--ods-space-4) * -1);
-  border-block-start: 1px solid var(--ods-color-border-default);
-}
-
-.settings-form > .settings-list > .settings-row:last-child {
-  border-block-end: 0;
-}
-
-.settings-unsaved-indicator {
-  display: flex;
-  align-items: center;
-  gap: var(--ods-space-2);
-  margin-block-start: var(--ods-space-4);
-  padding: var(--ods-space-3) var(--ods-space-4);
-  border: 1px solid
-    color-mix(in srgb, var(--ods-color-status-warning) 36%, var(--ods-color-border-default));
-  border-radius: var(--ods-radius-control);
-  background: var(--ods-color-status-warning-soft);
-  color: var(--ods-color-fg-default);
-  font-size: var(--ods-font-size-sm);
-  font-weight: var(--ods-font-weight-medium);
-}
-
-.settings-unsaved-indicator i {
-  color: var(--ods-color-status-warning);
-  font-size: var(--ods-font-size-lg);
-}
-
-.settings-management-panel {
-  display: flex;
-  min-width: 0;
-  flex-direction: column;
-  gap: var(--ods-space-6);
-  padding-block-start: var(--ods-space-6);
-}
-
-/* A management panel opens with one line: counts on the left, search and the main action
-   on the right. The tab above already names the panel. */
+/* A page that is a list opens with one line: what it is or how to find things on the left,
+   the main action on the right. */
 .settings-toolbar {
   display: flex;
   min-width: 0;
+  min-height: var(--ods-control-height-md);
   flex-wrap: wrap;
   align-items: center;
   justify-content: space-between;
-  gap: var(--ods-space-4) var(--ods-space-6);
+  gap: var(--ods-space-3) var(--ods-space-4);
+}
+
+.settings-toolbar__title {
   padding-inline-start: var(--ods-space-4);
+}
+
+.settings-toolbar__actions {
+  display: flex;
+  min-width: 0;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: var(--ods-space-3);
+  margin-inline-start: auto;
+}
+
+.settings-toolbar__search {
+  width: 18rem;
+  max-width: 100%;
 }
 
 .settings-stats {
@@ -160,6 +194,7 @@
   flex-wrap: wrap;
   gap: var(--ods-space-2) var(--ods-space-8);
   margin: 0;
+  padding-inline-start: var(--ods-space-1);
 }
 
 .settings-stats > div {
@@ -176,56 +211,49 @@
 .settings-stats dd {
   margin: 0;
   color: var(--ods-color-fg-default);
-  font-size: var(--ods-font-size-xl);
+  font-size: var(--ods-font-size-lg);
   font-variant-numeric: tabular-nums;
   line-height: var(--ods-line-height-heading);
 }
 
-.settings-toolbar__actions {
-  display: flex;
-  min-width: 0;
-  flex-wrap: wrap;
-  align-items: center;
-  gap: var(--ods-space-3);
-  margin-inline-start: auto;
+.settings-empty {
+  min-height: 14rem;
 }
 
-.settings-toolbar__search {
-  width: 16rem;
-  max-width: 100%;
+/* Tables on settings pages: secondary columns step back, actions hug the end. */
+.settings-table__muted {
+  color: var(--ods-color-fg-muted);
 }
 
-.settings-view .data-sync-panel,
-.settings-view .developer-settings,
-.settings-view .dict-management,
-.settings-view .user-management,
-.settings-view .notification-management {
+.settings-table__muted[data-warning] {
+  color: var(--ods-color-status-warning);
+}
+
+.settings-table__number {
+  font-variant-numeric: tabular-nums;
+}
+
+.settings-table__stack {
   display: flex;
   min-width: 0;
-  min-height: 100%;
   flex-direction: column;
-  gap: var(--ods-space-6);
+  line-height: var(--ods-line-height-heading);
 }
 
-.settings-view .dev-content,
-.settings-view .sync-content {
-  display: flex;
-  min-width: 0;
-  flex: 1;
-  flex-direction: column;
-  gap: var(--ods-space-5);
-}
-
-.settings-view .dict-item-icon,
-.settings-view .notification-type-icon,
-.settings-view .sync-connection-icon-wrapper {
-  display: grid;
+.settings-table__actions {
+  display: inline-flex;
   flex: 0 0 auto;
-  place-items: center;
+  align-items: center;
+  justify-content: flex-end;
+  gap: var(--ods-space-1);
 }
 
 .settings-field--full {
   grid-column: 1 / -1;
+}
+
+.settings-field--wide {
+  grid-column: span 2;
 }
 
 .settings-modal-body {
@@ -233,286 +261,149 @@
   gap: var(--ods-space-4);
 }
 
-.settings-view .dev-loading,
-.settings-view .sync-loading-state,
-.settings-view .dev-empty,
-.settings-view .sync-empty-state,
-.settings-view .dict-empty {
-  min-height: 12rem;
-}
-
-/* User management */
-.settings-view .user-list,
-.settings-view .notification-list,
-.settings-view .dict-list,
-.settings-view .dev-token-list {
+/* Profile: who is signed in, then what can be changed. */
+.settings-account {
   display: flex;
   min-width: 0;
-  flex-direction: column;
-  gap: var(--ods-space-3);
+  align-items: center;
+  gap: var(--ods-space-4);
 }
 
-.settings-view .user-card,
-.settings-view .dict-item-card,
-.settings-view .notification-card,
-.settings-view .dev-token-card {
-  min-width: 0;
-}
-
-.settings-view .user-info,
-.settings-view .dict-item-info,
-.settings-view .notification-body {
+.settings-account__copy {
+  display: flex;
   min-width: 0;
   flex: 1;
-}
-
-.settings-view .user-name-row,
-.settings-view .user-meta,
-.settings-view .user-contact,
-.settings-view .user-actions,
-.settings-view .dict-item-actions,
-.settings-view .notification-tags,
-.settings-view .notification-actions {
-  display: flex;
-  min-width: 0;
-  flex-wrap: wrap;
-  align-items: center;
-  gap: var(--ods-space-2);
-}
-
-.settings-view .user-name {
-  color: var(--ods-color-fg-default);
-  font-weight: var(--ods-font-weight-semibold);
-}
-
-.settings-view .user-meta,
-.settings-view .user-contact {
-  margin-top: var(--ods-space-1);
-  color: var(--ods-color-fg-muted);
-  font-size: var(--ods-font-size-sm);
-}
-
-.settings-view .meta-item,
-.settings-view .contact-item {
-  display: inline-flex;
-  align-items: center;
-  gap: var(--ods-space-1);
-}
-
-.settings-view .user-actions {
-  flex: 0 0 auto;
-  margin-inline-start: auto;
-}
-
-/* Dictionary */
-.settings-view .dict-layout {
-  display: grid;
-  min-height: 24rem;
-  grid-template-columns: 11.25rem minmax(0, 1fr);
-  gap: 0;
-}
-
-.settings-view .dict-sidebar {
-  width: 100%;
-  align-content: start;
-  overflow-y: auto;
-}
-
-.settings-view .dict-sidebar-title {
-  padding: var(--ods-space-3) var(--ods-space-4);
-  color: var(--ods-color-fg-subtle);
-  font-size: var(--ods-font-size-xs);
-  font-weight: var(--ods-font-weight-semibold);
-  letter-spacing: var(--ods-letter-spacing-wide);
-  text-transform: uppercase;
-}
-
-.settings-view .dict-content {
-  display: flex;
-  min-width: 0;
-  flex-direction: column;
-  gap: var(--ods-space-4);
-  padding: var(--ods-space-4);
-}
-
-.settings-view .dict-list {
-  margin: 0;
-  padding: 0;
-  list-style: none;
-}
-
-.settings-view .dict-item {
-  display: flex;
-  min-height: 4.5rem;
-  align-items: center;
-  gap: var(--ods-space-4);
-  padding-block: var(--ods-space-3);
-  border-block-end: 1px solid var(--ods-color-border-default);
-}
-
-.settings-view .dict-item-info {
-  display: flex;
-  min-width: 0;
   flex-direction: column;
   gap: var(--ods-space-1);
 }
 
-.settings-view .dict-item-label {
-  color: var(--ods-color-fg-default);
-  font-weight: var(--ods-font-weight-medium);
-}
-
-.settings-view .dict-item-value {
-  overflow-wrap: anywhere;
-  color: var(--ods-color-fg-muted);
-  font-family: var(--ods-font-family-mono);
-  font-size: var(--ods-font-size-sm);
-}
-
-.settings-view .dict-item-actions {
-  display: flex;
-  gap: var(--ods-space-1);
-  flex: 0 0 auto;
-  margin-inline-start: auto;
-}
-
-/* Notifications */
-.settings-view .notification-inner {
-  position: relative;
-  display: flex;
-  min-width: 0;
-  align-items: center;
-  gap: var(--ods-space-4);
-  padding: var(--ods-space-4);
-}
-
-.settings-view .notification-type-icon {
-  width: 2.5rem;
-  height: 2.5rem;
-}
-
-.settings-view .notification-header-row {
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-  gap: var(--ods-space-3);
-}
-
-.settings-view .notification-title {
-  display: flex;
-  align-items: center;
-  gap: var(--ods-space-2);
-  margin: var(--ods-space-2) 0 var(--ods-space-1);
+.settings-account__name {
+  overflow: hidden;
   color: var(--ods-color-fg-default);
   font-size: var(--ods-font-size-lg);
   font-weight: var(--ods-font-weight-semibold);
+  line-height: var(--ods-line-height-heading);
+  text-overflow: ellipsis;
+  white-space: nowrap;
 }
 
-.settings-view .notification-desc {
-  display: -webkit-box;
-  overflow: hidden;
-  margin: 0;
+.settings-account__meta {
+  display: flex;
+  align-items: center;
+  gap: var(--ods-space-2);
   color: var(--ods-color-fg-muted);
-  font-size: var(--ods-font-size-md);
-  -webkit-box-orient: vertical;
-  -webkit-line-clamp: 2;
-  line-clamp: 2;
-}
-
-.settings-view .notification-sender,
-.settings-view .notification-time {
-  color: var(--ods-color-fg-subtle);
   font-size: var(--ods-font-size-sm);
 }
 
-.settings-view .notification-sender {
-  display: inline-flex;
-  align-items: center;
-  gap: var(--ods-space-1);
-  margin-top: var(--ods-space-2);
+/* Appearance: each theme is a small picture of the window in that theme. */
+.settings-theme {
+  position: relative;
+  display: block;
+  overflow: hidden;
+  aspect-ratio: 16 / 10;
+  border-radius: var(--ods-radius-sm);
 }
 
-.settings-view .notification-right {
-  display: flex;
-  flex: 0 0 auto;
-  flex-direction: column;
-  align-items: flex-end;
-  gap: var(--ods-space-2);
+.settings-theme__layer {
+  position: absolute;
+  background:
+    linear-gradient(var(--ods-color-scene-veil), var(--ods-color-scene-veil)),
+    url('../assets/jiangnan/scene-business.webp') 50% 45% / cover no-repeat;
+  inset: 0;
 }
 
-.settings-view .unread-dot {
+/* 跟随系统: the second theme takes the lower-right half. */
+.settings-theme__layer[data-half] {
+  clip-path: polygon(100% 0, 100% 100%, 0 100%);
+}
+
+.settings-theme__panel {
+  position: absolute;
+  border-radius: var(--ods-radius-xs);
+  background: var(--ods-color-bg-surface-raised);
+  box-shadow: 0 0 0 1px var(--ods-color-border-strong);
+  inset: 12% 8% 30%;
+}
+
+.settings-theme__dock {
+  position: absolute;
+  width: 46%;
+  height: 12%;
+  border-radius: var(--ods-radius-pill);
+  background: var(--ods-color-bg-surface-raised);
+  box-shadow: 0 0 0 1px var(--ods-color-border-strong);
+  inset-block-end: 9%;
+  inset-inline-start: 27%;
+}
+
+.settings-theme__name {
+  display: block;
+  margin-block-start: var(--ods-space-2);
+  color: var(--ods-color-fg-default);
+  font-size: var(--ods-font-size-sm);
+  text-align: center;
+}
+
+/* Notifications: fixed columns, so the tags and times line up down the list. Unread rows
+   carry a dot and a heavier title. */
+.notification-row {
+  display: grid;
+  min-height: 4rem;
+  grid-template-columns: 0.5rem minmax(0, 1fr) 6.5rem 9rem auto;
+  gap: var(--ods-space-4);
+}
+
+.notification-row__dot {
   width: 0.5rem;
   height: 0.5rem;
-  flex: 0 0 auto;
   border-radius: var(--ods-radius-pill);
-  background: var(--ods-color-status-warning);
 }
 
-/* Developer tokens */
-.settings-view .dev-token-section {
+.notification-row[data-unread] .notification-row__dot {
+  background: var(--ods-color-accent-warm);
+}
+
+.notification-row__copy {
   display: flex;
-  flex-direction: column;
-  gap: var(--ods-space-3);
-}
-
-.settings-view .dev-token-section + .dev-token-section {
-  margin-top: var(--ods-space-6);
-}
-
-.settings-view .dev-section-title,
-.settings-view .dev-token-header,
-.settings-view .dev-token-name,
-.settings-view .dev-token-actions {
-  display: flex;
-  align-items: center;
-  gap: var(--ods-space-2);
-}
-
-.settings-view .dev-section-title {
-  margin: 0;
-  color: var(--ods-color-fg-default);
-  font-size: var(--ods-font-size-lg);
-  font-weight: var(--ods-font-weight-semibold);
-}
-
-.settings-view .dev-token-grid {
-  display: grid;
-  grid-template-columns: repeat(2, minmax(0, 1fr));
-  gap: var(--ods-space-3);
-}
-
-.settings-view .dev-token-header {
-  justify-content: space-between;
-}
-
-.settings-view .dev-token-name {
   min-width: 0;
+  flex-direction: column;
+  gap: 2px;
+}
+
+.notification-row__tag {
+  display: flex;
+}
+
+.notification-row__title,
+.notification-row__summary {
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.notification-row__title {
   color: var(--ods-color-fg-default);
+  font-size: var(--ods-font-size-md);
+  line-height: var(--ods-line-height-heading);
+}
+
+.notification-row[data-unread] .notification-row__title {
   font-weight: var(--ods-font-weight-semibold);
 }
 
-.settings-view .dev-token-meta {
-  display: flex;
-  flex-direction: column;
-  gap: var(--ods-space-2);
+.notification-row__summary,
+.notification-row__meta {
   color: var(--ods-color-fg-muted);
   font-size: var(--ods-font-size-sm);
+  line-height: var(--ods-line-height-body);
 }
 
-.settings-view .dev-meta-item {
-  display: inline-flex;
-  align-items: center;
-  gap: var(--ods-space-2);
+.notification-row__meta {
+  text-align: end;
+  white-space: nowrap;
 }
 
-.settings-view .dev-meta-item.revoked {
-  color: var(--ods-color-status-danger);
-}
-
-.settings-view .dev-token-actions {
-  justify-content: flex-end;
-}
-
+/* Developer tokens: the modal that creates one. */
 .settings-modal-body .dev-expiry-content {
   display: flex;
   flex-direction: column;
@@ -549,52 +440,49 @@
 }
 
 /* Data sync */
-.settings-view .sync-form-actions {
-  width: 100%;
+.settings-view .sync-config {
+  display: flex;
+  min-width: 0;
+  flex-direction: column;
+  /* The same gap as the form grid below, so the options sit on its columns. */
+  gap: var(--ods-space-5);
+  --radio-group-gap: var(--ods-space-5);
+}
+
+.settings-view .dict-value-column {
+  width: 40%;
+}
+
+.settings-view .dict-sort-column {
+  width: 6rem;
+}
+
+.settings-view .settings-actions-column {
+  width: 8rem;
 }
 
 .settings-view .sync-db-option-content {
   display: flex;
   align-items: center;
   gap: var(--ods-space-2);
+  white-space: nowrap;
   color: var(--ods-color-fg-default);
   font-weight: var(--ods-font-weight-medium);
 }
 
-.settings-view .sync-connection-banner {
-  min-width: 0;
-  justify-content: space-between;
-}
-
-.settings-view .sync-connection-info,
-.settings-view .sync-connection-value,
-.settings-view .sync-connection-actions,
-.settings-view .sync-details {
+.settings-view .sync-connection {
   display: flex;
   min-width: 0;
-  flex-direction: column;
-  gap: var(--ods-space-4);
+  align-items: center;
+  gap: var(--ods-space-3);
+  padding-inline-start: var(--ods-space-1);
 }
 
-.settings-view .sync-connection-icon-wrapper {
-  width: 2.75rem;
-  height: 2.75rem;
-}
-
-.settings-view .sync-connection-details,
 .settings-view .sync-table-info {
   display: flex;
   min-width: 0;
   flex-direction: column;
-  gap: var(--ods-space-1);
-}
-
-.settings-view .sync-connection-label {
-  color: var(--ods-color-fg-muted);
-  font-size: var(--ods-font-size-xs);
-  font-weight: var(--ods-font-weight-semibold);
-  letter-spacing: var(--ods-letter-spacing-wide);
-  text-transform: uppercase;
+  gap: 2px;
 }
 
 .settings-view .sync-connection-host,
@@ -602,7 +490,7 @@
   overflow: hidden;
   color: var(--ods-color-fg-muted);
   font-family: var(--ods-font-family-mono);
-  font-size: var(--ods-font-size-sm);
+  font-size: var(--ods-font-size-xs);
   text-overflow: ellipsis;
   white-space: nowrap;
 }
@@ -610,16 +498,17 @@
 .settings-view .sync-connection-indicator {
   position: relative;
   display: inline-flex;
-  width: 0.625rem;
-  height: 0.625rem;
+  width: 0.5rem;
+  height: 0.5rem;
+  flex: 0 0 auto;
 }
 
 .settings-view .sync-pulse,
 .settings-view .sync-dot {
   position: absolute;
-  inset: 0;
   border-radius: var(--ods-radius-pill);
   background: var(--ods-color-status-success);
+  inset: 0;
 }
 
 .settings-view .sync-pulse {
@@ -628,7 +517,6 @@
 
 .settings-view .sync-table-name {
   color: var(--ods-color-fg-default);
-  font-weight: var(--ods-font-weight-semibold);
 }
 
 .settings-view .sync-result-error {
@@ -645,66 +533,18 @@
   align-items: center;
   gap: var(--ods-space-1);
   font-size: var(--ods-font-size-sm);
-  font-weight: var(--ods-font-weight-medium);
 }
 
 .settings-view .sync-result-pending {
   color: var(--ods-color-fg-subtle);
 }
 
-/* Appearance: the option rows on the left, the scene on the right. */
-.settings-appearance {
-  display: grid;
-  min-width: 0;
-  grid-template-columns: minmax(0, 1.97fr) minmax(0, 1fr);
-  align-items: start;
-  column-gap: var(--ods-space-10);
-  padding-block-start: var(--ods-space-2);
-}
-
-/* Four rows share the height the window can spare, so the list and the preview end together. */
-.settings-appearance .settings-row {
-  min-height: clamp(4.5rem, 10vh, 6.75rem);
-}
-
-/* The backdrop painting itself. It runs from the first control to the last rule; at the
-   prototype's proportions that crops it to the bridge and the willow. */
-.settings-preview {
-  position: relative;
-  align-self: stretch;
-  overflow: hidden;
-  margin-block: var(--ods-space-4) var(--ods-space-6);
-  border: var(--ods-material-glass-border);
-  border-radius: var(--ods-radius-shell);
-  background-image: url('../assets/jiangnan/scene.webp');
-  background-position: 12% 0;
-  background-repeat: no-repeat;
-  background-size: cover;
-  box-shadow: inset 0 0 0 1px var(--ods-color-border-strong);
-}
-
-/* 夜雨 dims the preview the same way it dims the backdrop. */
-.settings-preview::after {
-  position: absolute;
-  background: var(--ods-color-scene-veil);
-  content: '';
-  inset: 0;
-}
-
 /* About */
-.settings-about {
-  display: flex;
-  flex-direction: column;
-  padding-block-start: var(--ods-space-6);
-}
-
 .about-hero {
   display: flex;
   min-width: 0;
   align-items: center;
   gap: var(--ods-space-4);
-  padding: 0 var(--ods-space-2) var(--ods-space-5) var(--ods-space-4);
-  border-block-end: 1px solid var(--ods-color-border-default);
 }
 
 .about-logo {
@@ -722,38 +562,46 @@
   gap: var(--ods-space-1);
 }
 
-.about-hero__version {
-  display: flex;
-  flex-wrap: wrap;
-  align-items: center;
-  justify-content: flex-end;
-  gap: var(--ods-space-3);
-}
-
-/* Plain facts: shorter rows than the ones that carry a description. */
-.settings-about .settings-row {
-  min-height: 3rem;
-  padding-block: var(--ods-space-3);
-}
-
 .about-title {
   margin: 0;
   color: var(--ods-color-fg-default);
   font-family: var(--ods-font-family-display);
-  font-size: var(--ods-font-size-2xl);
+  font-size: var(--ods-font-size-xl);
   font-weight: var(--ods-font-weight-bold);
   line-height: var(--ods-line-height-heading);
 }
 
-.about-tagline,
-.about-copyright {
+.about-tagline {
   color: var(--ods-color-fg-muted);
   font-size: var(--ods-font-size-sm);
 }
 
-.about-copyright {
-  margin: 0;
-  padding: var(--ods-space-3) var(--ods-space-4) 0;
+.about-hero__name {
+  display: flex;
+  align-items: center;
+  gap: var(--ods-space-3);
+}
+
+.about-update {
+  display: grid;
+  gap: var(--ods-space-3);
+  margin-block-start: var(--ods-space-4);
+  color: var(--ods-color-fg-muted);
+  font-size: var(--ods-font-size-sm);
+}
+
+.about-update[data-state='error'] {
+  color: var(--ods-color-status-danger);
+}
+
+.about-update__status {
+  display: flex;
+  justify-content: space-between;
+  gap: var(--ods-space-3);
+}
+
+.about-update__cancel {
+  justify-self: end;
 }
 
 @keyframes settings-sync-pulse {
@@ -767,79 +615,60 @@
 @keyframes settings-content-in {
   from {
     opacity: 0;
-    transform: translateY(12px);
+    transform: translateY(var(--ods-space-2));
   }
 }
 
+/* Each card of a page follows the one above it in. */
 @media (prefers-reduced-motion: no-preference) {
-  .settings-view {
-    animation: settings-content-in var(--ods-duration-page) var(--ods-ease-emphasized) both;
+  .settings-page > * {
+    animation: settings-content-in var(--ods-duration-page) var(--ods-ease-emphasized) backwards;
   }
 
-  .settings-panel-frame {
-    animation: settings-content-in 280ms var(--ods-ease-emphasized) both;
+  .settings-page > :nth-child(2) {
+    animation-delay: 50ms;
+  }
+
+  .settings-page > :nth-child(n + 3) {
+    animation-delay: 100ms;
   }
 }
 
-@media (max-width: 64rem) {
-  .settings-appearance {
+/* Narrow windows: the rail becomes a strip of tabs above the content. */
+@media (max-width: 56rem) {
+  .settings-workspace {
     grid-template-columns: minmax(0, 1fr);
-    row-gap: var(--ods-space-6);
+    gap: var(--ods-space-4);
   }
 
-  .settings-form,
-  .settings-about,
-  .settings-view .sync-config {
-    width: 100%;
+  .settings-rail {
+    position: static;
   }
 
-  .settings-preview {
-    width: min(100%, 24rem);
-    aspect-ratio: 401 / 370;
-    margin-block: 0;
-  }
-
-  .settings-view .dev-token-grid {
-    grid-template-columns: minmax(0, 1fr);
+  .settings-content {
+    padding-inline-start: 0;
+    border-inline-start: 0;
   }
 }
 
 @media (max-width: 48rem) {
-  .settings-row {
+  .settings-row,
+  .settings-account,
+  .about-hero {
     flex-wrap: wrap;
-    gap: var(--ods-space-3);
   }
 
-  .settings-view .sync-connection-banner,
-  .settings-view .notification-inner,
-  .settings-view .user-card,
-  .settings-view .dict-item-card {
-    align-items: stretch;
-    flex-direction: column;
-  }
-
-  .settings-view .dict-layout {
-    grid-template-columns: minmax(0, 1fr);
-  }
-
-  .settings-view .notification-right,
-  .settings-view .user-actions,
-  .settings-view .dict-item-actions {
-    width: 100%;
-    align-items: flex-start;
-    margin-inline-start: 0;
-  }
-
-  .settings-field--full {
+  .settings-field--wide {
     grid-column: auto;
+  }
+
+  .settings-toolbar__search {
+    width: 100%;
   }
 }
 
 @media (prefers-reduced-motion: reduce) {
-  .settings-panel-frame,
-  .settings-view,
   .settings-view .sync-pulse {
     animation: none;
-    transform: none;
   }
 }

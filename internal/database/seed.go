@@ -9,9 +9,11 @@ import (
 	"os"
 	"path/filepath"
 
-	"github.com/FruitsAI/Orange/internal/models"
 	"golang.org/x/crypto/bcrypt"
 	"gorm.io/gorm"
+
+	"github.com/primordialweave/zhusuan/internal/config"
+	"github.com/primordialweave/zhusuan/internal/models"
 )
 
 // Seed 填充数据库初始数据
@@ -109,12 +111,11 @@ func Seed(db *gorm.DB) error {
 // writeInitialCredentials 将首次启动生成的初始密码写入用户配置目录下的凭据文件 (0600)
 // 返回文件路径；写入失败时返回空字符串。
 func writeInitialCredentials(adminPassword, userPassword string) string {
-	configDir, err := os.UserConfigDir()
-	if err != nil {
-		slog.Error("failed to get user config dir for initial credentials", "error", err)
+	appDir := config.AppConfig.DataDir
+	if appDir == "" {
+		slog.Error("app config directory unavailable for initial credentials")
 		return ""
 	}
-	appDir := filepath.Join(configDir, "FruitsAI", "Orange")
 	if err := os.MkdirAll(appDir, 0700); err != nil {
 		slog.Error("failed to create initial credentials dir", "error", err)
 		return ""

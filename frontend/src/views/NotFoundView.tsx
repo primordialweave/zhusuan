@@ -18,11 +18,6 @@ export default function NotFoundView() {
       <h1 className="scene-page__title" id="not-found-title">
         页面走丢了
       </h1>
-      <p className="scene-page__text">
-        你访问的页面暂时找不到，
-        <br />
-        回到首页继续查看项目与收款进度。
-      </p>
 
       <div className="not-found__actions">
         <RouterButton fullWidth size="lg" to="/dashboard">

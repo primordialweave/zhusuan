@@ -20,8 +20,8 @@ import {
   Table,
 } from '@/design-system'
 import { useToastStore } from '@/composables/useToast'
-import { downloadCsv } from '@/utils/csv'
 import { formatAmount, formatDate } from '@/utils/format'
+import { useProjectExport } from '@/components/project/useProjectExport'
 import '@/styles/project-domain.css'
 
 const statusOptions = [
@@ -68,6 +68,7 @@ export default function ProjectsView() {
   const [activeDropdownId, setActiveDropdownId] = useState<number | null>(null)
   const [confirmation, setConfirmation] = useState<ConfirmationState | null>(null)
   const [confirming, setConfirming] = useState(false)
+  const { exportProject } = useProjectExport()
   const mountedRef = useRef(false)
   const requestIdRef = useRef(0)
 
@@ -168,62 +169,45 @@ export default function ProjectsView() {
     clearSearch()
   }
 
-  const exportProject = (project: Project) => {
-    downloadCsv(`Orange-project-${project.id}.csv`, [
-      ['项目名称', '客户', '开始日期', '截止日期', '合同金额', '已收款', '收款进度', '状态'],
-      [
-        project.name,
-        project.company,
-        project.start_date,
-        project.end_date,
-        project.total_amount,
-        project.received_amount || 0,
-        getProgress(project) === null ? '—' : `${getProgress(project)}%`,
-        project.status,
-      ],
-    ])
-  }
-
   return (
     <div className="projects-view" data-motion-scope="projects">
       <PageHeader
         actions={
-          <RouterButton size="lg" to="/projects/create">
-            <i aria-hidden="true" className="ri-add-line" />
-            <span>新建项目</span>
-          </RouterButton>
+          <>
+            <SearchField
+              aria-label="搜索项目"
+              className="project-search"
+              onClear={clearSearch}
+              onKeyDown={(event) => {
+                if (event.key === 'Enter') handleSearch()
+              }}
+              onValueChange={setKeyword}
+              pending={loading}
+              placeholder="搜索项目"
+              value={keyword}
+            />
+            <Select
+              aria-label="项目状态筛选"
+              className="project-status-filter"
+              onValueChange={handleFilterChange}
+              options={statusOptions}
+              value={activeFilter}
+            />
+            <RouterButton to="/projects/create">
+              <i aria-hidden="true" className="ri-add-line" />
+              <span>新建项目</span>
+            </RouterButton>
+          </>
         }
-        description="查看合同与收款进度"
         title="项目管理"
       />
 
       <section aria-label="项目台账" className="projects-workspace" data-motion="entrance">
-        <div className="projects-toolbar">
-          <SearchField
-            aria-label="搜索项目"
-            className="project-search"
-            onClear={clearSearch}
-            onKeyDown={(event) => {
-              if (event.key === 'Enter') handleSearch()
-            }}
-            onValueChange={setKeyword}
-            pending={loading}
-            placeholder="搜索项目"
-            value={keyword}
-          />
-          <Select
-            aria-label="项目状态筛选"
-            className="project-status-filter"
-            onValueChange={handleFilterChange}
-            options={statusOptions}
-            value={activeFilter}
-          />
-        </div>
-
         <Table.Root
           aria-busy={loading}
           aria-label="项目列表"
           className="project-table"
+          stickyHeader
           variant="plain"
           wrapperClassName="project-table-scroll"
         >
@@ -357,8 +341,8 @@ export default function ProjectsView() {
                         </Dropdown.Item>
                         <Dropdown.Item
                           onSelect={() => {
-                            exportProject(project)
                             setActiveDropdownId(null)
+                            void exportProject(project)
                           }}
                           startContent={<i aria-hidden="true" className="ri-download-2-line" />}
                         >
@@ -427,6 +411,7 @@ export default function ProjectsView() {
 
         {totalItems > 0 && totalPages > 0 ? (
           <PaginationBar
+            className="projects-pagination"
             info={paginationInfo}
             onPageChange={setCurrentPage}
             page={currentPage}

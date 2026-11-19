@@ -1,6 +1,7 @@
 package desktop
 
 import (
+	"encoding/json"
 	"errors"
 	"testing"
 
@@ -25,6 +26,114 @@ func memoryStore() *CredentialStore {
 			delete(secrets, service+":"+scope)
 			return nil
 		},
+	}
+}
+
+func TestCredentialStoreMigratesLegacyLoginWithoutDeletingBackup(t *testing.T) {
+	store := memoryStore()
+	legacy := LoginCredentials{Username: "legacy", Password: "saved password"}
+	data, err := json.Marshal(legacy)
+	if err != nil {
+		t.Fatal(err)
+	}
+	if err = store.set(legacyCredentialService, legacyDesktopCredentialScope, string(data)); err != nil {
+		t.Fatal(err)
+	}
+	got, err := store.Load(desktopCredentialScope)
+	if err != nil || got == nil || *got != legacy {
+		t.Fatalf("legacy login migration failed: %v", err)
+	}
+	if _, err = store.get(credentialService, desktopCredentialScope); err != nil {
+		t.Fatal("new namespace not written")
+	}
+	if _, err = store.get(legacyCredentialService, legacyDesktopCredentialScope); err != nil {
+		t.Fatal("old backup deleted")
+	}
+	if err = store.Clear(desktopCredentialScope); err != nil {
+		t.Fatal(err)
+	}
+	if got, err = store.Load(desktopCredentialScope); err != nil || got != nil {
+		t.Fatal("forget restored legacy backup")
+	}
+}
+
+func TestCredentialStoreKeepsNewLoginOverOldBackup(t *testing.T) {
+	store := memoryStore()
+	old, _ := json.Marshal(LoginCredentials{Username: "old", Password: "old"})
+	if err := store.set(legacyCredentialService, legacyDesktopCredentialScope, string(old)); err != nil {
+		t.Fatal(err)
+	}
+	current := LoginCredentials{Username: "current", Password: "current"}
+	if err := store.Save(desktopCredentialScope, current); err != nil {
+		t.Fatal(err)
+	}
+	got, err := store.Load(desktopCredentialScope)
+	if err != nil || got == nil || *got != current {
+		t.Fatal("old backup overwrote current login")
+	}
+}
+
+func TestCredentialStoreKeepsPartialNewScopeOverOlderBackup(t *testing.T) {
+	store := memoryStore()
+	old, _ := json.Marshal(LoginCredentials{Username: "old", Password: "old"})
+	partial, _ := json.Marshal(LoginCredentials{Username: "partial-new", Password: "newer"})
+	if err := store.set(legacyCredentialService, legacyDesktopCredentialScope, string(old)); err != nil {
+		t.Fatal(err)
+	}
+	if err := store.set(credentialService, legacyDesktopCredentialScope, string(partial)); err != nil {
+		t.Fatal(err)
+	}
+	got, err := store.Load(desktopCredentialScope)
+	if err != nil || got == nil || got.Username != "partial-new" {
+		t.Fatal("legacy record replaced partially migrated newer credentials")
+	}
+}
+
+func TestCredentialStoreMigratesCustomAPIScope(t *testing.T) {
+	store := memoryStore()
+	scope := "https://one.example/api/v1"
+	data, _ := json.Marshal(LoginCredentials{Username: "custom", Password: "custom"})
+	if err := store.set(legacyCredentialService, scope, string(data)); err != nil {
+		t.Fatal(err)
+	}
+	if got, err := store.Load(scope); err != nil || got == nil {
+		t.Fatal("custom scope not inherited")
+	}
+	if got, err := store.Load("https://other.example/api/v1"); err != nil || got != nil {
+		t.Fatal("legacy credentials leaked between servers")
+	}
+}
+
+func TestCredentialStoreReportsMigrationWriteFailureAndPreservesOldLogin(t *testing.T) {
+	store := memoryStore()
+	data, _ := json.Marshal(LoginCredentials{Username: "old", Password: "old"})
+	if err := store.set(legacyCredentialService, legacyDesktopCredentialScope, string(data)); err != nil {
+		t.Fatal(err)
+	}
+	store.set = func(string, string, string) error { return errors.New("write denied") }
+	if _, err := store.Load(desktopCredentialScope); err == nil {
+		t.Fatal("migration write failure ignored")
+	}
+	if _, err := store.get(legacyCredentialService, legacyDesktopCredentialScope); err != nil {
+		t.Fatal("backup lost on migration failure")
+	}
+}
+
+func TestCredentialStoreDoesNotTreatCurrentAccessFailureAsMissing(t *testing.T) {
+	store := memoryStore()
+	var oldRead bool
+	store.get = func(service, scope string) (string, error) {
+		if service == credentialService {
+			return "", errors.New("permission denied")
+		}
+		oldRead = true
+		return "", keyring.ErrNotFound
+	}
+	if _, err := store.Load(desktopCredentialScope); err == nil {
+		t.Fatal("access failure ignored")
+	}
+	if oldRead {
+		t.Fatal("current access failure fell through to legacy")
 	}
 }
 

@@ -58,6 +58,7 @@
 }
 
 .ods-accordion__indicator {
+  display: inline-flex;
   flex: 0 0 auto;
   color: var(--ods-color-fg-subtle);
   font-size: var(--ods-font-size-xl);

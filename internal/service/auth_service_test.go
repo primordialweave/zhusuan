@@ -4,11 +4,11 @@ import (
 	"sync"
 	"testing"
 
-	"github.com/FruitsAI/Orange/internal/config"
-	"github.com/FruitsAI/Orange/internal/constants"
-	"github.com/FruitsAI/Orange/internal/database"
-	"github.com/FruitsAI/Orange/internal/models"
-	"github.com/FruitsAI/Orange/internal/pkg/password"
+	"github.com/primordialweave/zhusuan/internal/config"
+	"github.com/primordialweave/zhusuan/internal/constants"
+	"github.com/primordialweave/zhusuan/internal/database"
+	"github.com/primordialweave/zhusuan/internal/models"
+	"github.com/primordialweave/zhusuan/internal/pkg/password"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 )

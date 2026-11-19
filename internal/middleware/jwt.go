@@ -10,12 +10,12 @@ import (
 	"encoding/hex"
 	"time"
 
-	"github.com/FruitsAI/Orange/internal/database"
-	"github.com/FruitsAI/Orange/internal/models"
-	"github.com/FruitsAI/Orange/internal/pkg/cache"
-	"github.com/FruitsAI/Orange/internal/pkg/jwt"
-	"github.com/FruitsAI/Orange/internal/pkg/response"
-	"github.com/FruitsAI/Orange/internal/repository"
+	"github.com/primordialweave/zhusuan/internal/database"
+	"github.com/primordialweave/zhusuan/internal/models"
+	"github.com/primordialweave/zhusuan/internal/pkg/cache"
+	"github.com/primordialweave/zhusuan/internal/pkg/jwt"
+	"github.com/primordialweave/zhusuan/internal/pkg/response"
+	"github.com/primordialweave/zhusuan/internal/repository"
 	"github.com/gin-gonic/gin"
 	"gorm.io/gorm"
 )

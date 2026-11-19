@@ -32,18 +32,47 @@
   flex: 0 0 auto;
 }
 
-.payment-summary__pie [data-part='paid'] {
-  fill: var(--ods-data-part-paid);
+.payment-summary__switch {
+  flex: 0 0 auto;
 }
 
 .payment-summary__pie [data-part='pending'] {
   fill: var(--ods-data-part-pending);
 }
 
+.payment-summary__pie [data-part='paid'] {
+  fill: none;
+  stroke: var(--ods-data-part-paid);
+  stroke-width: 16;
+  transition: stroke-dasharray var(--ods-duration-hero) var(--ods-ease-emphasized);
+}
+
 .payment-summary__pie [data-part='none'] {
   fill: none;
   stroke: var(--ods-color-border-control);
   stroke-width: 1.5;
+}
+
+@keyframes payment-summary-swap {
+  from {
+    opacity: 0;
+    transform: translateY(var(--ods-space-1));
+  }
+}
+
+@media (prefers-reduced-motion: no-preference) {
+  .payment-summary__pie {
+    transition: transform var(--ods-duration-fast) var(--ods-ease-spring);
+  }
+
+  .payment-summary__switch:hover .payment-summary__pie {
+    transform: scale(1.06);
+  }
+
+  /* The legend is keyed by scope, so a switch replays this. */
+  .payment-summary__legend {
+    animation: payment-summary-swap var(--ods-duration-page) var(--ods-ease-emphasized) backwards;
+  }
 }
 
 .payment-summary__legend {

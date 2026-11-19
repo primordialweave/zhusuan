@@ -32,35 +32,38 @@ describe('settings design-system ownership contract', () => {
     expect(settingsCss).not.toContain('!important')
   })
 
-  it('uses shared card radios for database and token-expiry choices, a segmented theme control', () => {
+  it('uses shared card radios for the database, token-expiry and theme choices', () => {
     expect(radioSource).toContain("variant?: 'card' | 'default'")
     expect(radioSource).toContain('columns?: 1 | 2 | 3')
     expect(radioCss).toContain(".ods-radio[data-variant='card']")
-    expect(dataSyncSource).toContain('columns={2}')
+    expect(dataSyncSource).toContain('columns={3}')
     expect(tokenSource).toContain('columns={2}')
-    expect(settingsProductionSource.match(/variant="card"/g)).toHaveLength(2)
-    expect(settingsSource).toContain('<SegmentedControl')
-    expect(settingsSource).not.toContain('<RadioGroup')
+    expect(settingsProductionSource.match(/variant="card"/g)).toHaveLength(3)
+    expect(settingsSource).toContain('<RadioGroup')
+    expect(settingsSource).not.toContain('<SegmentedControl')
   })
 
   it('uses shared Tabs treatments for the settings strip and dictionary sidebar', () => {
     expect(tabsCss).toContain(".ods-tabs__list[data-variant='underline']")
     expect(tabsCss).toContain(".ods-tabs__list[data-variant='navigation']")
     expect(tabsCss).toMatch(
-      /data-variant='navigation'\] \.ods-tabs__tab\s*\{[\s\S]*gap:\s*var\(--ods-space-2\)/,
+      /data-variant='navigation'\] \.ods-tabs__tab\s*\{[\s\S]*gap:\s*var\(--ods-space-3\)/,
     )
     expect(tabsCss).toMatch(/data-variant='underline'\]\s*\{[\s\S]*overflow-x:\s*auto/)
-    expect(settingsSource).toContain('variant="underline"')
-    expect(dictionarySource).toContain('variant="navigation"')
+    expect(settingsSource).toContain("variant={stacked ? 'underline' : 'navigation'}")
+    expect(dictionarySource).toContain('variant="accent"')
   })
 
-  it('lays the page out flat: no cards or section headers around the built-in panels', () => {
+  it('builds every page from the one group card, with its actions packed to the end', () => {
+    const groupSource = readSource('src/components/settings/SettingsGroup.tsx')
+
+    expect(groupSource).toContain('<Card.Root')
     expect(settingsSource).not.toContain('<Card.Root')
     expect(settingsSource).not.toContain('<SectionHeader')
-    expect(settingsSource).toContain(
-      '<PageHeader description="管理账户和界面偏好" title="系统设置" />',
-    )
-    expect(settingsCss).toMatch(/\.settings-row\s*\{[\s\S]*border-block-end:\s*1px solid/)
+    expect(settingsSource).toContain('<PageHeader title="系统设置" />')
+    expect(settingsSource.match(/<SettingsGroup\b/g)?.length).toBeGreaterThanOrEqual(6)
+    expect(settingsCss).toMatch(/\.settings-group__footer\s*\{[^}]*justify-content:\s*flex-end/)
+    expect(settingsCss).toMatch(/\.settings-row \+ \.settings-row\s*\{[^}]*border-block-start/)
   })
 
   it('shares the global foreground and typography tokens across settings', () => {
@@ -92,17 +95,24 @@ describe('settings design-system ownership contract', () => {
     )
   })
 
-  it('names a panel once, on its tab, and keeps SectionHeader for the sections inside it', () => {
-    expect(settingsProductionSource.match(/<SectionHeader\b/g)).toHaveLength(2)
-    expect(settingsProductionSource).not.toMatch(/<SectionHeader[^>]*size="lg"/)
+  it('names a panel once, on its tab, and opens list pages with one toolbar row', () => {
+    expect(settingsProductionSource).not.toContain('<SectionHeader')
     expect(settingsProductionSource).not.toMatch(/className="(?:dev|sync)-stat/)
-    expect(settingsProductionSource.match(/className="settings-toolbar"/g)).toHaveLength(4)
+    expect(settingsProductionSource.match(/className="settings-toolbar"/g)).toHaveLength(5)
     expect(settingsProductionSource).not.toMatch(
       /className="(?:nav-header|dev-header|dev-header-content|dev-title-section|dev-title-info|dev-title|dev-subtitle|dev-icon-wrapper|appearance-header|appearance-header-main|appearance-title-wrapper|appearance-title-content|appearance-title|appearance-subtitle|appearance-icon|sync-title-wrapper|sync-title|sync-subtitle|sync-icon)"/,
     )
     expect(settingsCss).not.toMatch(
       /\.(?:nav-header|dev-header|dev-header-content|dev-title-section|dev-title-info|dev-title|dev-subtitle|dev-icon-wrapper|appearance-header|appearance-header-main|appearance-title-wrapper|appearance-title-content|appearance-title|appearance-subtitle|appearance-icon|sync-title-wrapper|sync-title|sync-subtitle|sync-icon)(?:[\s,.:{]|$)/,
     )
+  })
+
+  it('lists users, dictionary entries and tokens in ODS tables, not hand-built cards', () => {
+    for (const source of [userSource, dictionarySource, tokenSource]) {
+      expect(source).toContain('<Table.Root')
+      expect(source).not.toContain('<Card.Root')
+    }
+    expect(settingsCss).not.toMatch(/\.(?:user-card|dev-token-card|notification-card|dict-item)\b/)
   })
 
   it('uses ODS Table and form patterns instead of rebuilding card slots and tabular rows', () => {

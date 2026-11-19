@@ -5,7 +5,6 @@ import { useConfirm } from '@/composables/useConfirm'
 import { useToastStore } from '@/composables/useToast'
 import {
   Button,
-  Card,
   Chip,
   EmptyState,
   Field,
@@ -16,9 +15,10 @@ import {
   PaginationBar,
   Select,
   Spinner,
-  Surface,
   TextArea,
 } from '@/design-system'
+import { formatRelativeTime } from '@/utils/format'
+import SettingsGroup from './SettingsGroup'
 
 interface NotificationManagementProps {
   isAdmin?: boolean
@@ -42,12 +42,6 @@ const getNotificationTypeName = (type: number) => {
   if (type === 2) return '活动'
   if (type === 3) return '私信'
   return '系统'
-}
-
-const getNotificationIcon = (type: number) => {
-  if (type === 2) return 'ri-calendar-event-line'
-  if (type === 3) return 'ri-mail-send-line'
-  return 'ri-settings-3-line'
 }
 
 const getFormType = (type: number) => {
@@ -77,10 +71,6 @@ export default function NotificationManagement({ isAdmin = false }: Notification
 
   const unreadNotifications = useMemo(
     () => notifications.filter((notification) => !notification.is_read).length,
-    [notifications],
-  )
-  const systemNotifications = useMemo(
-    () => notifications.filter((notification) => notification.type === 1).length,
     [notifications],
   )
   const notificationTotalPages = Math.ceil(notificationTotal / notificationPageSize)
@@ -235,173 +225,127 @@ export default function NotificationManagement({ isAdmin = false }: Notification
   }
 
   return (
-    <div className="notification-management">
+    <div className="notification-management settings-page">
       <div className="settings-toolbar">
-        <dl className="settings-stats">
-          <div>
-            <dt>总通知</dt>
-            <dd>{notificationTotal}</dd>
-          </div>
-          <div>
-            <dt>未读</dt>
-            <dd>{unreadNotifications}</dd>
-          </div>
-          <div>
-            <dt>系统</dt>
-            <dd>{systemNotifications}</dd>
-          </div>
-        </dl>
+        <h2 className="settings-toolbar__title">
+          {unreadNotifications > 0 ? `${unreadNotifications} 条未读` : '全部已读'}
+        </h2>
         {isAdmin ? (
-          <div className="settings-toolbar__actions">
-            <Button onClick={openCreateModal}>
-              <i aria-hidden="true" className="ri-add-line" />
-              <span>发送通知</span>
-            </Button>
-          </div>
+          <Button onClick={openCreateModal}>
+            <i aria-hidden="true" className="ri-add-line" />
+            <span>发送通知</span>
+          </Button>
         ) : null}
       </div>
 
-      <div className="dev-content">
-        {notificationLoading ? (
-          <Spinner className="dev-loading" label="正在加载通知列表" size="lg" />
-        ) : notifications.length === 0 ? (
-          <EmptyState
-            className="dev-empty"
-            description="目前没有收到任何系统消息"
-            icon={<i className="ri-notification-off-line" />}
-            size="lg"
-            title="暂无通知"
-          />
-        ) : (
-          <div className="notification-list">
+      {notificationLoading && notifications.length === 0 ? (
+        <Spinner className="settings-empty" label="正在加载通知列表" size="lg" />
+      ) : notifications.length === 0 ? (
+        <EmptyState
+          className="settings-empty"
+          icon={<i className="ri-notification-off-line" />}
+          size="lg"
+          title="暂无通知"
+        />
+      ) : (
+        <SettingsGroup flush>
+          <ul className="settings-list">
             {notifications.map((notification) => (
-              <Card.Root
-                className="notification-card"
-                gap="none"
+              <li
+                className="settings-row notification-row"
+                data-unread={!notification.is_read || undefined}
                 key={notification.id}
-                padding="none"
-                tone={!notification.is_read ? 'warning' : 'neutral'}
               >
-                <div className="notification-inner">
-                  <Surface
-                    className="notification-type-icon"
-                    padding="none"
-                    radius="control"
+                <span aria-hidden="true" className="notification-row__dot" />
+                <div className="notification-row__copy">
+                  <span className="notification-row__title">
+                    {!notification.is_read ? <span className="ods-sr-only">未读：</span> : null}
+                    {notification.title}
+                  </span>
+                  <span className="notification-row__summary">{notification.content}</span>
+                </div>
+                <span className="notification-row__tag">
+                  <Chip
                     tone={
                       notification.type === 2
-                        ? 'danger'
+                        ? 'accent'
                         : notification.type === 3
-                          ? 'accent'
+                          ? 'info'
                           : 'neutral'
                     }
-                    variant="inset"
                   >
-                    <i className={getNotificationIcon(notification.type)} />
-                  </Surface>
-
-                  <div className="notification-body">
-                    <div className="notification-header-row">
-                      <div className="notification-tags">
-                        <Chip
-                          size="sm"
-                          tone={
-                            notification.type === 2
-                              ? 'danger'
-                              : notification.type === 3
-                                ? 'accent'
-                                : 'neutral'
-                          }
-                        >
-                          {getNotificationTypeName(notification.type)}
-                        </Chip>
-                        <Chip size="sm" variant="outline">
-                          {notification.is_global === 1 ? '全员' : '私信'}
-                        </Chip>
-                      </div>
-                    </div>
-
-                    <h4 className="notification-title">
-                      {!notification.is_read ? <span className="unread-dot" /> : null}
-                      {notification.title}
-                    </h4>
-
-                    <p className="notification-desc">{notification.content}</p>
-
-                    {notification.sender ? (
-                      <div className="notification-sender">
-                        <i className="ri-user-line" />
-                        <span>{notification.sender.name}</span>
-                      </div>
-                    ) : null}
-                  </div>
-
-                  <div className="notification-right">
-                    <Button
-                      aria-label={`查看通知：${notification.title}`}
-                      onClick={() => void viewNotificationDetail(notification)}
-                      size="sm"
-                      variant="ghost"
-                    >
-                      查看
-                    </Button>
-                    {isAdmin ? (
-                      <div className="notification-actions">
-                        <IconButton
-                          label="编辑通知"
-                          onClick={() => editNotification(notification)}
-                          size="sm"
-                          title="编辑"
-                          variant="ghost"
-                        >
-                          <i className="ri-edit-line" />
-                        </IconButton>
-                        <IconButton
-                          label="删除通知"
-                          onClick={() => void handleDeleteNotification(notification.id)}
-                          size="sm"
-                          title="删除"
-                          tone="danger"
-                          variant="ghost"
-                        >
-                          <i className="ri-delete-bin-line" />
-                        </IconButton>
-                      </div>
-                    ) : null}
-                    <span className="notification-time">
-                      {new Date(notification.create_time).toLocaleString()}
-                    </span>
-                  </div>
+                    {getNotificationTypeName(notification.type)}
+                    {notification.is_global === 1 ? ' · 全员' : ''}
+                  </Chip>
+                </span>
+                <span className="notification-row__meta">
+                  {notification.sender ? `${notification.sender.name} · ` : ''}
+                  {formatRelativeTime(notification.create_time)}
+                </span>
+                <div className="settings-table__actions">
+                  <IconButton
+                    label={`查看通知：${notification.title}`}
+                    onClick={() => void viewNotificationDetail(notification)}
+                    size="sm"
+                    title="查看"
+                    variant="ghost"
+                  >
+                    <i className="ri-eye-line" />
+                  </IconButton>
+                  {isAdmin ? (
+                    <>
+                      <IconButton
+                        label="编辑通知"
+                        onClick={() => editNotification(notification)}
+                        size="sm"
+                        title="编辑"
+                        variant="ghost"
+                      >
+                        <i className="ri-edit-line" />
+                      </IconButton>
+                      <IconButton
+                        label="删除通知"
+                        onClick={() => void handleDeleteNotification(notification.id)}
+                        size="sm"
+                        title="删除"
+                        tone="danger"
+                        variant="ghost"
+                      >
+                        <i className="ri-delete-bin-line" />
+                      </IconButton>
+                    </>
+                  ) : null}
                 </div>
-              </Card.Root>
+              </li>
             ))}
-          </div>
-        )}
+          </ul>
+        </SettingsGroup>
+      )}
 
-        {notifications.length > 0 ? (
-          <PaginationBar
-            info={notificationPaginationInfo}
-            onPageChange={setNotificationCurrentPage}
-            page={notificationCurrentPage}
-            pageCount={notificationTotalPages}
-            separated
-            trailing={
-              <Select
-                aria-label="每页通知数"
-                onValueChange={(value) => {
-                  setNotificationPageSize(Number(value))
-                  setNotificationCurrentPage(1)
-                }}
-                options={[
-                  { label: '5条/页', value: '5' },
-                  { label: '10条/页', value: '10' },
-                ]}
-                size="sm"
-                value={String(notificationPageSize)}
-              />
-            }
-          />
-        ) : null}
-      </div>
+      {notificationTotal > notificationPageSize || notificationCurrentPage > 1 ? (
+        <PaginationBar
+          info={notificationPaginationInfo}
+          onPageChange={setNotificationCurrentPage}
+          page={notificationCurrentPage}
+          pageCount={notificationTotalPages}
+          trailing={
+            <Select
+              aria-label="每页通知数"
+              onValueChange={(value) => {
+                setNotificationPageSize(Number(value))
+                setNotificationCurrentPage(1)
+              }}
+              options={[
+                { label: '5条/页', value: '5' },
+                { label: '10条/页', value: '10' },
+              ]}
+              size="sm"
+              value={String(notificationPageSize)}
+              width="content"
+            />
+          }
+        />
+      ) : null}
 
       <Modal.Root
         onClose={() => setShowCreateNotificationModal(false)}

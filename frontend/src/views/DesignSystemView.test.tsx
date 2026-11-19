@@ -9,7 +9,7 @@ describe('DesignSystemView', () => {
   it('composes the showcase from Orange Design System patterns and surfaces', () => {
     const { container } = render(<DesignSystemView />)
 
-    expect(screen.getByRole('heading', { level: 1, name: 'Orange 设计系统' })).toBeInTheDocument()
+    expect(screen.getByRole('heading', { level: 1, name: '珠算 设计系统' })).toBeInTheDocument()
     expect(screen.getByRole('heading', { level: 2, name: '按钮 Button' })).toBeInTheDocument()
     expect(container.querySelector('.ods-page-header')).toBeInTheDocument()
     expect(

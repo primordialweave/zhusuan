@@ -8,11 +8,11 @@ COPY go.mod go.sum ./
 RUN go mod download
 
 COPY . .
-RUN go build -ldflags="-w -s" -o /orange-api ./cmd/server
+RUN go build -ldflags="-w -s" -o /zhusuan-api ./cmd/server
 
 FROM alpine:3.22
 
-RUN apk --no-cache add ca-certificates tzdata wget && adduser -D -H orange
+RUN apk --no-cache add ca-certificates tzdata wget && adduser -D -H zhusuan
 
 ENV API_SERVER_HOST=0.0.0.0
 ENV API_SERVER_PORT=3456
@@ -21,13 +21,13 @@ ENV TZ=Asia/Shanghai
 
 WORKDIR /app
 
-COPY --from=builder /orange-api /usr/local/bin/orange-api
+COPY --from=builder /zhusuan-api /usr/local/bin/zhusuan-api
 
-USER orange
+USER zhusuan
 
 EXPOSE 3456
 
 HEALTHCHECK --interval=30s --timeout=3s --start-period=10s --retries=3 \
   CMD wget --no-verbose --tries=1 --spider http://127.0.0.1:3456/api/health || exit 1
 
-CMD ["orange-api"]
+CMD ["zhusuan-api"]

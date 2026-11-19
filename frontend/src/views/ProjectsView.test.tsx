@@ -91,7 +91,7 @@ describe('ProjectsView design system migration', () => {
     expect(screen.queryByRole('tablist')).not.toBeInTheDocument()
     expect(container.querySelector('.ods-summary-metric')).not.toBeInTheDocument()
     expect(container.querySelector('[data-slot="eyebrow"]')).not.toBeInTheDocument()
-    expect(screen.getByText('查看合同与收款进度')).toBeInTheDocument()
+    expect(document.querySelector('.ods-page-header__description, .scene-page__text')).toBeNull()
     expect(screen.getAllByRole('columnheader').map((column) => column.textContent)).toEqual([
       '项目名称',
       '客户',

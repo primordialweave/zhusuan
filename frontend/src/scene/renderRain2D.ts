@@ -16,6 +16,16 @@ interface Ripple {
   y: number
 }
 
+interface Swallow {
+  /** Seconds until the next pass while idle, then seconds into the pass. */
+  clock: number
+  direction: 1 | -1
+  duration: number
+  flying: boolean
+  height: number
+  size: number
+}
+
 export interface RainRenderer {
   render: (deltaSeconds: number) => void
   resize: (width: number, height: number, scale: number, crop: SceneCrop) => void
@@ -37,6 +47,61 @@ export function createRainRenderer(canvas: HTMLCanvasElement): RainRenderer {
   let streaks: Streak[] = []
   let ripples: Ripple[] = []
 
+  const swallow: Swallow = {
+    clock: 3,
+    direction: 1,
+    duration: 7,
+    flying: false,
+    height: 0.14,
+    size: 1,
+  }
+
+  // A swallow crosses the open sky now and then: a shallow dipping glide with quick wingbeats.
+  const drawSwallow = (deltaSeconds: number) => {
+    swallow.clock += swallow.flying ? deltaSeconds : -deltaSeconds
+    if (!swallow.flying) {
+      if (swallow.clock > 0) return
+      swallow.flying = true
+      swallow.clock = 0
+      swallow.direction = Math.random() < 0.5 ? 1 : -1
+      swallow.duration = 6 + Math.random() * 3
+      swallow.height = 0.07 + Math.random() * 0.12
+      swallow.size = 0.85 + Math.random() * 0.4
+    }
+    const progress = swallow.clock / swallow.duration
+    if (progress >= 1) {
+      swallow.flying = false
+      swallow.clock = 9 + Math.random() * 10
+      return
+    }
+    const travel = width + 120
+    const along = swallow.direction === 1 ? progress : 1 - progress
+    const x = along * travel - 60
+    const y = height * (swallow.height + Math.sin(progress * Math.PI * 2.2) * 0.022)
+    const flap = Math.sin(swallow.clock * 15)
+    const span = 13 * swallow.size
+    const lift = (2 + flap * 6) * swallow.size
+    const fade = Math.min(1, progress * 8, (1 - progress) * 8)
+
+    context.save()
+    context.translate(x, y)
+    context.scale(swallow.direction, 1)
+    context.fillStyle = `rgba(34, 52, 44, ${0.62 * fade})`
+    context.beginPath()
+    // Wings sweep back from the shoulders; the forked tail trails behind.
+    context.moveTo(5 * swallow.size, 0)
+    context.quadraticCurveTo(0, -lift * 0.6, -span * 0.55, -lift - 4 * swallow.size)
+    context.quadraticCurveTo(-span * 0.2, -lift * 0.2, -3 * swallow.size, 0.5)
+    context.lineTo(-span * 0.95, -2.5 * swallow.size)
+    context.lineTo(-span * 0.6, 0.8 * swallow.size)
+    context.lineTo(-span * 0.95, 3.5 * swallow.size)
+    context.quadraticCurveTo(-span * 0.2, 2.2 * swallow.size, -3 * swallow.size, 1.5)
+    context.quadraticCurveTo(-span * 0.25, lift * 0.5 + 3, -span * 0.5, lift + 5 * swallow.size)
+    context.quadraticCurveTo(0, lift * 0.5 + 1, 5 * swallow.size, 0)
+    context.fill()
+    context.restore()
+  }
+
   const waterlineAt = (x: number) =>
     waterTop.left + (waterTop.right - waterTop.left) * (x / Math.max(1, width))
 
@@ -55,7 +120,7 @@ export function createRainRenderer(canvas: HTMLCanvasElement): RainRenderer {
     const depth = Math.random()
     ripple.y = top + depth * Math.max(0, height - top - 12)
     ripple.scale = 0.45 + depth * 0.9
-    ripple.life = 0.8 + Math.random()
+    ripple.life = 1.1 + Math.random() * 1.2
     ripple.age = started ? Math.random() * ripple.life : -Math.random() * 1.6
   }
 
@@ -83,12 +148,19 @@ export function createRainRenderer(canvas: HTMLCanvasElement): RainRenderer {
         if (ripple.age > ripple.life) resetRipple(ripple, false)
         if (ripple.age < 0) continue
         const progress = ripple.age / ripple.life
-        const radius = (4 + progress * 24) * ripple.scale
-        context.strokeStyle = `rgba(255, 255, 255, ${(1 - progress) * 0.42})`
-        context.beginPath()
-        context.ellipse(ripple.x, ripple.y, radius, radius * 0.3, 0, 0, Math.PI * 2)
-        context.stroke()
+        // Two rings per drop: the second starts later and stays inside the first.
+        for (const lag of [0, 0.28]) {
+          const ring = (progress - lag) / (1 - lag)
+          if (ring <= 0) continue
+          const radius = (4 + ring * 30) * ripple.scale
+          context.strokeStyle = `rgba(255, 255, 255, ${(1 - ring) * (lag === 0 ? 0.5 : 0.3)})`
+          context.beginPath()
+          context.ellipse(ripple.x, ripple.y, radius, radius * 0.3, 0, 0, Math.PI * 2)
+          context.stroke()
+        }
       }
+
+      drawSwallow(deltaSeconds)
     },
     resize(nextWidth, nextHeight, nextScale, crop) {
       width = nextWidth

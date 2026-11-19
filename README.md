@@ -1,7 +1,9 @@
 <div align="center">
-  <img src="frontend/public/orange.png" alt="Orange Logo" width="120" height="120" />
+  <img src="frontend/public/zhusuan.png" alt="珠算 Logo" width="120" height="120" />
 
-# Orange
+# 珠算 · zhusuan
+
+原 Orange 项目已迁入 [Primordial Weave](https://github.com/primordialweave/zhusuan)。旧版用户的数据与登录信息迁移规则见 [迁移说明](docs/migration.md)。
 
   <p>
     <strong>一个基于 Wails v3 的现代化跨平台桌面应用</strong>
@@ -35,7 +37,7 @@
 
 ## 📖 简介
 
-**Orange** 是一个基于 [Wails v3](https://wails.io) 构建的现代化桌面应用程序，展示了如何使用 Go (后端) 和 React (前端) 打造高性能、原生体验的跨平台应用。
+**珠算** 是一个基于 [Wails v3](https://wails.io) 构建的现代化桌面应用程序，展示了如何使用 Go (后端) 和 React (前端) 打造高性能、原生体验的跨平台应用。
 
 该项目集成了一套完整的业务管理功能，包括用户权限管理、项目合同追踪、财务款项管理以及系统字典配置，旨在为企业级桌面应用开发提供最佳实践参考。
 
@@ -112,8 +114,8 @@
 1. **克隆仓库**
 
 ```bash
-git clone https://github.com/FruitsAI/Orange.git
-cd Orange
+git clone https://github.com/primordialweave/zhusuan.git
+cd zhusuan
 ```
 
 2. **安装前端依赖**
@@ -150,9 +152,9 @@ wails3 build
 **重要**: 登录后请立即修改初始密码，并妥善保管凭据文件。
 
 > **凭据文件位置**:
-> - Windows: `%APPDATA%\Orange\initial-credentials.txt`
-> - macOS: `~/Library/Application Support/Orange/initial-credentials.txt`
-> - Linux: `~/.config/Orange/initial-credentials.txt`
+> - Windows: `%APPDATA%\primordialweave\zhusuan\initial-credentials.txt`
+> - macOS: `~/Library/Application Support/zhusuan/initial-credentials.txt`
+> - Linux: `~/.config/zhusuan/initial-credentials.txt`
 
 ## ⚙️ 配置说明
 
@@ -160,22 +162,22 @@ wails3 build
 
 ### 数据库配置
 
-Orange 支持三种数据库：**SQLite** (默认)、**MySQL** 和 **PostgreSQL**。
+珠算支持三种数据库：**SQLite** (默认)、**MySQL** 和 **PostgreSQL**。
 
 ```ini
 # 数据库类型: sqlite (默认), mysql, postgres
 DB_TYPE=sqlite
 
-# 数据库路径 (默认: 系统用户配置目录下的 orange.db)
+# 数据库路径 (默认: 系统用户配置目录下的 zhusuan.db)
 # SQLite 配置 (仅 DB_TYPE=sqlite 时有效)
-DB_PATH=orange.db
+DB_PATH=zhusuan.db
 
 # MySQL/PostgreSQL 配置
 DB_HOST=localhost
 DB_PORT=3306          # MySQL: 3306, PostgreSQL: 5432
 DB_USER=root
 DB_PASSWORD=          # 生产环境必须设置强密码
-DB_NAME=orange
+DB_NAME=zhusuan
 
 # SSL 连接模式 (PostgreSQL)
 # disable: 本地开发环境
@@ -206,8 +208,8 @@ TOKEN_EXPIRY=24
 LOG_ENABLE=true
 # 日志级别: debug, info, warn, error
 LOG_LEVEL=info
-# 日志文件路径 (默认: 系统用户配置目录/log/orange.log)
-LOG_PATH=orange.log
+# 日志文件路径 (默认: 系统用户配置目录/log/zhusuan.log)
+LOG_PATH=zhusuan.log
 # 单个日志文件最大大小 (MB)
 LOG_MAX_SIZE=10
 # 保留旧日志文件的最大个数
@@ -230,7 +232,7 @@ PROMETHEUS_PASSWORD=
 
 # GitHub Updates
 # 用于检查更新的仓库地址
-GITHUB_REPO=FruitsAI/Orange
+GITHUB_REPO=primordialweave/zhusuan
 ```
 
 > **安全最佳实践**:
@@ -268,7 +270,7 @@ GITHUB_REPO=FruitsAI/Orange
 ## 📂 目录结构
 
 ```
-Orange/
+zhusuan/
 ├── build/              # Wails 构建相关配置与资源 (AppIcon 等)
 ├── cmd/                # Go 应用程序入口
 ├── frontend/           # React 前端源代码
@@ -295,7 +297,7 @@ Orange/
 
 ## 🤝 贡献
 
-欢迎提交 Pull Request 或 Issue 来帮助改进 Orange！
+欢迎提交 Pull Request 或 Issue 来帮助改进珠算！
 
 1. Fork 本仓库
 2. 创建特性分支 (`git checkout -b feature/AmazingFeature`)

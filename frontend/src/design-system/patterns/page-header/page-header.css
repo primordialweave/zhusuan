@@ -1,15 +1,22 @@
+/* One row: the title, then whatever the page needs within reach. The row is as tall as a
+   control, so a page with actions and a page without start their content at the same height. */
 .ods-page-header {
   display: grid;
   grid-template-columns: auto minmax(0, 1fr) auto;
   align-items: center;
   gap: var(--ods-space-4);
   min-width: 0;
+  min-height: var(--ods-control-height-md);
 }
 
 .ods-page-header__leading,
 .ods-page-header__actions {
   display: flex;
   align-items: center;
+  gap: var(--ods-space-3);
+}
+
+.ods-page-header__leading {
   gap: var(--ods-space-2);
 }
 
@@ -40,7 +47,7 @@
   margin: 0;
   color: var(--ods-color-fg-default);
   font-family: var(--ods-font-family-title);
-  font-size: clamp(var(--ods-font-size-3xl), 2.9vw, var(--ods-font-size-4xl));
+  font-size: clamp(1.375rem, 2vw, 1.75rem);
   font-weight: var(--ods-font-weight-title);
   letter-spacing: var(--ods-letter-spacing-tight);
   line-height: var(--ods-line-height-heading);
@@ -49,7 +56,7 @@
 .ods-page-header__description {
   margin-block-start: var(--ods-space-1);
   color: var(--ods-color-fg-muted);
-  font-size: var(--ods-font-size-md);
+  font-size: var(--ods-font-size-sm);
   line-height: var(--ods-line-height-body);
 }
 

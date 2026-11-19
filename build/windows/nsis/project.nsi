@@ -1,114 +1,306 @@
 Unicode true
 
-####
-## Please note: Template replacements don't work in this file. They are provided with default defines like
-## mentioned underneath.
-## If the keyword is not defined, "wails_tools.nsh" will populate them.
-## If they are defined here, "wails_tools.nsh" will not touch them. This allows you to use this project.nsi manually
-## from outside of Wails for debugging and development of the installer.
-## 
-## For development first make a wails nsis build to populate the "wails_tools.nsh":
-## > wails build --target windows/amd64 --nsis
-## Then you can call makensis on this file with specifying the path to your binary:
-## For a AMD64 only installer:
-## > makensis -DARG_WAILS_AMD64_BINARY=..\..\bin\app.exe
-## For a ARM64 only installer:
-## > makensis -DARG_WAILS_ARM64_BINARY=..\..\bin\app.exe
-## For a installer with both architectures:
-## > makensis -DARG_WAILS_AMD64_BINARY=..\..\bin\app-amd64.exe -DARG_WAILS_ARM64_BINARY=..\..\bin\app-arm64.exe
-####
-## The following information is taken from the wails_tools.nsh file, but they can be overwritten here.
-####
-## !define INFO_PROJECTNAME    "my-project" # Default "Orange"
-## !define INFO_COMPANYNAME    "My Company" # Default "FruitsAI"
-## !define INFO_PRODUCTNAME    "My Product Name" # Default "Orange"
-## !define INFO_PRODUCTVERSION "1.0.0"     # Default "0.1.0"
-## !define INFO_COPYRIGHT      "(c) Now, My Company" # Default "© 2026, My Company"
-###
-## !define PRODUCT_EXECUTABLE  "Application.exe"      # Default "${INFO_PROJECTNAME}.exe"
-## !define UNINST_KEY_NAME     "UninstKeyInRegistry"  # Default "${INFO_COMPANYNAME}${INFO_PRODUCTNAME}"
-####
-## !define REQUEST_EXECUTION_LEVEL "admin"            # Default "admin"  see also https://nsis.sourceforge.io/Docs/Chapter4.html
-####
-## Include the wails tools
-####
+; Stable project identities must not depend on generated include defaults.
+!define INFO_PROJECTNAME "zhusuan"
+!define INFO_COMPANYNAME "PrimordialWeave"
+!define INFO_PRODUCTNAME "珠算"
+!define INFO_COPYRIGHT "(c) 2026, PrimordialWeave"
+!define PRODUCT_EXECUTABLE "zhusuan.exe"
+!define UNINST_KEY_NAME "PrimordialWeaveZhusuan"
+!define LEGACY_EXECUTABLE "Orange.exe"
+!define LEGACY_UNINST_KEY "Software\Microsoft\Windows\CurrentVersion\Uninstall\FruitsAIOrange"
+!ifndef INFO_PRODUCTVERSION
+    !searchparse /file "..\..\config.yml" '  version: "' INFO_PRODUCTVERSION '"'
+!endif
 !include "wails_tools.nsh"
+!include "MUI.nsh"
+!include "LogicLib.nsh"
 
-# The version information for this two must consist of 4 parts
 VIProductVersion "${INFO_PRODUCTVERSION}.0"
-VIFileVersion    "${INFO_PRODUCTVERSION}.0"
-
-VIAddVersionKey "CompanyName"     "${INFO_COMPANYNAME}"
+VIFileVersion "${INFO_PRODUCTVERSION}.0"
+VIAddVersionKey "CompanyName" "${INFO_COMPANYNAME}"
 VIAddVersionKey "FileDescription" "${INFO_PRODUCTNAME} Installer"
-VIAddVersionKey "ProductVersion"  "${INFO_PRODUCTVERSION}"
-VIAddVersionKey "FileVersion"     "${INFO_PRODUCTVERSION}"
-VIAddVersionKey "LegalCopyright"  "${INFO_COPYRIGHT}"
-VIAddVersionKey "ProductName"     "${INFO_PRODUCTNAME}"
-
-# Enable HiDPI support. https://nsis.sourceforge.io/Reference/ManifestDPIAware
+VIAddVersionKey "ProductVersion" "${INFO_PRODUCTVERSION}"
+VIAddVersionKey "FileVersion" "${INFO_PRODUCTVERSION}"
+VIAddVersionKey "LegalCopyright" "${INFO_COPYRIGHT}"
+VIAddVersionKey "ProductName" "${INFO_PRODUCTNAME}"
 ManifestDPIAware true
 
-!include "MUI.nsh"
+Var ZhusuanUpdate
+Var ZhusuanPreviousVersion
+Var ZhusuanExistingKey
+Var ZhusuanBinaryBackup
+Var ZhusuanLegacyBackup
+Var ZhusuanUninstallerBackup
+Var ZhusuanNewWritten
+Var ZhusuanUninstallerWritten
+
+; Extract a bare path from historical quoted DisplayIcon/UninstallString values.
+Function ZhusuanCommandDirectory
+    StrCpy $2 $1 1
+    ${If} $2 == '$\"'
+        StrCpy $1 $1 "" 1
+        StrCpy $3 0
+        trim_command_loop:
+        StrCpy $2 $1 1 $3
+        ${If} $2 == '$\"'
+            StrCpy $1 $1 $3
+            Goto trim_command_done
+        ${EndIf}
+        ${If} $2 == ""
+            Goto trim_command_done
+        ${EndIf}
+        IntOp $3 $3 + 1
+        Goto trim_command_loop
+        trim_command_done:
+    ${EndIf}
+    ${GetParent} "$1" $1
+FunctionEnd
+
+!macro ZhusuanReadInstallDir ROOT VIEW KEY
+    ${If} $0 == ""
+        SetRegView ${VIEW}
+        ReadRegStr $1 ${ROOT} "${KEY}" "InstallLocation"
+        ${If} $1 == ""
+            ReadRegStr $1 ${ROOT} "${KEY}" ""
+        ${EndIf}
+        ${If} ${FileExists} "$1\${PRODUCT_EXECUTABLE}"
+            StrCpy $0 $1
+        ${ElseIf} ${FileExists} "$1\${LEGACY_EXECUTABLE}"
+            StrCpy $0 $1
+        ${EndIf}
+        ${If} $0 == ""
+            ReadRegStr $1 ${ROOT} "${KEY}" "DisplayIcon"
+            ${If} $1 == ""
+                ReadRegStr $1 ${ROOT} "${KEY}" "UninstallString"
+            ${EndIf}
+            ${If} $1 != ""
+                Call ZhusuanCommandDirectory
+                ${If} ${FileExists} "$1\${PRODUCT_EXECUTABLE}"
+                    StrCpy $0 $1
+                ${ElseIf} ${FileExists} "$1\${LEGACY_EXECUTABLE}"
+                    StrCpy $0 $1
+                ${EndIf}
+            ${EndIf}
+        ${EndIf}
+    ${EndIf}
+!macroend
+
+!macro ZhusuanDeleteLegacyKey ROOT VIEW
+    SetRegView ${VIEW}
+    ReadRegStr $1 ${ROOT} "${LEGACY_UNINST_KEY}" "InstallLocation"
+    ${If} $1 == ""
+        ReadRegStr $1 ${ROOT} "${LEGACY_UNINST_KEY}" ""
+    ${EndIf}
+    ${If} $1 == ""
+        ReadRegStr $1 ${ROOT} "${LEGACY_UNINST_KEY}" "DisplayIcon"
+        ${If} $1 == ""
+            ReadRegStr $1 ${ROOT} "${LEGACY_UNINST_KEY}" "UninstallString"
+        ${EndIf}
+        ${If} $1 != ""
+            Call ZhusuanCommandDirectory
+        ${EndIf}
+    ${EndIf}
+    ${If} $1 == $INSTDIR
+        DeleteRegKey ${ROOT} "${LEGACY_UNINST_KEY}"
+    ${EndIf}
+!macroend
 
 !define MUI_ICON "..\icon.ico"
 !define MUI_UNICON "..\icon.ico"
-# !define MUI_WELCOMEFINISHPAGE_BITMAP "resources\leftimage.bmp" #Include this to add a bitmap on the left side of the Welcome Page. Must be a size of 164x314
-!define MUI_FINISHPAGE_NOAUTOCLOSE # Wait on the INSTFILES page so the user can take a look into the details of the installation steps
-!define MUI_ABORTWARNING # This will warn the user if they exit from the installer.
-
-!insertmacro MUI_PAGE_WELCOME # Welcome to the installer page.
-# !insertmacro MUI_PAGE_LICENSE "resources\eula.txt" # Adds a EULA page to the installer
-!insertmacro MUI_PAGE_DIRECTORY # In which folder install page.
-!insertmacro MUI_PAGE_INSTFILES # Installing page.
-!insertmacro MUI_PAGE_FINISH # Finished installation page.
-
-!insertmacro MUI_UNPAGE_INSTFILES # Uninstalling page
-
-!insertmacro MUI_LANGUAGE "English" # Set the Language of the installer
-
-## The following two statements can be used to sign the installer and the uninstaller. The path to the binaries are provided in %1
-#!uninstfinalize 'signtool --file "%1"'
-#!finalize 'signtool --file "%1"'
+!define MUI_FINISHPAGE_NOAUTOCLOSE
+!define MUI_ABORTWARNING
+!insertmacro MUI_PAGE_WELCOME
+!insertmacro MUI_PAGE_DIRECTORY
+!insertmacro MUI_PAGE_INSTFILES
+!insertmacro MUI_PAGE_FINISH
+!insertmacro MUI_UNPAGE_INSTFILES
+!insertmacro MUI_LANGUAGE "English"
 
 Name "${INFO_PRODUCTNAME}"
-OutFile "..\..\..\bin\${INFO_PROJECTNAME}-${ARCH}-installer.exe" # Name of the installer's file.
-InstallDir "$PROGRAMFILES64\${INFO_COMPANYNAME}\${INFO_PRODUCTNAME}" # Default installing folder ($PROGRAMFILES is Program Files folder).
-ShowInstDetails show # This will always show the installation details.
+OutFile "..\..\..\bin\${INFO_PROJECTNAME}-${ARCH}-installer.exe"
+InstallDir "$PROGRAMFILES64\${INFO_COMPANYNAME}\${INFO_PROJECTNAME}"
+ShowInstDetails show
 
 Function .onInit
-   !insertmacro wails.checkArchitecture
+    !insertmacro wails.checkArchitecture
+    StrCpy $ZhusuanUpdate "0"
+    StrCpy $ZhusuanBinaryBackup "0"
+    StrCpy $ZhusuanLegacyBackup "0"
+    StrCpy $ZhusuanUninstallerBackup "0"
+    StrCpy $ZhusuanNewWritten "0"
+    StrCpy $ZhusuanUninstallerWritten "0"
+    ${GetParameters} $0
+    ClearErrors
+    ${GetOptions} $0 "/UPDATE" $1
+    ${IfNot} ${Errors}
+        StrCpy $ZhusuanUpdate "1"
+        SetSilent silent
+    ${EndIf}
+
+    ; NSIS /D overrides detection and must be the unquoted final argument.
+    ClearErrors
+    ${GetOptions} $CMDLINE "/D=" $1
+    ${If} ${Errors}
+        StrCpy $0 ""
+        !insertmacro ZhusuanReadInstallDir HKLM 64 "${UNINST_KEY}"
+        !insertmacro ZhusuanReadInstallDir HKCU 64 "${UNINST_KEY}"
+        !insertmacro ZhusuanReadInstallDir HKLM 32 "${UNINST_KEY}"
+        !insertmacro ZhusuanReadInstallDir HKCU 32 "${UNINST_KEY}"
+        !insertmacro ZhusuanReadInstallDir HKLM 64 "${LEGACY_UNINST_KEY}"
+        !insertmacro ZhusuanReadInstallDir HKCU 64 "${LEGACY_UNINST_KEY}"
+        !insertmacro ZhusuanReadInstallDir HKLM 32 "${LEGACY_UNINST_KEY}"
+        !insertmacro ZhusuanReadInstallDir HKCU 32 "${LEGACY_UNINST_KEY}"
+        ${If} $0 != ""
+            StrCpy $INSTDIR $0
+        ${EndIf}
+    ${EndIf}
+    SetRegView 64
+    ReadRegStr $ZhusuanExistingKey HKLM "${UNINST_KEY}" "DisplayName"
+    ReadRegStr $ZhusuanPreviousVersion HKLM "${UNINST_KEY}" "DisplayVersion"
+    ${If} $ZhusuanUpdate == "1"
+        ${IfNot} ${FileExists} "$INSTDIR\${PRODUCT_EXECUTABLE}"
+        ${AndIfNot} ${FileExists} "$INSTDIR\${LEGACY_EXECUTABLE}"
+            SetErrorLevel 3
+            Abort "An existing installation was not found."
+        ${EndIf}
+    ${EndIf}
+FunctionEnd
+
+Function ZhusuanRollback
+    ${If} $ZhusuanNewWritten == "1"
+        Delete "$INSTDIR\${PRODUCT_EXECUTABLE}"
+        StrCpy $ZhusuanNewWritten "0"
+    ${EndIf}
+    ${If} $ZhusuanBinaryBackup == "1"
+        Rename "$INSTDIR\${PRODUCT_EXECUTABLE}.update-backup" "$INSTDIR\${PRODUCT_EXECUTABLE}"
+        StrCpy $ZhusuanBinaryBackup "0"
+    ${EndIf}
+    ${If} $ZhusuanLegacyBackup == "1"
+        Rename "$INSTDIR\${LEGACY_EXECUTABLE}.update-backup" "$INSTDIR\${LEGACY_EXECUTABLE}"
+        StrCpy $ZhusuanLegacyBackup "0"
+    ${EndIf}
+    ${If} $ZhusuanUninstallerWritten == "1"
+        Delete "$INSTDIR\uninstall.exe"
+        StrCpy $ZhusuanUninstallerWritten "0"
+    ${EndIf}
+    ${If} $ZhusuanUninstallerBackup == "1"
+        Rename "$INSTDIR\uninstall.exe.update-backup" "$INSTDIR\uninstall.exe"
+        StrCpy $ZhusuanUninstallerBackup "0"
+    ${EndIf}
+    SetRegView 64
+    ${If} $ZhusuanExistingKey == ""
+        DeleteRegKey HKLM "${UNINST_KEY}"
+    ${Else}
+        WriteRegStr HKLM "${UNINST_KEY}" "DisplayVersion" "$ZhusuanPreviousVersion"
+    ${EndIf}
+FunctionEnd
+
+Function .onInstFailed
+    Call ZhusuanRollback
+    SetErrorLevel 4
 FunctionEnd
 
 Section
     !insertmacro wails.setShellContext
-
     !insertmacro wails.webview2runtime
-
     SetOutPath $INSTDIR
-    
-    !insertmacro wails.files
 
+    ; Back up either identity, refusing replacement while an executable is in use.
+    ${If} ${FileExists} "$INSTDIR\${PRODUCT_EXECUTABLE}"
+        System::Call 'kernel32::CreateFileW(t "$INSTDIR\${PRODUCT_EXECUTABLE}", i 0x40000000, i 0, p 0, i 3, i 0, p 0) p.r0'
+        ${If} $0 == -1
+            Goto zhusuan_install_failed
+        ${EndIf}
+        System::Call 'kernel32::CloseHandle(p r0)'
+        IfFileExists "$INSTDIR\${PRODUCT_EXECUTABLE}.update-backup" zhusuan_install_failed
+        ClearErrors
+        Rename "$INSTDIR\${PRODUCT_EXECUTABLE}" "$INSTDIR\${PRODUCT_EXECUTABLE}.update-backup"
+        IfErrors zhusuan_install_failed
+        StrCpy $ZhusuanBinaryBackup "1"
+    ${EndIf}
+    ${If} ${FileExists} "$INSTDIR\${LEGACY_EXECUTABLE}"
+        System::Call 'kernel32::CreateFileW(t "$INSTDIR\${LEGACY_EXECUTABLE}", i 0x40000000, i 0, p 0, i 3, i 0, p 0) p.r0'
+        ${If} $0 == -1
+            Goto zhusuan_install_failed
+        ${EndIf}
+        System::Call 'kernel32::CloseHandle(p r0)'
+        IfFileExists "$INSTDIR\${LEGACY_EXECUTABLE}.update-backup" zhusuan_install_failed
+        ClearErrors
+        Rename "$INSTDIR\${LEGACY_EXECUTABLE}" "$INSTDIR\${LEGACY_EXECUTABLE}.update-backup"
+        IfErrors zhusuan_install_failed
+        StrCpy $ZhusuanLegacyBackup "1"
+    ${EndIf}
+    ${If} ${FileExists} "$INSTDIR\uninstall.exe"
+        IfFileExists "$INSTDIR\uninstall.exe.update-backup" zhusuan_install_failed
+        ClearErrors
+        Rename "$INSTDIR\uninstall.exe" "$INSTDIR\uninstall.exe.update-backup"
+        IfErrors zhusuan_install_failed
+        StrCpy $ZhusuanUninstallerBackup "1"
+    ${EndIf}
+    ClearErrors
+    StrCpy $ZhusuanNewWritten "1"
+    !insertmacro wails.files
+    IfErrors zhusuan_install_failed
+
+    ClearErrors
+    StrCpy $ZhusuanUninstallerWritten "1"
+    WriteUninstaller "$INSTDIR\uninstall.exe"
+    IfErrors zhusuan_install_failed
+    SetRegView 64
+    WriteRegStr HKLM "${UNINST_KEY}" "Publisher" "${INFO_COMPANYNAME}"
+    WriteRegStr HKLM "${UNINST_KEY}" "DisplayName" "${INFO_PRODUCTNAME}"
+    WriteRegStr HKLM "${UNINST_KEY}" "DisplayVersion" "${INFO_PRODUCTVERSION}"
+    WriteRegStr HKLM "${UNINST_KEY}" "DisplayIcon" "$INSTDIR\${PRODUCT_EXECUTABLE}"
+    WriteRegStr HKLM "${UNINST_KEY}" "UninstallString" "$\"$INSTDIR\uninstall.exe$\""
+    WriteRegStr HKLM "${UNINST_KEY}" "QuietUninstallString" "$\"$INSTDIR\uninstall.exe$\" /S"
+    WriteRegStr HKLM "${UNINST_KEY}" "InstallLocation" "$INSTDIR"
+    WriteRegStr HKLM "${UNINST_KEY}" "" "$INSTDIR"
+    IfErrors zhusuan_install_failed
+    ${GetSize} "$INSTDIR" "/S=0K" $0 $1 $2
+    IntFmt $0 "0x%08X" $0
+    WriteRegDWORD HKLM "${UNINST_KEY}" "EstimatedSize" "$0"
+    IfErrors zhusuan_install_failed
+
+    ; Commit the new identity only after executable/uninstaller/registry writes succeeded.
     CreateShortcut "$SMPROGRAMS\${INFO_PRODUCTNAME}.lnk" "$INSTDIR\${PRODUCT_EXECUTABLE}"
     CreateShortCut "$DESKTOP\${INFO_PRODUCTNAME}.lnk" "$INSTDIR\${PRODUCT_EXECUTABLE}"
-
     !insertmacro wails.associateFiles
     !insertmacro wails.associateCustomProtocols
-    
-    !insertmacro wails.writeUninstaller
+    ${If} $ZhusuanLegacyBackup == "1"
+        Delete "$SMPROGRAMS\Orange.lnk"
+        Delete "$DESKTOP\Orange.lnk"
+        SetShellVarContext current
+        Delete "$SMPROGRAMS\Orange.lnk"
+        Delete "$DESKTOP\Orange.lnk"
+        !insertmacro wails.setShellContext
+    ${EndIf}
+    !insertmacro ZhusuanDeleteLegacyKey HKLM 64
+    !insertmacro ZhusuanDeleteLegacyKey HKCU 64
+    !insertmacro ZhusuanDeleteLegacyKey HKLM 32
+    !insertmacro ZhusuanDeleteLegacyKey HKCU 32
+    SetRegView 64
+    Delete "$INSTDIR\${PRODUCT_EXECUTABLE}.update-backup"
+    Delete "$INSTDIR\${LEGACY_EXECUTABLE}.update-backup"
+    Delete "$INSTDIR\uninstall.exe.update-backup"
+    SetErrorLevel 0
+    Goto zhusuan_install_done
+
+    zhusuan_install_failed:
+    Call ZhusuanRollback
+    SetErrorLevel 4
+    Abort "The installation could not be completed. Previous files were restored."
+    zhusuan_install_done:
 SectionEnd
 
-Section "uninstall" 
+Section "uninstall"
     !insertmacro wails.setShellContext
-
-    RMDir /r "$AppData\${PRODUCT_EXECUTABLE}" # Remove the WebView2 DataPath
-
-    RMDir /r $INSTDIR
-
+    ; Retain databases, credentials, profiles and unrelated files in custom directories.
+    Delete "$INSTDIR\${PRODUCT_EXECUTABLE}"
     Delete "$SMPROGRAMS\${INFO_PRODUCTNAME}.lnk"
     Delete "$DESKTOP\${INFO_PRODUCTNAME}.lnk"
-
     !insertmacro wails.unassociateFiles
     !insertmacro wails.unassociateCustomProtocols
-
     !insertmacro wails.deleteUninstaller
+    RMDir "$INSTDIR"
 SectionEnd

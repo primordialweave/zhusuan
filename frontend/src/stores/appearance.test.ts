@@ -34,7 +34,7 @@ describe('appearance store', () => {
 
   it('restores stored switches and falls back per key on a bad value', async () => {
     window.localStorage.setItem(
-      'orange.appearance.v1',
+      'zhusuan.appearance.v1',
       JSON.stringify({ liquidGlass: false, reduceMotion: 'yes', sceneMotion: false }),
     )
     const { useAppearanceStore } = await loadStore()
@@ -49,7 +49,7 @@ describe('appearance store', () => {
   it.each(['{not json', 'null', '[1, 2]', '"text"'])(
     'falls back to the defaults for stored %s',
     async (stored) => {
-      window.localStorage.setItem('orange.appearance.v1', stored)
+      window.localStorage.setItem('zhusuan.appearance.v1', stored)
       const { DEFAULT_APPEARANCE, useAppearanceStore } = await loadStore()
 
       expect(preferences(useAppearanceStore.getState())).toEqual(DEFAULT_APPEARANCE)
@@ -79,7 +79,7 @@ describe('appearance store', () => {
 
   it('applies the stored preferences before the first render', async () => {
     window.localStorage.setItem(
-      'orange.appearance.v1',
+      'zhusuan.appearance.v1',
       JSON.stringify({ liquidGlass: false, reduceMotion: true, sceneMotion: true }),
     )
     const { applyAppearanceBeforeRender } = await loadStore()

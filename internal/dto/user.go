@@ -1,6 +1,6 @@
 package dto
 
-import "github.com/FruitsAI/Orange/internal/models"
+import "github.com/primordialweave/zhusuan/internal/models"
 
 // CreateUserRequest 管理员创建用户请求
 type CreateUserRequest struct {

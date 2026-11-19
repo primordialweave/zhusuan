@@ -314,7 +314,6 @@ export default function ProjectCreateView() {
   return (
     <div className="project-create-view project-form-page" data-motion-scope="project-create">
       <PageHeader
-        description={isEdit ? '更新项目档案与收款计划' : '建立项目档案并规划回款节点'}
         leading={
           <IconButton label="返回上一页" onClick={() => navigate(-1)} variant="ghost">
             <i aria-hidden="true" className="ri-arrow-left-line" />
@@ -532,7 +531,7 @@ export default function ProjectCreateView() {
             </dl>
 
             <div className="project-plan-check" data-state={planState}>
-              <Surface padding="none" radius="control" tone={planState} variant="inset">
+              <Surface padding="none" radius="control" tone="accent" variant="inset">
                 <i
                   aria-hidden="true"
                   className={planAligned ? 'ri-check-line' : 'ri-scales-3-line'}

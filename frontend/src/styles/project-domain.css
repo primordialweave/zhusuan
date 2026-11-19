@@ -225,7 +225,7 @@
 }
 
 .project-form-aside__note i {
-  margin-block-start: 2px;
+  margin-block-start: 3px;
   color: var(--ods-color-status-success);
 }
 
@@ -277,33 +277,48 @@
   grid-column: 1 / -1;
 }
 
+/* The list fills the panel: the header row and the pagination stay put, only the rows scroll. */
 .projects-view {
   display: flex;
+  min-height: 0;
+  flex: 1 1 0;
   flex-direction: column;
-  gap: var(--ods-space-8);
+  gap: var(--ods-space-4);
 }
 
 .projects-workspace {
   display: flex;
   min-width: 0;
+  min-height: 0;
+  flex: 1 1 0;
   flex-direction: column;
-  gap: var(--ods-space-5);
+  gap: var(--ods-space-3);
 }
 
-.projects-toolbar {
-  display: flex;
-  min-width: 0;
-  flex-wrap: wrap;
-  align-items: center;
-  gap: var(--ods-space-4);
+/* In a window too short for a few rows the table keeps this height and the page scrolls. */
+.project-table-scroll {
+  min-height: 11rem;
+  flex: 1 1 0;
+  overflow-y: auto;
+  overscroll-behavior: contain;
+}
+
+/* The bottom rule closes the table whether or not the last row has scrolled into view. */
+.projects-workspace > .project-table-scroll {
+  border-block-end: 1px solid var(--ods-color-border-default);
+}
+
+/* The count starts under the first column's text, not under the table's edge. */
+.projects-pagination {
+  padding-inline: var(--ods-space-4);
 }
 
 .project-search {
-  flex: 0 1 clamp(16rem, 34%, 27rem);
+  width: clamp(12rem, 22vw, 18rem);
 }
 
 .project-status-filter {
-  flex: 0 0 11rem;
+  width: 12rem;
 }
 
 .project-table {
@@ -351,7 +366,6 @@
   overflow: hidden;
   -webkit-box-orient: vertical;
   -webkit-line-clamp: 2;
-  font-size: var(--ods-font-size-md);
   line-height: var(--ods-line-height-heading);
 }
 
@@ -362,15 +376,11 @@
   font-variant-numeric: tabular-nums;
 }
 
-.project-amount-cell {
-  font-size: var(--ods-font-size-md);
-}
-
 .project-progress-cell {
   display: flex;
   max-width: 14rem;
   flex-direction: column;
-  gap: var(--ods-space-2);
+  gap: var(--ods-space-1);
 }
 
 .project-progress-caption {

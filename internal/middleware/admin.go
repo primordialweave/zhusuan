@@ -1,8 +1,8 @@
 package middleware
 
 import (
-	"github.com/FruitsAI/Orange/internal/constants"
-	"github.com/FruitsAI/Orange/internal/pkg/response"
+	"github.com/primordialweave/zhusuan/internal/constants"
+	"github.com/primordialweave/zhusuan/internal/pkg/response"
 	"github.com/gin-gonic/gin"
 )
 

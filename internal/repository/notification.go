@@ -1,8 +1,8 @@
 package repository
 
 import (
-	"github.com/FruitsAI/Orange/internal/database"
-	"github.com/FruitsAI/Orange/internal/models"
+	"github.com/primordialweave/zhusuan/internal/database"
+	"github.com/primordialweave/zhusuan/internal/models"
 	"gorm.io/gorm"
 )
 

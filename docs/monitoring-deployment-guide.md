@@ -182,7 +182,7 @@ REDIS_PASSWORD=orange123
 ### 缓存示例
 
 ```go
-import "github.com/FruitsAI/Orange/internal/pkg/cache"
+import "github.com/primordialweave/zhusuan/internal/pkg/cache"
 
 // 设置缓存
 cache.Set("key", []byte("value"), 5*time.Minute)

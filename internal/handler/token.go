@@ -7,10 +7,10 @@ import (
 	"strconv"
 	"time"
 
-	"github.com/FruitsAI/Orange/internal/middleware"
-	"github.com/FruitsAI/Orange/internal/models"
-	"github.com/FruitsAI/Orange/internal/pkg/response"
-	"github.com/FruitsAI/Orange/internal/repository"
+	"github.com/primordialweave/zhusuan/internal/middleware"
+	"github.com/primordialweave/zhusuan/internal/models"
+	"github.com/primordialweave/zhusuan/internal/pkg/response"
+	"github.com/primordialweave/zhusuan/internal/repository"
 	"github.com/gin-gonic/gin"
 )
 

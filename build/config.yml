@@ -5,12 +5,12 @@ version: '3'
 
 # This information is used to generate the build assets.
 info:
-  companyName: "FruitsAI" # The name of the company
-  productName: "Orange" # The name of the application
-  productIdentifier: "ai.fruits.orange" # The unique product identifier
-  description: "FruitsAI Orange Desktop App" # The application description
-  copyright: "(c) 2026, FruitsAI" # Copyright text
-  comments: "FruitsAI Orange - Intelligent Desktop Application" # Comments
+  companyName: "PrimordialWeave" # The name of the company
+  productName: "珠算" # The name of the application
+  productIdentifier: "org.primordialweave.zhusuan" # The unique product identifier
+  description: "PrimordialWeave 珠算 Desktop App" # The application description
+  copyright: "(c) 2026, PrimordialWeave" # Copyright text
+  comments: "PrimordialWeave zhusuan - Intelligent Desktop Application" # Comments
   version: "0.7.2" # The application version
 
 # iOS build configuration (uncomment to customise iOS project generation)
@@ -72,4 +72,4 @@ fileAssociations:
 
 # Other data
 other:
-  - name: FruitsAI
+  - name: PrimordialWeave

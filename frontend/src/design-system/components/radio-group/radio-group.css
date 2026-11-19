@@ -1,7 +1,8 @@
 .ods-radio-group {
   border: 0;
   display: grid;
-  gap: var(--ods-space-3);
+  /* A host form may set the gap so the options fall on its own grid. */
+  gap: var(--radio-group-gap, var(--ods-space-3));
   margin: var(--ods-space-0);
   min-width: 0;
   padding: var(--ods-space-0);
@@ -143,7 +144,8 @@
 .ods-radio[data-variant='card'][data-selected='true'] {
   border-color: var(--ods-color-accent);
   background: var(--ods-color-accent-soft);
-  box-shadow: 0 0 0 1px var(--ods-color-accent-soft);
+  /* A second pixel of the same colour: the choice has to read on the night panel too. */
+  box-shadow: 0 0 0 1px var(--ods-color-accent);
 }
 
 .ods-radio[data-variant='card']:has(.ods-radio__input:focus-visible) {

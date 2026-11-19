@@ -6,6 +6,7 @@ import (
 )
 
 func TestLoadIncludesWebDeploymentURLs(t *testing.T) {
+	t.Setenv("ZHUSUAN_CONFIG_ROOT", t.TempDir())
 	t.Setenv("JWT_SECRET", "orange-dev-secret-32-characters-long")
 	t.Setenv("FRONTEND_URL", "https://orange.example.com")
 	t.Setenv("API_BASE_URL", "https://api.orange.example.com")

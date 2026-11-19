@@ -39,7 +39,7 @@
   - `npx tsc --noEmit -p tsconfig.app.json`、`npx vitest run`（107 文件 497 用例）、`npx eslint src --max-warnings=0`、`npm run build` 全过
   - `go test ./...` 全过；`go build .` 和 `go build ./cmd/... ./internal/...` 通过。`go build ./...` 会在 `build/ios` 报 `function main is undeclared`，那是 Wails 的 iOS 脚手架，要带构建标签，和这次重构无关
   - `npx prettier --check src` 还报 12 个文件，都是重构之前就有、这次没碰的（`src/api/*.ts`、`config/api.ts` 等），没去动
-  - **WebKit 截图还没有人眼看过。** 对照图已经拼好放在 `/tmp/orange-resume/s14/webkit/sheet-webkit-{light,dark,closeups}.jpg`，会话末尾连续三次起子代理都被网关 429 拒掉（主会话已经连续跑了八个多小时）。数值上 WebKit 和 Chromium 一致，下次会话一开始先把这三张图交给子代理看
+  - **WebKit 截图已由子代理看过（2026-11-18）**：18 张里没有渲染损坏。三条低置信度备注：登录页「记住密码」很淡（浏览器预览里它本来就是禁用态）；会滚动的页面滚动条顶端贴近面板右上圆角；夜雨下项目详情的小字偏暗（已在遗留项里）。登录卡片的海棠角没有特写，只在缩略图里看过。记录在 `/tmp/orange-resume/s14/webkit/review.md`。以下是当时的原话： 对照图已经拼好放在 `/tmp/orange-resume/s14/webkit/sheet-webkit-{light,dark,closeups}.jpg`，会话末尾连续三次起子代理都被网关 429 拒掉（主会话已经连续跑了八个多小时）。数值上 WebKit 和 Chromium 一致，下次会话一开始先把这三张图交给子代理看
   - 浏览器：九个页面在 1280×800 下浅色、深色各过一遍（Chromium 和 WebKit），面板和 Dock 位置一致、没有横向溢出。WebKit 里用鼠标点 Dock 把五个入口走了一圈：没有控制台或页面错误，工作台摘要显示真实金额，场景的 WebGL2 和 Canvas 2D 两层都在跑（`/tmp/orange-resume/s14/webkit_idle.py`）。之前 `webkit_check.py` 报的三条 `due to access control checks` 是脚本自己在请求没回来时就 `goto` 刷新造成的，等网络空闲再跳就没有。**没在 Wails 打包后的真实窗口里看过**，这一步只能用户自己跑 `task dev`
 - [x] 2026-11-18 提交前重新验证：`npm run build`（含 `tsc --build`）、`node node_modules/eslint/bin/eslint.js src --max-warnings=0`、`npm run test:run -- --reporter=dot`（107 文件、497 用例）通过；`go test -mod=readonly -count=1 -json ./...`（14 个有测试包、75 个顶层测试及 103 个子测试、0 失败/跳过）、主程序临时 `go build -mod=readonly` 通过。构建仍有主 JS chunk 超过 500 KB 的提示，测试仍有 React `act` 和 Wails 浏览器环境提示；本次未补做真实桌面 Keychain 或窗口验收。
 - [ ] 还没做、留给下一次的（都不挡事）：
@@ -48,6 +48,77 @@
   - 数据同步的「对比 / 同步」步骤没在浏览器里验过（要连一个云端库）
   - 登录页背景比原型灰、桥占得更宽（06/07 是另一幅画，没有可用的素材）
   - 2026-11-18 用户授权提交全部当前代码，按三个主题整理：登录凭据存储（`d575353`）、统计时间范围修复（`6c63e2f`）、烟雨江南界面重构（提交号见 `git log`）。切分支前的混合改动已一并纳入对应主题，原始快照 `refs/backup/pre-jiangnan-ui` 保留。
+
+### 第十七次会话（2026-11-18）：收紧密度、设置页重排、动画
+
+用户要求：项目管理和设置页可视范围太小；Dock 下移；所有页面去副标题；主标题变小；整体收紧；增加动画（登录页小女孩挥手、水面涟漪、柳树摇曳等）；设置页可以不按原型。
+- [x] 壳层：`--ods-shell-dock-offset` 改成 `clamp(10px,1.1vw,16px)`（原 20–43）；面板顶 = 标题栏留白 44；左右边距 `clamp(16px,2.5vw,40px)`；面板到 Dock 16；面板内边距 16–28 / 16–32；`--ods-radius-surface` 20–28。1280×800 下面板从 1158×583（占窗口 65.9%）变成 1216×638（75.7%）
+- [x] `PageHeader`：标题 `clamp(1.375rem,2vw,1.75rem)`（1280 宽时 25.6px，原 37px），整行最小高度 40。所有页面不再传 `description`（项目详情的客户 / 合同号 / 状态、固定项目的收款页项目名是数据，保留）；登录页和 404 的说明句也删了
+- [x] `Table` plain 变体：表头 40、行最小 44、上下内边距 8
+- [x] 项目管理：搜索、状态筛选并进标题行的 `actions`，`.projects-toolbar` 删除。1280×800 下可见行 4 → 9
+- [x] 设置页重排（不再跟原型）：左侧 10.5rem 竖向分类栏（ODS `Tabs` 的 `navigation` 变体改成圆角项 + 选中浅青底，带图标）+ 右侧内容，中间一条竖线；≤56rem 宽时退回横向 underline 标签（`hooks/useMediaQuery.ts`）。行高 52、外观行 60，开关行的说明句删了；表单和「关于」宽度封顶 44rem。字典管理里的「字典分类」小标删了
+- [x] Dock：一个滑动的高亮 `.app-dock__indicator`（`--app-dock-index`），链接自己的选中底通过 `--router-nav-link-selected-background/shadow` 关掉；悬停图标上浮；Dock 和页面内容有进场动画（`animation-fill-mode: backwards`，不能留 transform，否则 sticky / fixed 子元素会错位）
+- [x] 场景：柳枝摆幅加大并带阵风起伏、水波加强、涟漪 6 → 12 且每滴两圈、偶尔飞过一只燕子（`renderRain2D.ts` 里画的）。`useSceneRuntime` 钩子从 `JiangnanScene` 抽出来，`startSceneRuntime` 多了 `crop` 参数，`getScenePageCrop` 对应登录页的裁切
+- [x] 小女孩挥手素材：用 `.env` 里的生图服务（OpenAI 兼容，`/v1/images/edits`，脚本 `/tmp/orange-resume/s17/img.py`）从 `scene.webp` 里裁出 384×384（源图 680,630 起）放大到 1024 做图生图。**生图会把整个人重画得比原画清晰**，所以不能和原画交替：另外生成了一张同样清晰的「放下手」的静止帧，三帧（`greeter-rest/wave-a/wave-b.webp`，402×316，各约 20 KB）都盖在原画的小女孩上；头部锁定用同一帧，栏杆以下不动。位置是静帧的比例 x 0.2434、y 0.32626、宽 0.09016、高 0.09942
+- [x] 登录页 / 404：背景跑和工作台一样的水面、柳枝、雨丝（`ScenePage` 用 `useSceneRuntime(animate, getScenePageCrop)`），小女孩 `SceneGreeter` 每 9 秒挥一次手（工作台上也有）；登录表单逐项进场（`login.css`，只动卡片的子元素）。`scene-page.test.ts` 的「不许循环动画」改成只约束卡片所在的三个样式文件，另加了人物裁切和两张静帧一致的断言
+- [x] 子代理看图后改的：项目页状态筛选被「新建项目」压住（`Select` 自带 `min-width: 12rem`，外层给 9rem 会溢出，改成 12rem）；字典管理的第二条竖栏改成横向 `accent` 标签、去掉「共 N 个条目」；设置表单和「关于」铺满内容区；挥手两帧的交叉淡化从 270ms 缩到 90ms（半透明叠在一起时像重影）；人物加 `blur(0.35px) saturate(0.9)` 压一点锐度
+- [x] 验证：`tsc -p tsconfig.app.json`、vitest（107 文件 498 用例）、ESLint、`npm run build` 全过；WebKit 1280×800 和 1024×700 下各页无横向溢出，设置九个标签都不滚动，Dock 高亮和当前项重合。**没在 Wails 真窗口里看过**，挥手和燕子只看过静态截图，没看过连续播放
+- 没改、留着的：夜雨主题下状态胶囊对比度低、进度说明小字偏暗；设置页内容少的标签下半个面板是空的（面板高度固定）；分析页三处左边缘不齐；人物仍比周围的画略清晰
+- 生图素材的中间文件在 `/tmp/orange-resume/s17/art/`（`wave1.png`、`rest.png`、`wave2b.png` 是模型输出，合成脚本在本次会话记录里，没进仓库）。丢了要重做的话：先图生图出一张举手帧，再以它为底图生成放下手和另一个挥手角度，这样三帧的脸一致
+- 验证环境：真实桌面应用（`task dev`）占着 3456 且连的是真实库，所以另起了 `API_SERVER_PORT=3466` 的后端（库副本 `/tmp/orange-resume/s17/db`）和 9331 的预览（`PREVIEW_API_TARGET` / `PREVIEW_CACHE_DIR`，`vite.preview.config.mts` 现在读这两个环境变量）。脚本 `/tmp/orange-resume/s17/wk.py <config.json>`（Playwright WebKit，只落盘）
+
+### 第十八次会话（2026-11-18 晚）：用户看过第十七次的结果后提的七条
+
+做完一条勾一条，做法和结论直接写在条目下面。
+- [x] 1 小女孩挥手时脸清晰、静止时模糊。Playwright WebKit（DPR 2）里量不出差别（边缘方差都是 131）。推断是 `.scene-greeter__pose` 上的 `filter: blur(.35px)`：静止帧不合成、走软件滤镜，挥手帧因为 opacity 动画被提成合成层、走另一条路径。做法：去掉 CSS filter。**已去掉**
+- [x] 2 首页饼图点击切换（用户原话「首页饼状图可以点击切换的」，没说切什么；按统计范围理解：全部 → 近一年 → 近90天 → 近30天 → 近7天）。做法：饼图包在 ODS `Button variant="bare"`（新变体）里，点一下在 全部 → 本年 → 本月 之间循环，范围直接写进两行标签（本年已收款 / 本年待收款），不另加说明；选择存在 localStorage `workbenchSummaryScope`。本年 / 本月走新的 `year` / `month` 接口参数（自然年、自然月）。已收扇区改成「描边圆」（r=8、线宽 16、`stroke-dasharray`），切换时扇区角度有过渡
+- [x] 3 项目管理只滚表格数据，标题行、表头、分页固定。做法：`.projects-view` / `.projects-workspace` 都是 `flex: 1 1 0; min-height: 0`，表格外层 `.project-table-scroll` 自己 `overflow-y: auto`（最小 11rem，窗口太矮时整页再滚）；`Table` 用 `stickyHeader`，ODS 里把 plain + sticky 的表头线改成内阴影（collapse 的边框不跟着 sticky 走）、表头 z-index 3（高于行内 sticky 单元格）
+- [x] 4 数据分析「年」后面加自选年 / 月，按所选年或所选月统计（后端 stats / income-trend 加 `year`、`month` 参数）。做法：第五个标签「自选」，选中后右边出现年、月两个下拉（月份第一项「全年」）；后端 `GetStatsForCalendar` / `GetIncomeTrendForCalendar` + `utils.GetCalendarRange`，自选范围不进缓存；前端 `DashboardScope = 周期 | {year, month}`。注意库里的日期存的是 UTC 零点，测试数据也要用 UTC
+- [x] 5 导出：WKWebView 不认 `<a download>`，所以桌面端现在点导出没反应。加 Wails 服务弹保存对话框写文件；项目详情页的导出还是「开发中」的提示，要做成真的。做法：`internal/desktop/file_exporter.go`（`FileExporter.SaveText`，已在 `main.go` 注册并重新生成 bindings）；前端 `utils/csv.ts` 的 `exportCsv` 在桌面端走它、浏览器里走下载链接；项目导出统一成 `useProjectExport`（项目信息 + 全部收款节点），列表和详情页共用。**桌面端的保存对话框没法在浏览器预览里验证**
+- [x] 6 分页左右箭头、设置页左侧菜单图标与文字没有垂直居中；全局检查图标对齐。根因两个：分页箭头是文字字符「‹ ›」（换成 `ri-arrow-left-s-line` / `right`）；Remix 图标的 `<i>` 继承了行高，盒子比字形高，在 flex 里居中后字形偏下（设置页左栏偏了 3.9px）。在 `foundations/typography.css` 加了全局规则：图标盒子 `inline-flex; line-height: 1; vertical-align: .03em`。像素审计脚本 `/tmp/orange-resume/s17/icon_audit.py [阈值]`（WebKit DPR 2，逐页量每个图标的墨迹中心相对控件中心和旁边文字的偏移）：198 个图标里超过 1px 的从 84 个降到 2 个（都是 1.06px，字形本身上重下轻）
+- [x] 7 设置页：安全设置并进个人信息（放在下面），两个保存按钮右对齐；各页面重新设计。做法：`components/settings/SettingsGroup.tsx`（标题 + ODS `Card` + 可选的底部操作行）是所有设置页的基本单元，页面 = `.settings-page` 里一摞 group / 工具条 / 表格。个人信息页 = 账户卡（头像、姓名、角色、退出登录）+「个人信息」卡 +「安全设置」卡，两个保存按钮都在卡片底部操作行右端；`?tab=security` 会落到个人信息页。外观 = 三张主题缩略图单选卡（每层带 `data-theme`，所以无论当前什么主题都用各自主题的令牌画）+ 三个开关行。用户 / 字典 / 令牌改成 ODS `Table`（card 变体），通知改成卡片里的行，数据同步的配置是一张卡（主机地址占两列）。各面板顶部的统计数字除数据同步的对比步骤外都删了。`settings.css` 整个重写（845 行 → 约 560 行），旧的 `.user-card` / `.dev-token-*` / `.notification-card` / `.dict-*` 规则全删
+
+  第十八次会话的验证与看图后的修改：
+  - 子代理看图（两轮，`/tmp/orange-resume/s17/review-c.md`、`review-d.md`）后改的 ODS：`Avatar` accent 色调的字改用 `accent-text`（原来浅字压浅底）；`Switch` 关闭态轨道改 `border-control`；`IconButton` 图标 16 / 18 / 20px（原来跟着按钮文字是 12 / 14px）；分页选中项去掉外发光、方向按钮改成正圆；`Table` card 变体和粘性单元格底色改 `bg-surface`（夜雨下卡片才和面板分得开）；`Radio` card 选中态多一圈 accent；`Tabs` navigation 项左内边距 16（图标和页面标题对齐）
+  - 分析页：第一项指标和趋势图标题都从 +16 起（和页面标题同一条左边线）；项目页分页条左右内边距 16
+  - 验证：`go test ./internal/...`、`go vet`、`go build .` 通过；前端 tsc / vitest（110 文件 512 用例）/ ESLint / `npm run build` 通过；WebKit 1280×800 下设置八个分类都不滚动、无横向溢出，项目页外层不滚、表格内部滚（表头 y=127 不动，分页 y=624）
+  - 第二轮看图后又改：数据同步的数据库类型落到表单的三列网格上（`RadioGroup` 新增可由宿主设置的 `--radio-group-gap`）；通知的「查看」改成眼睛图标；重置密码图标换成 `ri-lock-password-line`（原来的钥匙比旁边两个细）；分析页结构图例铺满右栏、逾期附注字号 12 → 14；项目表格外框加底线；项目导出里的类型 / 阶段 / 收款方式写字典标签而不是存储值（`useProjectExport` 里现取字典）
+  - 导出在浏览器预览里走通过（`/tmp/orange-resume/s17/export_check.py`）：报表 `Orange-数据分析-2026年11月.csv`、项目 `Orange-项目-<项目名>.csv`
+  - 还留着的小问题：项目表滚动时行直接切在表头下，没有渐隐；夜雨主题下卡片和面板只差一点亮度、主要靠描边；新建项目页日期选择器的日历图标偏上 1px（字形本身上重下轻）
+  - **没验证的**：桌面端保存对话框（要在 Wails 里点）；挥手清晰度的修复（无头 WebKit 里修复前后都量不出差别，是按 WebKit 滤镜渲染路径推断的）
+  - `animation-plans/` 目录在本次会话开始前就已经从工作区删掉了（`git status` 里 8 个 ` D`），不是这次会话删的，没去动
+
+### 项目类型名称与小天平配色（2026-11-19）
+
+- [x] 项目详情改用 `project_type` 字典的 `label`；字典请求独立于项目/收款加载，失败时保留默认名称或历史原值，卸载后不更新状态。真实库副本的类型是 `mba` / `medicine` / `Chemistry` / `Education`，应显示 MBA / 医学 / 化学 / 教育。
+- [x] 新增项目右侧金额核对图标的 ODS `Surface` 改为 `tone="accent"`，消费系统青绿色文字/背景令牌；金额核对文字、外框和 `data-state` 仍按实际金额更新。
+- [x] 验证：全量 `src` ESLint、`npm run build`（含 `tsc --build`）、三份改动 TSX 的 Prettier、`git diff --check` 均通过。详情/新增页与相关 ODS 契约合计 6 文件、42 用例通过，0 失败/跳过；详情 17 用例包含新增的 9 个字典回归。构建仍有原有主 chunk 超过 500 KB 提示。
+- [x] ego lite 与 WebKit 均核对 1280×800 的浅色/深色页面：详情显示名称，天平颜色分别为 `rgb(45, 101, 74)` / `rgb(160, 215, 175)`，均与 `--ods-color-accent-text` 一致。WebKit 另核对 MBA / 医学 / 化学 / 教育 / 其他五种类型及金额中立、未匹配、已匹配三种状态；匹配后切换为勾，强调配色保持一致，无页面错误或横向溢出。
+- [x] 子代理查看两引擎截图中的四张 ego lite 截图：天平居中、青绿色协调，类型 MBA 完整可见，局部无明显渲染回归。截图和记录在 `/tmp/orange-project-fixes/shots/`、`visual-review.md`、`webkit-results.json`。此次未在 Wails 真窗口验收。
+- 验证使用数据库副本 `/tmp/orange-project-fixes/db/orange.db`，后端 3466、前端 9331 与独立 Vite 缓存，未操作桌面应用所用的真实库。
+
+### GitHub 打包发布与应用内更新（2026-11-19，代码与本地验收完成）
+
+- 实际 GitHub 最新发布是 v0.7.2，包含 Windows installer、macOS zip 和 Linux AppImage/deb/rpm。原更新操作只打开下载页；原 Release 三平台并行各自公开附件，存在半成品发布窗口；旧 NSIS 未读取安装路径，默认版本还停在 0.0.1。
+- Windows NSIS 已补 HKLM/HKCU、64/32 位历史安装目录识别与持久记录，支持 `/S /UPDATE /D=<目录>`；安装失败恢复旧 exe/uninstaller。安装器不重启应用，用户态 helper 等待安装退出码 0 后重启，避免继承管理员权限。
+- Release 改为 prepare → 三平台 build/verify → 聚合 draft/核对附件 → publish；标签同步到 package/Info.plist/Windows/nfpm 元数据，生成 SHA256SUMS，缺包/哈希变化失败。macOS 实际构建 universal 并用 lipo 验证；旧重复 test.yml 合并到 CI，升级 retired Actions 和 Go 版本来源。
+- 已写原生 AppUpdater 与独立更新 helper：流式下载与 SHA-256 校验、按 OS/架构选包、取消/重试、等待旧进程退出、安装后重启。macOS/AppImage 暂存到安装目录同一文件系统后替换并保留失败回滚副本；deb/rpm 使用包管理器与 pkexec。开发模式、只读磁盘映像或不支持安装方式仅提供下载页。
+- 设置关于页已接原生服务和更新进度；仅更新期间每 500ms 串行读取内存状态，空闲无轮询/网络，退出/卸载清理。原生版本从 main 内嵌 frontend/package.json 读取，与发布元数据一致。更新 helper 在 Bootstrap 前分流，不打开数据库/窗口/HTTP。
+- Release 追加静态 `update.json`（五个平台资产与 SHA256SUMS 的名称、URL、大小和 SHA-256）；更新器优先读取该文件，旧发布 404 时回退 API，避免共享匿名 GitHub API 额度影响新发布的更新检查。前端及原生均禁止降级。
+- 验证完成：前端全量 111 文件、552 用例；Go 15 有测试包、100 顶层/132 子测试（更新器 22 顶层/29 子测试），0 失败/跳过，race/vet 通过。全量 src ESLint、Prettier、production build、Windows amd64 production 主程序/更新器测试二进制交叉编译通过；Wails Go1.26 绑定扫描 3 服务/8 方法无警告。macOS 本地编译仍有现有 SDK 27.2 对部署目标 11.0 的链接警告，不作为旧 macOS 兼容性验收。
+- 发布工具 9 用例、两工作流 actionlint、golangci v2 config verify、NSIS 3.13 隔离编译通过；更新器全量 lint 和相对 HEAD 的全部代码增量 lint 都为 0。全库仍有静态检查旧债；CI 以 PR baseSHA / push beforeSHA / dispatch 父提交做新增问题门禁，保留完整 JSON/文本/SARIF。本次顺带整理新增统计代码的常量/import，并将导出文件默认权限收紧为 0600，清掉阻塞增量门禁的四项问题。
+- 页面 QA：真实 REST HTTP200 返回最新 v0.7.2，实际显示“当前已是最新版本”；ego lite 浅/深 1280×800 下下载42%、取消、错误重试渲染通过。native 状态使用页内 runtime response fixture，未真实执行安装/重启。证据 `/tmp/orange-update-preview/qa.md`、截图、调用记录；space3 已关闭、隔离3466/9331服务已停止。旧用户服务3456/9245未停止。
+- 原生更新助手的无效计划调用在 Bootstrap 前退出，未打开数据库/窗口/HTTP；文件替换/OS拒绝启动回滚已用临时目录验证，但新应用初始化/数据库迁移失败的自动回滚未覆盖。Windows运行/UAC、三平台Actions实际运行与发版未执行。未推送代码、打 tag、发布或替换用户实际安装的应用。说明见 `docs/release.md`。
+
+### 珠算与 Primordial Weave 迁移（2026-11-19）
+
+- 用户明确选择“全部换新标识，并迁移旧数据”。显示名珠算，英文名/可执行文件/资产前缀 zhusuan，模块 github.com/primordialweave/zhusuan，Apple ID org.primordialweave.zhusuan，Windows key PrimordialWeaveZhusuan。
+- GitHub 已通过 transfer(new_owner=primordialweave,new_name=zhusuan) 转移同一仓库；id 1107498836 保持不变，30 refs 与24历史Releases记录比对保留，visibility public、default branch main、Actions enabled/all 保持；origin 已改新URL。源无显式team绑定，当前xuewill仍admin。原地址不要重新建repo，否则旧跳转会失效。
+- 原工作区完整快照保存在 refs/backup/pre-zhusuan-migration-20261119；模块/绑定/打包已新命名，用户提供的 frontend/public/zhusuan.png保持不变，已生成新平台icon。原Handoff历史项目名与路径是历史证据，未盲目替换。
+- 新默认数据路径 UserConfigDir/primordialweave/zhusuan/zhusuan.db；旧库只读VACUUM INTO+OS锁+独占发布，原库保留，已有新库不覆盖，显式DB_PATH尊重。实际新旧项目/收款/字典逐条一致；当前保存的登录已用cmd/migrate-credentials迁入新service/scope（不输出值），新旧keychain条目均保留。
+- Mac旧WK偏好逻辑读取白名单（UTF16LE，含WAL），私有one-shot/no-store endpoint在store初始化前补缺失值，新值优先；Windows新profile路径DataDir/WebView2，旧进程/SID与LOCK校验后clone持久文件，缓存/会话不搬。登录会话原本在sessionStorage，不宣称保存会话；Wails native LogLevelWarn防止Info binding输出密码。
+- 隔离初步验收：frontend112文件/556用例，updater28顶层/33子、data/credentials26顶层与scope/profile回归通过；更新器与全部增量lint0、NSIS3.13隔离编译、Windows updater/config/desktop交叉编译通过。完整最终检查仍在汇总。
+- 浏览器QA在ego space4核对浅深1280×800登录/关于、新logo/组织链接、偏好旧→新及新优先，截图无裁剪/溢出；native响应明确fixture，REST登录真实隔离服务。QA space与3466/9331已清理，未停用户3456/9245。记录/tmp/zhusuan-migration/qa.md与docs/migration.md。
 
 ### 业务页改造清单（第十次会话整理，做完一条勾一条）
 
@@ -231,6 +302,16 @@
 
 ### 2.2 浏览器预览
 
+- **项目类型名称必须以系统字典为准。** 创建/编辑保存 `project_type` 的 `value`，详情若只维护固定四项映射，会对自定义类型（如 `medicine`）显示编码。详情要读取同一字典，优先显示 `label`，并兼容请求失败、已删除条目、旧值与路由切换；当前后端种子的 `web/mobile/design/saas` 也与旧前端默认选项不同。
+- **改了 Go 代码要重启自己起的预览后端。** `go run ./cmd/server` 不会热重载；第十八次会话加了 `year` / `month` 参数后前端一直拿到全量数据，查了一圈才发现 3466 上还是旧进程。
+- **别对整个 `src` 跑 `prettier --write`。** 仓库里有十来个历史文件本来就不符合 prettier（`src/api/*.ts`、`config/api.ts` 等），一跑就多出一堆无关改动；只格式化自己动过的文件。
+- **WebKit 里 CSS `filter` 只在元素被提成合成层时才按设备像素渲染。** 静止的元素加了 `filter` 会按 1x 软件路径画，Retina 上发糊；同一个元素一旦在跑 opacity 动画就变清晰。无头 WebKit 截图复现不了。要么不用 filter，要么让元素始终在合成层上（`will-change`）。
+- Remix 图标的 `<i>` 默认继承行高，盒子比字形高；放进 `inline-grid` / 固定宽高的容器里字形会往下溢出，看起来就是「图标比文字低」。全局规则在 `foundations/typography.css`，新写图标不要再单独设行高。
+
+- **图生图会把整块区域重画**，不只是你要改的那只手：脸更清晰、色调偏一点、甚至自己加速度线。和原画逐帧交替一定会闪。做逐帧动画时所有帧都要出自同一张模型输出，头部等不动的部位用同一帧的像素锁住，背景按差值遮罩贴回原画，并先减掉未改动区域上量到的整体色偏。
+- ODS `Select` 自带 `min-width: 12rem`，外层容器比它窄不会让它变窄，只会让它溢出去压住旁边的控件。
+- 页面进场动画如果用 `animation-fill-mode: both` 且关键帧里有 `transform`，动画结束后元素仍然带着 transform，里面的 `position: sticky / fixed` 子元素会跟着错位。用 `backwards`。
+
 - Wails 开发模式的 Vite（9245 端口）没有配置 API 基址，接口走 Wails 自己的资源服务器，所以在普通浏览器里打开 9245 登录不了。后端 3456 端口有 CORS 白名单，自己另起的端口不在名单里。
 - 解决办法是 `frontend/vite.preview.config.mts`，它把 `/api` 代理到 `localhost:3456`：`cd frontend && npx vite --config vite.preview.config.mts --port 9321 --strictPort`。前提是 3456 上有后端在跑（`task dev` 或 `go run ./cmd/server`）。
 - 本地开发账号 `admin` / `admin123`。
@@ -264,3 +345,11 @@
 - **npm 12 的安装脚本警告与安装退出码要分开判断。** 12.2.1 默认拦截未被 `allowScripts` 覆盖的依赖脚本；本次 esbuild / fsevents 的警告伴随 npm install 实际退出码 0，两者当前均可加载。隔离实验确认关闭 npm stdout 后也能出现 `exit 0 / info ok` 加 `npm error A complete log...`。若要审核并补跑依赖脚本，使用 `npm install-scripts approve esbuild fsevents` 再 `npm rebuild esbuild fsevents`；仅 approve 不会补跑，消除警告也不会解决 3456 冲突。
 - 同一前端目录同时运行多个 Vite 实例会共享默认 `node_modules/.vite` 缓存。本次已有 9321 预览时另起 9245，依赖重新优化出现 `browserHash` 错误；验证另一个实例时应使用独立 `cacheDir`，不能据根页面 HTTP 200 宣称整个前端验证通过。
 - 如果 `npx eslint src --max-warnings=0` 报 `could not determine executable to run`，先查 npm 日志中的实际 argv。本次实际被转成了 `npm exec ... src --max-warnings=0`（缺少 eslint），改用 `node node_modules/eslint/bin/eslint.js src --max-warnings=0` 后通过；不要把命令包装导致的参数丢失当成源码 lint 失败。
+
+### 2.6 安装与自动更新
+
+- NSIS `/D=` 必须是命令行最后一项，目录不包引号（NSIS 将余下整段作为路径）；调用用 ShellExecuteEx/进程参数，不经过 shell。静默更新在旧应用退出后进行，安装失败不能重启新程序。
+- 更新成功前不退出当前应用；已校验安装包、暂存应用准备完毕且 helper 写就绪标记后，才交接正常退出。取消下载在解压/暂存后还要在锁内复查，防止取消与安装交接竞争。
+- 回滚失败时暂存目录的 previous 可能是旧应用的唯一副本，清理不能删除它。测试用独立临时安装目录、TLS fixture 与注入的安装/重启函数，不替换用户真实应用或触碰真实数据库。
+- 旧 Wails CLI 即使扫描成功也会报“application built with go1.25”与项目 go1.26 的版本警告。验证绑定时使用 Go1.26 重编译的固定 CLI（可用 `GOTOOLCHAIN=go1.26.0 go run github.com/wailsapp/wails/v3/cmd/wails3@v3.0.0-alpha.55 ...`），不要用 `go get` 将 CLI 的全部依赖写入应用 go.mod。
+- Wails 开发 watch 会在 Go 源码修改后触发前端依赖重装，另一个 Vite 预览仍握着旧 chunk 路径时会报 `Cannot find ... vite/dist/node/chunks/dist.js`。不要停止用户的桌面 watch；页面 QA 可用冻结 production dist + 独立 Node 静态/API 代理预览，不再依赖被重装的 Vite。

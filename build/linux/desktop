@@ -1,13 +1,13 @@
 [Desktop Entry]
 Version=1.0
-Name=Orange
-Comment=FruitsAI Orange Desktop App
+Name=珠算
+Comment=PrimordialWeave zhusuan Desktop App
 # The Exec line includes %u to pass the URL to the application
-Exec=/usr/local/bin/Orange %u
+Exec=/usr/local/bin/zhusuan %u
 Terminal=false
 Type=Application
-Icon=Orange
+Icon=zhusuan
 Categories=Utility;
-StartupWMClass=Orange
+StartupWMClass=zhusuan
 
  

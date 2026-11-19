@@ -1,6 +1,6 @@
 package dto
 
-import "github.com/FruitsAI/Orange/internal/models"
+import "github.com/primordialweave/zhusuan/internal/models"
 
 // LoginRequest 登录请求
 type LoginRequest struct {

@@ -29,19 +29,29 @@ export interface IncomeTrend {
   expected_values: number[] // 预计收入
 }
 
+export type DashboardPeriod = 'week' | 'month' | 'quarter' | 'year'
+
+/** 统计范围：固定的滚动周期，或自选的自然年 / 自然月（month 为 0 表示整年）。 */
+export type DashboardScope = DashboardPeriod | { month: number; year: number }
+
+const scopeParams = (scope?: DashboardScope) =>
+  typeof scope === 'object'
+    ? { month: scope.month || undefined, year: scope.year }
+    : { period: scope }
+
 // 仪表盘 API 集合
 export const dashboardApi = {
   // 获取统计数据
-  getStats: (period?: 'week' | 'month' | 'quarter' | 'year', signal?: AbortSignal) =>
+  getStats: (scope?: DashboardScope, signal?: AbortSignal) =>
     api.get<ApiResponse<DashboardStats>>('/dashboard/stats', {
-      params: { period, _t: Date.now() },
+      params: { ...scopeParams(scope), _t: Date.now() },
       signal,
     }),
 
   // 获取收入趋势
-  getIncomeTrend: (period?: 'week' | 'month' | 'quarter' | 'year', signal?: AbortSignal) =>
+  getIncomeTrend: (scope?: DashboardScope, signal?: AbortSignal) =>
     api.get<ApiResponse<IncomeTrend>>('/dashboard/income-trend', {
-      params: { period, _t: Date.now() },
+      params: { ...scopeParams(scope), _t: Date.now() },
       signal,
     }),
 

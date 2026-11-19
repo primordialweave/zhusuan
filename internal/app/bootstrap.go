@@ -6,13 +6,13 @@ import (
 	"runtime/debug"
 	"time"
 
-	"github.com/FruitsAI/Orange/internal/config"
-	"github.com/FruitsAI/Orange/internal/constants"
-	"github.com/FruitsAI/Orange/internal/database"
-	"github.com/FruitsAI/Orange/internal/models"
-	"github.com/FruitsAI/Orange/internal/pkg/jwt"
-	"github.com/FruitsAI/Orange/internal/pkg/logger"
-	"github.com/FruitsAI/Orange/internal/router"
+	"github.com/primordialweave/zhusuan/internal/config"
+	"github.com/primordialweave/zhusuan/internal/constants"
+	"github.com/primordialweave/zhusuan/internal/database"
+	"github.com/primordialweave/zhusuan/internal/models"
+	"github.com/primordialweave/zhusuan/internal/pkg/jwt"
+	"github.com/primordialweave/zhusuan/internal/pkg/logger"
+	"github.com/primordialweave/zhusuan/internal/router"
 	"github.com/gin-gonic/gin"
 )
 

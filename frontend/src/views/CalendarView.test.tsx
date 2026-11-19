@@ -140,7 +140,7 @@ describe('CalendarView', () => {
     )
 
     expect(screen.getByRole('heading', { level: 1, name: '收款日历' })).toBeInTheDocument()
-    expect(screen.getByText('查看计划收款与到账安排')).toBeInTheDocument()
+    expect(document.querySelector('.ods-page-header__description, .scene-page__text')).toBeNull()
     expect(container.querySelector('.ods-summary-metric')).not.toBeInTheDocument()
     expect(container.querySelector('.ods-card')).not.toBeInTheDocument()
 

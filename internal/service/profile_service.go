@@ -3,10 +3,10 @@ package service
 import (
 	"errors"
 
-	"github.com/FruitsAI/Orange/internal/models"
-	pkgerrors "github.com/FruitsAI/Orange/internal/pkg/errors"
-	"github.com/FruitsAI/Orange/internal/pkg/password"
-	"github.com/FruitsAI/Orange/internal/repository"
+	"github.com/primordialweave/zhusuan/internal/models"
+	pkgerrors "github.com/primordialweave/zhusuan/internal/pkg/errors"
+	"github.com/primordialweave/zhusuan/internal/pkg/password"
+	"github.com/primordialweave/zhusuan/internal/repository"
 	"gorm.io/gorm"
 )
 

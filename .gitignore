@@ -65,3 +65,5 @@ code-review-report.json
 .vercel
 output/
 .superpowers/
+__pycache__/
+*.pyc

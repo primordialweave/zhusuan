@@ -3,12 +3,30 @@ import { act, fireEvent } from '@testing-library/react'
 import userEvent from '@testing-library/user-event'
 import { useLocation, useNavigate, type NavigateFunction } from 'react-router-dom'
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
+import { Browser } from '@wailsio/runtime'
 import type { User } from '@/api/auth'
+import { useToastStore } from '@/composables/useToast'
 import { APPEARANCE_STORAGE_KEY, DEFAULT_APPEARANCE, useAppearanceStore } from '@/stores/appearance'
 import { useAuthStore } from '@/stores/auth'
 import { useThemeStore } from '@/stores/theme'
 import { render, screen, waitFor, within } from '@/test/render'
+import { appUpdater, type UpdateInfo, type UpdateStatus } from '@/utils/appUpdater'
 import SettingsView from './SettingsView'
+
+vi.mock('@/utils/appUpdater', () => ({
+  appUpdater: {
+    isAvailable: vi.fn().mockReturnValue(false),
+    checkForUpdates: vi.fn(),
+    startUpdate: vi.fn(),
+    status: vi.fn(),
+    cancelUpdate: vi.fn(),
+  },
+}))
+
+vi.mock('@wailsio/runtime', async (importOriginal) => ({
+  ...(await importOriginal<typeof import('@wailsio/runtime')>()),
+  Browser: { OpenURL: vi.fn() },
+}))
 
 vi.mock('@/components/settings/TokenManagement', () => ({
   default: ({ actions }: { actions?: ReactNode }) => (
@@ -92,21 +110,27 @@ describe('SettingsView', () => {
     vi.unstubAllGlobals()
   })
 
-  it('offers the theme as one segmented choice that stays synchronized with the theme store', async () => {
+  it('offers the theme as three pictured choices that stay synchronized with the theme store', async () => {
     const user = userEvent.setup()
     render(<SettingsView />, { initialEntries: ['/settings?tab=appearance'] })
 
     const tabs = screen.getByRole('tablist', { name: '设置分类' })
     expect(tabs).toHaveClass('ods-tabs__list')
-    expect(tabs).toHaveAttribute('data-variant', 'underline')
+    expect(tabs).toHaveAttribute('data-variant', 'navigation')
 
-    const theme = screen.getByRole('radiogroup', { name: '界面主题' })
-    expect(theme).toHaveClass('ods-segmented-control')
+    const theme = screen.getByRole('group', { name: '界面主题' })
+    expect(theme).toHaveClass('ods-radio-group')
     expect(
       within(theme)
         .getAllByRole('radio')
-        .map((option) => option.textContent),
+        .map((option) => option.closest('label')?.textContent),
     ).toEqual(['浅色', '深色', '跟随系统'])
+    // 跟随系统 shows both themes; each layer is painted with that theme's own tokens.
+    expect(
+      Array.from(theme.querySelectorAll('.settings-theme__layer')).map((layer) =>
+        layer.getAttribute('data-theme'),
+      ),
+    ).toEqual(['light', 'dark', 'light', 'dark'])
     expect(within(theme).getByRole('radio', { name: '跟随系统' })).toBeChecked()
 
     await user.click(within(theme).getByRole('radio', { name: '深色' }))
@@ -125,7 +149,6 @@ describe('SettingsView', () => {
     expect(scene).toBeChecked()
     expect(reduce).not.toBeChecked()
     expect(glass).toBeChecked()
-    expect(reduce).toHaveAccessibleDescription('保留静态雨景，减少背景动效')
 
     await user.click(reduce)
     await user.click(glass)
@@ -138,7 +161,6 @@ describe('SettingsView', () => {
       reduceMotion: true,
       sceneMotion: true,
     })
-    expect(screen.getByRole('img', { name: '江南场景预览' })).toBeInTheDocument()
   })
 
   it('composes profile actions and fields from Orange Design System', () => {
@@ -153,11 +175,10 @@ describe('SettingsView', () => {
     render(<SettingsView />, { initialEntries: ['/settings?tab=profile'] })
 
     expect(screen.getByRole('heading', { level: 1, name: '系统设置' })).toBeInTheDocument()
-    expect(screen.getByText('管理账户和界面偏好')).toBeInTheDocument()
+    expect(document.querySelector('.ods-page-header__description, .scene-page__text')).toBeNull()
     expect(screen.queryByLabelText('设置导航')).not.toBeInTheDocument()
     expect(screen.getAllByRole('tab').map((tab) => tab.textContent)).toEqual([
       '个人信息',
-      '安全设置',
       '外观设置',
       '通知设置',
       '数据同步',
@@ -223,13 +244,16 @@ describe('SettingsView', () => {
       ),
     )
 
+    // 安全设置 now lives on the profile page; an old link to it still lands there.
+    act(() => routeNavigate?.('/settings?tab=about'))
     act(() => routeNavigate?.('/settings?tab=security'))
     await waitFor(() =>
-      expect(screen.getByRole('tab', { name: '安全设置' })).toHaveAttribute(
+      expect(screen.getByRole('tab', { name: '个人信息' })).toHaveAttribute(
         'aria-selected',
         'true',
       ),
     )
+    expect(screen.getByLabelText('当前密码')).toBeInTheDocument()
   })
 
   it('rejects role-restricted tabs without rewriting the requested URL', () => {
@@ -284,13 +308,26 @@ describe('SettingsView', () => {
     expect(nameInput).toHaveValue('普通用户')
   })
 
-  it('keeps password change behavior behind ODS tabs, fields, and actions', async () => {
+  it('changes the password from the profile page, below the profile form', async () => {
     const changePassword = vi.fn().mockResolvedValue(true)
     useAuthStore.setState({ changePassword })
     const user = userEvent.setup()
     render(<SettingsView />, { initialEntries: ['/settings?tab=profile'] })
 
-    await user.click(screen.getByRole('tab', { name: '安全设置' }))
+    expect(screen.queryByRole('tab', { name: '安全设置' })).not.toBeInTheDocument()
+    const groups = screen
+      .getAllByRole('region')
+      .map((group) => group.getAttribute('aria-labelledby'))
+    expect(groups).toHaveLength(2)
+    const [profileGroup, securityGroup] = screen.getAllByRole('region')
+    expect(profileGroup).toHaveAccessibleName('个人信息')
+    expect(securityGroup).toHaveAccessibleName('安全设置')
+    // Both save buttons sit in their card's footer row, which packs its content to the end.
+    for (const name of ['保存更改', '修改密码']) {
+      expect(screen.getByRole('button', { name }).parentElement).toHaveClass(
+        'settings-group__footer',
+      )
+    }
     await user.type(screen.getByLabelText('当前密码'), 'old-secret')
     await user.type(screen.getByLabelText('新密码'), 'new-secret')
     await user.type(screen.getByLabelText('确认新密码'), 'new-secret')
@@ -302,11 +339,220 @@ describe('SettingsView', () => {
   it('lists the About facts as rows and opens the repository from an ODS button', () => {
     render(<SettingsView />, { initialEntries: ['/settings?tab=about'] })
 
-    expect(screen.getByRole('heading', { level: 2, name: 'Orange' })).toBeInTheDocument()
-    const repository = screen.getByRole('button', { name: 'FruitsAI/Orange' })
+    expect(screen.getByRole('heading', { level: 2, name: '珠算' })).toBeInTheDocument()
+    const repository = screen.getByRole('button', { name: 'primordialweave/zhusuan' })
     expect(repository).toHaveClass('ods-button')
     expect(repository).toHaveAccessibleDescription('开源地址')
     expect(screen.getByRole('button', { name: '检测更新' })).toHaveClass('ods-button')
-    expect(document.querySelector('.ods-card')).toBeNull()
+  })
+})
+
+describe('SettingsView in-app updates', () => {
+  const originalAuthState = useAuthStore.getState()
+  const info: UpdateInfo = {
+    currentVersion: '1.0.0',
+    latestVersion: '1.1.0',
+    available: true,
+    supported: true,
+    reason: '',
+    releaseURL: 'https://github.com/primordialweave/zhusuan/releases/tag/v1.1.0',
+    releaseNotes: '',
+  }
+  const idle: UpdateStatus = {
+    state: 'idle',
+    progress: 0,
+    downloadedBytes: 0,
+    totalBytes: 0,
+    message: '',
+  }
+  const downloading: UpdateStatus = {
+    state: 'downloading',
+    progress: 42,
+    downloadedBytes: 42,
+    totalBytes: 100,
+    message: '正在下载更新',
+  }
+
+  beforeEach(() => {
+    vi.clearAllMocks()
+    vi.mocked(appUpdater.isAvailable).mockReturnValue(true)
+    vi.mocked(appUpdater.checkForUpdates).mockResolvedValue(info)
+    vi.mocked(appUpdater.startUpdate).mockResolvedValue(undefined)
+    vi.mocked(appUpdater.status).mockResolvedValue(idle)
+    vi.mocked(appUpdater.cancelUpdate).mockResolvedValue(undefined)
+    vi.mocked(Browser.OpenURL).mockResolvedValue(undefined)
+    vi.spyOn(useToastStore.getState(), 'error').mockImplementation(() => 0)
+    vi.spyOn(useToastStore.getState(), 'success').mockImplementation(() => 0)
+    vi.spyOn(useToastStore.getState(), 'info').mockImplementation(() => 0)
+    useAuthStore.setState({
+      refreshUser: vi.fn().mockResolvedValue(undefined),
+      user: adminUser,
+    })
+  })
+
+  afterEach(() => {
+    vi.useRealTimers()
+    vi.restoreAllMocks()
+    useAuthStore.setState(originalAuthState)
+  })
+
+  async function confirmUpdate() {
+    fireEvent.click(screen.getByRole('button', { name: '检测更新' }))
+    fireEvent.click(await screen.findByRole('button', { name: '更新并重启' }))
+  }
+
+  it('downloads the update in-app after confirmation and shows the installed version and progress', async () => {
+    vi.mocked(appUpdater.status).mockResolvedValueOnce(idle).mockResolvedValue(downloading)
+    render(<SettingsView />, { initialEntries: ['/settings?tab=about'] })
+    await confirmUpdate()
+
+    await waitFor(() =>
+      expect(screen.getByRole('progressbar', { name: '应用更新进度' })).toHaveAttribute(
+        'aria-valuenow',
+        '42',
+      ),
+    )
+    expect(screen.getByText('v1.0.0')).toBeInTheDocument()
+    expect(screen.getByRole('button', { name: '正在更新' })).toBeDisabled()
+    expect(appUpdater.startUpdate).toHaveBeenCalledOnce()
+    expect(Browser.OpenURL).not.toHaveBeenCalled()
+  })
+
+  it('does not install when the update confirmation is dismissed', async () => {
+    render(<SettingsView />, { initialEntries: ['/settings?tab=about'] })
+    fireEvent.click(screen.getByRole('button', { name: '检测更新' }))
+    const dialog = await screen.findByRole('alertdialog')
+    fireEvent.click(within(dialog).getByRole('button', { name: '取消' }))
+
+    await waitFor(() => expect(screen.getByRole('button', { name: '检测更新' })).toBeEnabled())
+    expect(appUpdater.startUpdate).not.toHaveBeenCalled()
+    expect(screen.queryByRole('progressbar', { name: '应用更新进度' })).not.toBeInTheDocument()
+  })
+
+  it('does not offer an install or poll when there is no newer version', async () => {
+    vi.mocked(appUpdater.checkForUpdates).mockResolvedValue({ ...info, available: false })
+    render(<SettingsView />, { initialEntries: ['/settings?tab=about'] })
+    fireEvent.click(screen.getByRole('button', { name: '检测更新' }))
+
+    await waitFor(() => expect(useToastStore.getState().success).toHaveBeenCalled())
+    expect(appUpdater.startUpdate).not.toHaveBeenCalled()
+    expect(appUpdater.status).toHaveBeenCalledOnce()
+    expect(screen.queryByRole('alertdialog')).not.toBeInTheDocument()
+  })
+
+  it('allows cancelling a download and stops polling once cancellation completes', async () => {
+    vi.mocked(appUpdater.status).mockResolvedValueOnce(idle).mockResolvedValue(downloading)
+    vi.mocked(appUpdater.cancelUpdate).mockImplementation(async () => {
+      vi.mocked(appUpdater.status).mockResolvedValue({
+        ...idle,
+        state: 'available',
+        message: '已取消下载',
+      })
+    })
+    const { unmount } = render(<SettingsView />, { initialEntries: ['/settings?tab=about'] })
+    await confirmUpdate()
+    fireEvent.click(await screen.findByRole('button', { name: '取消下载' }))
+
+    await waitFor(() => expect(screen.getByText('已取消下载')).toBeInTheDocument())
+    expect(screen.getByRole('button', { name: '检测更新' })).toBeEnabled()
+    expect(screen.queryByRole('progressbar', { name: '应用更新进度' })).not.toBeInTheDocument()
+    expect(appUpdater.cancelUpdate).toHaveBeenCalledOnce()
+    const calls = vi.mocked(appUpdater.status).mock.calls.length
+    vi.useFakeTimers()
+    await act(async () => {
+      await vi.advanceTimersByTimeAsync(1500)
+    })
+    expect(appUpdater.status).toHaveBeenCalledTimes(calls)
+    unmount()
+  })
+
+  it('reports an installation failure and offers a fresh check for retry', async () => {
+    vi.mocked(appUpdater.status)
+      .mockResolvedValueOnce(idle)
+      .mockResolvedValue({ ...idle, state: 'error', message: '更新包校验失败' })
+    render(<SettingsView />, { initialEntries: ['/settings?tab=about'] })
+    await confirmUpdate()
+
+    expect(await screen.findByText('更新包校验失败')).toBeInTheDocument()
+    const retry = screen.getByRole('button', { name: '重试更新' })
+    expect(retry).toBeEnabled()
+    expect(useToastStore.getState().error).toHaveBeenCalledWith('更新包校验失败')
+    fireEvent.click(retry)
+    await screen.findByRole('button', { name: '更新并重启' })
+    expect(appUpdater.checkForUpdates).toHaveBeenCalledTimes(2)
+  })
+
+  it('restores the prior updater failure on mount without repeatedly checking the service', async () => {
+    vi.mocked(appUpdater.status).mockResolvedValue({
+      ...idle,
+      state: 'error',
+      message: '安装失败，已恢复旧版本',
+    })
+    render(<SettingsView />, { initialEntries: ['/settings?tab=about'] })
+    expect(await screen.findByText('安装失败，已恢复旧版本')).toBeInTheDocument()
+    expect(screen.getByRole('button', { name: '重试更新' })).toBeEnabled()
+    expect(appUpdater.status).toHaveBeenCalledOnce()
+  })
+
+  it('hands unsupported installs to the release page with their reason', async () => {
+    vi.mocked(appUpdater.checkForUpdates).mockResolvedValue({
+      ...info,
+      supported: false,
+      reason: '浏览器预览请从发布页下载安装。',
+    })
+    render(<SettingsView />, { initialEntries: ['/settings?tab=about'] })
+    fireEvent.click(screen.getByRole('button', { name: '检测更新' }))
+    expect(await screen.findByText(/浏览器预览请从发布页下载安装/)).toBeInTheDocument()
+    fireEvent.click(screen.getByRole('button', { name: '前往下载' }))
+
+    await waitFor(() => expect(Browser.OpenURL).toHaveBeenCalledWith(info.releaseURL))
+    expect(appUpdater.startUpdate).not.toHaveBeenCalled()
+  })
+
+  it('does not start an install from a check that finishes after unmount', async () => {
+    let resolveCheck!: (value: UpdateInfo) => void
+    vi.mocked(appUpdater.checkForUpdates).mockReturnValue(
+      new Promise((resolve) => {
+        resolveCheck = resolve
+      }),
+    )
+    const { unmount } = render(<SettingsView />, { initialEntries: ['/settings?tab=about'] })
+    fireEvent.click(screen.getByRole('button', { name: '检测更新' }))
+    unmount()
+    await act(async () => {
+      resolveCheck(info)
+    })
+    expect(appUpdater.startUpdate).not.toHaveBeenCalled()
+    expect(screen.queryByRole('alertdialog')).not.toBeInTheDocument()
+  })
+
+  it('cleans up update polling when the page unmounts', async () => {
+    vi.mocked(appUpdater.status).mockResolvedValueOnce(idle).mockResolvedValue(downloading)
+    const { unmount } = render(<SettingsView />, { initialEntries: ['/settings?tab=about'] })
+    await confirmUpdate()
+    await screen.findByRole('progressbar', { name: '应用更新进度' })
+    unmount()
+    const calls = vi.mocked(appUpdater.status).mock.calls.length
+    vi.useFakeTimers()
+    await act(async () => {
+      await vi.advanceTimersByTimeAsync(1500)
+    })
+    expect(appUpdater.status).toHaveBeenCalledTimes(calls)
+  })
+
+  it('stops progress requests when the update helper is restarting the application', async () => {
+    vi.mocked(appUpdater.status)
+      .mockResolvedValueOnce(idle)
+      .mockResolvedValue({ ...idle, state: 'restarting', message: '更新完成，正在重启' })
+    render(<SettingsView />, { initialEntries: ['/settings?tab=about'] })
+    await confirmUpdate()
+    expect(await screen.findByText('更新完成，正在重启')).toBeInTheDocument()
+    expect(screen.getByRole('button', { name: '正在重启' })).toBeDisabled()
+    const calls = vi.mocked(appUpdater.status).mock.calls.length
+    vi.useFakeTimers()
+    await act(async () => {
+      await vi.advanceTimersByTimeAsync(1500)
+    })
+    expect(appUpdater.status).toHaveBeenCalledTimes(calls)
   })
 })

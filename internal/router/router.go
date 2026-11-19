@@ -5,16 +5,17 @@ import (
 	"log/slog"
 	"net/http"
 
-	"github.com/FruitsAI/Orange/internal/config"
-	"github.com/FruitsAI/Orange/internal/constants"
-	"github.com/FruitsAI/Orange/internal/handler"
-	"github.com/FruitsAI/Orange/internal/middleware"
 	"github.com/gin-gonic/gin"
 	"github.com/prometheus/client_golang/prometheus/promhttp"
 	swaggerFiles "github.com/swaggo/files"
 	ginSwagger "github.com/swaggo/gin-swagger"
 
-	_ "github.com/FruitsAI/Orange/docs" // Swagger 生成的文档包
+	"github.com/primordialweave/zhusuan/internal/config"
+	"github.com/primordialweave/zhusuan/internal/constants"
+	"github.com/primordialweave/zhusuan/internal/handler"
+	"github.com/primordialweave/zhusuan/internal/middleware"
+
+	_ "github.com/primordialweave/zhusuan/docs" // Swagger 生成的文档包
 )
 
 // NewRouter 创建并配置 Gin 路由引擎

@@ -3,7 +3,7 @@
   overflow-x: auto;
   border: 1px solid var(--ods-color-border-default);
   border-radius: var(--ods-radius-panel);
-  background: var(--ods-color-bg-surface-raised);
+  background: var(--ods-color-bg-surface);
 }
 
 .ods-table {
@@ -25,7 +25,8 @@
 .ods-table[data-sticky='true'] .ods-table__column {
   position: sticky;
   inset-block-start: 0;
-  z-index: 1;
+  /* Above the body's own sticky cells, which would otherwise slide over the header. */
+  z-index: 3;
 }
 
 .ods-table__column[data-align='center'],
@@ -75,7 +76,7 @@
 }
 
 .ods-table__cell[data-sticky] {
-  background: var(--ods-color-bg-surface-raised);
+  background: var(--ods-color-bg-surface);
 }
 
 .ods-table__column[data-sticky='start'],
@@ -98,19 +99,26 @@
 }
 
 .ods-table[data-variant='plain'] .ods-table__column {
-  height: var(--ods-control-height-lg);
+  height: var(--ods-control-height-md);
+  padding-block: var(--ods-space-2);
   border-block: 1px solid var(--ods-color-border-strong);
   background: transparent;
   color: var(--ods-color-fg-default);
   font-weight: var(--ods-font-weight-regular);
 }
 
+/* A collapsed border does not travel with a sticky cell, so the header rules are drawn inside it. */
 .ods-table[data-variant='plain'][data-sticky='true'] .ods-table__column {
+  border-block: 0;
   background: var(--ods-color-bg-canvas-subtle);
+  box-shadow:
+    inset 0 1px var(--ods-color-border-strong),
+    inset 0 -1px var(--ods-color-border-strong);
 }
 
 .ods-table[data-variant='plain'] .ods-table__cell {
-  height: var(--ods-space-16);
+  height: 2.75rem;
+  padding-block: var(--ods-space-2);
 }
 
 .ods-table[data-variant='plain'] .ods-table__body .ods-table__row:first-child {
@@ -124,4 +132,10 @@
 .ods-table[data-variant='plain'] .ods-table__column[data-sticky],
 .ods-table[data-variant='plain'] .ods-table__cell[data-sticky] {
   box-shadow: none;
+}
+
+.ods-table[data-variant='plain'][data-sticky='true'] .ods-table__column[data-sticky] {
+  box-shadow:
+    inset 0 1px var(--ods-color-border-strong),
+    inset 0 -1px var(--ods-color-border-strong);
 }

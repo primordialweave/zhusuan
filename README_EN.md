@@ -104,7 +104,7 @@ The project integrates a comprehensive suite of business management features, in
 1. **Clone the repository**
 
 ```bash
-git clone https://github.com/FruitsAI/Orange.git
+git clone https://github.com/primordialweave/zhusuan.git
 cd Orange
 ```
 

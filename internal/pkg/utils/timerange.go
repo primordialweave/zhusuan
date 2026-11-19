@@ -84,3 +84,25 @@ func GetPeriodRange(period string, offset int) PeriodRange {
 func GetCurrentAndPreviousPeriod(period string) (current, previous PeriodRange) {
 	return GetPeriodRange(period, 0), GetPeriodRange(period, 1)
 }
+
+// GetCalendarRange 返回某一自然年或自然月的时间范围，以及紧邻的上一年 / 上一月
+//
+// 参数:
+//   - year: 四位年份
+//   - month: 1-12 表示该年的某个月；0 表示整年
+func GetCalendarRange(year, month int) (current, previous PeriodRange) {
+	const day = "2006-01-02"
+	span := func(start, end time.Time) PeriodRange {
+		// end 是下一周期的第一天，往回一天即本周期最后一天
+		return PeriodRange{
+			StartDate: start.Format(day),
+			EndDate:   end.AddDate(0, 0, -1).Format(day) + " 23:59:59",
+		}
+	}
+	if month == 0 {
+		start := time.Date(year, time.January, 1, 0, 0, 0, 0, time.Local)
+		return span(start, start.AddDate(1, 0, 0)), span(start.AddDate(-1, 0, 0), start)
+	}
+	start := time.Date(year, time.Month(month), 1, 0, 0, 0, 0, time.Local)
+	return span(start, start.AddDate(0, 1, 0)), span(start.AddDate(0, -1, 0), start)
+}

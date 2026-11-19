@@ -2,9 +2,12 @@ import { act, screen, waitFor } from '@testing-library/react'
 import userEvent from '@testing-library/user-event'
 import { Route, Routes, useNavigate } from 'react-router-dom'
 import { beforeEach, describe, expect, it, vi } from 'vitest'
+import { dictionaryApi, type DictionaryItem } from '@/api/dictionary'
 import { paymentApi, projectApi, type Payment, type Project } from '@/api/project'
 import { render } from '@/test/render'
 import ProjectDetailView from './ProjectDetailView'
+
+vi.mock('@/api/dictionary', () => ({ dictionaryApi: { getItems: vi.fn() } }))
 
 vi.mock('@/api/project', async (importOriginal) => {
   const original = await importOriginal<typeof import('@/api/project')>()
@@ -56,6 +59,11 @@ const laterPayment = { ...payment, id: 8, stage: '尾款' } satisfies Payment
 
 const apiResponse = <T,>(data: T) => ({ data: { data } })
 
+const projectTypes = [
+  { dictionary_id: 4, id: 1, label: '医学研究', sort: 1, status: 1, value: 'medicine' },
+  { dictionary_id: 4, id: 2, label: '网页应用开发', sort: 2, status: 1, value: 'web' },
+] satisfies DictionaryItem[]
+
 const createDeferred = <T,>() => {
   let resolve!: (value: T | PromiseLike<T>) => void
   const promise = new Promise<T>((promiseResolve) => {
@@ -98,12 +106,96 @@ function renderProjectDetail(initialEntry: string) {
 describe('ProjectDetailView payment deep links', () => {
   beforeEach(() => {
     vi.clearAllMocks()
+    vi.mocked(dictionaryApi.getItems).mockResolvedValue(apiResponse(projectTypes) as never)
     vi.mocked(projectApi.get).mockResolvedValue(apiResponse(project) as never)
     vi.mocked(projectApi.getPayments).mockResolvedValue(
       apiResponse([payment, laterPayment]) as never,
     )
     Element.prototype.scrollIntoView = vi.fn()
     vi.spyOn(HTMLElement.prototype, 'focus').mockImplementation(() => undefined)
+  })
+
+  it('updates a saved project type to its dictionary name when the dictionary arrives', async () => {
+    const dictionary = createDeferred<Awaited<ReturnType<typeof dictionaryApi.getItems>>>()
+    vi.mocked(dictionaryApi.getItems).mockReturnValue(dictionary.promise)
+    vi.mocked(projectApi.get).mockResolvedValue(
+      apiResponse({ ...project, type: 'medicine' }) as never,
+    )
+    renderProjectDetail('/projects/42')
+
+    expect(await screen.findByText('medicine')).toBeInTheDocument()
+    expect(screen.getByRole('heading', { name: project.name })).toBeInTheDocument()
+
+    await act(async () => {
+      dictionary.resolve(apiResponse(projectTypes) as never)
+      await dictionary.promise
+    })
+
+    expect(dictionaryApi.getItems).toHaveBeenCalledWith('project_type')
+    expect(screen.getByText('医学研究')).toBeInTheDocument()
+    expect(screen.queryByText('medicine')).not.toBeInTheDocument()
+  })
+
+  it('uses the configured name rather than a hardcoded default name', async () => {
+    vi.mocked(projectApi.get).mockResolvedValue(apiResponse({ ...project, type: 'web' }) as never)
+    renderProjectDetail('/projects/42')
+
+    expect(await screen.findByText('网页应用开发')).toBeInTheDocument()
+    expect(screen.queryByText('Web开发')).not.toBeInTheDocument()
+  })
+
+  it('matches a late dictionary response to the current project after navigation', async () => {
+    const user = userEvent.setup()
+    const dictionary = createDeferred<Awaited<ReturnType<typeof dictionaryApi.getItems>>>()
+    vi.mocked(dictionaryApi.getItems).mockReturnValue(dictionary.promise)
+    vi.mocked(projectApi.get).mockImplementation((projectId) =>
+      Promise.resolve(
+        apiResponse({
+          ...project,
+          id: projectId,
+          name: projectId === 42 ? project.name : '新项目',
+          type: projectId === 42 ? 'medicine' : 'web',
+        }) as never,
+      ),
+    )
+    renderProjectDetail('/projects/42')
+
+    await screen.findByRole('heading', { name: project.name })
+    await user.click(screen.getByRole('button', { name: '打开其他项目' }))
+    await screen.findByRole('heading', { name: '新项目' })
+
+    await act(async () => {
+      dictionary.resolve(apiResponse(projectTypes) as never)
+      await dictionary.promise
+    })
+
+    expect(screen.getByText('网页应用开发')).toBeInTheDocument()
+    expect(screen.queryByText('医学研究')).not.toBeInTheDocument()
+  })
+
+  it.each([
+    ['software', '软件开发'],
+    ['web', 'Web开发'],
+    ['legacy_type', 'legacy_type'],
+    ['品牌设计', '品牌设计'],
+    ['', '-'],
+  ])('keeps project information visible when the dictionary fails for %s', async (type, label) => {
+    vi.mocked(dictionaryApi.getItems).mockRejectedValue(new Error('字典不可用'))
+    vi.mocked(projectApi.get).mockResolvedValue(apiResponse({ ...project, type }) as never)
+    const { container } = renderProjectDetail('/projects/42')
+
+    await screen.findByRole('heading', { name: project.name })
+    const typeRow = container.querySelector('.project-record-list > div:first-child')
+    expect(typeRow?.querySelector('dd')).toHaveTextContent(label)
+  })
+
+  it('preserves an unknown type when its dictionary item was removed', async () => {
+    vi.mocked(projectApi.get).mockResolvedValue(
+      apiResponse({ ...project, type: 'legacy_type' }) as never,
+    )
+    renderProjectDetail('/projects/42')
+
+    expect(await screen.findByText('legacy_type')).toBeInTheDocument()
   })
 
   it('opens the payment plan tab from the initial search params', async () => {

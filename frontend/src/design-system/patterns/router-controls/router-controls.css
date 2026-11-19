@@ -148,6 +148,7 @@
   display: flex;
   font-size: var(--ods-shell-dock-icon-size);
   line-height: 1;
+  transition: transform var(--ods-duration-fast) var(--ods-ease-spring);
 }
 
 .ods-router-nav-link[data-appearance='dock'] .ods-router-nav-link__label {
@@ -160,7 +161,14 @@
   .ods-router-nav-link[data-appearance='dock']:hover {
     background: var(--ods-color-bg-surface-hover);
     color: var(--ods-color-fg-relaxed);
-    transform: translateY(-1px);
+  }
+
+  .ods-router-nav-link[data-appearance='dock']:hover .ods-router-nav-link__icon {
+    transform: translateY(-2px) scale(1.08);
+  }
+
+  .ods-router-nav-link[data-appearance='dock'][aria-current='page']:hover {
+    background: var(--router-nav-link-selected-background, var(--ods-gradient-nav-selected));
   }
 }
 
@@ -174,8 +182,9 @@
 }
 
 .ods-router-nav-link[data-appearance='dock'][aria-current='page'] {
-  background: var(--ods-gradient-nav-selected);
-  box-shadow: var(--ods-shadow-nav-selected);
+  /* A host that draws one sliding highlight behind its links turns these two off. */
+  background: var(--router-nav-link-selected-background, var(--ods-gradient-nav-selected));
+  box-shadow: var(--router-nav-link-selected-shadow, var(--ods-shadow-nav-selected));
   /* Same ink weight as the unselected entries; only the highlight marks the selection. */
   color: color-mix(in srgb, var(--ods-color-accent-fg) 88%, transparent);
   transform: none;
@@ -191,7 +200,8 @@
   .ods-router-link[data-appearance='row']:is(:hover, :active),
   .ods-router-link[data-appearance='row']:hover > .ods-link__icon,
   .ods-router-nav-link[data-appearance='tab']:active,
-  .ods-router-nav-link[data-appearance='dock']:is(:hover, :active) {
+  .ods-router-nav-link[data-appearance='dock']:is(:hover, :active),
+  .ods-router-nav-link[data-appearance='dock']:hover .ods-router-nav-link__icon {
     transform: none;
   }
 }

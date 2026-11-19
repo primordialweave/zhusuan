@@ -100,7 +100,7 @@ if err != nil {
 使用预定义的业务错误（位于 `pkg/errors/errors.go`）：
 
 ```go
-import pkgerrors "github.com/FruitsAI/Orange/internal/pkg/errors"
+import pkgerrors "github.com/primordialweave/zhusuan/internal/pkg/errors"
 
 // 常用业务错误
 var (

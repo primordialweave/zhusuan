@@ -1,7 +1,9 @@
 /* Application shell: scene, drag region, work surface and Dock. */
 :root {
-  --app-surface-top: clamp(48px, calc(8.5vw - 45px), 82px);
-  --app-surface-inline: clamp(20px, calc(9vw - 54px), 96px);
+  /* The panel starts right under the title bar and keeps a narrow margin of scene around it. */
+  --app-surface-top: var(--ods-shell-titlebar-clearance);
+  --app-surface-inline: clamp(16px, 2.5vw, 40px);
+  --app-surface-dock-gap: var(--ods-space-4);
   --app-dock-clearance: calc(
     var(--ods-shell-dock-height) + var(--ods-shell-dock-offset) + env(safe-area-inset-bottom)
   );
@@ -33,7 +35,7 @@
   min-width: 0;
   justify-content: center;
   padding: var(--app-surface-top) var(--app-surface-inline)
-    calc(var(--app-dock-clearance) + var(--ods-space-6) + var(--ods-space-1));
+    calc(var(--app-dock-clearance) + var(--app-surface-dock-gap));
 }
 
 .app-work-surface {
@@ -75,6 +77,52 @@
   gap: var(--ods-shell-dock-gap);
   /* The prototype's five cells are 1px narrower at each end than an even inset would make them. */
   padding: var(--ods-shell-dock-padding) calc(var(--ods-shell-dock-padding) + 1px);
+  --app-dock-inline: calc(var(--ods-shell-dock-padding) + 1px);
+  --router-nav-link-selected-background: transparent;
+  --router-nav-link-selected-shadow: none;
+}
+
+/* One highlight for the whole Dock: it glides to the current entry instead of blinking over. */
+.app-dock__indicator {
+  position: absolute;
+  width: calc((100% - var(--app-dock-inline) * 2 - var(--ods-shell-dock-gap) * 4) / 5);
+  border-radius: var(--ods-radius-pill);
+  background: var(--ods-gradient-nav-selected);
+  box-shadow: var(--ods-shadow-nav-selected);
+  inset-block: var(--ods-shell-dock-padding);
+  inset-inline-start: var(--app-dock-inline);
+  pointer-events: none;
+  transform: translateX(calc(var(--app-dock-index) * (100% + var(--ods-shell-dock-gap))));
+  transition: transform var(--ods-duration-hero) var(--ods-ease-emphasized);
+}
+
+.app-dock > :not(.app-dock__indicator) {
+  z-index: 1;
+}
+
+@keyframes app-dock-in {
+  from {
+    opacity: 0;
+    transform: translate(-50%, var(--ods-space-6));
+  }
+}
+
+@keyframes app-view-in {
+  from {
+    opacity: 0;
+    transform: translateY(var(--ods-space-2));
+  }
+}
+
+/* Fill backwards only: a transform left on the view would trap its sticky and fixed children. */
+@media (prefers-reduced-motion: no-preference) {
+  .app-dock-area {
+    animation: app-dock-in var(--ods-duration-hero) var(--ods-ease-emphasized) backwards;
+  }
+
+  .app-view-content {
+    animation: app-view-in var(--ods-duration-page) var(--ods-ease-emphasized) backwards;
+  }
 }
 
 .app-notification-entry {
@@ -149,14 +197,10 @@
 /* Short windows give height back to the content before anything is clipped. */
 @media (max-height: 760px) {
   :root {
-    --app-surface-top: var(--ods-shell-titlebar-clearance);
+    --app-surface-dock-gap: var(--ods-space-3);
     --ods-shell-dock-height: 76px;
-    --ods-shell-dock-offset: 16px;
+    --ods-shell-dock-offset: 10px;
     --ods-shell-dock-padding: 8px;
-  }
-
-  .app-main {
-    padding-bottom: calc(var(--app-dock-clearance) + var(--ods-space-4));
   }
 }
 

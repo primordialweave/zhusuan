@@ -1,8 +1,9 @@
+// Package main starts the Orange desktop application or its private update helper.
 package main
 
 import (
 	"embed"
-	_ "embed"
+	"encoding/json"
 	"io/fs"
 	"log"
 	"log/slog"
@@ -10,14 +11,19 @@ import (
 	"net/http"
 	"os"
 	"path"
+	"path/filepath"
+	goruntime "runtime"
 	"strconv"
 	"strings"
+	"sync"
 	"time"
 
-	"github.com/FruitsAI/Orange/internal/app"
-	"github.com/FruitsAI/Orange/internal/config"
-	"github.com/FruitsAI/Orange/internal/desktop"
 	"github.com/wailsapp/wails/v3/pkg/application"
+
+	"github.com/primordialweave/zhusuan/internal/app"
+	"github.com/primordialweave/zhusuan/internal/config"
+	"github.com/primordialweave/zhusuan/internal/desktop"
+	"github.com/primordialweave/zhusuan/internal/updater"
 )
 
 // Wails 使用 Go 的 `embed` 包将前端构建产物嵌入到二进制文件中。
@@ -27,10 +33,13 @@ import (
 //go:embed all:frontend/dist
 var assets embed.FS
 
+//go:embed frontend/package.json
+var appMetadata []byte
+
 // createAssetHandler 创建一个组合处理器，用于统一处理 HTTP 请求：
 // 1. 将 /api/* 开头的请求路由到 Gin 框架处理 (后端接口)
 // 2. 将其他请求作为静态资源服务，从嵌入的文件系统中提供前端页面
-func createAssetHandler(ginRouter http.Handler) http.Handler {
+func createAssetHandler(ginRouter http.Handler, preferenceLoaders ...func() (map[string]string, error)) http.Handler {
 
 	// 获取嵌入的前端静态资源
 	frontendFS, err := fs.Sub(assets, "frontend/dist")
@@ -38,9 +47,17 @@ func createAssetHandler(ginRouter http.Handler) http.Handler {
 		log.Fatal("Failed to create sub filesystem:", err)
 	}
 	staticHandler := http.FileServer(http.FS(frontendFS))
+	var preferenceHandler http.Handler
+	if len(preferenceLoaders) > 0 {
+		preferenceHandler = newPreferenceHandler(preferenceLoaders[0])
+	}
 
 	// 返回一个组合的 http.Handler
 	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		if r.URL.Path == "/__zhusuan_migration__/preferences" && preferenceHandler != nil {
+			preferenceHandler.ServeHTTP(w, r)
+			return
+		}
 		// 如果是 API 请求，转交给 Gin 处理
 		if strings.HasPrefix(r.URL.Path, "/api") {
 			ginRouter.ServeHTTP(w, r)
@@ -62,7 +79,43 @@ func createAssetHandler(ginRouter http.Handler) http.Handler {
 			return
 		}
 		w.Header().Set("Content-Type", "text/html; charset=utf-8")
-		_, _ = w.Write(index)
+		if _, err := w.Write(index); err != nil {
+			slog.Debug("Unable to send frontend response", "error", err)
+		}
+	})
+}
+
+func newPreferenceHandler(loader func() (map[string]string, error)) http.Handler {
+	var once sync.Once
+	var mu sync.Mutex
+	var values map[string]string
+	var loadErr error
+	var consumed bool
+	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		w.Header().Set("Cache-Control", "no-store")
+		if r.Method != http.MethodGet {
+			w.WriteHeader(http.StatusMethodNotAllowed)
+			return
+		}
+		mu.Lock()
+		defer mu.Unlock()
+		if consumed {
+			w.WriteHeader(http.StatusGone)
+			return
+		}
+		once.Do(func() { values, loadErr = loader() })
+		if loadErr != nil {
+			http.Error(w, "旧外观设置迁移暂未完成", http.StatusInternalServerError)
+			return
+		}
+		w.Header().Set("Content-Type", "application/json; charset=utf-8")
+		if values == nil {
+			values = map[string]string{}
+		}
+		if err := json.NewEncoder(w).Encode(values); err != nil {
+			slog.Debug("Unable to send migration preferences", "error", err)
+		}
+		consumed, values = true, nil
 	})
 }
 
@@ -81,7 +134,7 @@ func newExternalAPIServer(addr string, handler http.Handler) *http.Server {
 
 func mainWindowOptions() application.WebviewWindowOptions {
 	return application.WebviewWindowOptions{
-		Title:  "Orange",
+		Title:  "珠算",
 		Width:  1280,
 		Height: 800,
 		Mac: application.MacWindow{
@@ -95,6 +148,19 @@ func mainWindowOptions() application.WebviewWindowOptions {
 }
 
 func main() {
+	if handled, err := updater.RunHelper(os.Args[1:]); handled {
+		if err != nil {
+			log.Print(err)
+			os.Exit(1)
+		}
+		return
+	}
+	var metadata struct {
+		Version string `json:"version"`
+	}
+	if err := json.Unmarshal(appMetadata, &metadata); err != nil {
+		log.Fatal("Invalid application version metadata:", err)
+	}
 	runtime, cleanup, err := app.Bootstrap(app.RuntimeModeDesktop)
 	if err != nil {
 		log.Fatal(err)
@@ -123,7 +189,17 @@ func main() {
 	}
 
 	// 8. 创建组合资源处理器 (API + 前端静态资源)
-	assetHandler := createAssetHandler(ginRouter)
+	assetHandler := createAssetHandler(ginRouter, func() (map[string]string, error) {
+		home, err := os.UserHomeDir()
+		if err != nil {
+			return nil, err
+		}
+		return desktop.ReadLegacyPreferences(goruntime.GOOS, home)
+	})
+	profileDirectory := filepath.Join(config.AppConfig.DataDir, "WebView2")
+	if err := desktop.PrepareWebviewProfile(profileDirectory); err != nil {
+		log.Fatal(err)
+	}
 
 	// 7. 创建 Wails 应用程序实例
 	// 配置项说明:
@@ -131,10 +207,14 @@ func main() {
 	// - Assets: 配置静态资源服务，Handler 指向我们的组合处理器
 	// - Mac: macOS 特定配置，如关闭最后一个窗口后是否退出应用
 	app := application.New(application.Options{
-		Name:        "Orange",
-		Description: "FruitsAI Orange Desktop App",
+		Name:        "珠算",
+		Description: "PrimordialWeave 珠算桌面应用",
+		// Wails binding Info logs can contain saved credentials; keep native runtime logs private.
+		LogLevel: slog.LevelWarn,
 		Services: []application.Service{
 			application.NewService(desktop.NewCredentialStore()),
+			application.NewService(desktop.NewFileExporter()),
+			application.NewService(desktop.NewAppUpdater(metadata.Version, config.AppConfig.GitHubRepo)),
 		},
 		Assets: application.AssetOptions{
 			Handler: assetHandler,
@@ -142,6 +222,7 @@ func main() {
 		Mac: application.MacOptions{
 			ApplicationShouldTerminateAfterLastWindowClosed: true,
 		},
+		Windows: application.WindowsOptions{WebviewUserDataPath: profileDirectory},
 	})
 
 	// 8. 创建主窗口

@@ -5,9 +5,9 @@ import (
 	"log"
 	"time"
 
-	"github.com/FruitsAI/Orange/internal/models"
-	"github.com/FruitsAI/Orange/internal/pkg/cache"
-	"github.com/FruitsAI/Orange/internal/repository"
+	"github.com/primordialweave/zhusuan/internal/models"
+	"github.com/primordialweave/zhusuan/internal/pkg/cache"
+	"github.com/primordialweave/zhusuan/internal/repository"
 )
 
 // DictionaryService 数据字典服务

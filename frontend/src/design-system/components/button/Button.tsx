@@ -1,6 +1,14 @@
 import { forwardRef, type ButtonHTMLAttributes, type ReactNode } from 'react'
 
-export type ButtonVariant = 'primary' | 'secondary' | 'tertiary' | 'outline' | 'ghost' | 'danger'
+export type ButtonVariant =
+  | 'primary'
+  | 'secondary'
+  | 'tertiary'
+  | 'outline'
+  | 'ghost'
+  | 'danger'
+  /** No paint and no box of its own: wraps content that is itself the thing to press. */
+  | 'bare'
 export type ButtonSize = 'sm' | 'md' | 'lg'
 export type ButtonTone = 'neutral' | 'accent' | 'danger'
 
