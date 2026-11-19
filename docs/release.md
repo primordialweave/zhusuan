@@ -20,6 +20,16 @@ task bump-version VERSION=1.0.0
 
 发布工作流由推送稳定版本标签触发，也可在 GitHub Actions 的 Release 手动选择已有标签。手动运行必须填写 `tag`；构建该标签对应的代码。公开 Release 是单独的发布操作，准备文档、提交或更新草稿 PR 不会运行此标签发布流程。默认分支合并还可能触发 GHCR 镜像构建，合并前应确认发布意图。
 
+## 已有标签的构建配方恢复
+
+首次 1.0.0 打包发现 Task 同时重装 node_modules 并扫描 Go 包的竞争。应用源码及公开标签保持不变，构建调整为先完成前端安装，再生成绑定；只下载/校验固定 Go 依赖，macOS 两个架构顺序构建。
+
+手动 Release 可填写完整的 `build_recipe_ref` 提交 SHA。该提交必须已包含在 main，流程只读取四份桌面 Taskfile，不替换 Go/前端应用源码、版本或资源；应用仍从 tag 构建，配方来源写入发行说明和 update.json 正文。后续标签包含修复后的配方时无需填写。
+
+```sh
+gh workflow run release.yml --ref main -f tag=v1.0.0 -f build_recipe_ref=<40位已审查提交SHA>
+```
+
 ## 构建和发布顺序
 
 1. `prepare` 校验已有版本标签、版本编码与发布工具回归用例。

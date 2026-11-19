@@ -401,3 +401,5 @@
 - 正式发布预检发现desktop Name=珠算会让AppImage输出中文文件名，Wails alpha.55却移动zhusuan-x86_64.AppImage，导致Linux包失败。create:appimage设置LINUXDEPLOY_OUTPUT_APP_NAME=zhusuan；保留菜单中文名。实际产物由Release runner验证。
 
 - Windows smoke的Get-Item RegistryKey为只读，调用DeleteValue会UnauthorizedAccess并使Release失败；用Registry.LocalMachine.OpenSubKey(path,true)显式可写句柄并Dispose。只在干净CI runner的安装键操作，未在用户系统执行。
+
+- Release44506289477的Linux失败确认npm ci与go mod tidy并行，重建node_modules时Go扫描到消失的JS目录并误查Go模块。构建改为只download/verify固定依赖；npm完成后才生成bindings；macOS两架构顺序构建避免共享输出竞争。应用源码及v1.0.0标签c3af8fe保持不变，通过Release手动输入已合入main的固定build_recipe_ref，仅覆盖四份Taskfile并在发行说明/manifest正文记录来源，避免移动公开标签。初次失败Release已取消，未公开任何半成品。
