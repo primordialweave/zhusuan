@@ -390,3 +390,5 @@
 - 最终CI在慢runner上新增重分期行为测试超过默认5秒，下一测试拿到前一个mockRejectedValueOnce队列：clearAllMocks只清调用计数，不清实现/once队列。应完整reset相关API mock、缩短非关键逐字录入并保留等待/断言，不能把这类污染当成产品保存回归。安全runner的APT准备曾停留十余分钟；CI/Release Linux依赖设置30秒连接超时、2次重试和10分钟步骤上限，避免无界等待。
 
 - 取消的CI日志确认区域HTTP镜像 us-east-2.ec2.archive.ubuntu.com 下载69.9MB依赖在9分钟内仍未完成，并多次Ign重试。不能把“步骤仍运行”假设为代码编译失败。CI/Release共用 install-linux-deps.sh，临时runner镜像列表使用Canonical HTTPS、保留APT签名，--no-install-recommends减掉非构建必需推荐包；30秒超时/2次重试/10分钟步骤上限保留。
+
+- 绿色安全job并不代表无漏洞：Trivy原exit-code0报告了24条可修复HIGH。已升级go-git5.19.2/go-billy5.9.0/x-net0.62.0及其MVS要求的crypto0.58/mod0.41/text0.43等，Go保持1.26.0；不要逐个硬钉扫描表的最小修复版本，x-net要求更高crypto/mod时会冲突。GOTOOLCHAIN=local会回到已安装1.25.5，检查兼容性应显式GOTOOLCHAIN=go1.26.0。Trivy HIGH/CRITICAL改为exit-code1门禁；Gosec SARIF16条规则提示与golangci配置扫描不同，已在release-readiness核查输入边界并保留报告，不能称全量扫描清零。

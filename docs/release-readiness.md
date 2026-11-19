@@ -45,9 +45,15 @@ README 使用九张 1440×960 的当前界面截图。先在隔离数据库副�
 | 增量 golangci | 相对 origin/main 的最终检查通过，0 新增问题 |
 | 全量 golangci | 51 条历史告警；25 revive、9 errcheck、7 gofmt、4 goimports、3 goconst、2 gocyclo、1 staticcheck 简化建议 |
 | npm production dependency audit | 0 已报告漏洞；非完整供应链认证 |
+| Go 依赖安全 | 报告模式发现 24 条可修复 HIGH 记录后，升级对应库并将 HIGH/CRITICAL 设为 CI 门禁；最新 head 的扫描结果见 PR |
+| Gosec 原始 SARIF | 16 条路径/子进程/秘密字段/本机日志规则提示，保留原始报告并核查输入边界，未宣称扫描清零 |
 | NSIS | 使用临时假 executable/bootstrapper 编译通过，没有运行系统安装器 |
 
-全量扫描并未清零。errcheck 项主要是数据库连接关闭、日志 Sync 与鉴权缓存清理的返回值未检查；其余以命名、格式、重复常量和复杂度建议为主。本次没有新增告警，全量报告中没有 gosec/go vet/类型检查问题；这不能替代完整安全认证或目标平台验收。保留现有基线，避免把无关大范围重构混入此次发布准备。
+全量扫描并未清零。errcheck 项主要是数据库连接关闭、日志 Sync 与鉴权缓存清理的返回值未检查；其余以命名、格式、重复常量和复杂度建议为主。本次没有新增告警，golangci 配置下全量报告中没有 gosec/go vet/类型检查问题；这不能替代完整安全认证或目标平台验收。保留现有基线，避免把无关大范围重构混入此次发布准备。
+
+独立 Gosec 的原始 SARIF 有 16 条模式提示：G703×1、G204×2、G304×10、G117×1、G706×2。已核对固定用户缓存、迁库/暂存/profile 文件路径、固定 dpkg-query/rpm 参数、写入系统凭据的登录 JSON 及本机环境日志地址；保留报告供继续审查，不把变量路径或秘密字段模式当作已复现远程漏洞，也不把成功 job 当作无漏洞认证。
+
+Trivy 的旧配置只报告而不阻断，因此成功 job 曾包含 24 条可修复 HIGH。现升级 go-git 5.19.2、go-billy 5.9.0、x/crypto 0.58.0、x/mod 0.41.0、x/net 0.62.0、x/text 0.43.0 及所需传递依赖，保持 Go 1.26.0；对应 HIGH/CRITICAL 扫描改为门禁。最终结果按最新 head 确认。
 
 本地证据保存在 /tmp/zhusuan-release-review；最终 GitHub CI 应按 PR 的最新 head SHA 核对，旧 head 的通过记录不能替代当前提交。慢 CI runner 曾使新增分期行为用例超过 5 秒，并因 mock 一次性队列未清空污染下一用例；相关 API mock 完整重置，非关键录入减少逐字符更新，两条完整创建/重试流程单独使用 10 秒预算；断言保留，单 worker 的 19 条表单回归通过。Linux 依赖安装统一使用 Canonical HTTPS 镜像、省略非构建推荐包，并使用有限网络重试和步骤超时，避免镜像故障时无界等待。构建前端会删除/重建 frontend/dist，Go 的 embed 检查必须等构建结束，不能并行；本次发现该竞态后已顺序重跑。
 
