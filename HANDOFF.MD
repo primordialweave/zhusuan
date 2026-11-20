@@ -2,7 +2,13 @@
 
 接手任何任务前先读这份文档。它只记两类东西：**当前在制品的状态**，和**已经踩过的坑**。踩到新坑就追加到第 2 节，状态变了就改第 1 节。
 
-## 1. 珠算 1.0.1 已正式发布
+## 1. 当前任务：1.0.2 发布、依赖 PR 更新与分支清理
+
+- 用户本轮明确授权发版、清PR更新依赖、最后清分支；覆盖上轮暂不发布限制。先发布1.0.2（当前Windows普通启动修复和透明胶囊标题栏），依赖升级单独在后续main合入，不改变已发布标签。
+- PR30最新5656c5e检查全通过；更新版本并为正式Release使用Intel macOS/单worker，Windows完整普通用户+原生窗口验收。1.0.2正式包十附件核验后latest，旧公开标签/附件不可改。
+- 并行只读审计前端、Go、Actions依赖与分支。tag应用快照后再实施依赖升级。分支只删已合并或可证明已取代的分支，未合并独有提交保留；本地design-qa.md删除及root node_modules保持，不纳入任务提交。
+
+## 1.1 珠算 1.0.1 已正式发布
 
 - 原会话用户选择发布1.0.1，本会话已接续完成。北京时间2026-11-20 02:34:19公开并设latest：https://github.com/primordialweave/zhusuan/releases/tag/v1.0.1 。应用标签固定于 `176c9780dbcfb0932370e9c98d5c5e7a9eb08d3a`；1.0.0十附件名称/大小/SHA256均保持原样。
 - 已完成两架构DMG/ZIP、macOS中文名和无外板图标、Windows UTF-8中文/用户默认目录/显式路径与旧Orange保留、金额输入/必填校验、令牌/通知弹层；另修真实下载取消EOF竞态。项目详情medicine→医学及小天平青绿已实际回归。
@@ -454,3 +460,11 @@
 - Intel44579095153两worker仍593/598，4个交互超时和CalendarView加载aria-busy=true时findByRole默认1s耗尽；其余日期格式通过，不是日期偏移。针对固定3个测试优化夹具输入/语义查询并给多交互流程预算，专用Macworkflow仅覆盖这3个已审test文件、记录fixtureSHA，应用源码tag176c不变；绝不把所有失败泛称产品通过。
 
 - macOS旧Xcode Assets.car重编可能因内部时间戳变成相同尺寸不同hash，dev watch会重新生成；发行复验必须比git show <应用tag>:...，不能拿工作区未提交生成物当正式来源。公开前验证十附件server digest后再draft=false/latest，匿名latest和旧版本不可变性均需发布后再读。
+
+### 2.11 Windows普通安装与自定义标题栏（2026-11-20）
+
+- 管理员GitHub runner上的安装成功不证明普通用户能双击。应读取实际PE manifest，并在同SID、MediumIL、管理员组deny-only且HKLM写被拒绝的真实token里先无参数显示welcome，再静默安装/卸载。SmartScreen/MOTW和用户接受UAC与此分开验。
+- Wails alpha.55 frameless仍有WS_CAPTION/WS_OVERLAPPEDWINDOW，通过WM_NCCALCSIZE移除系统标题栏；不能用stylebit无caption断言。应核client/window上沿几何和真实边缘拖动。该版本自动5px边/15px角resize，不读最新版--wails-resize。Snaphover布局未实现，不声称支持。
+- 自定义系统窗口操作控件也须走ODS ownership，新增ODS WindowControlButton；页面CSS不能覆盖IconButton外观，也不能绕过Image契约原生img。已有契约抓到后已改为正式组件，未加例外。
+
+- Windows新检查首次Chocolatey feed504（未构建），第二次restricted worker0xC0000142（未运行安装器）。STARTUPINFO显式winsta0/default后真实同SID Medium token成功；TokenElevation元数据true不能说false，实际isAdminfalse和HKLM写拒绝才证明无管理员能力。最终44640534380普通欢迎窗/安装卸载和原生全屏等全通过。

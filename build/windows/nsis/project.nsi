@@ -155,6 +155,57 @@ FunctionEnd
     ${EndIf}
 !macroend
 
+; The installer stays asInvoker. Only an existing machine installation needs UAC.
+; ShellExecuteEx supplies a process handle so the original caller gets the real result.
+Function ZhusuanElevateInstaller
+    ${GetParameters} $0
+    ClearErrors
+    ${GetOptions} $0 "/ZHUSUAN_ELEVATED" $1
+    ${IfNot} ${Errors}
+        MessageBox MB_OK|MB_ICONEXCLAMATION "无法取得更新已有珠算所需的管理员权限，原安装未改动。" /SD IDOK
+        SetErrorLevel 5
+        Quit
+    ${EndIf}
+    ; NSIS removed /D from $CMDLINE, so append the already resolved path last.
+    StrCpy $0 '$0 /ZHUSUAN_ELEVATED /D=$INSTDIR'
+    System::Call '*(&l4, i 0x140, p $HWNDPARENT, t "runas", t "$EXEPATH", t "$0", p 0, i 1, p 0, p 0, p 0, p 0, i 0, p 0, p 0) p.r0'
+    System::Call 'shell32::ShellExecuteExW(p r0) i.r1 ?e'
+    Pop $3
+    ${If} $1 == "0"
+        System::Free $0
+        ${If} $3 == "1223"
+            MessageBox MB_OK|MB_ICONINFORMATION "已取消管理员授权，原安装未改动。" /SD IDOK
+        ${Else}
+            MessageBox MB_OK|MB_ICONEXCLAMATION "无法启动管理员安装，请重试。原安装未改动。" /SD IDOK
+        ${EndIf}
+        ${If} $3 == "0"
+            StrCpy $3 "5"
+        ${EndIf}
+        SetErrorLevel $3
+        Quit
+    ${EndIf}
+    System::Call '*$0(i, i, p, p, p, p, p, i, p, p, p, p, i, p, p.r2)'
+    System::Free $0
+    ${If} $2 == "0"
+        SetErrorLevel 5
+        Quit
+    ${EndIf}
+    System::Call 'kernel32::WaitForSingleObject(p r2, i -1) i.r1'
+    ${If} $1 != "0"
+        System::Call 'kernel32::CloseHandle(p r2)'
+        SetErrorLevel 5
+        Quit
+    ${EndIf}
+    System::Call 'kernel32::GetExitCodeProcess(p r2, *i.r3) i.r1'
+    System::Call 'kernel32::CloseHandle(p r2)'
+    ${If} $1 == "0"
+        SetErrorLevel 5
+        Quit
+    ${EndIf}
+    SetErrorLevel $3
+    Quit
+FunctionEnd
+
 !macro ZhusuanScopeFunction PREFIX
 Function ${PREFIX}ZhusuanSelectScope
     StrCpy $ZhusuanInstallScope "user"
@@ -165,8 +216,13 @@ Function ${PREFIX}ZhusuanSelectScope
         SetShellVarContext all
         System::Call 'shell32::IsUserAnAdmin() i.r0'
         ${If} $0 == "0"
-            SetErrorLevel 5
-            Abort "此珠算安装位于全局目录，请以管理员身份运行安装器。"
+            !if "${PREFIX}" == ""
+                Call ZhusuanElevateInstaller
+            !else
+                MessageBox MB_OK|MB_ICONEXCLAMATION "此珠算安装位于全局目录，请以管理员身份卸载。" /SD IDOK
+                SetErrorLevel 5
+                Abort
+            !endif
         ${EndIf}
     ${Else}
         SetShellVarContext current

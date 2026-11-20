@@ -14,7 +14,7 @@ on:
         type: string
       test_recipe_ref:
         description: Reviewed main commit SHA for the installation smoke fixture
-        required: true
+        required: false
         type: string
 
 permissions:
@@ -35,12 +35,22 @@ jobs:
           GIT_CONFIG_COUNT: '1'
           GIT_CONFIG_KEY_0: core.autocrlf
           GIT_CONFIG_VALUE_0: 'false'
-      - name: Apply reviewed installation fixture
+      - name: Verify candidate source identity
         shell: bash
         run: |
           [[ "$RELEASE_TAG" =~ ^v[0-9]+\.[0-9]+\.[0-9]+$ ]]
-          [[ "$TEST_RECIPE_REF" =~ ^[0-9a-f]{40}$ ]]
           [[ -z "$APPLICATION_REF" || "$APPLICATION_REF" =~ ^[0-9a-f]{40}$ ]]
+          if [[ -n "$APPLICATION_REF" ]]; then
+            test "$(git rev-parse HEAD)" = "$APPLICATION_REF"
+          fi
+          SOURCE_SHA=$(git rev-parse HEAD)
+          printf 'Application source: %s\n' "$SOURCE_SHA"
+          printf 'APPLICATION_SOURCE_SHA=%s\n' "$SOURCE_SHA" >> "$GITHUB_ENV"
+      - name: Apply reviewed installation fixture
+        if: env.TEST_RECIPE_REF != ''
+        shell: bash
+        run: |
+          [[ "$TEST_RECIPE_REF" =~ ^[0-9a-f]{40}$ ]]
           git fetch --no-tags origin '+refs/heads/main:refs/remotes/origin/main' "$TEST_RECIPE_REF"
           git merge-base --is-ancestor "$TEST_RECIPE_REF" origin/main
           git show "${TEST_RECIPE_REF}:scripts/windows-installer-smoke.ps1" > scripts/windows-installer-smoke.ps1
@@ -67,14 +77,23 @@ jobs:
           'C:\Program Files (x86)\NSIS' | Out-File -FilePath $env:GITHUB_PATH -Encoding utf8 -Append
           'C:\Program Files (x86)\NSIS\Bin' | Out-File -FilePath $env:GITHUB_PATH -Encoding utf8 -Append
       - name: Build tagged Windows installer
+        id: build
         shell: bash
         run: |
           python scripts/release.py metadata "$RELEASE_TAG"
           task windows:package ARCH=amd64
+      - name: Verify standard-user installation without elevation
+        shell: pwsh
+        run: ./scripts/windows-standard-user-installer-smoke.ps1 -Installer bin/zhusuan-amd64-installer.exe
       - name: Verify installation and upgrade
         shell: pwsh
         run: ./scripts/windows-installer-smoke.ps1 -Installer bin/zhusuan-amd64-installer.exe
+      - name: Verify native window controls and fullscreen
+        if: always() && !cancelled() && steps.build.outcome == 'success'
+        shell: pwsh
+        run: ./scripts/windows-window-smoke.ps1 -Executable bin/zhusuan.exe
       - name: Verify backend
+        if: always() && !cancelled() && steps.build.outcome == 'success'
         shell: bash
         run: |
           go test -mod=readonly . ./internal/... ./cmd/...
@@ -87,5 +106,9 @@ jobs:
           path: |
             bin/zhusuan-amd64-installer.exe
             ${{ runner.temp }}/zhusuan-installer-diagnostics/*
+            ${{ runner.temp }}/zhusuan-standard-user-installation.json
+            ${{ runner.temp }}/zhusuan-window-check/*.png
+            ${{ runner.temp }}/zhusuan-window-check/*.json
+            ${{ runner.temp }}/zhusuan-window-check/*.log
           if-no-files-found: warn
           retention-days: 7

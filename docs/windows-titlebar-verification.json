@@ -1,0 +1,459 @@
+{
+  "run": "https://github.com/primordialweave/zhusuan/actions/runs/44640534380",
+  "sourceCommit": "50b06bb8fde4a5515ed59be191773309938273f1",
+  "installerBytes": 37824516,
+  "installerSha256": "6f3bb641adc14f27c043a9fc617f209d85a6a0613e241ac8e5c012f0ccd47879",
+  "standardUser": {
+    "passed": true,
+    "manifest": "asInvoker",
+    "phase": "complete",
+    "ordinaryLaunchShowsDialog": true,
+    "tokenElevationReported": true,
+    "integrityRid": 8192,
+    "isAdmin": false,
+    "installerSha256": "6f3bb641adc14f27c043a9fc617f209d85a6a0613e241ac8e5c012f0ccd47879",
+    "machineWriteDenied": true,
+    "sameUserSidVerified": true
+  },
+  "window": {
+    "passed": true,
+    "error": null,
+    "sourceCommit": "50b06bb8fde4a5515ed59be191773309938273f1",
+    "executable": "zhusuan.exe",
+    "nativeDesktop": true,
+    "states": [
+      {
+        "name": "01-normal",
+        "outer": {
+          "left": 40,
+          "top": 40,
+          "right": 964,
+          "bottom": 660,
+          "width": 924,
+          "height": 620
+        },
+        "client": {
+          "left": 40,
+          "top": 40,
+          "right": 964,
+          "bottom": 661,
+          "width": 924,
+          "height": 621
+        },
+        "dwm": {
+          "left": 40,
+          "top": 40,
+          "right": 964,
+          "bottom": 660,
+          "width": 924,
+          "height": 620
+        },
+        "monitor": {
+          "left": 0,
+          "top": 0,
+          "right": 1024,
+          "bottom": 768,
+          "width": 1024,
+          "height": 768
+        },
+        "workArea": {
+          "left": 0,
+          "top": 0,
+          "right": 1024,
+          "bottom": 720,
+          "width": 1024,
+          "height": 720
+        },
+        "style": "0x14CF0000",
+        "dpi": 96,
+        "maximised": false,
+        "minimised": false,
+        "fullscreen": false
+      },
+      {
+        "name": "02-resized",
+        "outer": {
+          "left": 40,
+          "top": 40,
+          "right": 904,
+          "bottom": 620,
+          "width": 864,
+          "height": 580
+        },
+        "client": {
+          "left": 40,
+          "top": 40,
+          "right": 904,
+          "bottom": 621,
+          "width": 864,
+          "height": 581
+        },
+        "dwm": {
+          "left": 40,
+          "top": 40,
+          "right": 904,
+          "bottom": 620,
+          "width": 864,
+          "height": 580
+        },
+        "monitor": {
+          "left": 0,
+          "top": 0,
+          "right": 1024,
+          "bottom": 768,
+          "width": 1024,
+          "height": 768
+        },
+        "workArea": {
+          "left": 0,
+          "top": 0,
+          "right": 1024,
+          "bottom": 720,
+          "width": 1024,
+          "height": 720
+        },
+        "style": "0x14CF0000",
+        "dpi": 96,
+        "maximised": false,
+        "minimised": false,
+        "fullscreen": false
+      },
+      {
+        "name": "03-dragged",
+        "outer": {
+          "left": 82,
+          "top": 63,
+          "right": 946,
+          "bottom": 643,
+          "width": 864,
+          "height": 580
+        },
+        "client": {
+          "left": 82,
+          "top": 63,
+          "right": 946,
+          "bottom": 644,
+          "width": 864,
+          "height": 581
+        },
+        "dwm": {
+          "left": 82,
+          "top": 63,
+          "right": 946,
+          "bottom": 643,
+          "width": 864,
+          "height": 580
+        },
+        "monitor": {
+          "left": 0,
+          "top": 0,
+          "right": 1024,
+          "bottom": 768,
+          "width": 1024,
+          "height": 768
+        },
+        "workArea": {
+          "left": 0,
+          "top": 0,
+          "right": 1024,
+          "bottom": 720,
+          "width": 1024,
+          "height": 720
+        },
+        "style": "0x14CF0000",
+        "dpi": 96,
+        "maximised": false,
+        "minimised": false,
+        "fullscreen": false
+      },
+      {
+        "name": "04-maximised",
+        "outer": {
+          "left": -8,
+          "top": -8,
+          "right": 1032,
+          "bottom": 728,
+          "width": 1040,
+          "height": 736
+        },
+        "client": {
+          "left": 0,
+          "top": 0,
+          "right": 1024,
+          "bottom": 720,
+          "width": 1024,
+          "height": 720
+        },
+        "dwm": {
+          "left": 0,
+          "top": 0,
+          "right": 1024,
+          "bottom": 720,
+          "width": 1024,
+          "height": 720
+        },
+        "monitor": {
+          "left": 0,
+          "top": 0,
+          "right": 1024,
+          "bottom": 768,
+          "width": 1024,
+          "height": 768
+        },
+        "workArea": {
+          "left": 0,
+          "top": 0,
+          "right": 1024,
+          "bottom": 720,
+          "width": 1024,
+          "height": 720
+        },
+        "style": "0x15CF0000",
+        "dpi": 96,
+        "maximised": true,
+        "minimised": false,
+        "fullscreen": false
+      },
+      {
+        "name": "05-fullscreen-from-maximised",
+        "outer": {
+          "left": 0,
+          "top": 0,
+          "right": 1024,
+          "bottom": 768,
+          "width": 1024,
+          "height": 768
+        },
+        "client": {
+          "left": 0,
+          "top": 0,
+          "right": 1024,
+          "bottom": 768,
+          "width": 1024,
+          "height": 768
+        },
+        "dwm": {
+          "left": 0,
+          "top": 0,
+          "right": 1024,
+          "bottom": 768,
+          "width": 1024,
+          "height": 768
+        },
+        "monitor": {
+          "left": 0,
+          "top": 0,
+          "right": 1024,
+          "bottom": 768,
+          "width": 1024,
+          "height": 768
+        },
+        "workArea": {
+          "left": 0,
+          "top": 0,
+          "right": 1024,
+          "bottom": 720,
+          "width": 1024,
+          "height": 720
+        },
+        "style": "0x95000000",
+        "dpi": 96,
+        "maximised": true,
+        "minimised": false,
+        "fullscreen": true
+      },
+      {
+        "name": "06-minimised",
+        "outer": {
+          "left": -32000,
+          "top": -32000,
+          "right": -31840,
+          "bottom": -31972,
+          "width": 160,
+          "height": 28
+        },
+        "client": {
+          "left": -32000,
+          "top": -32000,
+          "right": -31840,
+          "bottom": -31971,
+          "width": 160,
+          "height": 29
+        },
+        "dwm": {
+          "left": -32000,
+          "top": -32000,
+          "right": -31840,
+          "bottom": -31972,
+          "width": 160,
+          "height": 28
+        },
+        "monitor": {
+          "left": 0,
+          "top": 0,
+          "right": 1024,
+          "bottom": 768,
+          "width": 1024,
+          "height": 768
+        },
+        "workArea": {
+          "left": 0,
+          "top": 0,
+          "right": 1024,
+          "bottom": 720,
+          "width": 1024,
+          "height": 720
+        },
+        "style": "0x34CF0000",
+        "dpi": 96,
+        "maximised": false,
+        "minimised": true,
+        "fullscreen": false
+      },
+      {
+        "name": "07-fullscreen-f11",
+        "outer": {
+          "left": 0,
+          "top": 0,
+          "right": 1024,
+          "bottom": 768,
+          "width": 1024,
+          "height": 768
+        },
+        "client": {
+          "left": 0,
+          "top": 0,
+          "right": 1024,
+          "bottom": 768,
+          "width": 1024,
+          "height": 768
+        },
+        "dwm": {
+          "left": 0,
+          "top": 0,
+          "right": 1024,
+          "bottom": 768,
+          "width": 1024,
+          "height": 768
+        },
+        "monitor": {
+          "left": 0,
+          "top": 0,
+          "right": 1024,
+          "bottom": 768,
+          "width": 1024,
+          "height": 768
+        },
+        "workArea": {
+          "left": 0,
+          "top": 0,
+          "right": 1024,
+          "bottom": 720,
+          "width": 1024,
+          "height": 720
+        },
+        "style": "0x94000000",
+        "dpi": 96,
+        "maximised": false,
+        "minimised": false,
+        "fullscreen": true
+      },
+      {
+        "name": "08-restored-after-escape",
+        "outer": {
+          "left": 82,
+          "top": 63,
+          "right": 946,
+          "bottom": 643,
+          "width": 864,
+          "height": 580
+        },
+        "client": {
+          "left": 82,
+          "top": 63,
+          "right": 946,
+          "bottom": 644,
+          "width": 864,
+          "height": 581
+        },
+        "dwm": {
+          "left": 82,
+          "top": 63,
+          "right": 946,
+          "bottom": 643,
+          "width": 864,
+          "height": 580
+        },
+        "monitor": {
+          "left": 0,
+          "top": 0,
+          "right": 1024,
+          "bottom": 768,
+          "width": 1024,
+          "height": 768
+        },
+        "workArea": {
+          "left": 0,
+          "top": 0,
+          "right": 1024,
+          "bottom": 720,
+          "width": 1024,
+          "height": 720
+        },
+        "style": "0x14CF0000",
+        "dpi": 96,
+        "maximised": false,
+        "minimised": false,
+        "fullscreen": false
+      },
+      {
+        "name": "09-final-normal",
+        "outer": {
+          "left": 82,
+          "top": 63,
+          "right": 946,
+          "bottom": 643,
+          "width": 864,
+          "height": 580
+        },
+        "client": {
+          "left": 82,
+          "top": 63,
+          "right": 946,
+          "bottom": 644,
+          "width": 864,
+          "height": 581
+        },
+        "dwm": {
+          "left": 82,
+          "top": 63,
+          "right": 946,
+          "bottom": 643,
+          "width": 864,
+          "height": 580
+        },
+        "monitor": {
+          "left": 0,
+          "top": 0,
+          "right": 1024,
+          "bottom": 768,
+          "width": 1024,
+          "height": 768
+        },
+        "workArea": {
+          "left": 0,
+          "top": 0,
+          "right": 1024,
+          "bottom": 720,
+          "width": 1024,
+          "height": 720
+        },
+        "style": "0x14CF0000",
+        "dpi": 96,
+        "maximised": false,
+        "minimised": false,
+        "fullscreen": false
+      }
+    ]
+  }
+}

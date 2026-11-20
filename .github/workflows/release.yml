@@ -60,7 +60,7 @@ jobs:
       fail-fast: false
       matrix:
         include:
-          - runner: macos-15
+          - runner: macos-15-intel
             platform: darwin
           - runner: ubuntu-24.04
             platform: linux
@@ -138,7 +138,7 @@ jobs:
         run: |
           npm ci
           node node_modules/eslint/bin/eslint.js src --max-warnings=0
-          npm run test:run
+          npm run test:run -- --maxWorkers=1
       - name: Build Apple Silicon and Intel macOS packages
         if: matrix.platform == 'darwin'
         run: |
@@ -150,10 +150,18 @@ jobs:
       - name: Build Windows installer
         if: matrix.platform == 'windows'
         run: task windows:package ARCH=amd64
+      - name: Verify Windows standard-user installation
+        if: matrix.platform == 'windows'
+        shell: pwsh
+        run: ./scripts/windows-standard-user-installer-smoke.ps1 -Installer bin/zhusuan-amd64-installer.exe
       - name: Verify Windows installation and upgrade
         if: matrix.platform == 'windows'
         shell: pwsh
         run: ./scripts/windows-installer-smoke.ps1 -Installer bin/zhusuan-amd64-installer.exe
+      - name: Verify Windows native controls and fullscreen
+        if: matrix.platform == 'windows'
+        shell: pwsh
+        run: ./scripts/windows-window-smoke.ps1 -Executable bin/zhusuan.exe
       - name: Retain Windows installer failure diagnostics
         if: failure() && matrix.platform == 'windows'
         uses: actions/upload-artifact@v4
@@ -162,6 +170,8 @@ jobs:
           path: |
             bin/zhusuan-amd64-installer.exe
             ${{ runner.temp }}/zhusuan-installer-diagnostics/*
+            ${{ runner.temp }}/zhusuan-standard-user-installation.json
+            ${{ runner.temp }}/zhusuan-window-check/*
           if-no-files-found: warn
           retention-days: 7
       - name: Build Linux packages

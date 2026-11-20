@@ -1,0 +1,36 @@
+.window-titlebar {
+  --wails-draggable: no-drag;
+  position: fixed;
+  z-index: 40;
+  top: 0;
+  right: 0;
+  left: 0;
+  display: flex;
+  height: var(--ods-shell-titlebar-clearance);
+  /* Preserve the native resize hit area along the top edge. */
+  padding: 8px 12px;
+  background: transparent;
+  color: var(--ods-color-fg-default);
+  pointer-events: none;
+  user-select: none;
+}
+
+.window-titlebar__drag {
+  --wails-draggable: drag;
+  min-width: 0;
+  flex: 1;
+  pointer-events: auto;
+}
+
+.window-titlebar__controls {
+  --wails-draggable: no-drag;
+  display: flex;
+  height: 100%;
+  align-items: center;
+  gap: 6px;
+  pointer-events: auto;
+}
+
+[data-desktop-platform='windows'] .app-titlebar-drag-region {
+  pointer-events: none;
+}
