@@ -1,7 +1,7 @@
 import { useCallback, useEffect, useLayoutEffect, useRef, useState } from 'react'
 import { Events, Window } from '@wailsio/runtime'
 import { useToastStore } from '@/composables/useToast'
-import { Image, WindowControlButton } from '@/design-system'
+import { WindowControlButton } from '@/design-system'
 import { handleWindowDragRegionDoubleClick } from './windowDrag'
 import './window-titlebar.css'
 
@@ -112,21 +112,11 @@ function WindowsTitleBar() {
 
   return (
     <header className="window-titlebar" data-fullscreen={state.fullscreen || undefined}>
-      <div className="window-titlebar__drag" onDoubleClick={handleWindowDragRegionDoubleClick}>
-        <span className="window-titlebar__icon">
-          <Image
-            alt=""
-            background="transparent"
-            disableAnimation
-            draggable={false}
-            fit="contain"
-            radius="none"
-            showSkeleton={false}
-            src="/zhusuan.png"
-          />
-        </span>
-        <span className="window-titlebar__name">珠算</span>
-      </div>
+      <div
+        aria-hidden="true"
+        className="window-titlebar__drag"
+        onDoubleClick={handleWindowDragRegionDoubleClick}
+      />
       <div aria-label="窗口控制" className="window-titlebar__controls" role="group">
         <WindowControlButton
           data-window-control="fullscreen"

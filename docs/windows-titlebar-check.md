@@ -28,3 +28,9 @@
 - 原生检查仅使用新临时配置、数据库、WebViewprofile，禁外部API；未触真实账本/用户配置。浏览器ego空间9和自有9331预览已关闭。
 - UAC交互授权接受/取消、下载来源MOTW/SmartScreen/杀软，以及不同Windows版本/DPI/多屏仍需真实用户设备验证；安装器仍无Authenticode。本次不改变系统安全设置或绕过下载保护。
 - 主JS834.18KB（gzip268.15KB），保留既有500KB构建警告，无新增依赖；窗口状态只初始化/操作后/事件时查询，空闲无轮询。
+
+## 标题栏视觉更新
+
+后续用户要求全透明标题栏、去左上角品牌，仅保留右上四个小胶囊按钮。已移除品牌节点和标题栏底色，每按钮36×28px/满圆角/6px间距，淡青绿半透明胶囊背景；顶部留8px保持原生resize区域。逻辑和空白拖区保留。
+
+本次在ego预览检查浅色1280×800与深色760×520，header计算background为rgba(0,0,0,0)、品牌为空、按钮no-drag、无横向溢出，全屏按钮/Esc行为正确；双击触发原生ToggleMaximise调用，预览无原生事件不能据其状态文案判断窗口结果。标题栏与ODS三契约19项、ESLint和productionbuild通过。新的[浅色效果](screenshots/windows-titlebar/transparent-capsule-light.png)/[深色效果](screenshots/windows-titlebar/transparent-capsule-dark.png)为浏览器预览。前面的Windows原生截图和50b06bb安装包属于旧按钮尺寸，此次未重新声称原生验收或更新已发布包。

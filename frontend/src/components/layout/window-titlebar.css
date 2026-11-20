@@ -8,8 +8,8 @@
   display: flex;
   height: var(--ods-shell-titlebar-clearance);
   /* Preserve the native resize hit area along the top edge. */
-  padding: 4px 4px 0 8px;
-  background: color-mix(in srgb, var(--ods-color-bg-surface) 82%, transparent);
+  padding: 8px 12px;
+  background: transparent;
   color: var(--ods-color-fg-default);
   pointer-events: none;
   user-select: none;
@@ -17,31 +17,17 @@
 
 .window-titlebar__drag {
   --wails-draggable: drag;
-  display: flex;
   min-width: 0;
   flex: 1;
-  align-items: center;
-  gap: var(--ods-space-2);
-  padding-inline: var(--ods-space-2);
   pointer-events: auto;
-}
-
-.window-titlebar__icon {
-  width: 22px;
-  height: 22px;
-  display: flex;
-}
-
-.window-titlebar__name {
-  font-size: var(--ods-font-size-sm);
-  font-weight: var(--ods-font-weight-medium);
 }
 
 .window-titlebar__controls {
   --wails-draggable: no-drag;
   display: flex;
   height: 100%;
-  align-items: stretch;
+  align-items: center;
+  gap: 6px;
   pointer-events: auto;
 }
 

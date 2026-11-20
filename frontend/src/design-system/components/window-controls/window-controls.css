@@ -2,16 +2,15 @@
   --wails-draggable: no-drag;
 
   display: inline-flex;
-  width: 46px;
-  min-height: var(--ods-control-height-md);
-  height: 100%;
-  flex: 0 0 46px;
+  width: 36px;
+  height: 28px;
+  flex: 0 0 36px;
   align-items: center;
   justify-content: center;
   padding: var(--ods-space-0);
-  border: 1px solid transparent;
-  border-radius: var(--ods-radius-sm);
-  background: transparent;
+  border: 1px solid color-mix(in srgb, var(--ods-color-border-default) 65%, transparent);
+  border-radius: var(--ods-radius-pill);
+  background: color-mix(in srgb, var(--ods-color-bg-surface-raised) 82%, transparent);
   color: inherit;
   font: inherit;
   cursor: default;
@@ -32,7 +31,7 @@
 
 @media (hover: hover) {
   .ods-window-control-button:hover:not(:disabled) {
-    background: var(--ods-color-bg-surface-hover);
+    background: var(--ods-color-bg-surface-raised);
   }
 
   .ods-window-control-button[data-tone='danger']:hover:not(:disabled) {

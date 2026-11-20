@@ -6,6 +6,7 @@
 
 - 用户明确问题是“下载的安装器.exe”普通双击不打开，需要右键管理员；另要求Windows移除系统标题栏，改自定义并能全屏。本任务先修复和验证，不复用上一轮1.0.1发布授权创建新版本，不覆盖公开产物。
 - 已核正式1.0.1 installer PE manifest为asInvoker，真实缺陷是检测到已有HKLM珠算时非管理员.onInit直接Abort，安装页尚未出现即退出。改为仅机器范围目标自动runas，fresh仍普通用户；保留目标参数并等待传播退出码，UAC取消提示原安装不变。fresh无旧记录的下载安全提示未据此视作已复现。
+- 用户进一步要求标题栏透明、去左上角图标和名字，仅右上角小胶囊按钮。已改透明header，四独立36×28胶囊/6px间距，ODS内维护外观。ego浅1280×800/深760×520实测无溢出，标题栏行为/ODS三契约19例及productionbuild通过；此视觉调整尚未重新打Windows包，之前50b06bb候选不含本次样式。
 - Windows原生Frameless仅该平台启用，保留resize/DWM与原生max/min/close。React全局标题栏覆盖登录和业务页，ODS控件、系统青绿，最大化/还原、最小化、全屏/退出/关闭、F11/Esc，事件驱动无空闲轮询。mac/Linux保持原样。
 - 新standarduser CI使用真实restricted同用户Medium token验证无参数欢迎页及默认安装/卸载；nativewindow CI用Win32/UIA/真实鼠标键盘验证标题栏几何、拖动缩放、max/min/restore/fullscreen/F11Esc/关闭，隔离数据。最终WindowsCheck44640534380全job成功，source50b06bb：普通同SID Medium token无参数欢迎页/安装/卸载、原完整升级smoke、真实原生windowcontrol/fullscreen/resize/drag/F11Esc/关闭及后端测试vet全部通过。本地前端608例/Go race141顶层159子测试/16包，lint/build/vet/增量0/Python31通过。证据docs/windows-titlebar-check.md及JSON/截图。分支codex/windows-installer-custom-titlebar。
 
