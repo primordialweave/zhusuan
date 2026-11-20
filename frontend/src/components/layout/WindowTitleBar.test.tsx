@@ -125,6 +125,96 @@ describe('WindowTitleBar', () => {
     expect(runtime.close).toHaveBeenCalledOnce()
   })
 
+  it('keeps the next window command when a native event updates the UI before its response', async () => {
+    const user = userEvent.setup()
+    let completeMaximise!: () => void
+    runtime.toggleMaximise.mockImplementationOnce(
+      () =>
+        new Promise<void>((resolve) => {
+          completeMaximise = resolve
+        }),
+    )
+    await renderWindows()
+
+    await user.click(screen.getByRole('button', { name: '最大化' }))
+    runtime.state.maximised = true
+    await emitNativeEvent(runtime.events.WindowMaximise)
+    expect(screen.getByRole('button', { name: '还原' })).toBeEnabled()
+
+    await user.click(screen.getByRole('button', { name: '全屏' }))
+    expect(runtime.toggleFullscreen).not.toHaveBeenCalled()
+    await act(async () => completeMaximise())
+
+    await waitFor(() => expect(runtime.toggleFullscreen).toHaveBeenCalledOnce())
+    expect(screen.getByRole('button', { name: '退出全屏' })).toBeInTheDocument()
+  })
+
+  it('keeps the next command while an earlier state query is still pending', async () => {
+    const user = userEvent.setup()
+    await renderWindows()
+    let finishStateQuery!: (maximised: boolean) => void
+    runtime.isMaximised.mockImplementationOnce(
+      () =>
+        new Promise<boolean>((resolve) => {
+          finishStateQuery = resolve
+        }),
+    )
+
+    await user.click(screen.getByRole('button', { name: '最大化' }))
+    await emitNativeEvent(runtime.events.WindowMaximise)
+    expect(screen.getByRole('button', { name: '还原' })).toBeEnabled()
+    await user.click(screen.getByRole('button', { name: '全屏' }))
+    expect(runtime.toggleFullscreen).not.toHaveBeenCalled()
+    await act(async () => finishStateQuery(true))
+
+    await waitFor(() => expect(runtime.toggleFullscreen).toHaveBeenCalledOnce())
+    expect(screen.getByRole('button', { name: '退出全屏' })).toBeInTheDocument()
+  })
+
+  it('continues queued commands after a preceding native action rejects', async () => {
+    const user = userEvent.setup()
+    let failMaximise!: (error: Error) => void
+    runtime.toggleMaximise.mockImplementationOnce(
+      () =>
+        new Promise<void>((_resolve, reject) => {
+          failMaximise = reject
+        }),
+    )
+    await renderWindows()
+
+    await user.click(screen.getByRole('button', { name: '最大化' }))
+    await user.click(screen.getByRole('button', { name: '最小化' }))
+    await user.click(screen.getByRole('button', { name: '关闭窗口' }))
+    expect(runtime.minimise).not.toHaveBeenCalled()
+    expect(runtime.close).not.toHaveBeenCalled()
+    await act(async () => failMaximise(new Error('native action failed')))
+
+    await waitFor(() => expect(runtime.close).toHaveBeenCalledOnce())
+    expect(runtime.minimise).toHaveBeenCalledOnce()
+    expect(runtime.minimise.mock.invocationCallOrder[0]).toBeLessThan(
+      runtime.close.mock.invocationCallOrder[0],
+    )
+  })
+
+  it('does not execute queued window commands after unmount', async () => {
+    const user = userEvent.setup()
+    let completeMaximise!: () => void
+    runtime.toggleMaximise.mockImplementationOnce(
+      () =>
+        new Promise<void>((resolve) => {
+          completeMaximise = resolve
+        }),
+    )
+    const { unmount } = await renderWindows()
+
+    await user.click(screen.getByRole('button', { name: '最大化' }))
+    await user.click(screen.getByRole('button', { name: '全屏' }))
+    unmount()
+    await act(async () => completeMaximise())
+
+    expect(runtime.toggleFullscreen).not.toHaveBeenCalled()
+  })
+
   it('reads initial native fullscreen and maximised state', async () => {
     runtime.state.maximised = true
     runtime.state.fullscreen = true
