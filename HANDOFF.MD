@@ -5,8 +5,8 @@
 ## 1. 当前任务：1.0.2 发布、依赖 PR 更新与分支清理
 
 - 用户本轮明确授权发版、清PR更新依赖、最后清分支；覆盖上轮暂不发布限制。先发布1.0.2（当前Windows普通启动修复和透明胶囊标题栏），依赖升级单独在后续main合入，不改变已发布标签。
-- PR30最新5656c5e检查全通过；更新版本并为正式Release使用Intel macOS/单worker，Windows完整普通用户+原生窗口验收。1.0.2正式包十附件核验后latest，旧公开标签/附件不可改。
-- 并行只读审计前端、Go、Actions依赖与分支。tag应用快照后再实施依赖升级。分支只删已合并或可证明已取代的分支，未合并独有提交保留；本地design-qa.md删除及root node_modules保持，不纳入任务提交。
+- 1.0.2北京时间2026-11-20 10:06:23已公开latest，应用tag9b01a8dd1fb626dc2f15fbfa415921b00ed8723f，Release44657027033全部job通过，十附件/匿名manifest/下载200和旧1.0.0/1.0.1不可变性验证完成。首轮44654031499发现窗口actionPending吞点击，PR31改串行queue+4稳定回归；仅未公开候选tag更新，旧候选本地archive保留。依赖升级未纳入该发行。
+- 已切codex/dependency-refresh并实施前端、Go/Wails3.1、Actions最新兼容稳定依赖升级；依赖改动不影响1.0.2tag。分支只删已合并或可证明已取代的分支，未合并独有提交保留；本地design-qa.md删除及root node_modules保持，不纳入任务提交。
 
 ## 1.1 珠算 1.0.1 已正式发布
 
@@ -468,3 +468,5 @@
 - 自定义系统窗口操作控件也须走ODS ownership，新增ODS WindowControlButton；页面CSS不能覆盖IconButton外观，也不能绕过Image契约原生img。已有契约抓到后已改为正式组件，未加例外。
 
 - Windows新检查首次Chocolatey feed504（未构建），第二次restricted worker0xC0000142（未运行安装器）。STARTUPINFO显式winsta0/default后真实同SID Medium token成功；TokenElevation元数据true不能说false，实际isAdminfalse和HKLM写拒绝才证明无管理员能力。最终44640534380普通欢迎窗/安装卸载和原生全屏等全通过。
+
+- 升级SDK/工具不能盲上与项目平台不兼容大版本：TS7超出最新typescripteslint peer<6.1，选TS6.0.3；Node24选types24.19.2；Go1.27最低macOS13，维护Go1.26.11保实际支持Monterey，原10.15虚标校正为12。应用/测试可达依赖均latest，不把上游CLI不可达工具图硬钉成业务依赖。
