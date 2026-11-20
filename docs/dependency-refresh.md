@@ -21,3 +21,5 @@ Vite8的esbuilddrop迁移到Rolldown/Oxc生产压缩，保留dropconsole/debugge
 当前待最终CI、原生检查与PR合并；旧DependabotPR仅在确认已被本更新覆盖后关闭，分支以精确head和已合并证据清理。
 
 Linux迁移：Wails3.1默认GTK4/WebKitGTK6，CI安装libgtk-4-dev/libwebkitgtk-6.0-dev，deb/rpm/Arch运行依赖同步对应GTK4栈。旧依赖CI准确发现缺pkg-config，修复后以新runner结果为准；Linux支持范围随新Wails依赖要求为Ubuntu24.04+/Debian13+或提供同等库的发行版。
+
+容器验证：API运行Alpine3.24.4，PR现在实际构建API镜像但不登录/推送GHCR，只有main push继续发布镜像。本地Dockerdaemon未运行，实际构建以CI结果为准。可选Zig跨编译镜像明确Alpine3.24，所需gtk4.0-dev/webkit2gtk-6.0-dev已核官方包存在；实验跨编译器/SDK预设保留，正式Linux走原生Ubuntu24CI。
