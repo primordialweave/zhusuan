@@ -45,7 +45,7 @@ function WindowsTitleBar() {
   const fullscreenRef = useRef(false)
   const mounted = useRef(false)
   const querySequence = useRef(0)
-  const actionPending = useRef(false)
+  const actionQueue = useRef(Promise.resolve())
 
   const refresh = useCallback(async () => {
     const sequence = ++querySequence.current
@@ -56,17 +56,19 @@ function WindowsTitleBar() {
   }, [])
 
   const run = useCallback(
-    async (action: () => Promise<void>) => {
-      if (actionPending.current) return
-      actionPending.current = true
-      try {
-        await action()
-        await refresh()
-      } catch {
-        if (mounted.current) useToastStore.getState().error('窗口操作未完成，请重试')
-      } finally {
-        actionPending.current = false
-      }
+    (action: () => Promise<void>) => {
+      // Native events can update the controls before the preceding call resolves.
+      // Preserve each accepted command in order instead of dropping the next click.
+      actionQueue.current = actionQueue.current.then(async () => {
+        if (!mounted.current) return
+        try {
+          await action()
+          if (mounted.current) await refresh()
+        } catch {
+          if (mounted.current) useToastStore.getState().error('窗口操作未完成，请重试')
+        }
+      })
+      return actionQueue.current
     },
     [refresh],
   )

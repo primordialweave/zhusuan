@@ -11,3 +11,5 @@ Release改为官方标准Intel macOS runner，顺序两架构构建；全平台�
 本次未新增依赖；标题栏状态事件驱动，无闲时轮询。JS主chunk保留既有>500KB提示。真实设备性能、多屏/高DPI、SmartScreen/MOTW和真人UAC接受/取消仍需设备验收；macOS ad-hoc、Windows无Authenticode。
 
 最终应用提交、CI/Release与附件验收结果完成后追加。
+
+首轮Release44654031499的Linux/macOS完整构建通过；Windows普通用户/升级通过，原生最大化后立即全屏未执行。deferred native action/query +提前窗口事件可稳定复现旧actionPending保护吞点击。修复为Promise串行命令队列，失败后继续、卸载后不执行后续，四个行为回归新增，旧行为失败、新14例通过。此产品修复纳入尚未公开的1.0.2候选，原始候选保留，不混后续依赖升级。
