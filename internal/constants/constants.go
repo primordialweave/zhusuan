@@ -46,4 +46,4 @@ const (
 )
 
 // AppVersion is the application release version.
-const AppVersion = "1.0.1"
+const AppVersion = "1.0.2"
