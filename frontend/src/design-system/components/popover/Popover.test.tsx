@@ -5,6 +5,14 @@ import { afterEach, describe, expect, it, vi } from 'vitest'
 import { Drawer } from '../drawer'
 import { Modal } from '../modal'
 import { Popover, usePopoverClose } from './Popover'
+import '@/design-system/tokens/reference.css'
+import '@/design-system/tokens/semantic.css'
+
+const modalLayer = (offset: number) => {
+  const base = Number(getComputedStyle(document.documentElement).getPropertyValue('--ods-z-modal'))
+  expect(base).toBeGreaterThan(0)
+  return String(base + offset)
+}
 
 function ClosePopoverButton() {
   const close = usePopoverClose()
@@ -245,8 +253,8 @@ describe('Popover', () => {
     const childPopover = screen.getByText('状态选项').closest('[data-slot="popover"]')
 
     await waitFor(() => {
-      expect(scrim).toHaveStyle({ zIndex: 'calc(var(--ods-z-modal) + 0)' })
-      expect(childPopover).toHaveStyle({ zIndex: 'calc(var(--ods-z-modal) + 1)' })
+      expect(scrim).toHaveStyle({ zIndex: modalLayer(0) })
+      expect(childPopover).toHaveStyle({ zIndex: modalLayer(1) })
     })
   })
 
@@ -308,9 +316,9 @@ describe('Popover', () => {
     const inner = screen.getByRole('button', { name: '内层操作' }).closest('[data-slot="popover"]')
 
     await waitFor(() => {
-      expect(scrim).toHaveStyle({ zIndex: 'calc(var(--ods-z-modal) + 0)' })
-      expect(outer).toHaveStyle({ zIndex: 'calc(var(--ods-z-modal) + 1)' })
-      expect(inner).toHaveStyle({ zIndex: 'calc(var(--ods-z-modal) + 2)' })
+      expect(scrim).toHaveStyle({ zIndex: modalLayer(0) })
+      expect(outer).toHaveStyle({ zIndex: modalLayer(1) })
+      expect(inner).toHaveStyle({ zIndex: modalLayer(2) })
     })
 
     await userEvent.click(screen.getByRole('button', { name: '内层操作' }))

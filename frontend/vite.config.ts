@@ -13,8 +13,13 @@ export default defineConfig(({ mode }) => ({
       '@': fileURLToPath(new URL('./src', import.meta.url)),
     },
   },
-  esbuild: {
-    drop: mode === 'production' ? (['console', 'debugger'] as const) : [],
+  build: {
+    rolldownOptions: {
+      output: {
+        minify:
+          mode === 'production' ? { compress: { dropConsole: true, dropDebugger: true } } : false,
+      },
+    },
   },
   test: {
     css: true,

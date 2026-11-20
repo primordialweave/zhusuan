@@ -41,22 +41,22 @@ macOS 下载：[Apple Silicon（M 系列）DMG](https://github.com/primordialwea
 
 | 层 | 技术 |
 | --- | --- |
-| 桌面 | Wails v3.0.0-alpha.55，系统 WebView |
-| 后端 | Go 1.26、Gin、GORM、SQLite/MySQL/PostgreSQL |
-| 前端 | React 19、TypeScript、Vite 7、React Router、Zustand |
+| 桌面 | Wails v3.1.0，系统 WebView |
+| 后端 | Go 1.26.11（最低 1.26.10）、Gin、GORM、SQLite/MySQL/PostgreSQL |
+| 前端 | React 19、TypeScript、Vite 8、React Router、Zustand |
 | 视觉 | ODS 组件与语义令牌、Tailwind 4、Chart.js、Remix Icon |
 
 macOS、Windows、Linux 是当前发布工作流的目标。iOS/Android 保留构建脚手架与图标资产，尚未完成移动端发布验收。
 
 ## 本地开发
 
-需要 Go 1.26、Node.js 24、npm 与固定版本 Wails/Task。前端兼容范围见 frontend/package.json。Linux 桌面构建还需要 GTK3/WebKit2GTK 4.1 开发库。
+需要 Go 1.26.11（最低 1.26.10）、Node.js 24、npm 与固定版本 Wails/Task。前端兼容范围见 frontend/package.json。Linux 桌面构建还需要 GTK3/WebKit2GTK 4.1 开发库。 macOS 最低系统版本为 12，使用仍支持 Monterey 的 Go 1.26 最新维护版本。
 
 ```sh
 git clone https://github.com/primordialweave/zhusuan.git
 cd zhusuan
-go install github.com/wailsapp/wails/v3/cmd/wails3@v3.0.0-alpha.55
-go install github.com/go-task/task/v3/cmd/task@v3.51.1
+go install github.com/wailsapp/wails/v3/cmd/wails3@v3.1.0
+go install github.com/go-task/task/v3/cmd/task@v3.54.0
 cd frontend && npm ci && cd ..
 task dev
 ```

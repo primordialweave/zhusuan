@@ -39,19 +39,19 @@ These current UI captures use an isolated database copy. Project/customer names,
 
 ## Stack and supported targets
 
-Go 1.26, Wails v3.0.0-alpha.55, Gin/GORM, React 19, TypeScript, Vite 7, React Router, Zustand, ODS/Tailwind 4 and Chart.js. SQLite is the desktop default; MySQL/PostgreSQL connections are configurable.
+Go 1.26.11 (minimum 1.26.10), Wails v3.1.0, Gin/GORM, React 19, TypeScript, Vite 8, React Router, Zustand, ODS/Tailwind 4 and Chart.js. SQLite is the desktop default; MySQL/PostgreSQL connections are configurable.
 
 macOS, Windows and Linux are the current release-workflow targets. iOS/Android contain build scaffolding and icon assets, without completed mobile release acceptance.
 
 ## Development
 
-Use Go 1.26 and Node.js 24. The frontend engine range is defined in frontend/package.json. Linux desktop builds also need GTK3 and WebKit2GTK 4.1 development packages.
+Use Go 1.26.11 (minimum 1.26.10) and Node.js 24. The frontend engine range is defined in frontend/package.json. Linux desktop builds also need GTK3 and WebKit2GTK 4.1 development packages. macOS 12 or newer is required; Go 1.26 remains on its latest maintenance release to retain Monterey support.
 
 ```sh
 git clone https://github.com/primordialweave/zhusuan.git
 cd zhusuan
-go install github.com/wailsapp/wails/v3/cmd/wails3@v3.0.0-alpha.55
-go install github.com/go-task/task/v3/cmd/task@v3.51.1
+go install github.com/wailsapp/wails/v3/cmd/wails3@v3.1.0
+go install github.com/go-task/task/v3/cmd/task@v3.54.0
 cd frontend && npm ci && cd ..
 task dev
 ```

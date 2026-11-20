@@ -1,6 +1,6 @@
 # 珠算前端
 
-React 19 + TypeScript + Vite 7，路由使用 React Router，状态使用 Zustand，公共视觉层为 frontend/src/design-system 的 ODS。当前主题是烟雨/夜雨，主色为青绿色。
+React 19.3 + TypeScript 6 + Vite 8，路由使用 React Router，状态使用 Zustand，公共视觉层为 frontend/src/design-system 的 ODS。当前主题是烟雨/夜雨，主色为青绿色。
 
 ## 开发
 
