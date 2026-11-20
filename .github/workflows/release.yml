@@ -32,7 +32,7 @@ jobs:
       tag: ${{ steps.version.outputs.tag }}
       version: ${{ steps.version.outputs.version }}
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v7
         with:
           ref: ${{ inputs.tag || github.ref_name }}
           fetch-depth: 0
@@ -72,7 +72,7 @@ jobs:
       BUILD_RECIPE_REF: ${{ inputs.build_recipe_ref }}
       TEST_RECIPE_REF: ${{ inputs.test_recipe_ref }}
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v7
         with:
           ref: ${{ needs.prepare.outputs.tag }}
         env:
@@ -206,7 +206,7 @@ jobs:
       BUILD_RECIPE_REF: ${{ inputs.build_recipe_ref }}
       TEST_RECIPE_REF: ${{ inputs.test_recipe_ref }}
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v7
         with:
           ref: ${{ needs.prepare.outputs.tag }}
       - uses: actions/download-artifact@v4
