@@ -14,7 +14,8 @@ sources_file="$work_dir/ubuntu.sources"
 apt_options=(-o "Dir::Etc::sourcelist=$sources_file" -o Dir::Etc::sourceparts=-
   -o Acquire::Retries=1 -o Acquire::http::Timeout=15 -o Acquire::https::Timeout=15
   -o APT::Update::Error-Mode=any)
-packages=(libgtk-3-dev libwebkit2gtk-4.1-dev build-essential "$@")
+# Wails 3.1 defaults to GTK4 and WebKitGTK 6.0 on Linux.
+packages=(libgtk-4-dev libwebkitgtk-6.0-dev build-essential "$@")
 downloaded=false
 for mirror in https://azure.archive.ubuntu.com/ubuntu/ https://archive.ubuntu.com/ubuntu/; do
   cat > "$sources_file" <<EOF

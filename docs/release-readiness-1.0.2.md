@@ -13,3 +13,14 @@ Release改为官方标准Intel macOS runner，顺序两架构构建；全平台�
 最终应用提交、CI/Release与附件验收结果完成后追加。
 
 首轮Release44654031499的Linux/macOS完整构建通过；Windows普通用户/升级通过，原生最大化后立即全屏未执行。deferred native action/query +提前窗口事件可稳定复现旧actionPending保护吞点击。修复为Promise串行命令队列，失败后继续、卸载后不执行后续，四个行为回归新增，旧行为失败、新14例通过。此产品修复纳入尚未公开的1.0.2候选，原始候选保留，不混后续依赖升级。
+
+
+## 正式发布结果
+
+北京时间2026-11-20 10:06:23 已公开 [v1.0.2](https://github.com/primordialweave/zhusuan/releases/tag/v1.0.2) 并设latest，应用标签为 `9b01a8dd1fb626dc2f15fbfa415921b00ed8723f`。 [Release44657027033](https://github.com/primordialweave/zhusuan/actions/runs/44657027033) prepare、Windows、Linux、Intel macOS两架构及publish全成功，发行无应用/测试配方覆盖。
+
+Windows普通同用户Medium token欢迎窗/安装/卸载、原完整升级和最新透明胶囊标题栏原生拖动缩放/max/min/restore/fullscreen/F11/Esc/close全部通过。窗口命令队列修复后再执行完整原生验收成功。
+
+八安装/更新载荷和两清单恰十附件，匿名latest update.json为1.0.2，内部九项条目/八包摘要与服务端相同，十下载HEAD200及Content-Length正确。已公开1.0.0与1.0.1附件名称/大小/digest均不变。机器结果见[release-verification-1.0.2.json](release-verification-1.0.2.json)。
+
+后续依赖升级在独立PR，不改变此发行标签或安装包。

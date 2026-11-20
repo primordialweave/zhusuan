@@ -9,7 +9,7 @@ on:
         default: v1.0.1
         type: string
       application_ref:
-        description: Optional full application commit SHA that must match the tag
+        description: Optional full candidate commit SHA for verification without changing the release tag
         required: false
         type: string
 
@@ -35,35 +35,36 @@ jobs:
       APPLICATION_REF: ${{ inputs.application_ref }}
       TEST_RECIPE_REF: ${{ inputs.test_recipe_ref }}
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v7.0.1
         with:
-          ref: ${{ inputs.tag }}
+          ref: ${{ inputs.application_ref || inputs.tag }}
           fetch-depth: 0
       - name: Verify candidate identity and native tools
         shell: bash
         run: |
           [[ "$RELEASE_TAG" =~ ^v(0|[1-9][0-9]*)\.(0|[1-9][0-9]*)\.(0|[1-9][0-9]*)$ ]]
           [[ -z "$APPLICATION_REF" || "$APPLICATION_REF" =~ ^[0-9a-f]{40}$ ]]
-          TAG_COMMIT=$(git rev-parse "refs/tags/${RELEASE_TAG}^{commit}")
-          test "$(git rev-parse HEAD)" = "$TAG_COMMIT"
+          SOURCE_COMMIT=$(git rev-parse HEAD)
           if [[ -n "$APPLICATION_REF" ]]; then
-            test "$TAG_COMMIT" = "$APPLICATION_REF"
+            test "$SOURCE_COMMIT" = "$APPLICATION_REF"
+          else
+            test "$SOURCE_COMMIT" = "$(git rev-parse "refs/tags/${RELEASE_TAG}^{commit}")"
+            git merge-base --is-ancestor "$SOURCE_COMMIT" origin/main
           fi
-          git merge-base --is-ancestor "$TAG_COMMIT" origin/main
-          printf 'Application source: %s\n' "$TAG_COMMIT"
+          printf 'Application source: %s\n' "$SOURCE_COMMIT"
           uname -m
           xcodebuild -version
           xcrun --sdk macosx --show-sdk-version
-      - uses: actions/setup-node@v4
+      - uses: actions/setup-node@v7.1.0
         with:
           node-version: '24.15.0'
           cache: npm
           cache-dependency-path: frontend/package-lock.json
-      - uses: actions/setup-go@v5
+      - uses: actions/setup-go@v7.1.0
         with:
           go-version-file: go.mod
           check-latest: false
-      - uses: actions/setup-python@v5
+      - uses: actions/setup-python@v7.1.0
         with:
           python-version: '3.12'
       - name: Verify release tooling and metadata
@@ -85,8 +86,8 @@ jobs:
       - name: Install pinned build tools
         shell: bash
         run: |
-          go install github.com/wailsapp/wails/v3/cmd/wails3@v3.0.0-alpha.55
-          go install github.com/go-task/task/v3/cmd/task@v3.51.1
+          go install github.com/wailsapp/wails/v3/cmd/wails3@v3.1.0
+          go install github.com/go-task/task/v3/cmd/task@v3.54.0
       - name: Verify frontend
         working-directory: frontend
         run: |
@@ -114,7 +115,7 @@ jobs:
           python3 scripts/release.py assets "$RELEASE_TAG" darwin
           git rev-parse HEAD > release/APPLICATION_COMMIT.txt
           printf '%s\n' "$TEST_RECIPE_REF" > release/TEST_RECIPE_COMMIT.txt
-      - uses: actions/upload-artifact@v4
+      - uses: actions/upload-artifact@v7.0.2
         with:
           name: release-darwin
           path: release/*

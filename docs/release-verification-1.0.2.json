@@ -1,0 +1,110 @@
+{
+  "ok": true,
+  "repository": "primordialweave/zhusuan",
+  "tag": "v1.0.2",
+  "application_commit": "9b01a8dd1fb626dc2f15fbfa415921b00ed8723f",
+  "release_url": "https://github.com/primordialweave/zhusuan/releases/tag/v1.0.2",
+  "published_at": "2026-11-20T02:06:23Z",
+  "is_latest": true,
+  "anonymous_latest_manifest": {
+    "http_status": 200,
+    "tag": "v1.0.2",
+    "bytes": 3705,
+    "sha256_matches_server": true,
+    "asset_entries": 9
+  },
+  "checksums": {
+    "http_status": 200,
+    "entries": 8,
+    "all_match_server_digests": true
+  },
+  "download_heads": [
+    {
+      "name": "SHA256SUMS",
+      "status": 200,
+      "size": 794,
+      "head_content_length": 794,
+      "digest": "sha256:d5477fd17de6c4ccafe7c2836ae895ed7746d0e56f3224a250cff8dc2202a0f4"
+    },
+    {
+      "name": "update.json",
+      "status": 200,
+      "size": 3705,
+      "head_content_length": 3705,
+      "digest": "sha256:513dbc0faed1bfba1432bc22bef6b307b91463d4c001a49d18873d2de0e0a6c0"
+    },
+    {
+      "name": "zhusuan-v1.0.2-linux-amd64.deb",
+      "status": 200,
+      "size": 36578472,
+      "head_content_length": 36578472,
+      "digest": "sha256:05e77dd5fdabe84840e37d6e573253bdf25ebea0dcd0aedd9d18dea88e636dd1"
+    },
+    {
+      "name": "zhusuan-v1.0.2-linux-amd64.rpm",
+      "status": 200,
+      "size": 37459870,
+      "head_content_length": 37459870,
+      "digest": "sha256:aa9cecdaaaf846252708447f522cd2d9c45cf46837095fc73145018f9f7ba922"
+    },
+    {
+      "name": "zhusuan-v1.0.2-linux-x86_64.AppImage",
+      "status": 200,
+      "size": 107784696,
+      "head_content_length": 107784696,
+      "digest": "sha256:2a101d5f139975f5b99e8cdfa7b001d42970565b9584ceb2786ba239ec95766b"
+    },
+    {
+      "name": "zhusuan-v1.0.2-macOS-amd64.dmg",
+      "status": 200,
+      "size": 48426333,
+      "head_content_length": 48426333,
+      "digest": "sha256:bdfdc3b6aa1dc17945a9a993e06a20473deeb47508d4ddc12ba513eba8c9a2e0"
+    },
+    {
+      "name": "zhusuan-v1.0.2-macOS-amd64.zip",
+      "status": 200,
+      "size": 43714681,
+      "head_content_length": 43714681,
+      "digest": "sha256:19041480bc6a24ec0451972eca3ec51bb3ee99d75c81f7c9ddf65fa07b528c19"
+    },
+    {
+      "name": "zhusuan-v1.0.2-macOS-arm64.dmg",
+      "status": 200,
+      "size": 46576370,
+      "head_content_length": 46576370,
+      "digest": "sha256:5efe465149b85a0e9963a448bedf179c6abe1173954080377d94e095330c435a"
+    },
+    {
+      "name": "zhusuan-v1.0.2-macOS-arm64.zip",
+      "status": 200,
+      "size": 42082808,
+      "head_content_length": 42082808,
+      "digest": "sha256:3406dad6ec865496a5bf056c38d38198b6c9e6bf913a850183aafb645271f681"
+    },
+    {
+      "name": "zhusuan-v1.0.2-windows-amd64-installer.exe",
+      "status": 200,
+      "size": 37824553,
+      "head_content_length": 37824553,
+      "digest": "sha256:96d454f68e930c3de779731c2bb788c118b2d1935fe62cf3b82bbc7fabb9a8ef"
+    }
+  ],
+  "prior_release": {
+    "tag": "v1.0.0",
+    "assets": 10,
+    "names_sizes_digests_unchanged": true
+  },
+  "local_files_verified": [],
+  "limits": {
+    "payload_bytes_downloaded": false,
+    "anonymous_gets": 2,
+    "head_requests": 10,
+    "max_concurrency": 4,
+    "request_timeout_seconds": 60
+  },
+  "prior_releases_verified": [
+    "v1.0.0",
+    "v1.0.1"
+  ]
+}

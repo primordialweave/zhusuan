@@ -11,9 +11,9 @@
 #   docker run --rm -v $(pwd):/app wails-cross windows amd64
 #   docker run --rm -v $(pwd):/app wails-cross windows arm64
 
-FROM golang:1.26-alpine
+FROM golang:1.26.11-alpine3.24
 
-RUN apk add --no-cache curl xz nodejs npm
+RUN apk add --no-cache curl xz nodejs npm pkgconf gtk4.0-dev webkit2gtk-6.0-dev
 
 # Install Zig
 ARG ZIG_VERSION=0.14.0
@@ -70,7 +70,7 @@ exec zig cc -target x86_64-macos-none -isysroot /opt/macos-sdk -I/opt/macos-sdk/
 ZIGWRAP
 RUN chmod +x /usr/local/bin/zcc-darwin-amd64
 
-# Linux amd64
+# Linux amd64 (experimental Zig cross-build; official Linux packages use native Ubuntu CI)
 COPY <<'ZIGWRAP' /usr/local/bin/zcc-linux-amd64
 #!/bin/sh
 ARGS=""

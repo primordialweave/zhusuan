@@ -214,7 +214,7 @@ export const Calendar = forwardRef<HTMLDivElement, CalendarProps>(function Calen
   }
 
   const handleDayKeyDown = (event: KeyboardEvent<HTMLButtonElement>, day: Dayjs) => {
-    let nextDay: Dayjs | null = null
+    let nextDay: Dayjs | null
 
     if (event.key === 'ArrowLeft') nextDay = findNextEnabledDay(day.subtract(1, 'day'), -1)
     else if (event.key === 'ArrowRight') nextDay = findNextEnabledDay(day.add(1, 'day'), 1)
