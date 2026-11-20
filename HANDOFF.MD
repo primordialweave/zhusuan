@@ -2,11 +2,11 @@
 
 接手任何任务前先读这份文档。它只记两类东西：**当前在制品的状态**，和**已经踩过的坑**。踩到新坑就追加到第 2 节，状态变了就改第 1 节。
 
-## 1. 当前任务：1.0.2 发布、依赖 PR 更新与分支清理
+## 1. 已完成：1.0.2 发布、依赖 PR 更新与分支清理
 
 - 用户本轮明确授权发版、清PR更新依赖、最后清分支；覆盖上轮暂不发布限制。先发布1.0.2（当前Windows普通启动修复和透明胶囊标题栏），依赖升级单独在后续main合入，不改变已发布标签。
 - 1.0.2北京时间2026-11-20 10:06:23已公开latest，应用tag9b01a8dd1fb626dc2f15fbfa415921b00ed8723f，Release44657027033全部job通过，十附件/匿名manifest/下载200和旧1.0.0/1.0.1不可变性验证完成。首轮44654031499发现窗口actionPending吞点击，PR31改串行queue+4稳定回归；仅未公开候选tag更新，旧候选本地archive保留。依赖升级未纳入该发行。
-- 已切codex/dependency-refresh并实施前端、Go/Wails3.1、Actions最新兼容稳定依赖升级；依赖改动不影响1.0.2tag。分支只删已合并或可证明已取代的分支，未合并独有提交保留；本地design-qa.md删除及root node_modules保持，不纳入任务提交。
+- 依赖已PR32合入main f51c579，前端612例/Go141顶层159子测试/模块verify/跨平台构建、WindowsCheck44659344940、MacCheck44659611928、PRCI44662323802全通过；Go1.26.11/Wails3.1、React19.3/Vite8/Vitest5/ESLint10/最新Actions。15旧DependabotPR关闭，开放0；已清21本地/18远程旧分支，精确SHAbackuprefs可恢复。本地/远端仅main与含独有78e2fffa的warm-ledger分支。原design-qa.md删除/rootnode_modules保留；独立发行worktree已detach，无额外branch，应用拒绝archive主checkout所以目录保留。mainCI44667056606四job全成功，详情docs/dependency-refresh.md。
 
 ## 1.1 珠算 1.0.1 已正式发布
 
@@ -472,3 +472,5 @@
 - 升级SDK/工具不能盲上与项目平台不兼容大版本：TS7超出最新typescripteslint peer<6.1，选TS6.0.3；Node24选types24.19.2；Go1.27最低macOS13，维护Go1.26.11保实际支持Monterey，原10.15虚标校正为12。应用/测试可达依赖均latest，不把上游CLI不可达工具图硬钉成业务依赖。
 
 - Wails3.1 Linux默认GTK4/WebKitGTK6而旧alpha使用GTK3/WebKit4.1，升级CI44659618563类型检查准确失败缺gtk4/webkitgtk6pkgconfig。必须同步CIdev包与nfpm运行依赖，不能只在Mac/Win编译过称全平台。新Actions上传/下载/SARIF已实测通过。
+
+- 清理branch前必须取exactobject，远程Dependabot可能在PR关闭后由bot自动删除；backup写不存在object会失败。已取refs/pull/6/head归档后核剩余refs；21local/18remote删除均核backup==旧SHA，lease拒绝竞态。唯一未合并warm-ledger仍保留。

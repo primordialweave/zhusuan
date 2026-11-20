@@ -23,3 +23,13 @@ Vite8的esbuilddrop迁移到Rolldown/Oxc生产压缩，保留dropconsole/debugge
 Linux迁移：Wails3.1默认GTK4/WebKitGTK6，CI安装libgtk-4-dev/libwebkitgtk-6.0-dev，deb/rpm/Arch运行依赖同步对应GTK4栈。旧依赖CI准确发现缺pkg-config，修复后以新runner结果为准；Linux支持范围随新Wails依赖要求为Ubuntu24.04+/Debian13+或提供同等库的发行版。
 
 容器验证：API运行Alpine3.24.4，PR现在实际构建API镜像但不登录/推送GHCR，只有main push继续发布镜像。本地Dockerdaemon未运行，实际构建以CI结果为准。可选Zig跨编译镜像明确Alpine3.24，所需gtk4.0-dev/webkit2gtk-6.0-dev已核官方包存在；实验跨编译器/SDK预设保留，正式Linux走原生Ubuntu24CI。
+
+原生升级检查：WindowsCheck44659344940（应用1ac128a）全步骤成功，Wails3.1普通用户欢迎窗/安装卸载、完整升级、Win32/UIA拖动缩放/max/min/restore/fullscreen/F11Esc/close及后端通过，无fixture覆盖。MacCheck44659611928（应用edfba19，仅额外workflow候选输入变更）两架构DMG/ZIP+612前端+完整后端/vet成功，无fixture覆盖，已下载核来源/四包SHA及解包签名。之后修改仅Linux构建包/CI/容器与文档，不改这些平台业务源码。
+
+## 最终合并与清理
+
+[PR32](https://github.com/primordialweave/zhusuan/pull/32) 已合并为 `f51c579a354fd85b717f34f83a713bd9bf51a300`。 [PR CI44662323802](https://github.com/primordialweave/zhusuan/actions/runs/44662323802) frontend/backend/security/API镜像构建全部通过，PR不推送镜像；主分支同源码 [44667056606](https://github.com/primordialweave/zhusuan/actions/runs/44667056606) frontend/backend/security/正式API镜像构建推送全部成功。新Linux GTK4栈、实际扫描器Trivy0.76.2与Alpine3.24.4 API容器已在CI验证。
+
+15个旧Dependabot PR（#3至#17）全部由本次更新覆盖后关闭；#15的Node26类型选择为项目Node24最新兼容类型。React/DOM与types今后分组更新，当前开放PR为0。
+
+分支按精确head已在main或精确squashmerge记录清理，删除21个本地旧分支、18个远程旧分支，删除前存本地refs/backup/cleanup-20261120/...可恢复；Dependabot其余分支随关闭自动清理。现在本地/远程仅main和codex/orange-warm-ledger-ui。后者含1个真正未合并独有提交78e2fffa，保留而不误删。临时发行worktree已detach，应用禁止移除当前主checkout，因此保留该干净detached目录；无额外工作分支。真实workspace原design-qa.md删除和rootnode_modules保持原样。
