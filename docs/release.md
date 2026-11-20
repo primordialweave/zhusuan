@@ -1,8 +1,8 @@
 # 打包、发布与桌面更新
 
-## 1.0.1 与发布入口
+## 1.0.2 与发布入口
 
-**1.0.1** 包含 macOS 两种芯片的 DMG、中文应用名与图标修复、Windows 用户目录安装和中文修复，以及金额表单、令牌与通知弹层修复。发布入口为 main 与稳定标签；安装包公开状态和附件以 [v1.0.1 Release](https://github.com/primordialweave/zhusuan/releases/tag/v1.0.1) 为准。检查证据及未验收范围见 [release-readiness-1.0.1.md](release-readiness-1.0.1.md)。
+**1.0.2** 已公开并设latest，包含Windows普通启动时按需UAC、透明胶囊标题栏与全屏、窗口操作串行队列修复。[v1.0.2 Release](https://github.com/primordialweave/zhusuan/releases/tag/v1.0.2) 三平台完整通过，检查证据见 [release-readiness-1.0.2.md](release-readiness-1.0.2.md)。依赖升级另行合入主分支，已发布源码/标签/附件不变。
 
 macOS 下载入口改为 Apple Silicon（arm64）和 Intel（amd64）两个 DMG。打开映像后将珠算拖入 Applications，再从应用程序文件夹启动。包仍采用 ad-hoc 签名，未配置 Developer ID/公证；Windows 安装器未配置 Authenticode 签名。首次打开时可能需要按系统提示允许运行。安装前退出旧应用，首次以原用户启动珠算完成数据迁移，旧数据保留。
 
@@ -13,12 +13,12 @@ macOS 下载入口改为 Apple Silicon（arm64）和 Intel（amd64）两个 DMG�
 先统一源代码版本：
 
 ```sh
-python3 scripts/release.py metadata v1.0.1
+python3 scripts/release.py metadata v1.0.2
 # 等价入口
-task bump-version VERSION=1.0.1
+task bump-version VERSION=1.0.2
 ```
 
-命令同步前端 package/lockfile、后端 `AppVersion`、Wails build/config、macOS/iOS plist、Windows 文件资源及 MSIX、Linux 包与 Android versionName/versionCode。MSIX 使用 `1.0.1.0`，Android versionCode 使用 `1000001`；系统最低版本要求独立保留。NSIS 从 build/config.yml 读取版本，避免生成 include 中的默认版本漂移。CI 在自己的工作副本执行相同同步。
+命令同步前端 package/lockfile、后端 `AppVersion`、Wails build/config、macOS/iOS plist、Windows 文件资源及 MSIX、Linux 包与 Android versionName/versionCode。MSIX 使用 `1.0.2.0`，Android versionCode 使用 `1000002`；系统最低版本要求独立保留。NSIS 从 build/config.yml 读取版本，避免生成 include 中的默认版本漂移。CI 在自己的工作副本执行相同同步。
 
 发布工作流由推送稳定版本标签触发，也可在 GitHub Actions 的 Release 手动选择已有标签。手动运行必须填写 `tag`；构建该标签对应的代码。准备阶段先拒绝已公开 Release，避免重建和覆盖正式版本；公开 Release 是单独的发布操作，准备文档、提交或更新草稿 PR 不会运行此标签发布流程。默认分支合并还可能触发 GHCR 镜像构建，合并前应确认发布意图。
 
@@ -76,7 +76,7 @@ Windows 1.0.1 首次安装使用新的用户目录，不读取 Orange 安装记�
 
 Windows 1.0.1 普通首次安装使用 `%LOCALAPPDATA%\PrimordialWeave\zhusuan`，无需管理员权限，在 HKCU 写入 `PrimordialWeaveZhusuan` 卸载记录并创建当前用户的“珠算”快捷方式。NSIS 源文件使用 UTF-8 BOM，Unicode 安装器配套简体中文界面，避免系统 ACP 将名称解码成乱码。
 
-自动发现仅检查 HKCU/HKLM 64/32 位的新 `PrimordialWeaveZhusuan` 记录，读取 InstallLocation、历史默认值、DisplayIcon / UninstallString；目录中存在 zhusuan.exe 时才复用。Orange 的目录、程序、卸载记录与快捷方式均保留，数据通过应用首次启动迁移。已有珠算 1.0 的机器范围安装仍按其 HKLM 记录和原路径更新；没有管理员权限时明确失败，不静默改为另一用户安装。
+自动发现仅检查 HKCU/HKLM 64/32 位的新 `PrimordialWeaveZhusuan` 记录，读取 InstallLocation、历史默认值、DisplayIcon / UninstallString；目录中存在 zhusuan.exe 时才复用。Orange 的目录、程序、卸载记录与快捷方式均保留，数据通过应用首次启动迁移。已有珠算 1.0 的机器范围安装仍按其 HKLM 记录和原路径更新；1.0.2起需要权限时自动请求UAC，保留原目标并等待提升进程真实退出码；取消时明确提示原安装未改。
 
 显式 `/D=` 优先于自动发现，必须是命令行最后一项；目录不加引号，即使包含空格。这是 NSIS 的参数格式，不通过 shell 拼接运行。
 
@@ -120,4 +120,4 @@ npm run build
 
 CI/Release 通过 install-linux-deps.sh 使用临时 Ubuntu sources，优先 Azure HTTPS，失败再切换 Canonical HTTPS，并省略推荐包、保留 Ubuntu archive keyring 签名校验。两个镜像各有 50 秒索引与 130 秒下载预算，完整下载后才进入最长 180 秒的本地安装；总预算 565 秒，低于 10 分钟步骤上限。索引部分失败也会明确报错，网络超时不会中断 dpkg。CI 使用锁文件 `npm ci`、固定构建工具和 go.mod 工具链；复用生成的 frontend dist。Linux 桌面需 CGO 与 GTK/WebKit 开发库，macOS CGO arm64/amd64 构建在同一 macOS runner 上顺序完成。增量 golangci 门禁以 PR base.sha、push beforeSHA、手动运行父提交为基线，保留全量文本/JSON/SARIF 报告。Gosec 保留原始 no-fail 模式报告并结合输入边界复核；Trivy 对已有修复版本的 HIGH/CRITICAL 依赖漏洞返回非零，阻断 CI 及 main 镜像发布。
 
-1.0.1 的测试、构建与 CI 结果见 [release-readiness-1.0.1.md](release-readiness-1.0.1.md)，1.0.0 的历史证据保留在 [release-readiness.md](release-readiness.md)。历史版本或历史 commit 的成功 CI 不代表当前代码已通过，也不代表三个平台的真实安装与原生更新已验收。
+1.0.2 的完整正式结果见 [release-readiness-1.0.2.md](release-readiness-1.0.2.md)，1.0.1 历史结果见 [release-readiness-1.0.1.md](release-readiness-1.0.1.md)，1.0.0 的历史证据保留在 [release-readiness.md](release-readiness.md)。历史版本或历史 commit 的成功 CI 不代表当前代码已通过，也不代表三个平台的真实安装与原生更新已验收。

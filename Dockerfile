@@ -10,7 +10,7 @@ RUN go mod download
 COPY . .
 RUN go build -ldflags="-w -s" -o /zhusuan-api ./cmd/server
 
-FROM alpine:3.22
+FROM alpine:3.24.4
 
 RUN apk --no-cache add ca-certificates tzdata wget && adduser -D -H zhusuan
 

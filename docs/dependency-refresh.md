@@ -8,7 +8,7 @@
 
 后端24个直接依赖与应用/测试可达间接依赖更新为最新稳定，WailsGo与runtime同步3.1；Gin1.12、mysql1.10.2、pgx5.13、Prometheus1.25、Redis9.23、testify1.12.1、Zap1.28、crypto0.59、GORM1.31.2等。go语言最低1.26.10（新依赖要求），toolchain使用仍支持macOS12的最新维护版1.26.11；Go1.27要求macOS13，因此不为工具链大版本增加用户系统要求。原plist/CGO10.15低于Go1.26实际最低12，已校正为12；两架构Mach-O minos12复验。
 
-Actions四份workflow40引用更新精确稳定patch（checkout7.0.1、download8.0.2、upload7.0.2、setupnode/go/python7.1.0、CodeQL4.39.3、Dockerlogin4.8/buildx4.4.1/metadata6.2/buildpush7.4、ghrelease3.0.4、lintaction9.3、codecov7.1.1）。上游15份actionmanifest验证全部41steps输入兼容，Node24runner要求由GitHubhosted满足。WailsCLI3.1/task3.54/lint2.15更新，gosec2.30和Trivyaction0.36已最新。DependabotReact/runtime/types分组，移除无效旧指派及Vue规则。
+Actions四份workflow40引用更新精确稳定patch（checkout7.0.1、download8.0.2、upload7.0.2、setupnode/go/python7.1.0、CodeQL4.39.3、Dockerlogin4.8/buildx4.4.1/metadata6.2/buildpush7.4、ghrelease3.0.4、lintaction9.3、codecov7.1.1）。上游15份actionmanifest验证全部41steps输入兼容，Node24runner要求由GitHubhosted满足。WailsCLI3.1/task3.54/lint2.15更新，gosec2.30和Trivyaction0.36已最新，Trivy扫描器显式更新为0.76.2。API容器运行基础镜像更新Alpine3.24.4；旧非发布使用的Zig/macOSSDK跨编译预设保留独立验证边界。DependabotReact/runtime/types分组，移除无效旧指派及Vue规则。
 
 ## 必要迁移与验证
 
@@ -19,3 +19,5 @@ Vite8的esbuilddrop迁移到Rolldown/Oxc生产压缩，保留dropconsole/debugge
 主JS升级后867.79KB/gzip272.10KB，较此前833.92/268.04增加33.87/4.06KB；保留既有500KB提示。无新增空闲轮询，目标设备性能不由包体预算代替验收。Windows普通用户/原生窗口与Mac实际打包将用升级SDK再次CI验收，未完成前不以交叉编译声称原生通过。
 
 当前待最终CI、原生检查与PR合并；旧DependabotPR仅在确认已被本更新覆盖后关闭，分支以精确head和已合并证据清理。
+
+Linux迁移：Wails3.1默认GTK4/WebKitGTK6，CI安装libgtk-4-dev/libwebkitgtk-6.0-dev，deb/rpm/Arch运行依赖同步对应GTK4栈。旧依赖CI准确发现缺pkg-config，修复后以新runner结果为准；Linux支持范围随新Wails依赖要求为Ubuntu24.04+/Debian13+或提供同等库的发行版。

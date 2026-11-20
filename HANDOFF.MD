@@ -470,3 +470,5 @@
 - Windows新检查首次Chocolatey feed504（未构建），第二次restricted worker0xC0000142（未运行安装器）。STARTUPINFO显式winsta0/default后真实同SID Medium token成功；TokenElevation元数据true不能说false，实际isAdminfalse和HKLM写拒绝才证明无管理员能力。最终44640534380普通欢迎窗/安装卸载和原生全屏等全通过。
 
 - 升级SDK/工具不能盲上与项目平台不兼容大版本：TS7超出最新typescripteslint peer<6.1，选TS6.0.3；Node24选types24.19.2；Go1.27最低macOS13，维护Go1.26.11保实际支持Monterey，原10.15虚标校正为12。应用/测试可达依赖均latest，不把上游CLI不可达工具图硬钉成业务依赖。
+
+- Wails3.1 Linux默认GTK4/WebKitGTK6而旧alpha使用GTK3/WebKit4.1，升级CI44659618563类型检查准确失败缺gtk4/webkitgtk6pkgconfig。必须同步CIdev包与nfpm运行依赖，不能只在Mac/Win编译过称全平台。新Actions上传/下载/SARIF已实测通过。

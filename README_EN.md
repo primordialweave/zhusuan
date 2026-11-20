@@ -45,7 +45,7 @@ macOS, Windows and Linux are the current release-workflow targets. iOS/Android c
 
 ## Development
 
-Use Go 1.26.11 (minimum 1.26.10) and Node.js 24. The frontend engine range is defined in frontend/package.json. Linux desktop builds also need GTK3 and WebKit2GTK 4.1 development packages. macOS 12 or newer is required; Go 1.26 remains on its latest maintenance release to retain Monterey support.
+Use Go 1.26.11 (minimum 1.26.10) and Node.js 24. The frontend engine range is defined in frontend/package.json. Linux desktop builds also need GTK4 and WebKitGTK 6.0 development packages. macOS 12 or newer is required; Go 1.26 remains on its latest maintenance release to retain Monterey support.
 
 ```sh
 git clone https://github.com/primordialweave/zhusuan.git

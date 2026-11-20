@@ -50,7 +50,7 @@ macOS、Windows、Linux 是当前发布工作流的目标。iOS/Android 保留�
 
 ## 本地开发
 
-需要 Go 1.26.11（最低 1.26.10）、Node.js 24、npm 与固定版本 Wails/Task。前端兼容范围见 frontend/package.json。Linux 桌面构建还需要 GTK3/WebKit2GTK 4.1 开发库。 macOS 最低系统版本为 12，使用仍支持 Monterey 的 Go 1.26 最新维护版本。
+需要 Go 1.26.11（最低 1.26.10）、Node.js 24、npm 与固定版本 Wails/Task。前端兼容范围见 frontend/package.json。Linux 桌面构建还需要 GTK4/WebKitGTK 6.0 开发库。 macOS 最低系统版本为 12，使用仍支持 Monterey 的 Go 1.26 最新维护版本。
 
 ```sh
 git clone https://github.com/primordialweave/zhusuan.git

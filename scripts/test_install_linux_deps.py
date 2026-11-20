@@ -67,7 +67,11 @@ if failure == 'install' and '--no-download' in args:
             self.assertNotIn('--allow-unauthenticated', event['args'])
             if 'install' in event['args']:
                 self.assertIn('--no-install-recommends', event['args'])
-                self.assertEqual(event['args'][-1], 'rpm')
+                self.assertEqual(event['args'][-4:], [
+                    'libgtk-4-dev', 'libwebkitgtk-6.0-dev', 'build-essential', 'rpm',
+                ])
+                self.assertNotIn('libgtk-3-dev', event['args'])
+                self.assertNotIn('libwebkit2gtk-4.1-dev', event['args'])
             sources = next(arg.split('=', 1)[1] for arg in event['args'] if arg.startswith('Dir::Etc::sourcelist='))
             self.assertFalse(Path(sources).exists(), 'temporary sources must be removed')
         budget = sum(int(event['args'][1][:-1]) + 5 for event in events if event['name'] == 'timeout')

@@ -32,14 +32,14 @@ contents:
   - src: "./build/linux/zhusuan.desktop"
     dst: "/usr/share/applications/zhusuan.desktop"
 
-# Default dependencies for Debian 12/Ubuntu 22.04+ with WebKit 4.1
+# Default dependencies for Wails 3.1 GTK4/WebKitGTK 6.0 (Ubuntu 24.04+/Debian 13+)
 depends:
-  - libgtk-3-0
-  - libwebkit2gtk-4.1-0
+  - libgtk-4-1
+  - libwebkitgtk-6.0-4
 
 # Distribution-specific overrides for different package formats and WebKit versions
 overrides:
-  # RPM packages for RHEL/CentOS/AlmaLinux/Rocky Linux (WebKit 4.0)
+  # RPM packages using the GTK4/WebKitGTK 6.0 stack
   rpm:
     replaces:
       - Orange
@@ -48,14 +48,14 @@ overrides:
       - Orange
       - orange
     depends:
-      - gtk3
-      - webkit2gtk4.1
-  
-  # Arch Linux packages (WebKit 4.1)  
+      - gtk4
+      - webkitgtk6.0
+
+  # Arch Linux packages (WebKitGTK 6.0)
   archlinux:
     depends:
-      - gtk3
-      - webkit2gtk-4.1
+      - gtk4
+      - webkitgtk-6.0
 
 # scripts section to ensure desktop database is updated after install
 scripts:
@@ -69,8 +69,8 @@ scripts:
 # provides:
 #   - bar
 # depends:
-#   - gtk3
-#   - libwebkit2gtk
+#   - gtk4
+#   - libwebkitgtk-6.0
 # recommends:
 #   - whatever
 # suggests:
