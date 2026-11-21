@@ -5,10 +5,10 @@
 ## 1. 当前任务：1.2.0 提交与发布（2026-11-22）
 
 - 用户明确要求“提交代码，发布新版本 v1.2.0”，覆盖此前实施阶段“不提交/不发版/待确认”的限制。当前范围为全部玉质 SVG 图标、品牌空态、交互动效、组件/图表打磨及平台图标；版本已统一为 1.2.0。
-- 本地前端 117 文件/741 用例、非修改式 ESLint、真实 app TypeScript 检查通过；Go race 150 顶层/183 子测试、17 测试包通过，无失败/跳过；vet、module verify、增量 lint 0、Python 32 例通过。独立评审未发现阻塞问题。
+- 本地前端 118 文件/746 用例、非修改式 ESLint、真实 app TypeScript 检查通过；Go race 150 顶层/183 子测试、17 测试包通过，无失败/跳过；vet、module verify、增量 lint 0、Python 32 例通过。独立评审未发现阻塞问题。
 - `Assets.car` 来源摘要与浅/深 PNG 和 icon.json 一致，Aqua/DarkAqua 图组不同；ictool Default/Dark 已导出复核。深浅特化为系统资源目录能力，Wails 运行时 Dock 仍显式使用浅色嵌入 PNG，不能声称 live Dock 双态已实现。
-- 证据 `/tmp/zhusuan-release-1.2.0`；独立演示副本和 3488/9352 供最终浏览器复核。真实账本、用户开发服务、已安装应用和旧路径兼容 symlink 保留。历史 design-qa.md 删除、根 node_modules 和生成 events/index.ts 不纳入本次提交。
-- 接续完成浏览器验收、冻结源码、PR/main CI、v1.2.0 三平台 Release、正式附件/匿名 latest 与旧公开资产不可变验证。发布未完成前不要宣称已公开；所有已公开标签与附件禁止移动/覆盖。
+- 证据 `/tmp/zhusuan-release-1.2.0`；Ego/WebKit 共 128 布局组合与 scoped 交互复核通过；3488/9352 独立 QA 完成后关闭。真实账本、用户开发服务、已安装应用和旧路径兼容 symlink 保留。历史 design-qa.md 删除、根 node_modules 和生成 events/index.ts 不纳入本次提交。
+- 浏览器及本地复核完成；接续最终源码 PR/main CI、v1.2.0 三平台 Release、正式附件/匿名 latest 与旧公开资产不可变验证。发布未完成前不要宣称已公开；所有已公开标签与附件禁止移动/覆盖。
 
 ## 1. 已完成：1.1.0提交与公开发布（2026-11-21）
 
@@ -622,3 +622,12 @@
 
 - **现象**：在 `build/darwin/AppIcon.icon/icon.json` 中同时声明普通键（如 `"image-name"` 或 `"hidden"`）和对应的 `*-specializations`（如 `"image-name-specializations"` 或 `"hidden-specializations"`），或者误用 `"appearances": [{"appearance": "luminosity", "value": "dark"}]` 嵌套写法时，`xcrun actool` **不会报错**，但会静默忽略深色特化，编译出的 `Assets.car` 中 `NSAppearanceNameAqua` 与 `NSAppearanceNameDarkAqua` 完全相同且只打进浅色图。
 - **规避规则**：`icon.json` 中普通键与 `*-specializations` **互斥**，深浅双态应只保留 `"image-name-specializations": [{"value": "Artwork.png"}, {"appearance": "dark", "value": "Artwork-Dark.png"}]`（同时将 `build/appicon-dark.png` 纳入 `scripts/build_macos_icon.py` 的 `catalog_source_digest` 与 `build/Taskfile.yml` 的 `sources`）。每次重编 `Assets.car` 后，必须同时用 `xcrun assetutil --info build/darwin/Assets.car` 核验两张图均已编入且 `Aqua` / `DarkAqua` 的 `IconGroup` SHA1 不同，并用 `/Applications/Xcode.app/Contents/Applications/Icon Composer.app/Contents/Executables/ictool` 导出 `Default` / `Dark` 双态预览确认。
+
+### 2.21 已开始的 WAAPI 不受 CSS 减少动态规则控制（2026-11-22）
+
+- 发行前 Ego 实测：点击按钮后切换应用 `data-motion="reduced"`，已经开始的 440ms ripple 与 260ms SVG pulse 仍是 running。启动前检查 reduce 只能阻止新动画，CSS `animation: none` 不会取消 JS Web Animations。
+- 所有短时 WAAPI 需在存活期间监听系统 media change 和应用 data-motion 变化，任一切为 reduced 即取消；finished/cancel/unmount 都释放监听与 observer。Button 与 RouterControls 共用 pulse/ripple，不能只修 Button；JadeIcon 的通知铃反应也走同一守卫。原始证据 `/tmp/zhusuan-release-1.2.0/qa/waapi-reduced-first.json` 保留，不把首次起始门控通过当切换中途停止通过。
+
+### 2.22 Vite 外部 outDir 重复构建不默认清空（2026-11-22）
+
+- Vite 输出到项目根目录以外的私有临时 outDir 时，默认不清空已有产物。重复构建会留下旧 hash JS，若按目录汇总会误报双倍包体。仅对本任务拥有的 outDir 显式使用 `--emptyOutDir`，再确认 HTML 只引用本次产物后测量；不能据此清用户 dev/dist 或其他任务目录。本轮已修正测量，最终 JS/CSS/字体比较保留 `bundle-comparison.json`。

@@ -1,5 +1,6 @@
 import {
   forwardRef,
+  useEffect,
   useRef,
   type MouseEventHandler,
   type PointerEventHandler,
@@ -14,6 +15,7 @@ import {
 } from 'react-router-dom'
 import type { ButtonSize, ButtonTone, ButtonVariant } from '../../components/button'
 import { triggerButtonIconPulse, triggerButtonRipple } from '../../components/button/buttonMotion'
+import { cancelMotionAnimations } from '../../components/icon/iconMotion'
 import type { LinkTone, LinkUnderline } from '../../components/link'
 
 export interface RouterButtonProps extends Omit<ReactRouterLinkProps, 'className'> {
@@ -48,6 +50,11 @@ export const RouterButton = forwardRef<HTMLAnchorElement, RouterButtonProps>(fun
   const rippleRef = useRef<HTMLSpanElement | null>(null)
   const inactive = disabled || pending
   const interactiveSurface = variant !== 'bare'
+
+  useEffect(() => {
+    const link = linkRef.current
+    return () => cancelMotionAnimations(link, true)
+  }, [])
 
   const setLinkRef = (node: HTMLAnchorElement | null) => {
     linkRef.current = node

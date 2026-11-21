@@ -1,5 +1,11 @@
 import { forwardRef, useEffect, useRef, useState, type SVGAttributes } from 'react'
-import { COPIED_REACTION_HOLD_MS, prefersReducedMotion, SAVED_REACTION_HOLD_MS } from './iconMotion'
+import {
+  animateWithMotionPreference,
+  cancelMotionAnimation,
+  COPIED_REACTION_HOLD_MS,
+  prefersReducedMotion,
+  SAVED_REACTION_HOLD_MS,
+} from './iconMotion'
 import { JADE_ICON_REGISTRY, type JadeGlyphDefinition, type JadeIconName } from './registry'
 
 export type JadeIconDetail = 'subtle' | 'carved'
@@ -104,7 +110,7 @@ export const JadeIcon = forwardRef<SVGSVGElement, JadeIconProps>(function JadeIc
         resetTimerRef.current = null
       }
       if (activeAnimationRef.current) {
-        activeAnimationRef.current.cancel()
+        cancelMotionAnimation(activeAnimationRef.current)
         activeAnimationRef.current = null
       }
     }
@@ -134,7 +140,8 @@ export const JadeIcon = forwardRef<SVGSVGElement, JadeIconProps>(function JadeIc
           '[data-jade-part="bell-body"]',
         )
         if (part && typeof part.animate === 'function') {
-          activeAnimationRef.current = part.animate(
+          activeAnimationRef.current = animateWithMotionPreference(
+            part,
             [
               { transform: 'rotate(0deg)' },
               { offset: 0.32, transform: 'rotate(-4deg)' },

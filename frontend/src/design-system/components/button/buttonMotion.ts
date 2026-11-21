@@ -1,4 +1,9 @@
-import { prefersReducedMotion } from '../icon/iconMotion'
+import {
+  animateWithMotionPreference,
+  cancelMotionAnimation,
+  cancelMotionAnimations,
+  prefersReducedMotion,
+} from '../icon/iconMotion'
 
 const RIPPLE_DURATION_MS = 440
 const ICON_REBOUND_DURATION_MS = 260
@@ -17,10 +22,7 @@ export function triggerButtonRipple(
   const height = Math.max(rect.height, 32)
   const diameter = Math.hypot(width, height) * 1.15
   const hasPointerCoords =
-    typeof clientX === 'number' &&
-    typeof clientY === 'number' &&
-    rect.width > 0 &&
-    rect.height > 0
+    typeof clientX === 'number' && typeof clientY === 'number' && rect.width > 0 && rect.height > 0
   const x = hasPointerCoords ? clientX - rect.left : width / 2
   const y = hasPointerCoords ? clientY - rect.top : height / 2
 
@@ -29,11 +31,11 @@ export function triggerButtonRipple(
   ripple.style.left = `${x}px`
   ripple.style.top = `${y}px`
 
-  for (const running of ripple.getAnimations?.() ?? []) {
-    running.cancel()
-  }
+  cancelMotionAnimations(ripple)
+  for (const running of ripple.getAnimations?.() ?? []) cancelMotionAnimation(running)
 
-  ripple.animate(
+  animateWithMotionPreference(
+    ripple,
     [
       { opacity: 0.72, transform: 'translate(-50%, -50%) scale(0.12)' },
       { opacity: 0, transform: 'translate(-50%, -50%) scale(1.05)' },
@@ -53,11 +55,11 @@ export function triggerButtonIconPulse(button: HTMLElement | null) {
     button.querySelector<SVGSVGElement>('.ods-jade-icon')
   if (!target || typeof target.animate !== 'function') return
 
-  for (const running of target.getAnimations?.() ?? []) {
-    running.cancel()
-  }
+  cancelMotionAnimations(target)
+  for (const running of target.getAnimations?.() ?? []) cancelMotionAnimation(running)
 
-  target.animate(
+  animateWithMotionPreference(
+    target,
     [
       { transform: 'scale(0.86)' },
       { offset: 0.55, transform: 'scale(1.14)' },

@@ -1,5 +1,6 @@
 import {
   forwardRef,
+  useEffect,
   useRef,
   type ButtonHTMLAttributes,
   type MouseEventHandler,
@@ -7,6 +8,7 @@ import {
   type ReactNode,
 } from 'react'
 import { triggerButtonIconPulse, triggerButtonRipple } from './buttonMotion'
+import { cancelMotionAnimations } from '../icon/iconMotion'
 
 export type ButtonVariant =
   | 'primary'
@@ -55,6 +57,11 @@ export const Button = forwardRef<HTMLButtonElement, ButtonProps>(function Button
   const rippleRef = useRef<HTMLSpanElement | null>(null)
   const inactive = Boolean(disabled || pending)
   const interactiveSurface = variant !== 'bare'
+
+  useEffect(() => {
+    const button = buttonRef.current
+    return () => cancelMotionAnimations(button, true)
+  }, [])
 
   const setButtonRef = (node: HTMLButtonElement | null) => {
     buttonRef.current = node

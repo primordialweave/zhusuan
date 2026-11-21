@@ -1,6 +1,6 @@
 # 005 — 分批迁移、契约同步、验收并退出字体依赖
 
-- Status: DONE (implemented; 741 tests/build/lint passed; v1.2.0 release browser verification in progress)
+- Status: DONE (implemented; 746 tests/build/lint passed; 128 browser layouts and scoped interactions passed; release pending)
 - Commit: 555c2fd
 - Severity: MEDIUM
 - Category: Coverage / performance / contract / release boundary
@@ -46,4 +46,4 @@
 
 ## 本次执行状态
 
-2026-11-22 用户已授权提交并公开 v1.2.0，覆盖原方案阶段的暂不发版限制。代码、契约、741 前端测试、lint 和生产构建通过；包体实测和来源核查已完成。最终浏览器矩阵、CI、三平台附件与匿名更新验证见 `docs/release-readiness-1.2.0.md`。原性能/硬件/慢放目标保留为目标，不以未执行项目作完成声明。
+2026-11-22 用户已授权提交并公开 v1.2.0，覆盖原方案阶段的暂不发版限制。代码、契约、746 前端测试、lint 和生产构建通过；包体实测和来源核查已完成。浏览器 128 布局组合/交互已通过，未做 10% 慢放与硬件验收；CI、三平台附件与匿名更新验证见 `docs/release-readiness-1.2.0.md`。原性能/硬件/慢放目标保留为目标，不以未执行项目作完成声明。

@@ -141,6 +141,10 @@ describe('Button', () => {
 })
 
 describe('IconButton', () => {
+  afterEach(() => {
+    document.documentElement.removeAttribute('data-motion')
+  })
+
   it('requires a visible accessibility label while keeping the icon decorative', () => {
     render(
       <IconButton label="关闭" tone="accent" variant="secondary">
@@ -210,5 +214,26 @@ describe('IconButton', () => {
     fireEvent.click(button, { detail: 0 })
     expect(rippleAnimate).toHaveBeenCalledTimes(2)
     expect(iconAnimate).toHaveBeenCalledTimes(2)
+  })
+
+  it('cancels a running ripple and icon pulse when the button unmounts', () => {
+    const rippleCancel = vi.fn()
+    const iconCancel = vi.fn()
+    const { unmount } = render(
+      <IconButton label="关闭">
+        <JadeIcon name="close" />
+      </IconButton>,
+    )
+    const button = screen.getByRole('button', { name: '关闭' })
+    Object.assign(button.querySelector('.ods-button__ripple')!, {
+      animate: () => ({ cancel: rippleCancel }) as unknown as Animation,
+    })
+    Object.assign(button.querySelector('.ods-icon-button__icon')!, {
+      animate: () => ({ cancel: iconCancel }) as unknown as Animation,
+    })
+    fireEvent.click(button, { detail: 0 })
+    unmount()
+    expect(rippleCancel).toHaveBeenCalledOnce()
+    expect(iconCancel).toHaveBeenCalledOnce()
   })
 })
