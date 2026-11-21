@@ -2,7 +2,7 @@
 
 ## 1.2.0 与发布入口
 
-本次版本为 **1.2.0**，包含统一 SVG 玉质图标与品牌空态、组件和图表材质打磨、有限交互动效，以及 macOS 深浅双态图标资源。版本元数据已同步；公开状态以 [v1.2.0 Release](https://github.com/primordialweave/zhusuan/releases/tag/v1.2.0) 为准，提交代码或创建标签不代表安装包已发布。
+**1.2.0** 已公开并设为 latest，包含统一 SVG 玉质图标与品牌空态、组件和图表材质打磨、有限交互动效，以及 macOS 深浅双态图标资源。完整发行验收见 [release-readiness-1.2.0.md](release-readiness-1.2.0.md)；公开状态以 [v1.2.0 Release](https://github.com/primordialweave/zhusuan/releases/tag/v1.2.0) 为准，提交代码或创建标签不代表安装包已发布。
 
 **1.1.0** 已公开，包含玉质界面、全界面Skeleton、可配置品牌信息与收款计划批次口径，历史检查记录见 [release-readiness-1.1.0.md](release-readiness-1.1.0.md)。
 

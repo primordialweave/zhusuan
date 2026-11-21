@@ -1,6 +1,6 @@
 # 005 — 分批迁移、契约同步、验收并退出字体依赖
 
-- Status: DONE (implemented; 746 tests/build/lint passed; 128 browser layouts and scoped interactions passed; release pending)
+- Status: DONE (implemented; 746 tests/build/lint passed; 128 browser layouts and scoped interactions passed; v1.2.0 published and artifacts verified)
 - Commit: 555c2fd
 - Severity: MEDIUM
 - Category: Coverage / performance / contract / release boundary

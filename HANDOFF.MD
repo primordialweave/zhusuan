@@ -2,13 +2,16 @@
 
 接手任何任务前先读这份文档。它只记两类东西：**当前在制品的状态**，和**已经踩过的坑**。踩到新坑就追加到第 2 节，状态变了就改第 1 节。
 
-## 1. 当前任务：1.2.0 提交与发布（2026-11-22）
+## 1. 已完成：1.2.0 提交与公开发布（2026-11-22）
 
 - 用户明确要求“提交代码，发布新版本 v1.2.0”，覆盖此前实施阶段“不提交/不发版/待确认”的限制。当前范围为全部玉质 SVG 图标、品牌空态、交互动效、组件/图表打磨及平台图标；版本已统一为 1.2.0。
 - 本地前端 118 文件/746 用例、非修改式 ESLint、真实 app TypeScript 检查通过；Go race 150 顶层/183 子测试、17 测试包通过，无失败/跳过；vet、module verify、增量 lint 0、Python 32 例通过。独立评审未发现阻塞问题。
 - `Assets.car` 来源摘要与浅/深 PNG 和 icon.json 一致，Aqua/DarkAqua 图组不同；ictool Default/Dark 已导出复核。深浅特化为系统资源目录能力，Wails 运行时 Dock 仍显式使用浅色嵌入 PNG，不能声称 live Dock 双态已实现。
 - 证据 `/tmp/zhusuan-release-1.2.0`；Ego/WebKit 共 128 布局组合与 scoped 交互复核通过；3488/9352 独立 QA 完成后关闭。真实账本、用户开发服务、已安装应用和旧路径兼容 symlink 保留。历史 design-qa.md 删除、根 node_modules 和生成 events/index.ts 不纳入本次提交。
-- 浏览器及本地复核完成；接续最终源码 PR/main CI、v1.2.0 三平台 Release、正式附件/匿名 latest 与旧公开资产不可变验证。发布未完成前不要宣称已公开；所有已公开标签与附件禁止移动/覆盖。
+- PR35 最终 CI44925082350 与 main CI44925928249 均四 job 成功，已合入 main `1a5e33b4e37b52db6c3e9fd5dc511e3491062d3b`，tree 与验收分支 `50225a8` 相同。北京时间 2026-11-22 01:18:32 已公开 v1.2.0/latest；Release44926761621 的 prepare、三平台 build 和 publish 五 job 全成功，应用标签不可移动。
+- 十附件服务端 SHA256/大小、本地 CI 载荷、匿名十 HEAD200/长度、latest manifest 与九个资产映射全通过；27 个旧公开版本/157 个附件 ID-name-size-digest/旧 tag 不变。正式两 Mac ZIP/DMG 路径/CRC、版本/id/minOS/单架构、deep strict adhoc、readonly mount/Applications 链接通过；ICNS 与双态 Assets.car 和应用 tag 逐字节相同，所有 mount 已 detach。Windows 普通安装/升级/窗口全屏最终 runner 通过。
+- 最终记录 `docs/release-readiness-1.2.0.md` 与 `docs/release-verification-1.2.0.json`。主 checkout 回 main，历史 design-qa.md 删除/root node_modules/生成 events 保持原状；两自有 QA 服务与 Ego space84 已关闭，真实账本/用户开发服务/已安装 app 未操作。Mac仍adhoc、Windows无Authenticode、真实硬件/设备升级/Retina/屏幕阅读器未声明验收。
+
 
 ## 1. 已完成：1.1.0提交与公开发布（2026-11-21）
 

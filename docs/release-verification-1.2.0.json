@@ -1,6 +1,6 @@
 {
   "version": "1.2.0",
-  "stage": "pre-publication",
+  "stage": "published",
   "frontend": {
     "files": 118,
     "passed": 746,
@@ -86,5 +86,271 @@
     "Windows Authenticode",
     "mobile distribution"
   ],
-  "evidence_root": "/tmp/zhusuan-release-1.2.0"
+  "evidence_root": "/tmp/zhusuan-release-1.2.0",
+  "source_commit": "1a5e33b4e37b52db6c3e9fd5dc511e3491062d3b",
+  "pr": 35,
+  "pr_ci_run": 44925082350,
+  "main_ci_run": 44925928249,
+  "release_run": 44926761621,
+  "release_jobs_passed": 5,
+  "publication": {
+    "tag": "v1.2.0",
+    "published_at": "2026-11-21T17:18:32Z",
+    "release_url": "https://github.com/primordialweave/zhusuan/releases/tag/v1.2.0",
+    "latest": true,
+    "draft": false,
+    "assets": [
+      {
+        "name": "SHA256SUMS",
+        "size": 794,
+        "digest": "sha256:16ebe52b892000817bb539d616417b4caedf95086b2affcd6283f6272fadf3b7"
+      },
+      {
+        "name": "update.json",
+        "size": 4638,
+        "digest": "sha256:bf1f7ddb10133511893bab82bd0d437fb8e0c0a0cf78a00ef4f5c92c2d34d6f3"
+      },
+      {
+        "name": "zhusuan-v1.2.0-linux-amd64.deb",
+        "size": 39992116,
+        "digest": "sha256:7762e8b17b5a20953b719ffcfd877602f07ad805028f3a6b24f329c2192a3bee"
+      },
+      {
+        "name": "zhusuan-v1.2.0-linux-amd64.rpm",
+        "size": 41042198,
+        "digest": "sha256:14844f7ab7cef9c4e8387931570ad14181daf4e72eaba7ddb488383d3cc026ed"
+      },
+      {
+        "name": "zhusuan-v1.2.0-linux-x86_64.AppImage",
+        "size": 111356408,
+        "digest": "sha256:0bc9839b33e56c9d8d9c96658720a6ae3d402c137bc7b61412795b6cb5f0365a"
+      },
+      {
+        "name": "zhusuan-v1.2.0-macOS-amd64.dmg",
+        "size": 50277634,
+        "digest": "sha256:fb826951e0f3be9e47aed519d8fa31ede0f73cc1aeb21f080673dd2989c8a588"
+      },
+      {
+        "name": "zhusuan-v1.2.0-macOS-amd64.zip",
+        "size": 46151615,
+        "digest": "sha256:e9add1526d93838168bb48e9a18b8e88c829e4802118a5849a4f6d629da7b753"
+      },
+      {
+        "name": "zhusuan-v1.2.0-macOS-arm64.dmg",
+        "size": 48873572,
+        "digest": "sha256:ecb888892bcdfd2344b40e9cbcf28c56f4314589607a0807fac0cc0682ded6e0"
+      },
+      {
+        "name": "zhusuan-v1.2.0-macOS-arm64.zip",
+        "size": 44337999,
+        "digest": "sha256:af61695d16f6bf07166432be88865b53c37e14f16d784af8c28fbf6f9c355f2e"
+      },
+      {
+        "name": "zhusuan-v1.2.0-windows-amd64-installer.exe",
+        "size": 41107348,
+        "digest": "sha256:6278ec32af20db37a6b8bff87d829a9d9df2c7aa87cb6b496ed6d9d196aa154f"
+      }
+    ],
+    "anonymous_heads": [
+      {
+        "name": "SHA256SUMS",
+        "status": 200,
+        "size": 794
+      },
+      {
+        "name": "update.json",
+        "status": 200,
+        "size": 4638
+      },
+      {
+        "name": "zhusuan-v1.2.0-linux-amd64.deb",
+        "status": 200,
+        "size": 39992116
+      },
+      {
+        "name": "zhusuan-v1.2.0-linux-amd64.rpm",
+        "status": 200,
+        "size": 41042198
+      },
+      {
+        "name": "zhusuan-v1.2.0-linux-x86_64.AppImage",
+        "status": 200,
+        "size": 111356408
+      },
+      {
+        "name": "zhusuan-v1.2.0-macOS-amd64.dmg",
+        "status": 200,
+        "size": 50277634
+      },
+      {
+        "name": "zhusuan-v1.2.0-macOS-amd64.zip",
+        "status": 200,
+        "size": 46151615
+      },
+      {
+        "name": "zhusuan-v1.2.0-macOS-arm64.dmg",
+        "status": 200,
+        "size": 48873572
+      },
+      {
+        "name": "zhusuan-v1.2.0-macOS-arm64.zip",
+        "status": 200,
+        "size": 44337999
+      },
+      {
+        "name": "zhusuan-v1.2.0-windows-amd64-installer.exe",
+        "status": 200,
+        "size": 41107348
+      }
+    ],
+    "anonymous_latest_manifest_matches": true,
+    "anonymous_checksums_match": true,
+    "manifest_asset_entries": 9,
+    "old_public_releases_unchanged": [
+      "v1.1.0",
+      "v1.0.2",
+      "v1.0.1",
+      "v1.0.0",
+      "v0.7.2",
+      "v0.7.1",
+      "v0.7.0",
+      "v0.6.2",
+      "v0.6.1",
+      "v0.6.0",
+      "v0.5.0",
+      "v0.4.1",
+      "v0.4.0",
+      "v0.3.1",
+      "v0.3.0",
+      "v0.2.2",
+      "v0.2.1",
+      "v0.2.0",
+      "v0.1.10",
+      "v0.1.9",
+      "v0.1.8",
+      "v0.1.7",
+      "v0.1.6",
+      "v0.1.5",
+      "v0.1.4",
+      "v0.1.3",
+      "v0.1.2"
+    ],
+    "old_asset_count": 157,
+    "old_tags_unchanged": true
+  },
+  "macos": {
+    "arm64": {
+      "success": true,
+      "source_commit": "1a5e33b4e37b52db6c3e9fd5dc511e3491062d3b",
+      "zip_paths": {
+        "entry_count": 10,
+        "root": "zhusuan.app",
+        "symlink_count": 0,
+        "crc_verified": true,
+        "declared_uncompressed_bytes": 86720201,
+        "safe_before_extraction": true
+      },
+      "metadata": {
+        "CFBundleIdentifier": "org.primordialweave.zhusuan",
+        "CFBundleExecutable": "zhusuan",
+        "CFBundleShortVersionString": "1.2.0",
+        "CFBundleVersion": "1.2.0",
+        "CFBundleName": "珠算",
+        "CFBundleDisplayName": "珠算",
+        "LSMinimumSystemVersion": "12.0.0"
+      },
+      "architecture": "arm64",
+      "signature": "adhoc",
+      "deep_strict_signature_verified": true,
+      "minimum_os": [
+        "12.0"
+      ],
+      "catalog_sha256": "b13702f09dd265e2f5a96a16914d071b3f79f92baa7cc517b8ba95c5e4249863",
+      "catalog_byte_identical_to_source": true,
+      "icns_byte_identical_to_source": true,
+      "executable_sha256": "80470975ebabc4095aef6a9d8022efa225437a3c44db42beb620629572a04626",
+      "dmg_readonly": true,
+      "dmg_root_entries": [
+        "Applications",
+        "珠算.app"
+      ],
+      "applications_symlink": "/Applications",
+      "zip_dmg_executable_and_catalog_match": true,
+      "mount_detached": true,
+      "temporary_extraction_removed": true,
+      "assets": {
+        "zip": {
+          "path": "/private/tmp/zhusuan-release-1.2.0/ci-assets/release-darwin/zhusuan-v1.2.0-macOS-arm64.zip",
+          "size": 44337999,
+          "sha256": "af61695d16f6bf07166432be88865b53c37e14f16d784af8c28fbf6f9c355f2e"
+        },
+        "dmg": {
+          "path": "/private/tmp/zhusuan-release-1.2.0/ci-assets/release-darwin/zhusuan-v1.2.0-macOS-arm64.dmg",
+          "size": 48873572,
+          "sha256": "ecb888892bcdfd2344b40e9cbcf28c56f4314589607a0807fac0cc0682ded6e0"
+        }
+      }
+    },
+    "amd64": {
+      "success": true,
+      "source_commit": "1a5e33b4e37b52db6c3e9fd5dc511e3491062d3b",
+      "zip_paths": {
+        "entry_count": 10,
+        "root": "zhusuan.app",
+        "symlink_count": 0,
+        "crc_verified": true,
+        "declared_uncompressed_bytes": 90304521,
+        "safe_before_extraction": true
+      },
+      "metadata": {
+        "CFBundleIdentifier": "org.primordialweave.zhusuan",
+        "CFBundleExecutable": "zhusuan",
+        "CFBundleShortVersionString": "1.2.0",
+        "CFBundleVersion": "1.2.0",
+        "CFBundleName": "珠算",
+        "CFBundleDisplayName": "珠算",
+        "LSMinimumSystemVersion": "12.0.0"
+      },
+      "architecture": "x86_64",
+      "signature": "adhoc",
+      "deep_strict_signature_verified": true,
+      "minimum_os": [
+        "12.0"
+      ],
+      "catalog_sha256": "b13702f09dd265e2f5a96a16914d071b3f79f92baa7cc517b8ba95c5e4249863",
+      "catalog_byte_identical_to_source": true,
+      "icns_byte_identical_to_source": true,
+      "executable_sha256": "3adbb68ab59b660722dc50eada04760f65ee3dab801cd39507ec64fc275772be",
+      "dmg_readonly": true,
+      "dmg_root_entries": [
+        "Applications",
+        "珠算.app"
+      ],
+      "applications_symlink": "/Applications",
+      "zip_dmg_executable_and_catalog_match": true,
+      "mount_detached": true,
+      "temporary_extraction_removed": true,
+      "assets": {
+        "zip": {
+          "path": "/private/tmp/zhusuan-release-1.2.0/ci-assets/release-darwin/zhusuan-v1.2.0-macOS-amd64.zip",
+          "size": 46151615,
+          "sha256": "e9add1526d93838168bb48e9a18b8e88c829e4802118a5849a4f6d629da7b753"
+        },
+        "dmg": {
+          "path": "/private/tmp/zhusuan-release-1.2.0/ci-assets/release-darwin/zhusuan-v1.2.0-macOS-amd64.dmg",
+          "size": 50277634,
+          "sha256": "fb826951e0f3be9e47aed519d8fa31ede0f73cc1aeb21f080673dd2989c8a588"
+        }
+      }
+    }
+  },
+  "windows_runner_checks": {
+    "standard_user_installation": "passed",
+    "installation_and_upgrade": "passed",
+    "native_controls_and_fullscreen": "passed"
+  },
+  "checkout": {
+    "branch": "main",
+    "existing_unrelated_state_preserved": true
+  }
 }

@@ -38,3 +38,13 @@ Ego Lite 与 WebKit 各检查 8 个主/表单路由、8 个设置 tab，浅/深�
 Ego 20 次 hover 反转、WebKit 每主题 20 次反转，键盘按钮/Option+Tab+Enter 清除与触摸 reduced 清除通过。两引擎 app/OS 中途切换后 active WAAPI 均为空。SaveText transport 成功 fixture 后真实 UI 导航到第二项目，反馈 overlay 为 0，三个图标 opacity 均为 1；未打开真实 native 保存对话框或写导出文件。初次 QA 使用独立 router 实例超时，修正为真实链接后通过，原日志保留。
 
 [浅色复核图](screenshots/release-1.2.0/light.jpg) · [深色复核图](screenshots/release-1.2.0/dark.jpg)。两张联系图逐图复核无可行动项，环图同心、图标清晰完整；未将 viewport 外表单视作全页视觉验收。没有执行 10% 慢放、原生 Retina、屏幕阅读器或新完整慢网矩阵；加载失败/旧请求仍由现有回归覆盖。Ego 未另行采集 page exception/console error，不宣称其为 0。
+
+## 正式发布结果
+
+北京时间 2026-11-22 01:18:32 已公开并设为 latest：[v1.2.0](https://github.com/primordialweave/zhusuan/releases/tag/v1.2.0)。应用标签固定于 `1a5e33b4e37b52db6c3e9fd5dc511e3491062d3b`。PR35 最终 CI44925082350 与 main CI44925928249 均四 job 成功；[Release44926761621](https://github.com/primordialweave/zhusuan/actions/runs/44926761621) 的 prepare、三平台 build 和 publish 五 job 全部成功，无配方覆盖或候选重建。
+
+十个正式附件的服务端 SHA256 与本地 CI 产物逐一一致，大小一致；匿名十个下载 HEAD 均 200/长度正确，latest update.json 与本地生成内容完全一致，九个资产条目和 SHA256SUMS 映射一致。发布前快照中的 27 个公开版本、157 个附件 ID/名称/大小/digest 及所有旧标签均保持不变。
+
+正式两 ZIP 路径/CRC、版本/标识/minOS、唯一架构及 deep strict ad-hoc 签名通过；两 DMG 只读挂载、中文 app、Applications 链接通过。ICNS 与双态 Assets.car 均与最终应用标签逐字节相同，同架构 DMG/ZIP 程序与 catalog 摘要一致，所有临时 mount 已 detach。Windows 普通用户安装、安装升级及原生窗口/全屏由最终发行 runner 通过。没有在用户设备替换应用或执行真实升级。
+
+机器记录：[release-verification-1.2.0.json](release-verification-1.2.0.json)。完整日志、正式资产与只读挂载记录保留在 `/tmp/zhusuan-release-1.2.0`；两自有 QA 服务和 Ego space84 已关闭，用户服务与真实账本未改。签名/公证及目标硬件限制仍按上文范围，不将包验证扩展为设备验收。
