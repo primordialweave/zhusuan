@@ -12,6 +12,7 @@ import {
 import { createPortal } from 'react-dom'
 import { useDialogFocus } from '@/hooks/useDialogFocus'
 import { OverlayLayerProvider } from '@/hooks/overlayStack'
+import { CloseButton } from '../close-button'
 
 export type ModalSize = 'sm' | 'md' | 'lg' | 'full'
 export type ModalPlacement = 'center' | 'top'
@@ -178,20 +179,17 @@ export const ModalClose = forwardRef<HTMLButtonElement, ModalCloseProps>(functio
 ) {
   const { onClose } = useModalContext()
   return (
-    <button
+    <CloseButton
       {...props}
-      aria-label={label}
       className={['ods-modal__close', className].filter(Boolean).join(' ')}
       data-slot="close"
+      label={label}
       onClick={(event) => {
         onClick?.(event)
         if (!event.defaultPrevented) onClose()
       }}
       ref={ref}
-      type="button"
-    >
-      <span aria-hidden="true">✕</span>
-    </button>
+    />
   )
 })
 

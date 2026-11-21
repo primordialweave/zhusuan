@@ -119,4 +119,95 @@ describe('TokenManagement modal', () => {
     await user.click(within(dialog).getByRole('button', { name: '我已保存' }))
     expect(screen.queryByRole('dialog', { name: '令牌生成成功' })).not.toBeInTheDocument()
   })
+
+  it('shows an error state instead of a fake empty state when initial loading fails, then recovers on retry', async () => {
+    const user = userEvent.setup()
+    vi.mocked(tokenApi.list)
+      .mockRejectedValueOnce(new Error('network down'))
+      .mockResolvedValueOnce({
+        data: {
+          data: [
+            {
+              create_time: '2026-11-01T00:00:00Z',
+              expires_at: null,
+              id: 11,
+              last_used_at: null,
+              name: '生产同步令牌',
+              status: 1,
+            },
+          ],
+        },
+      } as never)
+
+    render(<TokenManagement />)
+
+    expect(await screen.findByRole('alert')).toHaveTextContent('令牌列表加载失败')
+    expect(screen.queryByText('暂无访问令牌')).not.toBeInTheDocument()
+    expect(screen.queryByRole('status', { name: '正在加载令牌列表' })).not.toBeInTheDocument()
+
+    await user.click(screen.getByRole('button', { name: '重新加载' }))
+    expect(await screen.findByText('生产同步令牌')).toBeInTheDocument()
+  })
+
+  it('does not fall back to empty state when refreshing after creating the first token fails', async () => {
+    const user = userEvent.setup()
+    vi.mocked(tokenApi.list)
+      .mockResolvedValueOnce(emptyTokenResponse as never)
+      .mockRejectedValueOnce(new Error('refresh failed'))
+    vi.mocked(tokenApi.create).mockResolvedValueOnce({
+      data: { data: { token: 'pat_first_secret' } },
+    } as never)
+
+    render(<TokenManagement />)
+
+    expect(await screen.findByText('暂无访问令牌')).toBeInTheDocument()
+    await user.click(screen.getByRole('button', { name: '生成新令牌' }))
+    await user.type(screen.getByRole('textbox', { name: /令牌名称/ }), '首个令牌')
+    const createDialog = screen.getByRole('dialog', { name: '生成新令牌' })
+    await user.click(within(createDialog).getByRole('button', { name: '生成令牌' }))
+
+    const successDialog = await screen.findByRole('dialog', { name: '令牌生成成功' })
+    await user.click(within(successDialog).getByRole('button', { name: '我已保存' }))
+
+    expect(await screen.findByRole('alert')).toHaveTextContent('令牌列表加载失败')
+    expect(screen.queryByText('暂无访问令牌')).not.toBeInTheDocument()
+  })
+
+  it('uses secondary revoke and soft-danger delete button hierarchy for token rows', async () => {
+    vi.mocked(tokenApi.list).mockResolvedValueOnce({
+      data: {
+        data: [
+          {
+            create_time: '2026-11-01T00:00:00Z',
+            expires_at: null,
+            id: 21,
+            last_used_at: null,
+            name: '活跃令牌',
+            status: 1,
+          },
+          {
+            create_time: '2026-10-01T00:00:00Z',
+            expires_at: null,
+            id: 22,
+            last_used_at: null,
+            name: '已撤销令牌',
+            status: 0,
+          },
+        ],
+      },
+    } as never)
+
+    render(<TokenManagement />)
+    expect(await screen.findByText('活跃令牌')).toBeInTheDocument()
+
+    const revokeButton = screen.getByRole('button', { name: '撤销令牌：活跃令牌' })
+    const deleteActiveButton = screen.getByRole('button', { name: '删除令牌：活跃令牌' })
+    const deleteRevokedButton = screen.getByRole('button', { name: '删除令牌：已撤销令牌' })
+
+    expect(revokeButton).toHaveAttribute('data-variant', 'secondary')
+    expect(deleteActiveButton).toHaveAttribute('data-variant', 'tertiary')
+    expect(deleteActiveButton).toHaveAttribute('data-tone', 'danger')
+    expect(deleteRevokedButton).toHaveAttribute('data-variant', 'tertiary')
+    expect(deleteRevokedButton).toHaveAttribute('data-tone', 'danger')
+  })
 })

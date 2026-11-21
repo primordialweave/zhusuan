@@ -5,11 +5,13 @@ import { useToastStore } from '@/composables/useToast'
 import {
   Button,
   Code,
+  EmptyScene,
   EmptyState,
   Field,
   FormActions,
   IconButton,
   Input,
+  JadeIcon,
   Modal,
   Skeleton,
   Table,
@@ -40,18 +42,22 @@ export default function DictionaryManagement() {
   const [dictionaries, setDictionaries] = useState<Dictionary[]>([])
   const [activeDictItems, setActiveDictItems] = useState<DictionaryItem[]>([])
   const [dictionariesLoading, setDictionariesLoading] = useState(true)
+  const [dictionariesLoaded, setDictionariesLoaded] = useState(false)
+  const [dictionariesFailed, setDictionariesFailed] = useState(false)
   const [itemsLoading, setItemsLoading] = useState(true)
-  const [itemsScope, setItemsScope] = useState('')
+  const [loadedItemsScope, setLoadedItemsScope] = useState<string | null>(null)
+  const [failedItemsScope, setFailedItemsScope] = useState<string | null>(null)
   const [showModal, setShowModal] = useState(false)
   const [isEditing, setIsEditing] = useState(false)
   const [modalForm, setModalForm] = useState<DictionaryItemForm>(emptyForm)
   const [submitting, setSubmitting] = useState(false)
+  const mountedRef = useRef(false)
   const dictionariesRequestRef = useRef(0)
   const itemsRequestRef = useRef(0)
   const submitInFlightRef = useRef(false)
   const returnFocusRef = useRef<HTMLButtonElement | null>(null)
   const nameInputRef = useRef<HTMLInputElement | null>(null)
-  const loadedItemsCodeRef = useRef('')
+  const loadedItemsCodeRef = useRef<string | null>(null)
 
   const activeDictName = useMemo(() => {
     const dictionary = dictionaries.find((item) => item.code === activeDictId)
@@ -63,16 +69,23 @@ export default function DictionaryManagement() {
       if (!code) return
       const requestId = ++itemsRequestRef.current
       setItemsLoading(true)
+      setFailedItemsScope((current) => (current === code ? null : current))
       if (loadedItemsCodeRef.current !== code) setActiveDictItems([])
       try {
         const response = await dictionaryApi.getItems(code)
-        if (requestId === itemsRequestRef.current) setActiveDictItems(response.data.data)
+        if (!mountedRef.current || requestId !== itemsRequestRef.current) return
+        setActiveDictItems(response.data.data)
+        loadedItemsCodeRef.current = code
+        setLoadedItemsScope(code)
+        setFailedItemsScope(null)
       } catch {
-        if (requestId === itemsRequestRef.current) toastError('获取字典项失败')
+        if (!mountedRef.current || requestId !== itemsRequestRef.current) return
+        toastError('获取字典项失败')
+        if (loadedItemsCodeRef.current !== code) {
+          setFailedItemsScope(code)
+        }
       } finally {
-        if (requestId === itemsRequestRef.current) {
-          loadedItemsCodeRef.current = code
-          setItemsScope(code)
+        if (mountedRef.current && requestId === itemsRequestRef.current) {
           setItemsLoading(false)
         }
       }
@@ -83,25 +96,34 @@ export default function DictionaryManagement() {
   const fetchDictionaries = useCallback(async () => {
     const requestId = ++dictionariesRequestRef.current
     setDictionariesLoading(true)
+    setDictionariesFailed(false)
     try {
       const response = await dictionaryApi.list()
       const nextDictionaries = response.data.data
-      if (requestId === dictionariesRequestRef.current) {
-        setDictionaries(nextDictionaries)
-        setActiveDictId((current) => current || nextDictionaries[0]?.code || '')
-      }
+      if (!mountedRef.current || requestId !== dictionariesRequestRef.current) return
+      setDictionaries(nextDictionaries)
+      setDictionariesLoaded(true)
+      setDictionariesFailed(false)
+      setActiveDictId((current) => current || nextDictionaries[0]?.code || '')
     } catch {
-      if (requestId === dictionariesRequestRef.current) toastError('获取字典失败')
+      if (!mountedRef.current || requestId !== dictionariesRequestRef.current) return
+      toastError('获取字典失败')
+      setDictionariesFailed(true)
     } finally {
-      if (requestId === dictionariesRequestRef.current) setDictionariesLoading(false)
+      if (mountedRef.current && requestId === dictionariesRequestRef.current) {
+        setDictionariesLoading(false)
+      }
     }
   }, [toastError])
 
   useEffect(() => {
+    mountedRef.current = true
     const timer = window.setTimeout(fetchDictionaries, 0)
     return () => {
+      mountedRef.current = false
       window.clearTimeout(timer)
       dictionariesRequestRef.current += 1
+      itemsRequestRef.current += 1
     }
   }, [fetchDictionaries])
 
@@ -195,16 +217,18 @@ export default function DictionaryManagement() {
     }
   }
 
+  const showDictionariesSkeleton = !dictionariesLoaded && !dictionariesFailed
+  const showDictionariesError = !dictionariesLoaded && dictionariesFailed
+  const itemsCurrent = Boolean(activeDictId) && loadedItemsScope === activeDictId
+  const itemsError = Boolean(activeDictId) && !itemsCurrent && failedItemsScope === activeDictId
   const showItemSkeleton =
-    dictionariesLoading ||
-    (Boolean(activeDictId) &&
-      (itemsScope !== activeDictId || (itemsLoading && activeDictItems.length === 0)))
+    showDictionariesSkeleton || (Boolean(activeDictId) && !itemsCurrent && !itemsError)
 
   return (
     <div className="dict-management settings-page">
       <Tabs.Root className="dict-layout" onValueChange={setActiveDictId} value={activeDictId}>
         <div className="settings-toolbar">
-          {dictionariesLoading && dictionaries.length === 0 ? (
+          {showDictionariesSkeleton ? (
             <div aria-hidden="true" className="settings-loading__tabs">
               <Skeleton height="2rem" width="6rem" />
               <Skeleton height="2rem" width="6rem" />
@@ -220,7 +244,7 @@ export default function DictionaryManagement() {
             </Tabs.List>
           )}
           <Button disabled={!activeDictId} onClick={openAddModal}>
-            <i aria-hidden="true" className="ri-add-line" />
+            <JadeIcon name="add" size="1em" />
             <span>新增条目</span>
           </Button>
         </div>
@@ -231,10 +255,45 @@ export default function DictionaryManagement() {
               columns={4}
               label={dictionariesLoading ? '正在加载字典' : `正在加载${activeDictName}条目`}
             />
+          ) : showDictionariesError ? (
+            <EmptyState
+              action={
+                <Button onClick={() => void fetchDictionaries()} variant="secondary">
+                  重新加载
+                </Button>
+              }
+              className="settings-empty"
+              description="暂时无法读取字典分类，请重试。"
+              icon={<JadeIcon name="warning" size="1em" />}
+              role="alert"
+              size="md"
+              title="字典分类加载失败"
+            />
+          ) : dictionaries.length === 0 ? (
+            <EmptyState
+              className="settings-empty"
+              scene={<EmptyScene name="ledger-empty" size="standard" />}
+              size="md"
+              title="暂无字典分类"
+            />
+          ) : itemsError ? (
+            <EmptyState
+              action={
+                <Button onClick={() => void fetchDictItems(activeDictId)} variant="secondary">
+                  重试
+                </Button>
+              }
+              className="settings-empty"
+              description="暂时无法读取该分类下的字典条目，请重试。"
+              icon={<JadeIcon name="warning" size="1em" />}
+              role="alert"
+              size="md"
+              title={`${activeDictName || '字典'}条目加载失败`}
+            />
           ) : activeDictItems.length === 0 ? (
             <EmptyState
               className="settings-empty"
-              icon={<i aria-hidden="true" className="ri-file-list-3-line" />}
+              scene={<EmptyScene name="ledger-empty" size="standard" />}
               size="md"
               title={`${activeDictName || '字典'}还没有条目`}
             />
@@ -273,9 +332,9 @@ export default function DictionaryManagement() {
                           onClick={(event) => openEditModal(item, event)}
                           size="sm"
                           title="编辑"
-                          variant="ghost"
+                          variant="tertiary"
                         >
-                          <i aria-hidden="true" className="ri-edit-line" />
+                          <JadeIcon motionPreset="interactive" name="edit" size="1em" />
                         </IconButton>
                         <IconButton
                           label="删除字典条目"
@@ -283,9 +342,9 @@ export default function DictionaryManagement() {
                           size="sm"
                           title="删除"
                           tone="danger"
-                          variant="ghost"
+                          variant="tertiary"
                         >
-                          <i aria-hidden="true" className="ri-delete-bin-line" />
+                          <JadeIcon name="trash" size="1em" />
                         </IconButton>
                       </div>
                     </Table.Cell>

@@ -1,5 +1,6 @@
 import { forwardRef, type ReactNode } from 'react'
 import { IconButton, type IconButtonProps } from '../button'
+import { JadeIcon } from '../icon'
 
 export interface CloseButtonProps extends Omit<IconButtonProps, 'children' | 'label'> {
   icon?: ReactNode
@@ -19,7 +20,7 @@ export const CloseButton = forwardRef<HTMLButtonElement, CloseButtonProps>(funct
       size={size}
       variant={variant}
     >
-      {icon ?? <i aria-hidden="true" className="ri-close-line" />}
+      {icon ?? <JadeIcon name="close" size="1em" />}
     </IconButton>
   )
 })

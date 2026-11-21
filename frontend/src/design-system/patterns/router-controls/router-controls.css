@@ -148,7 +148,7 @@
   display: flex;
   font-size: var(--ods-shell-dock-icon-size);
   line-height: 1;
-  transition: transform var(--ods-duration-fast) var(--ods-ease-spring);
+  transition: transform var(--ods-duration-fast) var(--ods-ease-standard);
 }
 
 .ods-router-nav-link[data-appearance='dock'] .ods-router-nav-link__label {
@@ -163,8 +163,9 @@
     color: var(--ods-color-fg-relaxed);
   }
 
-  .ods-router-nav-link[data-appearance='dock']:hover .ods-router-nav-link__icon {
-    transform: translateY(-2px) scale(1.08);
+  .ods-router-nav-link[data-appearance='dock']:not([aria-current='page']):hover:not(:active)
+    .ods-router-nav-link__icon {
+    transform: translateY(-1px) scale(1.04);
   }
 
   .ods-router-nav-link[data-appearance='dock'][aria-current='page']:hover {
@@ -179,6 +180,11 @@
 
 .ods-router-nav-link[data-appearance='dock']:active {
   transform: scale(0.98);
+}
+
+.ods-router-nav-link[data-appearance='dock']:active .ods-router-nav-link__icon {
+  transform: none;
+  transition-duration: var(--ods-duration-instant);
 }
 
 .ods-router-nav-link[data-appearance='dock'][aria-current='page'] {
@@ -204,4 +210,14 @@
   .ods-router-nav-link[data-appearance='dock']:hover .ods-router-nav-link__icon {
     transform: none;
   }
+}
+
+:root[data-motion='reduced'] .ods-router-link[data-appearance='row']:is(:hover, :active),
+:root[data-motion='reduced'] .ods-router-link[data-appearance='row']:hover > .ods-link__icon,
+:root[data-motion='reduced'] .ods-router-nav-link[data-appearance='tab']:active,
+:root[data-motion='reduced'] .ods-router-nav-link[data-appearance='dock']:is(:hover, :active),
+:root[data-motion='reduced']
+  .ods-router-nav-link[data-appearance='dock']:hover
+  .ods-router-nav-link__icon {
+  transform: none;
 }

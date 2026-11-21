@@ -76,7 +76,7 @@
   color: var(--ods-color-fg-muted);
 }
 
-.ods-tabs__list[data-variant='navigation'] .ods-tabs__tab > i {
+.ods-tabs__list[data-variant='navigation'] .ods-tabs__tab > .ods-jade-icon {
   display: inline-grid;
   width: 1.125rem;
   height: 1.125rem;

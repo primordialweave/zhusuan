@@ -291,4 +291,64 @@ describe('NotificationEntry', () => {
 
     expect(unreadMark).toHaveAttribute('data-invisible', 'true')
   })
+
+  test('ends the dock skeleton cleanly without cluttering navigation when initial background poll fails', async () => {
+    vi.mocked(notificationApi.getUnreadCount).mockRejectedValueOnce(new Error('offline'))
+    vi.mocked(notificationApi.list).mockRejectedValueOnce(new Error('offline'))
+    signIn()
+    render(<NotificationEntry />, { initialEntries: ['/dashboard'] })
+
+    expect(screen.getByRole('status', { name: '正在加载最近通知' })).toBeInTheDocument()
+    await waitFor(() =>
+      expect(screen.queryByRole('status', { name: '正在加载最近通知' })).not.toBeInTheDocument(),
+    )
+    expect(screen.queryByRole('button', { name: /查看通知/ })).not.toBeInTheDocument()
+    expect(screen.queryByRole('alert')).not.toBeInTheDocument()
+  })
+
+  test('does not leak the previous user unread trigger when switching to a user whose initial load fails', async () => {
+    respondWith(2, [unreadNotification])
+    signIn()
+    render(<NotificationEntry />, { initialEntries: ['/dashboard'] })
+
+    expect(await findTrigger()).toHaveAccessibleName('查看通知，2 条未读')
+
+    vi.mocked(notificationApi.getUnreadCount).mockRejectedValueOnce(new Error('user2 offline'))
+    vi.mocked(notificationApi.list).mockRejectedValueOnce(new Error('user2 offline'))
+    act(() => {
+      useAuthStore.setState({
+        isAuthenticated: true,
+        isLoggedIn: true,
+        token: 'user2-token',
+        user: { id: 2, username: 'other', name: '另一用户' } as never,
+      })
+    })
+
+    await waitFor(() =>
+      expect(screen.queryByRole('status', { name: '正在加载最近通知' })).not.toBeInTheDocument(),
+    )
+    expect(screen.queryByRole('button', { name: /查看通知/ })).not.toBeInTheDocument()
+  })
+
+  test('preserves cached notifications when a refresh fails after opening the popover', async () => {
+    const user = userEvent.setup()
+    vi.mocked(notificationApi.getUnreadCount)
+      .mockReset()
+      .mockResolvedValueOnce({ data: { data: { count: 1 } } } as never)
+      .mockRejectedValueOnce(new Error('transient error'))
+    vi.mocked(notificationApi.list)
+      .mockReset()
+      .mockResolvedValueOnce({ data: { data: { list: [unreadNotification] } } } as never)
+      .mockRejectedValueOnce(new Error('transient error'))
+
+    signIn()
+    render(<NotificationEntry />, { initialEntries: ['/dashboard'] })
+
+    const trigger = await findTrigger()
+    await user.click(trigger)
+
+    await waitFor(() => expect(notificationApi.list).toHaveBeenCalledTimes(2))
+    expect(screen.getByText('项目已更新')).toBeInTheDocument()
+    expect(screen.queryByText('暂无通知')).not.toBeInTheDocument()
+  })
 })

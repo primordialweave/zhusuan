@@ -7,11 +7,13 @@ import {
   Alert,
   Button,
   Chip,
+  EmptyScene,
   EmptyState,
   Field,
   FormActions,
   IconButton,
   Input,
+  JadeIcon,
   Modal,
   PaginationBar,
   Select,
@@ -258,7 +260,7 @@ export default function NotificationManagement({ isAdmin = false }: Notification
         </h2>
         {isAdmin ? (
           <Button onClick={openCreateModal}>
-            <i aria-hidden="true" className="ri-add-line" />
+            <JadeIcon name="add" size="1em" />
             <span>发送通知</span>
           </Button>
         ) : null}
@@ -288,7 +290,7 @@ export default function NotificationManagement({ isAdmin = false }: Notification
       ) : dataIsCurrent && notifications.length === 0 ? (
         <EmptyState
           className="settings-empty"
-          icon={<i className="ri-notification-off-line" />}
+          scene={<EmptyScene name="notifications-empty" size="standard" />}
           size="lg"
           title="暂无通知"
         />
@@ -333,9 +335,9 @@ export default function NotificationManagement({ isAdmin = false }: Notification
                     onClick={() => void viewNotificationDetail(notification)}
                     size="sm"
                     title="查看"
-                    variant="ghost"
+                    variant="tertiary"
                   >
-                    <i className="ri-eye-line" />
+                    <JadeIcon name="eye" size="1em" />
                   </IconButton>
                   {isAdmin ? (
                     <>
@@ -344,9 +346,9 @@ export default function NotificationManagement({ isAdmin = false }: Notification
                         onClick={() => editNotification(notification)}
                         size="sm"
                         title="编辑"
-                        variant="ghost"
+                        variant="secondary"
                       >
-                        <i className="ri-edit-line" />
+                        <JadeIcon motionPreset="interactive" name="edit" size="1em" />
                       </IconButton>
                       <IconButton
                         label="删除通知"
@@ -354,9 +356,9 @@ export default function NotificationManagement({ isAdmin = false }: Notification
                         size="sm"
                         title="删除"
                         tone="danger"
-                        variant="ghost"
+                        variant="tertiary"
                       >
-                        <i className="ri-delete-bin-line" />
+                        <JadeIcon name="trash" size="1em" />
                       </IconButton>
                     </>
                   ) : null}

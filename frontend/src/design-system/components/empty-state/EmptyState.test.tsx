@@ -1,6 +1,8 @@
 import { render, screen } from '@testing-library/react'
 import { describe, expect, it } from 'vitest'
+import { EmptyScene } from './EmptyScene'
 import { EmptyState } from './EmptyState'
+import { JadeIcon } from '../icon'
 
 describe('EmptyState', () => {
   it('renders accessible copy, decorative media, and an optional action', () => {
@@ -8,7 +10,7 @@ describe('EmptyState', () => {
       <EmptyState
         action={<button type="button">新建项目</button>}
         description="创建第一条记录后，数据会显示在这里。"
-        icon={<i className="ri-folder-add-line" />}
+        icon={<JadeIcon name="folder-open" size="1em" />}
         size="lg"
         title="暂无项目"
       />,
@@ -29,5 +31,22 @@ describe('EmptyState', () => {
     expect(container.querySelector('.ods-empty-state__icon')).toBeInTheDocument()
     expect(container.querySelector('.ods-empty-state__description')).not.toBeInTheDocument()
     expect(container.querySelector('.ods-empty-state__action')).not.toBeInTheDocument()
+  })
+
+  it('renders brand EmptyScene without the default icon badge when scene prop is provided', () => {
+    const { container } = render(
+      <EmptyState
+        scene={<EmptyScene name="projects-empty" size="hero" />}
+        size="lg"
+        title="暂无项目"
+      />,
+    )
+
+    expect(container.firstChild).toHaveAttribute('data-presentation', 'scene')
+    expect(container.querySelector('.ods-empty-state__icon')).not.toBeInTheDocument()
+    const scene = container.querySelector('[data-slot="empty-scene"]')
+    expect(scene).toHaveAttribute('data-scene', 'projects-empty')
+    expect(scene).toHaveAttribute('height', '96')
+    expect(scene).toHaveAttribute('viewBox', '0 0 160 112')
   })
 })

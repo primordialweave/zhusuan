@@ -172,3 +172,8 @@
     transition: none;
   }
 }
+
+:root[data-motion='reduced'] .ods-select__caret,
+:root[data-motion='reduced'] .ods-select__clear {
+  transition: none;
+}

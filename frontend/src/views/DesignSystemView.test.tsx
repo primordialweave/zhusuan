@@ -17,10 +17,15 @@ describe('DesignSystemView', () => {
     ).toBeInTheDocument()
     expect(container.querySelector('.design-showcase__scroll-item.ods-surface')).toBeInTheDocument()
     expect(container.querySelector('[data-variant="brand"]')).toBeInTheDocument()
+    expect(screen.getByRole('heading', { level: 2, name: '玉质图标 JadeIcon' })).toBeInTheDocument()
+    expect(
+      screen.getByRole('heading', { level: 2, name: '珠算空态场景 EmptyScene' }),
+    ).toBeInTheDocument()
+    expect(container.querySelectorAll('[data-slot="empty-scene"]')).toHaveLength(3)
     expect(document.querySelectorAll('[data-slot="toaster"]')).toHaveLength(0)
   })
 
-  it('relies on the single application-level toast host', () => {
+  it('relies on the single application-level toast host and shared jade icon defs', () => {
     renderReact(
       <MemoryRouter initialEntries={['/design-system']}>
         <Routes>
@@ -32,5 +37,6 @@ describe('DesignSystemView', () => {
     )
 
     expect(document.querySelectorAll('[data-slot="toaster"]')).toHaveLength(1)
+    expect(document.querySelectorAll('[data-slot="jade-icon-defs"]')).toHaveLength(1)
   })
 })

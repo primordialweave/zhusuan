@@ -1,4 +1,11 @@
-import { forwardRef, type MouseEventHandler, type ReactNode } from 'react'
+import {
+  forwardRef,
+  useEffect,
+  useRef,
+  type MouseEventHandler,
+  type PointerEventHandler,
+  type ReactNode,
+} from 'react'
 import {
   Link as ReactRouterLink,
   NavLink as ReactRouterNavLink,
@@ -7,6 +14,8 @@ import {
   type NavLinkProps as ReactRouterNavLinkProps,
 } from 'react-router-dom'
 import type { ButtonSize, ButtonTone, ButtonVariant } from '../../components/button'
+import { triggerButtonIconPulse, triggerButtonRipple } from '../../components/button/buttonMotion'
+import { cancelMotionAnimations } from '../../components/icon/iconMotion'
 import type { LinkTone, LinkUnderline } from '../../components/link'
 
 export interface RouterButtonProps extends Omit<ReactRouterLinkProps, 'className'> {
@@ -27,6 +36,7 @@ export const RouterButton = forwardRef<HTMLAnchorElement, RouterButtonProps>(fun
     disabled = false,
     fullWidth = false,
     onClick,
+    onPointerDown,
     pending = false,
     size = 'md',
     tabIndex,
@@ -34,14 +44,45 @@ export const RouterButton = forwardRef<HTMLAnchorElement, RouterButtonProps>(fun
     variant = 'primary',
     ...props
   },
-  ref,
+  forwardedRef,
 ) {
+  const linkRef = useRef<HTMLAnchorElement | null>(null)
+  const rippleRef = useRef<HTMLSpanElement | null>(null)
   const inactive = disabled || pending
+  const interactiveSurface = variant !== 'bare'
+
+  useEffect(() => {
+    const link = linkRef.current
+    return () => cancelMotionAnimations(link, true)
+  }, [])
+
+  const setLinkRef = (node: HTMLAnchorElement | null) => {
+    linkRef.current = node
+    if (typeof forwardedRef === 'function') {
+      forwardedRef(node)
+    } else if (forwardedRef) {
+      forwardedRef.current = node
+    }
+  }
+
+  const handlePointerDown: PointerEventHandler<HTMLAnchorElement> = (event) => {
+    if (!inactive && interactiveSurface && event.button === 0) {
+      triggerButtonRipple(linkRef.current, rippleRef.current, event.clientX, event.clientY)
+    }
+    onPointerDown?.(event)
+  }
+
   const handleClick: MouseEventHandler<HTMLAnchorElement> = (event) => {
     if (inactive) {
       event.preventDefault()
       event.stopPropagation()
       return
+    }
+    if (interactiveSurface) {
+      if (event.detail === 0) {
+        triggerButtonRipple(linkRef.current, rippleRef.current)
+      }
+      triggerButtonIconPulse(linkRef.current)
     }
     onClick?.(event)
   }
@@ -58,9 +99,13 @@ export const RouterButton = forwardRef<HTMLAnchorElement, RouterButtonProps>(fun
       data-tone={tone}
       data-variant={variant}
       onClick={handleClick}
-      ref={ref}
+      onPointerDown={handlePointerDown}
+      ref={setLinkRef}
       tabIndex={inactive ? -1 : tabIndex}
     >
+      {interactiveSurface ? (
+        <span aria-hidden="true" className="ods-button__ripple" ref={rippleRef} />
+      ) : null}
       {children}
     </ReactRouterLink>
   )

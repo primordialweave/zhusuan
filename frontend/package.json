@@ -1,6 +1,6 @@
 {
   "name": "zhusuan",
-  "version": "1.1.0",
+  "version": "1.2.0",
   "private": true,
   "type": "module",
   "engines": {
@@ -9,7 +9,7 @@
   "scripts": {
     "dev": "vite",
     "build:dev": "tsc --build && vite build --minify false --mode development",
-    "build": "tsc --build && vite build --mode production && node scripts/cleanup-remixicon-assets.mjs",
+    "build": "tsc --build && vite build --mode production",
     "preview": "vite preview",
     "test": "vitest",
     "test:run": "vitest run",
@@ -28,7 +28,6 @@
     "react": "^19.3.1",
     "react-dom": "^19.3.1",
     "react-router-dom": "^7.18.6",
-    "remixicon": "^4.9.1",
     "tailwindcss": "^4.3.5",
     "zustand": "^5.1.0"
   },

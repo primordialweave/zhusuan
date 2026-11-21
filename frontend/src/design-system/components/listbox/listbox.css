@@ -67,7 +67,10 @@
 }
 
 .ods-listbox__check {
+  display: inline-flex;
   flex: 0 0 auto;
+  align-items: center;
+  justify-content: center;
   color: var(--ods-color-accent-text);
   opacity: 0;
 }

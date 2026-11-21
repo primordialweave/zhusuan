@@ -107,4 +107,31 @@ describe.each(['jiangnan-mist', 'jiangnan-night'])('%s readable colors', (theme)
       ).toBeGreaterThanOrEqual(4.5)
     }
   })
+
+  it('keeps jade icon strokes and on-accent carved icons clearly legible on every surface', () => {
+    for (const token of [
+      '--ods-material-jade-icon-base',
+      '--ods-material-jade-icon-edge',
+      '--ods-material-jade-icon-depth',
+    ]) {
+      expect(contrast(tokenColor(token), surface), `${token} on surface`).toBeGreaterThanOrEqual(3)
+    }
+
+    const accentGradients = ['--ods-gradient-glow', '--ods-gradient-nav-selected']
+    for (const gradientToken of accentGradients) {
+      const stops = resolve(tokens.get(gradientToken)!).match(/#[0-9a-f]{6}/gi)!
+      for (const stop of stops) {
+        for (const iconToken of [
+          '--ods-material-jade-icon-on-accent-base',
+          '--ods-material-jade-icon-on-accent-edge',
+          '--ods-material-jade-icon-on-accent-depth',
+        ]) {
+          expect(
+            contrast(tokenColor(iconToken), color(stop)),
+            `${iconToken} on ${gradientToken} ${stop}`,
+          ).toBeGreaterThanOrEqual(4.5)
+        }
+      }
+    }
+  })
 })

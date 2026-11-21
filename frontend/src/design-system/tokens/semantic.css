@@ -69,6 +69,7 @@
   --ods-control-gap: var(--ods-ref-space-2);
 
   /* Motion */
+  --ods-delay-stagger: var(--ods-ref-duration-40);
   --ods-duration-instant: var(--ods-ref-duration-140);
   --ods-duration-fast: var(--ods-ref-duration-200);
   --ods-duration-press: var(--ods-ref-duration-160);

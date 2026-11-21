@@ -3,6 +3,7 @@ import userEvent from '@testing-library/user-event'
 import { describe, expect, it, vi } from 'vitest'
 import { render } from '@/test/render'
 import { RouterButton, RouterIconButton, RouterLink, RouterNavLink } from './RouterControls'
+import { JadeIcon } from '../../components/icon'
 import routerControlsCss from './router-controls.css?raw'
 
 describe('RouterButton', () => {
@@ -40,7 +41,7 @@ describe('RouterIconButton', () => {
   it('combines router navigation with the ODS icon-button contract', () => {
     render(
       <RouterIconButton label="系统设置" to="/settings" tone="accent" variant="secondary">
-        <i aria-hidden="true" className="ri-settings-4-line" />
+        <JadeIcon name="dock-settings" size="1em" />
       </RouterIconButton>,
     )
 
@@ -73,7 +74,7 @@ describe('RouterLink', () => {
       <RouterLink
         appearance="row"
         density="comfortable"
-        icon={<i className="ri-arrow-right-s-line" />}
+        icon={<JadeIcon name="chevron-right" size="1em" />}
         to="/projects/42"
       >
         星轨项目
@@ -121,7 +122,7 @@ describe('RouterNavLink', () => {
     render(
       <RouterNavLink
         appearance="dock"
-        icon={<i aria-hidden="true" className="ri-dashboard-line" />}
+        icon={<JadeIcon detail="carved" name="dock-dashboard" size="1em" />}
         to="/dashboard"
       >
         工作台

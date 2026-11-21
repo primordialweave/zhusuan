@@ -9,6 +9,9 @@
 
 /* Merge the pill buttons into one continuous segmented control. */
 .ods-button-group > .ods-button {
+  --ods-button-hover-lift: -1px;
+  --ods-button-hover-scale: 1;
+
   border-radius: 0;
 }
 

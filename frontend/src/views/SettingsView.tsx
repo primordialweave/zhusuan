@@ -21,14 +21,17 @@ import {
   FormGrid,
   Image,
   Input,
+  JadeIcon,
   PageHeader,
   ProgressBar,
   Radio,
   RadioGroup,
   RouterButton,
   Skeleton,
+  Spinner,
   Switch,
   Tabs,
+  type JadeIconName,
 } from '@/design-system'
 import { useMediaQuery } from '@/hooks/useMediaQuery'
 import { useAppearanceStore, type AppearancePreferences } from '@/stores/appearance'
@@ -301,19 +304,19 @@ export default function SettingsView() {
   }, [user])
 
   const settingsNav = useMemo(
-    () => [
-      { icon: 'ri-user-line', key: 'profile', label: '个人信息' },
-      { icon: 'ri-palette-line', key: 'appearance', label: '外观设置' },
-      { icon: 'ri-notification-3-line', key: 'notification', label: '通知设置' },
-      { icon: 'ri-cloud-line', key: 'data-sync', label: '数据同步' },
+    (): ReadonlyArray<{ icon: JadeIconName; key: string; label: string }> => [
+      { icon: 'user', key: 'profile', label: '个人信息' },
+      { icon: 'palette', key: 'appearance', label: '外观设置' },
+      { icon: 'bell', key: 'notification', label: '通知设置' },
+      { icon: 'cloud', key: 'data-sync', label: '数据同步' },
       ...(isAdmin
         ? [
-            { icon: 'ri-team-line', key: 'users', label: '用户管理' },
-            { icon: 'ri-book-2-line', key: 'dictionary', label: '字典管理' },
+            { icon: 'users' as const, key: 'users', label: '用户管理' },
+            { icon: 'book' as const, key: 'dictionary', label: '字典管理' },
           ]
         : []),
-      { icon: 'ri-code-s-slash-line', key: 'developer', label: '开发设置' },
-      { icon: 'ri-information-line', key: 'about', label: '关于' },
+      { icon: 'code', key: 'developer', label: '开发设置' },
+      { icon: 'info', key: 'about', label: '关于' },
     ],
     [isAdmin],
   )
@@ -551,7 +554,7 @@ export default function SettingsView() {
             actions={
               <RouterButton to="/design-system" variant="outline">
                 <span>组件展厅</span>
-                <i aria-hidden="true" className="ri-arrow-right-line" />
+                <JadeIcon name="arrow-right" size="1em" />
               </RouterButton>
             }
           />
@@ -651,10 +654,11 @@ export default function SettingsView() {
                   pending={checkingUpdate}
                   variant="outline"
                 >
-                  <i
-                    aria-hidden="true"
-                    className={`ri-loop-left-line ${checkingUpdate ? 'spinning' : ''}`}
-                  />
+                  {checkingUpdate ? (
+                    <Spinner aria-hidden="true" size="sm" />
+                  ) : (
+                    <JadeIcon name="refresh" size="1em" />
+                  )}
                   <span>
                     {checkingUpdate
                       ? '正在检测更新...'
@@ -743,7 +747,7 @@ export default function SettingsView() {
                   variant="outline"
                 >
                   <span>primordialweave/zhusuan</span>
-                  <i aria-hidden="true" className="ri-arrow-right-up-line" />
+                  <JadeIcon name="arrow-up-right" size="1em" />
                 </Button>
               </li>
               <li className="settings-row">
@@ -821,6 +825,7 @@ export default function SettingsView() {
             }
             className="settings-empty"
             description="暂时无法读取账户资料，请重试。"
+            icon={<JadeIcon name="warning" size="1em" />}
             title="个人信息加载失败"
           />
         </SettingsGroup>
@@ -848,7 +853,7 @@ export default function SettingsView() {
               </span>
             </div>
             <Button onClick={() => void handleLogout()} tone="danger" variant="outline">
-              <i aria-hidden="true" className="ri-logout-box-r-line" />
+              <JadeIcon name="logout" size="1em" />
               <span>退出登录</span>
             </Button>
           </div>
@@ -859,12 +864,12 @@ export default function SettingsView() {
             <>
               {profileDirty ? (
                 <span className="settings-unsaved-indicator" role="status">
-                  <i aria-hidden="true" className="ri-edit-circle-line" />
+                  <JadeIcon name="edit-circle" size="1em" />
                   有尚未保存的个人信息更改
                 </span>
               ) : null}
               <Button onClick={saveProfile}>
-                <i aria-hidden="true" className="ri-save-line" />
+                <JadeIcon name="save" size="1em" />
                 <span>保存更改</span>
               </Button>
             </>
@@ -883,7 +888,7 @@ export default function SettingsView() {
         <SettingsGroup
           footer={
             <Button onClick={handlePasswordChange}>
-              <i aria-hidden="true" className="ri-lock-password-line" />
+              <JadeIcon name="lock-password" size="1em" />
               <span>修改密码</span>
             </Button>
           }
@@ -915,7 +920,7 @@ export default function SettingsView() {
         >
           {settingsNav.map((item) => (
             <Tabs.Tab key={item.key} value={item.key}>
-              {stacked ? null : <i aria-hidden="true" className={item.icon} />}
+              {stacked ? null : <JadeIcon name={item.icon} size={18} />}
               {item.label}
             </Tabs.Tab>
           ))}

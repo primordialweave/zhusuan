@@ -23,6 +23,89 @@
   font-size: var(--ods-font-size-2xl);
 }
 
+.ods-empty-state__scene {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  margin-block-end: var(--ods-space-1);
+}
+
+.ods-empty-scene {
+  display: block;
+  max-width: 100%;
+  height: auto;
+  overflow: visible;
+  cursor: default;
+}
+
+@keyframes ods-empty-scene-fade {
+  from {
+    opacity: 0;
+  }
+
+  to {
+    opacity: 1;
+  }
+}
+
+@keyframes ods-empty-bead-settle {
+  from {
+    transform: translateY(2px);
+  }
+
+  to {
+    transform: translateY(0);
+  }
+}
+
+.ods-empty-scene[data-animate='true'] {
+  animation: ods-empty-scene-fade var(--ods-duration-fast) var(--ods-ease-standard) 1 both;
+}
+
+.ods-empty-scene[data-animate='true'] .ods-empty-scene__bead--movable {
+  animation: ods-empty-bead-settle var(--ods-duration-fast) var(--ods-ease-emphasized) 1 both;
+}
+
+.ods-empty-scene[data-animate='true'] .ods-empty-scene__bead--movable[data-bead-index='1'] {
+  animation-delay: var(--ods-delay-stagger);
+}
+
+.ods-empty-scene[data-animate='true'] .ods-empty-scene__bead--movable[data-bead-index='2'] {
+  animation-delay: calc(var(--ods-delay-stagger) * 2);
+}
+
+@media (hover: hover) and (pointer: fine) {
+  .ods-empty-scene[data-size='hero'] .ods-empty-scene__bead--movable[data-bead-index='0'] {
+    transition: transform var(--ods-duration-fast) var(--ods-ease-standard);
+  }
+
+  .ods-empty-scene[data-size='hero']:hover .ods-empty-scene__bead--movable[data-bead-index='0'] {
+    transform: translateY(1px);
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .ods-empty-scene[data-animate='true'],
+  .ods-empty-scene[data-animate='true'] .ods-empty-scene__bead--movable {
+    animation: none;
+  }
+
+  .ods-empty-scene[data-size='hero']:hover .ods-empty-scene__bead--movable[data-bead-index='0'] {
+    transform: none;
+  }
+}
+
+:root[data-motion='reduced'] .ods-empty-scene[data-animate='true'],
+:root[data-motion='reduced'] .ods-empty-scene[data-animate='true'] .ods-empty-scene__bead--movable {
+  animation: none;
+}
+
+:root[data-motion='reduced']
+  .ods-empty-scene[data-size='hero']:hover
+  .ods-empty-scene__bead--movable[data-bead-index='0'] {
+  transform: none;
+}
+
 .ods-empty-state__title {
   margin: 0;
   color: var(--ods-color-fg-default);

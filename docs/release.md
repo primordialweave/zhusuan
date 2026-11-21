@@ -1,10 +1,12 @@
 # 打包、发布与桌面更新
 
-## 1.1.0 与发布入口
+## 1.2.0 与发布入口
 
-**1.1.0** 已公开并设latest，本次发布包含玉质界面、全界面Skeleton、可配置品牌信息与收款计划批次口径，检查记录见 [release-readiness-1.1.0.md](release-readiness-1.1.0.md)。公开状态以 [v1.1.0 Release](https://github.com/primordialweave/zhusuan/releases/tag/v1.1.0) 为准。
+本次版本为 **1.2.0**，包含统一 SVG 玉质图标与品牌空态、组件和图表材质打磨、有限交互动效，以及 macOS 深浅双态图标资源。版本元数据已同步；公开状态以 [v1.2.0 Release](https://github.com/primordialweave/zhusuan/releases/tag/v1.2.0) 为准，提交代码或创建标签不代表安装包已发布。
 
-**1.0.2** 已公开并设latest，包含Windows普通启动时按需UAC、透明胶囊标题栏与全屏、窗口操作串行队列修复。[v1.0.2 Release](https://github.com/primordialweave/zhusuan/releases/tag/v1.0.2) 三平台完整通过，检查证据见 [release-readiness-1.0.2.md](release-readiness-1.0.2.md)。依赖升级另行合入主分支，已发布源码/标签/附件不变。
+**1.1.0** 已公开，包含玉质界面、全界面Skeleton、可配置品牌信息与收款计划批次口径，历史检查记录见 [release-readiness-1.1.0.md](release-readiness-1.1.0.md)。
+
+**1.0.2** 已公开，包含Windows普通启动时按需UAC、透明胶囊标题栏与全屏、窗口操作串行队列修复。[v1.0.2 Release](https://github.com/primordialweave/zhusuan/releases/tag/v1.0.2) 三平台完整通过，检查证据见 [release-readiness-1.0.2.md](release-readiness-1.0.2.md)。依赖升级另行合入主分支，已发布源码/标签/附件不变。
 
 macOS 下载入口改为 Apple Silicon（arm64）和 Intel（amd64）两个 DMG。打开映像后将珠算拖入 Applications，再从应用程序文件夹启动。包仍采用 ad-hoc 签名，未配置 Developer ID/公证；Windows 安装器未配置 Authenticode 签名。首次打开时可能需要按系统提示允许运行。安装前退出旧应用，首次以原用户启动珠算完成数据迁移，旧数据保留。
 
@@ -15,12 +17,12 @@ macOS 下载入口改为 Apple Silicon（arm64）和 Intel（amd64）两个 DMG�
 先统一源代码版本：
 
 ```sh
-python3 scripts/release.py metadata v1.1.0
+python3 scripts/release.py metadata v1.2.0
 # 等价入口
-task bump-version VERSION=1.1.0
+task bump-version VERSION=1.2.0
 ```
 
-命令同步前端 package/lockfile、后端 `AppVersion`、Wails build/config、macOS/iOS plist、Windows 文件资源及 MSIX、Linux 包与 Android versionName/versionCode。MSIX 使用 `1.0.2.0`，Android versionCode 使用 `1000002`；系统最低版本要求独立保留。NSIS 从 build/config.yml 读取版本，避免生成 include 中的默认版本漂移。CI 在自己的工作副本执行相同同步。
+命令同步前端 package/lockfile、后端 `AppVersion`、Wails build/config、macOS/iOS plist、Windows 文件资源及 MSIX、Linux 包与 Android versionName/versionCode。1.2.0 的 MSIX 使用 `1.2.0.0`，Android versionCode 使用 `1002000`；系统最低版本要求独立保留。NSIS 从 build/config.yml 读取版本，避免生成 include 中的默认版本漂移。CI 在自己的工作副本执行相同同步。
 
 发布工作流由推送稳定版本标签触发，也可在 GitHub Actions 的 Release 手动选择已有标签。手动运行必须填写 `tag`；构建该标签对应的代码。准备阶段先拒绝已公开 Release，避免重建和覆盖正式版本；公开 Release 是单独的发布操作，准备文档、提交或更新草稿 PR 不会运行此标签发布流程。默认分支合并还可能触发 GHCR 镜像构建，合并前应确认发布意图。
 
@@ -39,7 +41,7 @@ gh workflow run release.yml --ref main -f tag=v1.0.0 -f build_recipe_ref=<40位�
 ## 构建和发布顺序
 
 1. `prepare` 校验已有版本标签、版本编码与发布工具回归用例。
-2. `build` 在 macOS、Windows、Linux runner 分别校验前端、构建应用并运行 Go 测试与静态检查。
+2. `build` 在 macOS、Windows、Linux runner 分别校验前端、构建应用并运行 Go 测试与静态检查。发行前端测试使用单 worker，保留全部用例和断言，避免不同 runner 的并发资源争用。
 3. macOS 在同一 runner 顺序构建 arm64、amd64 两个应用，由 scripts/build_macos_packages.py 校验版本与架构后生成各自 DMG 和 ZIP；Windows 编译 NSIS 并在临时目录进行安装/覆盖升级检查；Linux 构建 AppImage、deb 与 rpm。
 4. 各平台检查必需产物，生成 SHA256 清单并上传 Actions artifact。缺失、空文件、重复资产直接使流程失败。
 5. 单一 `publish` job 汇总全部平台产物，重新核对摘要，生成 `SHA256SUMS` 与静态 `update.json`。
@@ -102,7 +104,7 @@ macOS 暂存 app bundle 与安装目标位于同一文件系统，校验应用�
 
 客户端以 128 KiB 缓冲下载，安装包上限 512 MiB，macOS 解压上限 1 GiB，更新日志上限 4 MiB。更新期间每 500 ms 串行读取内存状态；空闲时不轮询或检查网络。Linux 包归属探测延迟至用户主动检测更新。发布侧每次读取 1 MiB 计算摘要，不把安装包全部载入内存。
 
-前端场景有帧率、像素预算、后台暂停和资源释放控制；项目选择器按需读取 20 项。实际 CPU/GPU、内存、启动时间及电池开销仍需在目标设备测量，不以实现预算代替性能验收。
+前端场景有帧率、像素预算、后台暂停和资源释放控制；项目选择器按需读取 20 项。1.2.0 的 SVG 图标共用应用根部渐变定义，交互动效由 hover、按压或真实业务结果触发，并服从系统与应用的减少动态设置；主界面采用静态玉质材质。发行验收记录生产包体及浏览器交互结果，实际 CPU/GPU、内存、启动时间及电池开销仍需在目标设备测量，不以实现预算代替性能验收。
 
 ## 本地检查与验收记录
 

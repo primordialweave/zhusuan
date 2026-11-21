@@ -1,7 +1,9 @@
 .ods-circular-progress {
   --ods-circular-size: var(--ods-space-12);
-  --ods-circular-stroke: 8;
+  --ods-circular-stroke: 10.5;
   --ods-circular-color: var(--ods-color-accent);
+  --ods-circular-light: var(--ods-color-accent-hover);
+  --ods-circular-depth: var(--ods-color-accent-text);
 
   position: relative;
   display: inline-flex;
@@ -13,30 +15,54 @@
 
 .ods-circular-progress[data-size='sm'] {
   --ods-circular-size: var(--ods-space-8);
-  --ods-circular-stroke: 10;
+  --ods-circular-stroke: 11.5;
 }
 
 .ods-circular-progress[data-size='lg'] {
-  --ods-circular-size: var(--ods-space-16);
-  --ods-circular-stroke: 7;
+  --ods-circular-size: 4.5rem;
+  --ods-circular-stroke: 11;
 }
 
 .ods-circular-progress[data-tone='success'] {
-  --ods-circular-color: var(--ods-color-status-success);
+  --ods-circular-color: var(--ods-data-part-paid);
+  --ods-circular-light: var(--ods-color-accent-hover);
+  --ods-circular-depth: var(--ods-color-status-success);
 }
 
 .ods-circular-progress[data-tone='warning'] {
   --ods-circular-color: var(--ods-color-status-warning);
+  --ods-circular-light: var(--ods-data-part-pending);
+  --ods-circular-depth: var(--ods-color-status-warning);
 }
 
 .ods-circular-progress[data-tone='danger'] {
   --ods-circular-color: var(--ods-color-status-danger);
+  --ods-circular-light: var(--ods-color-status-danger);
+  --ods-circular-depth: var(--ods-color-status-danger);
 }
 
 .ods-circular-progress__svg {
   width: 100%;
   height: 100%;
+  overflow: visible;
   transform: rotate(-90deg);
+  filter: drop-shadow(0 2px 6px var(--ods-material-jade-icon-shadow));
+}
+
+.ods-circular-progress__stop--light {
+  stop-color: var(--ods-circular-light);
+}
+
+.ods-circular-progress__stop--base {
+  stop-color: var(--ods-circular-color);
+}
+
+.ods-circular-progress__stop--depth {
+  stop-color: var(--ods-circular-depth);
+}
+
+.ods-circular-progress__stop--ridge {
+  stop-color: var(--ods-color-fg-brand-surface);
 }
 
 .ods-circular-progress__track {
@@ -45,10 +71,15 @@
 }
 
 .ods-circular-progress__indicator {
-  stroke: var(--ods-circular-color);
   stroke-linecap: round;
   stroke-width: var(--ods-circular-stroke);
-  filter: drop-shadow(0 0 4px color-mix(in srgb, var(--ods-circular-color) 45%, transparent));
+  transition: stroke-dashoffset var(--ods-duration-page) var(--ods-ease-emphasized);
+}
+
+.ods-circular-progress__ridge {
+  stroke-linecap: round;
+  stroke-width: 4.6;
+  pointer-events: none;
   transition: stroke-dashoffset var(--ods-duration-page) var(--ods-ease-emphasized);
 }
 
@@ -65,6 +96,10 @@
   font-variant-numeric: tabular-nums;
 }
 
+.ods-circular-progress[data-size='lg'] .ods-circular-progress__label {
+  font-size: var(--ods-font-size-sm);
+}
+
 @keyframes ods-circular-rotate {
   to {
     transform: rotate(270deg);
@@ -72,11 +107,23 @@
 }
 
 @media (prefers-reduced-motion: reduce) {
-  .ods-circular-progress__indicator {
-    transition: none;
+  .ods-circular-progress__indicator,
+  .ods-circular-progress__ridge {
+    transition-duration: 0ms;
   }
 
   .ods-circular-progress[data-indeterminate='true'] .ods-circular-progress__svg {
     animation-duration: 2200ms;
   }
+}
+
+:root[data-motion='reduced'] .ods-circular-progress__indicator,
+:root[data-motion='reduced'] .ods-circular-progress__ridge {
+  transition-duration: 0ms;
+}
+
+:root[data-motion='reduced']
+  .ods-circular-progress[data-indeterminate='true']
+  .ods-circular-progress__svg {
+  animation-duration: 2200ms;
 }

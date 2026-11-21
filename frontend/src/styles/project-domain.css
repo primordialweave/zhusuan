@@ -243,11 +243,6 @@
   line-height: var(--ods-line-height-body);
 }
 
-.project-form-aside__note i {
-  margin-block-start: 3px;
-  color: var(--ods-color-status-success);
-}
-
 .project-form .ods-field,
 .payment-form .ods-field {
   min-width: 0;
@@ -461,10 +456,6 @@
   display: inline-flex;
   align-items: center;
   gap: var(--ods-space-2);
-}
-
-.project-detail-tab > i {
-  font-size: var(--ods-font-size-md);
 }
 
 .project-detail-content {
@@ -757,7 +748,7 @@
   gap: var(--ods-space-3);
 }
 
-.project-next-payment > div {
+.project-next-payment:not(.project-next-payment--empty) > div {
   display: flex;
   width: 100%;
   align-items: baseline;
@@ -786,13 +777,17 @@
 .project-next-payment--empty {
   align-items: center;
   justify-content: center;
-  min-height: 7rem;
+  min-height: 7.5rem;
   color: var(--ods-color-status-success);
   text-align: center;
 }
 
-.project-next-payment--empty > i {
-  font-size: var(--ods-font-size-2xl);
+.project-next-payment__badge {
+  display: grid;
+  width: var(--ods-space-12);
+  height: var(--ods-space-12);
+  flex: 0 0 auto;
+  place-items: center;
 }
 
 .project-next-payment--empty strong {

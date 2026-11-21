@@ -1,19 +1,19 @@
 # 平台图标
 
-当前图标使用用户提供的 `frontend/public/帝王绿翡翠算盘图标.png`，原文件保留不变。构建的唯一规范输入是 `build/appicon.png`；网页使用256像素输出，Windows格式由Wails生成，macOS由平台脚本生成。
+1.2.0 的平台图标采用 A2 算盘构图：青玉槽、五颗透光翠玉珠与暖琥珀金珠。浅色规范输入为 `build/appicon.png`，macOS 夜雨深色输入为 `build/appicon-dark.png`，两张均为 1024×1024，构图位置保持一致。网页和其他平台从浅色输入派生，macOS 另将深色资源编入系统图标目录。
 
 重新生成全部平台图标：
 
 ```sh
 python3 -m pip install -r scripts/requirements-icons.txt
-python3 scripts/generate_icons.py --input frontend/public/帝王绿翡翠算盘图标.png
+python3 scripts/generate_icons.py --input build/appicon.png
 ```
 
-图像更新到 `build/appicon.png` 后也可运行 `task icons`。标准打包消费已生成并提交的资源，不要求额外安装Pillow。
+图像更新到 `build/appicon.png` 后也可运行 `task icons`。macOS 脚本自动读取同目录的 `appicon-dark.png`，也可通过 `--dark-input` 指定深色源。标准打包消费已生成并提交的资源，不要求额外安装Pillow；重新生成全部派生图标需要 Pillow。
 
 | 平台 | 输出 |
 | --- | --- |
-| macOS | build/darwin/icons.icns 兼容旧系统；Assets.car 用于新版系统；运行时 Dock 直接使用新原画 PNG（build/appicon.png） |
+| macOS | `build/darwin/icons.icns` 兼容旧系统；`build/darwin/Assets.car` 含浅/深系统图标；运行时 Dock 显式使用浅色 `build/appicon.png` |
 | Windows | build/windows/icon.ico；16/32/48/64/128/256像素 |
 | MSIX | 六个方形、宽磁贴和启动图PNG，原画比例居中 |
 | Linux | hicolor128/256/512 PNG；AppImage使用512像素 |
@@ -23,8 +23,20 @@ python3 scripts/generate_icons.py --input frontend/public/帝王绿翡翠算盘�
 
 桌面与Web保留透明度；iOS合成到图内浅青瓷背景，避免透明角被当作黑色。iOS `xcode:gen` 之后会覆盖成规范的不透明catalog图标，防止工程生成步骤重新带入透明或旧版本图标。
 
-macOS 包显示为 `珠算.app`，内部可执行文件仍叫 `zhusuan`。`scripts/build_macos_icon.py` 生成标准透明 ICNS，并在 Xcode 26 及以后编译 `build/darwin/AppIcon.icon`。当前帝王绿原画主体透明边界与旧图接近，沿用并重新验证现有构图。原画已有圆角与透明留白，而 Icon Composer 会再套系统图标轮廓；图层设置 `scale: 1.18`、画布填充为 `none`，让青瓷底覆盖系统轮廓，避免内外两层底板。该设置仅调整平台图层构图，不改原画；需用 `NSWorkspace.icon(forFile:)` 的实际渲染检查，不能只看 PNG 或 ICNS 解码图。
+macOS 包显示为 `珠算.app`，内部可执行文件仍叫 `zhusuan`。`scripts/build_macos_icon.py` 从浅色源生成标准透明 ICNS，并在 Xcode 26 及以后编译 `build/darwin/AppIcon.icon`。图层设置 `scale: 1.18`、画布填充为 `none`，避免已有图标底面再套一层外板。该设置仅调整平台图层构图，不改源图；需用 `NSWorkspace.icon(forFile:)` 的实际渲染检查，不能只看 PNG 或 ICNS 解码图。
 
-`Assets.car` 与来源校验文件一起提交，让 Xcode 16 的构建机仍可打包。校验涵盖原始 PNG 和 `icon.json`；任一输入改变后，旧 Xcode 会明确报错，要求先用 Xcode 26 或更新版本重新生成，防止静默沿用旧图标。`Info.plist` 同时保留 `CFBundleIconFile=icons.icns` 和 `CFBundleIconName=AppIcon`，为新旧系统选择对应资源。
+深浅双态由 `icon.json` 中的 `image-name-specializations` 指定：默认值为 `Artwork.png`，`appearance: dark` 为 `Artwork-Dark.png`。脚本将两张规范输入缩放到 `build/darwin/AppIcon.icon/Assets/` 后编译。不要同时声明普通 `image-name` 与特化键；`actool` 可能编译成功却静默忽略深色资源。系统是否使用深色图标取决于系统外观及图标设置；Wails 运行时 Dock 显式设置的浅色 PNG 不随此目录切换。
 
-2026-11-20 品牌资源更新：应用图标采用用户新增“帝王绿翡翠算盘图标.png”，关于页另用“玉雕风珠算字标.png”。两张原始文件保留不变。应用原图1254×1254 RGBA，透明边缘包含少量原图自带的零星色点，生成只做等比缩放/必要平台合成，不擅自清理或重画。关于字标不参与平台图标生成。
+`Assets.car` 与 `Assets.car.source.sha256` 一起提交，让旧 Xcode 构建机仍可打包。摘要涵盖 `build/appicon.png`、`icon.json` 和存在时的 `build/appicon-dark.png`；任一输入改变后，旧 Xcode 会明确报错，要求先用 Xcode 26 或更新版本重新生成，防止静默沿用旧图标。`Info.plist` 同时保留 `CFBundleIconFile=icons.icns` 和 `CFBundleIconName=AppIcon`，为新旧系统选择对应资源。
+
+重新编译与核验双态目录：
+
+```sh
+python3 scripts/build_macos_icon.py --input build/appicon.png --dark-input build/appicon-dark.png --output build/darwin/icons.icns
+python3 -m unittest discover -s scripts -p 'test_macos_icon.py'
+xcrun assetutil --info build/darwin/Assets.car
+```
+
+核对 `NSAppearanceNameAqua` 与 `NSAppearanceNameDarkAqua` 都存在、分别引用 `Artwork` 与 `Artwork-Dark`，且两组 `IconGroup` SHA1 不同。再用 Icon Composer 的 `ictool` 导出 `Default` / `Dark` 两种 rendition 到临时目录，复核布局和深浅效果；编译退出码不能替代这一步。发行包的 `Contents/Resources/Assets.car` 应核对对应发行源码的输入与双态内容，不能拿开发 watch 重编后的工作区摘要比较已发布产物；工具时间戳也可能改变目录字节摘要。
+
+关于页使用 `frontend/public/玉雕风珠算字标.png`，不参与平台图标生成。2026-11-20 使用的原始 `frontend/public/帝王绿翡翠算盘图标.png` 保留作为历史品牌来源，重新生成当前版本时使用 `build/appicon.png`，避免把新版资源覆盖回旧构图。

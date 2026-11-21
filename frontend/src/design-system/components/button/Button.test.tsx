@@ -1,10 +1,15 @@
 import { createRef } from 'react'
 import { fireEvent, render, screen } from '@testing-library/react'
-import { describe, expect, it, vi } from 'vitest'
+import { afterEach, describe, expect, it, vi } from 'vitest'
 import { Button, IconButton } from './Button'
+import { JadeIcon } from '../icon'
 import buttonCss from './button.css?raw'
 
 describe('Button', () => {
+  afterEach(() => {
+    document.documentElement.removeAttribute('data-motion')
+  })
+
   it('gates every hover rule to fine pointers without interpolating shadows', () => {
     const buttonRule = buttonCss.match(/\.ods-button\s*\{([^}]+)\}/)?.[1]
     const transitionValue = buttonRule
@@ -33,11 +38,13 @@ describe('Button', () => {
       ".ods-button[data-variant='secondary']:hover:not(:disabled)",
       ".ods-button[data-variant='secondary'][data-tone='accent']:hover:not(:disabled):not([aria-disabled='true'])",
       ".ods-button[data-variant='tertiary']:hover:not(:disabled)",
+      ".ods-button[data-variant='tertiary'][data-tone='danger']:hover:not(:disabled)",
       ".ods-button[data-variant='outline']:hover:not(:disabled)",
       ".ods-button[data-variant='outline'][data-tone='danger']:hover:not(:disabled)",
       ".ods-button[data-variant='ghost']:hover:not(:disabled)",
       ".ods-button[data-variant='ghost'][data-tone='danger']:hover:not(:disabled)",
       ".ods-button[data-variant='danger']:hover:not(:disabled)",
+      ".ods-button:not([data-variant='bare']):not([data-variant='ghost']):hover:not(:disabled):not([aria-disabled='true'])::before",
     ])
     expect(buttonOutsideFinePointer).not.toContain('transform: translateY(-1px)')
     expect(finePointerRules[0]).not.toContain('box-shadow')
@@ -134,10 +141,14 @@ describe('Button', () => {
 })
 
 describe('IconButton', () => {
+  afterEach(() => {
+    document.documentElement.removeAttribute('data-motion')
+  })
+
   it('requires a visible accessibility label while keeping the icon decorative', () => {
     render(
       <IconButton label="关闭" tone="accent" variant="secondary">
-        <i aria-hidden="true" className="ri-close-line" />
+        <JadeIcon name="close" size="1em" />
       </IconButton>,
     )
 
@@ -155,5 +166,74 @@ describe('IconButton', () => {
     expect(buttonCss).toMatch(
       /\.ods-icon-button__icon\s*\{[\s\S]*color:\s*var\(--ods-icon-button-fg, currentColor\)/,
     )
+    expect(buttonCss).toMatch(
+      /\.ods-button\.ods-icon-button\[data-size='sm'\]\s*\{[\s\S]*padding-inline:\s*var\(--ods-space-0\)/,
+    )
+    expect(buttonCss).toMatch(
+      /\.ods-button\.ods-icon-button\[data-size='lg'\]\s*\{[\s\S]*padding-inline:\s*var\(--ods-space-0\)/,
+    )
+    expect(buttonCss).toMatch(
+      /\.ods-button\[data-variant='tertiary'\]\[data-tone='danger'\]\s*\{[\s\S]*background:\s*var\(--ods-material-jade-sheen\),\s*var\(--ods-color-status-danger-soft\)/,
+    )
+    const tertiaryDangerHover = buttonCss.match(
+      /\.ods-button\[data-variant='tertiary'\]\[data-tone='danger'\]:hover:not\(:disabled\)\s*\{([^}]+)\}/,
+    )?.[1]
+    expect(tertiaryDangerHover).toBeDefined()
+    expect(tertiaryDangerHover).not.toContain('transform:')
+  })
+
+  it('triggers click ripple and icon spring pulse while respecting reduced-motion', () => {
+    const rippleAnimate = vi.fn(() => ({ cancel: vi.fn() }) as unknown as Animation)
+    const iconAnimate = vi.fn(() => ({ cancel: vi.fn() }) as unknown as Animation)
+
+    render(
+      <IconButton label="删除" tone="danger" variant="tertiary">
+        <JadeIcon name="trash" size="1em" />
+      </IconButton>,
+    )
+
+    const button = screen.getByRole('button', { name: '删除' })
+    const ripple = button.querySelector('.ods-button__ripple') as HTMLSpanElement
+    const iconWrapper = button.querySelector('.ods-icon-button__icon') as HTMLSpanElement
+    ripple.animate = rippleAnimate
+    iconWrapper.animate = iconAnimate
+
+    fireEvent.pointerDown(button, { button: 0, clientX: 16, clientY: 16 })
+    fireEvent.click(button, { detail: 1 })
+    expect(rippleAnimate).toHaveBeenCalledTimes(1)
+    expect(iconAnimate).toHaveBeenCalledTimes(1)
+
+    // Keyboard activation (detail === 0) also plays centered ripple + icon pulse.
+    fireEvent.click(button, { detail: 0 })
+    expect(rippleAnimate).toHaveBeenCalledTimes(2)
+    expect(iconAnimate).toHaveBeenCalledTimes(2)
+
+    // In-app reduced motion suppresses both WAAPI animations.
+    document.documentElement.setAttribute('data-motion', 'reduced')
+    fireEvent.pointerDown(button, { button: 0, clientX: 16, clientY: 16 })
+    fireEvent.click(button, { detail: 0 })
+    expect(rippleAnimate).toHaveBeenCalledTimes(2)
+    expect(iconAnimate).toHaveBeenCalledTimes(2)
+  })
+
+  it('cancels a running ripple and icon pulse when the button unmounts', () => {
+    const rippleCancel = vi.fn()
+    const iconCancel = vi.fn()
+    const { unmount } = render(
+      <IconButton label="关闭">
+        <JadeIcon name="close" />
+      </IconButton>,
+    )
+    const button = screen.getByRole('button', { name: '关闭' })
+    Object.assign(button.querySelector('.ods-button__ripple')!, {
+      animate: () => ({ cancel: rippleCancel }) as unknown as Animation,
+    })
+    Object.assign(button.querySelector('.ods-icon-button__icon')!, {
+      animate: () => ({ cancel: iconCancel }) as unknown as Animation,
+    })
+    fireEvent.click(button, { detail: 0 })
+    unmount()
+    expect(rippleCancel).toHaveBeenCalledOnce()
+    expect(iconCancel).toHaveBeenCalledOnce()
   })
 })

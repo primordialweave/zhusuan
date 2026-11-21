@@ -3,9 +3,11 @@ import { projectApi, type Project } from '@/api/project'
 import {
   Button,
   ButtonGroup,
+  EmptyScene,
   EmptyState,
   Field,
   IconButton,
+  JadeIcon,
   Listbox,
   Popover,
   SearchField,
@@ -103,7 +105,7 @@ export function ProjectPicker({ disabled, onValueChange, value }: ProjectPickerP
           variant="outline"
         >
           <span>{value?.name || '请选择项目'}</span>
-          <i aria-hidden="true" className="ri-arrow-down-s-line" />
+          <JadeIcon name="chevron-down" size="1em" />
         </Button>
       </Popover.Trigger>
       <Popover.Content
@@ -140,16 +142,21 @@ export function ProjectPicker({ disabled, onValueChange, value }: ProjectPickerP
           </div>
         ) : failed ? (
           <EmptyState
-            title="项目暂时不可用"
-            size="sm"
             action={
               <Button size="sm" onClick={() => void load()}>
                 重试
               </Button>
             }
+            icon={<JadeIcon name="warning" size="1em" />}
+            size="sm"
+            title="项目暂时不可用"
           />
         ) : projects.length === 0 ? (
-          <EmptyState title="没有匹配项目" size="sm" />
+          <EmptyState
+            scene={<EmptyScene name="search-empty" size="compact" />}
+            size="sm"
+            title="没有匹配项目"
+          />
         ) : (
           <Listbox
             aria-label="所属项目"
@@ -173,7 +180,7 @@ export function ProjectPicker({ disabled, onValueChange, value }: ProjectPickerP
             }}
             variant="ghost"
           >
-            <i aria-hidden="true" className="ri-arrow-left-s-line" />
+            <JadeIcon name="chevron-left" size="1em" />
           </IconButton>
           <span>
             {page} / {Math.max(1, Math.ceil(total / PAGE_SIZE))}
@@ -187,7 +194,7 @@ export function ProjectPicker({ disabled, onValueChange, value }: ProjectPickerP
             }}
             variant="ghost"
           >
-            <i aria-hidden="true" className="ri-arrow-right-s-line" />
+            <JadeIcon name="chevron-right" size="1em" />
           </IconButton>
         </ButtonGroup>
       </Popover.Content>

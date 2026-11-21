@@ -7,12 +7,14 @@ import {
   Alert,
   Button,
   Chip,
+  EmptyScene,
   EmptyState,
   Field,
   FormActions,
   FormGrid,
   IconButton,
   Input,
+  JadeIcon,
   Modal,
   PaginationBar,
   SearchField,
@@ -243,7 +245,7 @@ export default function UserManagement() {
           value={keyword}
         />
         <Button onClick={openAddModal}>
-          <i aria-hidden="true" className="ri-add-line" />
+          <JadeIcon name="add" size="1em" />
           <span>新增用户</span>
         </Button>
       </div>
@@ -272,7 +274,12 @@ export default function UserManagement() {
       ) : dataIsCurrent && users.length === 0 ? (
         <EmptyState
           className="settings-empty"
-          icon={<i className="ri-user-unfollow-line" />}
+          scene={
+            <EmptyScene
+              name={searchKeyword ? 'search-empty' : 'users-empty'}
+              size="standard"
+            />
+          }
           size="lg"
           title={searchKeyword ? '没有符合条件的用户' : '暂无用户'}
         />
@@ -329,9 +336,9 @@ export default function UserManagement() {
                       onClick={() => openEditModal(user)}
                       size="sm"
                       title="编辑"
-                      variant="ghost"
+                      variant="tertiary"
                     >
-                      <i className="ri-edit-line" />
+                      <JadeIcon motionPreset="interactive" name="edit" size="1em" />
                     </IconButton>
                     <IconButton
                       label="重置用户密码"
@@ -341,9 +348,9 @@ export default function UserManagement() {
                       }}
                       size="sm"
                       title="重置密码"
-                      variant="ghost"
+                      variant="secondary"
                     >
-                      <i className="ri-lock-password-line" />
+                      <JadeIcon name="lock-password" size="1em" />
                     </IconButton>
                     <IconButton
                       label="删除用户"
@@ -351,9 +358,9 @@ export default function UserManagement() {
                       size="sm"
                       title="删除"
                       tone="danger"
-                      variant="ghost"
+                      variant="tertiary"
                     >
-                      <i className="ri-delete-bin-line" />
+                      <JadeIcon name="trash" size="1em" />
                     </IconButton>
                   </div>
                 </Table.Cell>

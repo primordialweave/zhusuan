@@ -5,9 +5,10 @@
   display: inline-flex;
   align-items: center;
   padding: 0.15em var(--ods-space-2);
-  border: 1px solid color-mix(in srgb, var(--ods-code-color) 16%, transparent);
+  border: 1px solid color-mix(in srgb, var(--ods-code-color) 18%, transparent);
   border-radius: var(--ods-radius-sm);
-  background: var(--ods-code-soft);
+  background: var(--ods-material-jade-sheen), var(--ods-code-soft);
+  box-shadow: var(--ods-material-jade-control-shadow);
   color: var(--ods-code-color);
   font-family: var(--ods-font-family-mono);
   font-size: var(--ods-font-size-sm);

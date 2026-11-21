@@ -1,5 +1,7 @@
 import { forwardRef, useCallback, type InputHTMLAttributes } from 'react'
+import { IconButton } from '../button'
 import { useFieldControlProps } from '../field/fieldContext'
+import { JadeIcon } from '../icon'
 
 export type NumberInputSize = 'sm' | 'md' | 'lg'
 
@@ -62,19 +64,20 @@ export const NumberInput = forwardRef<HTMLInputElement, NumberInputProps>(functi
       data-size={size}
       data-slot="number-input"
     >
-      <button
-        aria-label={decrementLabel}
+      <IconButton
         className="ods-number-input__button"
         data-slot="decrement"
         disabled={
           disabled || (numericMin !== undefined && value !== undefined && value <= numericMin)
         }
+        label={decrementLabel}
         onClick={() => shift(-1)}
+        size="sm"
         tabIndex={-1}
-        type="button"
+        variant="ghost"
       >
-        <span aria-hidden="true">−</span>
-      </button>
+        <JadeIcon name="minus" size="1em" />
+      </IconButton>
       <input
         {...controlProps}
         className="ods-number-input__field"
@@ -88,19 +91,20 @@ export const NumberInput = forwardRef<HTMLInputElement, NumberInputProps>(functi
         type="number"
         value={value ?? ''}
       />
-      <button
-        aria-label={incrementLabel}
+      <IconButton
         className="ods-number-input__button"
         data-slot="increment"
         disabled={
           disabled || (numericMax !== undefined && value !== undefined && value >= numericMax)
         }
+        label={incrementLabel}
         onClick={() => shift(1)}
+        size="sm"
         tabIndex={-1}
-        type="button"
+        variant="ghost"
       >
-        <span aria-hidden="true">+</span>
-      </button>
+        <JadeIcon name="add" size="1em" />
+      </IconButton>
     </div>
   )
 })

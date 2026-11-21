@@ -89,11 +89,16 @@ function analyzeJsxNode(node: ts.JsxChild, textContainer = false): ContentAnalys
   }
   if (ts.isJsxSelfClosingElement(node)) {
     const tagName = getTagName(node.tagName)
-    return { hasIcon: tagName === 'i' || tagName === 'svg', hasText: false }
+    return {
+      hasIcon: tagName === 'i' || tagName === 'svg' || tagName === 'JadeIcon',
+      hasText: false,
+    }
   }
   if (ts.isJsxElement(node)) {
     const tagName = getTagName(node.openingElement.tagName)
-    if (tagName === 'i' || tagName === 'svg') return { hasIcon: true, hasText: false }
+    if (tagName === 'i' || tagName === 'svg' || tagName === 'JadeIcon') {
+      return { hasIcon: true, hasText: false }
+    }
     const hidden = isAriaHidden(node.openingElement)
     const childTextContainer = ['span', 'strong', 'em', 'small', 'p'].includes(tagName)
     const content = mergeContent(
@@ -143,13 +148,17 @@ describe('icon-only button accessibility audit', () => {
       export function Fixture({ loading, label }: { loading: boolean; label: string }) {
         return <>
           <button>{loading && <i className="ri-loader-line" />}</button>
+          <button><JadeIcon name="close" /></button>
           <button><i className="ri-user-line" /><span>{label}</span></button>
           <button title="打开帮助"><svg /></button>
         </>
       }
     `
 
-    expect(findUnlabelledIconButtonsInSource('fixture.tsx', source)).toEqual(['fixture.tsx:4'])
+    expect(findUnlabelledIconButtonsInSource('fixture.tsx', source)).toEqual([
+      'fixture.tsx:4',
+      'fixture.tsx:5',
+    ])
   })
 
   it('gives every production TSX icon-only button an accessible name', () => {

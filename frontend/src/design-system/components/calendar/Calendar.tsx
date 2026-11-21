@@ -10,7 +10,8 @@ import {
   type ReactNode,
   type Ref,
 } from 'react'
-import { Button } from '../button'
+import { Button, IconButton } from '../button'
+import { JadeIcon } from '../icon'
 
 export type CalendarLayout = 'board' | 'compact'
 export type CalendarWeekStart = 0 | 1
@@ -270,24 +271,26 @@ export const Calendar = forwardRef<HTMLDivElement, CalendarProps>(function Calen
     </span>
   )
   const previousButton = (
-    <button
-      aria-label={view === 'days' ? '上个月' : view === 'months' ? '上一年' : '前 12 年'}
+    <IconButton
       className="ods-calendar__nav"
+      label={view === 'days' ? '上个月' : view === 'months' ? '上一年' : '前 12 年'}
       onClick={() => navigate(-1)}
-      type="button"
+      size={isBoard ? 'md' : 'sm'}
+      variant={isBoard ? 'outline' : 'ghost'}
     >
-      <i aria-hidden="true" className="ri-arrow-left-s-line" />
-    </button>
+      <JadeIcon name="chevron-left" size="1em" />
+    </IconButton>
   )
   const nextButton = (
-    <button
-      aria-label={view === 'days' ? '下个月' : view === 'months' ? '下一年' : '后 12 年'}
+    <IconButton
       className="ods-calendar__nav"
+      label={view === 'days' ? '下个月' : view === 'months' ? '下一年' : '后 12 年'}
       onClick={() => navigate(1)}
-      type="button"
+      size={isBoard ? 'md' : 'sm'}
+      variant={isBoard ? 'outline' : 'ghost'}
     >
-      <i aria-hidden="true" className="ri-arrow-right-s-line" />
-    </button>
+      <JadeIcon name="chevron-right" size="1em" />
+    </IconButton>
   )
   const todayButton = showTodayAction ? (
     <Button

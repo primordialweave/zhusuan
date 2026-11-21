@@ -1,5 +1,6 @@
 import { forwardRef, type KeyboardEvent } from 'react'
 import { CloseButton } from '../close-button'
+import { JadeIcon } from '../icon'
 import { Input, InputGroup, type InputProps } from '../input'
 import { Spinner } from '../spinner'
 
@@ -61,7 +62,7 @@ export const SearchField = forwardRef<HTMLInputElement, SearchFieldProps>(functi
       data-pending={pending || undefined}
       endContent={endContent}
       size={size}
-      startContent={<i aria-hidden="true" className="ri-search-line ods-search-field__icon" />}
+      startContent={<JadeIcon className="ods-search-field__icon" name="search" size="1em" />}
     >
       <Input
         {...props}

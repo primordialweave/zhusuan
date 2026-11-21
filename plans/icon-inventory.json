@@ -1,0 +1,376 @@
+{
+  "commit": "555c2fd",
+  "files": [
+    {
+      "path": "frontend/src/views/ProjectDetailView.tsx",
+      "names": [
+        "ri-add-line",
+        "ri-arrow-left-line",
+        "ri-arrow-right-line",
+        "ri-calendar-check-line",
+        "ri-check-double-line",
+        "ri-check-line",
+        "ri-checkbox-circle-line",
+        "ri-download-2-line",
+        "ri-edit-line",
+        "ri-error-warning-line",
+        "ri-layout-grid-line",
+        "ri-secure-payment-line"
+      ],
+      "status": "DONE",
+      "dynamicNeedsReview": false
+    },
+    {
+      "path": "frontend/src/views/AnalyticsView.tsx",
+      "names": [
+        "ri-donut-chart-line",
+        "ri-download-line",
+        "ri-line-chart-line"
+      ],
+      "status": "DONE",
+      "dynamicNeedsReview": false
+    },
+    {
+      "path": "frontend/src/views/ProjectCreateView.tsx",
+      "names": [
+        "ri-arrow-left-line",
+        "ri-check-line",
+        "ri-error-warning-line",
+        "ri-scales-3-line",
+        "ri-shield-check-line"
+      ],
+      "status": "DONE",
+      "dynamicNeedsReview": false
+    },
+    {
+      "path": "frontend/src/views/CalendarView.tsx",
+      "names": [
+        "ri-calendar-check-line",
+        "ri-wifi-off-line"
+      ],
+      "status": "DONE",
+      "dynamicNeedsReview": false
+    },
+    {
+      "path": "frontend/src/views/ProjectsView.tsx",
+      "names": [
+        "ri-add-line",
+        "ri-archive-line",
+        "ri-delete-bin-line",
+        "ri-download-2-line",
+        "ri-edit-line",
+        "ri-error-warning-line",
+        "ri-folder-open-line",
+        "ri-money-dollar-box-line",
+        "ri-more-fill",
+        "ri-refresh-line"
+      ],
+      "status": "DONE",
+      "dynamicNeedsReview": false
+    },
+    {
+      "path": "frontend/src/views/SettingsView.tsx",
+      "names": [
+        "ri-arrow-right-line",
+        "ri-arrow-right-up-line",
+        "ri-book-2-line",
+        "ri-cloud-line",
+        "ri-code-s-slash-line",
+        "ri-edit-circle-line",
+        "ri-information-line",
+        "ri-lock-password-line",
+        "ri-logout-box-r-line",
+        "ri-loop-left-line",
+        "ri-notification-3-line",
+        "ri-palette-line",
+        "ri-save-line",
+        "ri-team-line",
+        "ri-user-line"
+      ],
+      "status": "DONE",
+      "dynamicNeedsReview": false
+    },
+    {
+      "path": "frontend/src/views/LoginView.tsx",
+      "names": [
+        "ri-error-warning-line",
+        "ri-eye-line",
+        "ri-eye-off-line",
+        "ri-lock-line",
+        "ri-user-line"
+      ],
+      "status": "DONE",
+      "dynamicNeedsReview": false
+    },
+    {
+      "path": "frontend/src/views/PaymentCreateView.tsx",
+      "names": [
+        "ri-arrow-left-line"
+      ],
+      "status": "DONE",
+      "dynamicNeedsReview": false
+    },
+    {
+      "path": "frontend/src/views/NotFoundView.tsx",
+      "names": [
+        "ri-drizzle-line"
+      ],
+      "status": "DONE",
+      "dynamicNeedsReview": false
+    },
+    {
+      "path": "frontend/src/design-system/components/pagination/Pagination.tsx",
+      "names": [
+        "ri-arrow-left-s-line",
+        "ri-arrow-right-s-line",
+        "ri-more-fill"
+      ],
+      "status": "DONE",
+      "dynamicNeedsReview": false
+    },
+    {
+      "path": "frontend/src/design-system/components/calendar/Calendar.tsx",
+      "names": [
+        "ri-arrow-left-s-line",
+        "ri-arrow-right-s-line"
+      ],
+      "status": "DONE",
+      "dynamicNeedsReview": false
+    },
+    {
+      "path": "frontend/src/design-system/components/accordion/Accordion.tsx",
+      "names": [
+        "ri-arrow-right-s-line"
+      ],
+      "status": "DONE",
+      "dynamicNeedsReview": false
+    },
+    {
+      "path": "frontend/src/design-system/components/toast/Toaster.tsx",
+      "names": [
+        "ri-checkbox-circle-fill",
+        "ri-close-circle-fill",
+        "ri-error-warning-fill",
+        "ri-information-fill"
+      ],
+      "status": "DONE",
+      "dynamicNeedsReview": false
+    },
+    {
+      "path": "frontend/src/design-system/components/empty-state/EmptyState.tsx",
+      "names": [
+        "ri-inbox-2-line"
+      ],
+      "status": "DONE",
+      "dynamicNeedsReview": false
+    },
+    {
+      "path": "frontend/src/design-system/components/date-picker/DatePicker.tsx",
+      "names": [
+        "ri-calendar-line"
+      ],
+      "status": "DONE",
+      "dynamicNeedsReview": false
+    },
+    {
+      "path": "frontend/src/design-system/components/close-button/CloseButton.tsx",
+      "names": [
+        "ri-close-line"
+      ],
+      "status": "DONE",
+      "dynamicNeedsReview": false
+    },
+    {
+      "path": "frontend/src/design-system/components/select/Select.tsx",
+      "names": [
+        "ri-arrow-down-s-line",
+        "ri-close-line"
+      ],
+      "status": "DONE",
+      "dynamicNeedsReview": false
+    },
+    {
+      "path": "frontend/src/design-system/components/search-field/SearchField.tsx",
+      "names": [
+        "ri-search-line"
+      ],
+      "status": "DONE",
+      "dynamicNeedsReview": false
+    },
+    {
+      "path": "frontend/src/design-system/patterns/summary-metric/SummaryMetric.tsx",
+      "names": [
+        "ri-arrow-down-line",
+        "ri-arrow-up-line",
+        "ri-subtract-line"
+      ],
+      "status": "DONE",
+      "dynamicNeedsReview": false
+    },
+    {
+      "path": "frontend/src/components/settings/DictionaryManagement.tsx",
+      "names": [
+        "ri-add-line",
+        "ri-delete-bin-line",
+        "ri-edit-line",
+        "ri-file-list-3-line"
+      ],
+      "status": "DONE",
+      "dynamicNeedsReview": false
+    },
+    {
+      "path": "frontend/src/components/settings/NotificationManagement.tsx",
+      "names": [
+        "ri-add-line",
+        "ri-delete-bin-line",
+        "ri-edit-line",
+        "ri-eye-line",
+        "ri-notification-off-line"
+      ],
+      "status": "DONE",
+      "dynamicNeedsReview": false
+    },
+    {
+      "path": "frontend/src/components/settings/UserManagement.tsx",
+      "names": [
+        "ri-add-line",
+        "ri-delete-bin-line",
+        "ri-edit-line",
+        "ri-lock-password-line",
+        "ri-user-unfollow-line"
+      ],
+      "status": "DONE",
+      "dynamicNeedsReview": false
+    },
+    {
+      "path": "frontend/src/components/settings/DataSyncPanel.tsx",
+      "names": [
+        "ri-alert-line",
+        "ri-arrow-right-line",
+        "ri-check-double-line",
+        "ri-check-line",
+        "ri-database-2-fill",
+        "ri-database-2-line",
+        "ri-error-warning-line",
+        "ri-inbox-archive-line",
+        "ri-refresh-line",
+        "ri-upload-cloud-2-line"
+      ],
+      "status": "DONE",
+      "dynamicNeedsReview": false
+    },
+    {
+      "path": "frontend/src/components/settings/TokenManagement.tsx",
+      "names": [
+        "ri-add-line",
+        "ri-check-line",
+        "ri-delete-bin-line",
+        "ri-forbid-line",
+        "ri-key-2-line",
+        "ri-lock-line",
+        "ri-shield-keyhole-line",
+        "ri-shield-star-line"
+      ],
+      "status": "DONE",
+      "dynamicNeedsReview": false
+    },
+    {
+      "path": "frontend/src/components/layout/NotificationEntry.tsx",
+      "names": [
+        "ri-notification-3-line"
+      ],
+      "status": "DONE",
+      "dynamicNeedsReview": false
+    },
+    {
+      "path": "frontend/src/components/project/PaymentPlanEditor.tsx",
+      "names": [
+        "ri-add-line",
+        "ri-delete-bin-line",
+        "ri-secure-payment-line"
+      ],
+      "status": "DONE",
+      "dynamicNeedsReview": false
+    },
+    {
+      "path": "frontend/src/components/project/ProjectPicker.tsx",
+      "names": [
+        "ri-arrow-down-s-line",
+        "ri-arrow-left-s-line",
+        "ri-arrow-right-s-line"
+      ],
+      "status": "DONE",
+      "dynamicNeedsReview": false
+    }
+  ],
+  "uniqueNames": [
+    "ri-add-line",
+    "ri-alert-line",
+    "ri-archive-line",
+    "ri-arrow-down-line",
+    "ri-arrow-down-s-line",
+    "ri-arrow-left-line",
+    "ri-arrow-left-s-line",
+    "ri-arrow-right-line",
+    "ri-arrow-right-s-line",
+    "ri-arrow-right-up-line",
+    "ri-arrow-up-line",
+    "ri-book-2-line",
+    "ri-calendar-check-line",
+    "ri-calendar-line",
+    "ri-check-double-line",
+    "ri-check-line",
+    "ri-checkbox-circle-fill",
+    "ri-checkbox-circle-line",
+    "ri-close-circle-fill",
+    "ri-close-line",
+    "ri-cloud-line",
+    "ri-code-s-slash-line",
+    "ri-database-2-fill",
+    "ri-database-2-line",
+    "ri-delete-bin-line",
+    "ri-donut-chart-line",
+    "ri-download-2-line",
+    "ri-download-line",
+    "ri-drizzle-line",
+    "ri-edit-circle-line",
+    "ri-edit-line",
+    "ri-error-warning-fill",
+    "ri-error-warning-line",
+    "ri-eye-line",
+    "ri-eye-off-line",
+    "ri-file-list-3-line",
+    "ri-folder-open-line",
+    "ri-forbid-line",
+    "ri-inbox-2-line",
+    "ri-inbox-archive-line",
+    "ri-information-fill",
+    "ri-information-line",
+    "ri-key-2-line",
+    "ri-layout-grid-line",
+    "ri-line-chart-line",
+    "ri-lock-line",
+    "ri-lock-password-line",
+    "ri-logout-box-r-line",
+    "ri-loop-left-line",
+    "ri-money-dollar-box-line",
+    "ri-more-fill",
+    "ri-notification-3-line",
+    "ri-notification-off-line",
+    "ri-palette-line",
+    "ri-refresh-line",
+    "ri-save-line",
+    "ri-scales-3-line",
+    "ri-search-line",
+    "ri-secure-payment-line",
+    "ri-shield-check-line",
+    "ri-shield-keyhole-line",
+    "ri-shield-star-line",
+    "ri-subtract-line",
+    "ri-team-line",
+    "ri-upload-cloud-2-line",
+    "ri-user-line",
+    "ri-user-unfollow-line",
+    "ri-wifi-off-line"
+  ]
+}

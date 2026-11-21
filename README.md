@@ -9,9 +9,9 @@
 
 </div>
 
-珠算基于 Wails v3、Go 和 React 构建，管理项目合同、分期收款、待收与逾期款项。原 Orange 仓库已迁入 [Primordial Weave](https://github.com/primordialweave/zhusuan)，当前版本为 **1.1.0**。[下载安装包](https://github.com/primordialweave/zhusuan/releases/tag/v1.1.0)。
+珠算基于 Wails v3、Go 和 React 构建，管理项目合同、分期收款、待收与逾期款项。原 Orange 仓库已迁入 [Primordial Weave](https://github.com/primordialweave/zhusuan)，当前版本为 **1.2.0**。[下载安装包](https://github.com/primordialweave/zhusuan/releases/tag/v1.2.0)。
 
-macOS 下载：[Apple Silicon（M 系列）DMG](https://github.com/primordialweave/zhusuan/releases/download/v1.1.0/zhusuan-v1.1.0-macOS-arm64.dmg) · [Intel DMG](https://github.com/primordialweave/zhusuan/releases/download/v1.1.0/zhusuan-v1.1.0-macOS-amd64.dmg)。打开后将珠算拖入 Applications，再从应用程序文件夹启动。
+macOS 下载：[Apple Silicon（M 系列）DMG](https://github.com/primordialweave/zhusuan/releases/download/v1.2.0/zhusuan-v1.2.0-macOS-arm64.dmg) · [Intel DMG](https://github.com/primordialweave/zhusuan/releases/download/v1.2.0/zhusuan-v1.2.0-macOS-amd64.dmg)。打开后将珠算拖入 Applications，再从应用程序文件夹启动。
 
 ## 功能
 

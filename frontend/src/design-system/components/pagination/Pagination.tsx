@@ -1,4 +1,6 @@
 import { forwardRef, type HTMLAttributes } from 'react'
+import { Button, IconButton } from '../button'
+import { JadeIcon } from '../icon'
 
 export interface PaginationProps extends Omit<HTMLAttributes<HTMLElement>, 'onChange'> {
   onPageChange: (page: number) => void
@@ -51,45 +53,48 @@ export const Pagination = forwardRef<HTMLElement, PaginationProps>(function Pagi
       data-slot="root"
       ref={ref}
     >
-      <button
-        aria-label="上一页"
+      <IconButton
         className="ods-pagination__button ods-pagination__button--direction"
         disabled={previousDisabled}
+        label="上一页"
         onClick={() => onPageChange(currentPage - 1)}
-        type="button"
+        size="sm"
+        variant="secondary"
       >
-        <i aria-hidden="true" className="ri-arrow-left-s-line" />
-      </button>
+        <JadeIcon name="chevron-left" size="1em" />
+      </IconButton>
       <span className="ods-pagination__pages" data-slot="pages">
         {pages.map((item) =>
           typeof item === 'number' ? (
-            <button
+            <Button
               aria-current={item === currentPage ? 'page' : undefined}
               aria-label={`第 ${item} 页`}
               className="ods-pagination__button"
               data-active={item === currentPage || undefined}
               key={item}
               onClick={() => onPageChange(item)}
-              type="button"
+              size="sm"
+              variant={item === currentPage ? 'primary' : 'secondary'}
             >
               {item}
-            </button>
+            </Button>
           ) : (
             <span aria-hidden="true" className="ods-pagination__ellipsis" key={item}>
-              <i className="ri-more-fill" />
+              <JadeIcon name="more" size="1em" />
             </span>
           ),
         )}
       </span>
-      <button
-        aria-label="下一页"
+      <IconButton
         className="ods-pagination__button ods-pagination__button--direction"
         disabled={nextDisabled}
+        label="下一页"
         onClick={() => onPageChange(currentPage + 1)}
-        type="button"
+        size="sm"
+        variant="secondary"
       >
-        <i aria-hidden="true" className="ri-arrow-right-s-line" />
-      </button>
+        <JadeIcon name="chevron-right" size="1em" />
+      </IconButton>
     </nav>
   )
 })

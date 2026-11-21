@@ -10,9 +10,9 @@
   max-width: 260px;
   padding: var(--ods-space-2) var(--ods-space-3);
   border: var(--ods-material-glass-border-subtle);
-  border-radius: var(--ods-radius-sm);
-  background: var(--ods-color-bg-surface-raised);
-  box-shadow: var(--ods-shadow-panel);
+  border-radius: var(--ods-radius-md);
+  background: var(--ods-material-jade-sheen), var(--ods-color-bg-surface-raised);
+  box-shadow: var(--ods-material-jade-control-shadow), var(--ods-shadow-panel);
   backdrop-filter: blur(var(--ods-material-glass-blur))
     saturate(var(--ods-material-glass-saturation));
   color: var(--ods-color-fg-default);

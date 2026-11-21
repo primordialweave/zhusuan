@@ -10,19 +10,28 @@ export interface SpinnerProps extends Omit<HTMLAttributes<HTMLSpanElement>, 'chi
 }
 
 export const Spinner = forwardRef<HTMLSpanElement, SpinnerProps>(function Spinner(
-  { className, label = '加载中', size = 'md', tone = 'current', ...props },
+  {
+    'aria-hidden': ariaHidden,
+    className,
+    label = '加载中',
+    size = 'md',
+    tone = 'current',
+    ...props
+  },
   ref,
 ) {
+  const decorative = ariaHidden === true || ariaHidden === 'true'
   return (
     <span
       {...props}
-      aria-label={label}
+      aria-hidden={ariaHidden}
+      aria-label={decorative ? undefined : label}
       className={['ods-spinner', className].filter(Boolean).join(' ')}
       data-size={size}
       data-slot="spinner"
       data-tone={tone}
       ref={ref}
-      role="status"
+      role={decorative ? undefined : 'status'}
     >
       <span aria-hidden="true" className="ods-spinner__indicator" data-slot="indicator" />
     </span>

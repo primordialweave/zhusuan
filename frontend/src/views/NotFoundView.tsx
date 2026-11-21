@@ -1,6 +1,6 @@
 import { useNavigate } from 'react-router-dom'
 import ScenePage, { BrushStroke } from '@/components/scene/ScenePage'
-import { Button, RouterButton } from '@/design-system'
+import { Button, JadeIcon, RouterButton } from '@/design-system'
 import '@/styles/not-found.css'
 
 /** React Router records how deep the current entry sits in this app's own history. */
@@ -31,7 +31,7 @@ export default function NotFoundView() {
       </div>
 
       <p className="not-found__footer">
-        <i aria-hidden="true" className="ri-drizzle-line" />
+        <JadeIcon name="drizzle" size={20} tone="jade" />
         <span>雨雾未散，路径可重寻</span>
       </p>
     </ScenePage>

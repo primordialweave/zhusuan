@@ -194,4 +194,18 @@ describe('NotificationManagement request integrity', () => {
     expect(notificationApi.create).toHaveBeenCalledOnce()
     expect(notificationApi.list).toHaveBeenCalledTimes(2)
   })
+
+  it('uses distinct row button hierarchy for view, edit, and delete actions', async () => {
+    render(<NotificationManagement isAdmin />)
+    expect(await screen.findByText('初始通知')).toBeInTheDocument()
+
+    const viewButton = screen.getByRole('button', { name: '查看通知：初始通知' })
+    const editButton = screen.getByRole('button', { name: '编辑通知' })
+    const deleteButton = screen.getByRole('button', { name: '删除通知' })
+
+    expect(viewButton).toHaveAttribute('data-variant', 'tertiary')
+    expect(editButton).toHaveAttribute('data-variant', 'secondary')
+    expect(deleteButton).toHaveAttribute('data-variant', 'tertiary')
+    expect(deleteButton).toHaveAttribute('data-tone', 'danger')
+  })
 })

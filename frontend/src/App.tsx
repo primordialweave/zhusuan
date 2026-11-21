@@ -2,7 +2,7 @@ import { useEffect } from 'react'
 import { Outlet } from 'react-router-dom'
 import { ConfirmProvider } from '@/components/common/ConfirmProvider'
 import WindowTitleBar from '@/components/layout/WindowTitleBar'
-import { Toaster } from '@/design-system'
+import { JadeIconDefs, Toaster } from '@/design-system'
 import { useThemeStore } from '@/stores/theme'
 
 export default function App() {
@@ -12,6 +12,7 @@ export default function App() {
 
   return (
     <ConfirmProvider>
+      <JadeIconDefs />
       <WindowTitleBar />
       <Outlet />
       <Toaster />

@@ -109,6 +109,7 @@ tasks:
     dir: build
     sources:
       - "appicon.png"
+      - "appicon-dark.png"
       - "darwin/AppIcon.icon/icon.json"
       - "../scripts/build_macos_icon.py"
     generates:

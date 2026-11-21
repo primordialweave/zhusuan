@@ -5,15 +5,19 @@ import { useToastStore } from '@/composables/useToast'
 import {
   Button,
   Chip,
+  EmptyScene,
   EmptyState,
   Field,
   FormGrid,
   Input,
+  JadeIcon,
   Radio,
   RadioGroup,
   Select,
   Skeleton,
+  Spinner,
   Table,
+  type JadeIconName,
 } from '@/design-system'
 import { SettingsFormSkeleton, SettingsTableSkeleton } from './SettingsSkeleton'
 import SettingsGroup from './SettingsGroup'
@@ -28,9 +32,9 @@ const defaultConfig: SyncConfig = {
   user: '',
 }
 
-const dbTypeOptions = [
-  { icon: 'ri-database-2-fill', label: 'PostgreSQL / Supabase / Nile', value: 'postgres' },
-  { icon: 'ri-database-2-line', label: 'MySQL / TiDB', value: 'mysql' },
+const dbTypeOptions: ReadonlyArray<{ icon: JadeIconName; label: string; value: string }> = [
+  { icon: 'database-solid', label: 'PostgreSQL / Supabase / Nile', value: 'postgres' },
+  { icon: 'database', label: 'MySQL / TiDB', value: 'mysql' },
 ]
 
 const tableLabels: Record<string, string> = {
@@ -43,6 +47,16 @@ const tableLabels: Record<string, string> = {
   user_notifications: '用户通知状态',
   users: '用户表',
 }
+
+const configsEqual = (first: SyncConfig | null, second: SyncConfig) =>
+  first !== null &&
+  first.db_type === second.db_type &&
+  first.host === second.host &&
+  first.port === second.port &&
+  first.user === second.user &&
+  first.password === second.password &&
+  first.db_name === second.db_name &&
+  first.ssl_mode === second.ssl_mode
 
 export default function DataSyncPanel() {
   const { confirm } = useConfirm()
@@ -57,8 +71,23 @@ export default function DataSyncPanel() {
   const [compareResults, setCompareResults] = useState<TableCompareResult[]>([])
   const [syncResults, setSyncResults] = useState<SyncResult[]>([])
   const [step, setStep] = useState<'compare' | 'config' | 'sync'>('config')
+  const [activeCompareScopeId, setActiveCompareScopeId] = useState(0)
+  const [loadedCompareScopeId, setLoadedCompareScopeId] = useState<number | null>(null)
+  const [failedCompareScopeId, setFailedCompareScopeId] = useState<number | null>(null)
+  const mountedRef = useRef(false)
+  const compareRequestRef = useRef(0)
   const refreshTimer = useRef<number | null>(null)
-  const comparisonConfigRef = useRef<string | null>(null)
+  const comparisonConfigRef = useRef<SyncConfig | null>(null)
+  const comparisonScopeCounterRef = useRef(0)
+  const loadedScopeIdRef = useRef<number | null>(null)
+
+  const compareDataCurrent =
+    activeCompareScopeId > 0 && loadedCompareScopeId === activeCompareScopeId
+  const compareError =
+    activeCompareScopeId > 0 &&
+    !compareDataCurrent &&
+    failedCompareScopeId === activeCompareScopeId
+  const compareShowingSkeleton = !compareDataCurrent && !compareError
 
   const diffCount = useMemo(
     () => compareResults.filter((result) => result.local_count !== result.remote_count).length,
@@ -68,6 +97,13 @@ export default function DataSyncPanel() {
     () => syncResults.filter((result) => result.success).length,
     [syncResults],
   )
+
+  const clearScheduledRefresh = useCallback(() => {
+    if (refreshTimer.current !== null) {
+      window.clearTimeout(refreshTimer.current)
+      refreshTimer.current = null
+    }
+  }, [])
 
   const updateConfig = (patch: Partial<SyncConfig>) => {
     setCloudConfig((current) => ({ ...current, ...patch }))
@@ -88,22 +124,46 @@ export default function DataSyncPanel() {
   )
 
   const compareData = useCallback(async () => {
+    clearScheduledRefresh()
+    const requestId = ++compareRequestRef.current
+    const snapshot: SyncConfig = { ...cloudConfig }
+    const sameConfig = configsEqual(comparisonConfigRef.current, snapshot)
+    const scopeId =
+      sameConfig && comparisonScopeCounterRef.current > 0
+        ? comparisonScopeCounterRef.current
+        : ++comparisonScopeCounterRef.current
+
     setLoading(true)
     setStep('compare')
-    const configKey = JSON.stringify(cloudConfig)
-    if (comparisonConfigRef.current !== configKey) setCompareResults([])
-    comparisonConfigRef.current = configKey
+    setActiveCompareScopeId(scopeId)
+    setFailedCompareScopeId((current) => (current === scopeId ? null : current))
+    if (!sameConfig) {
+      comparisonConfigRef.current = snapshot
+      loadedScopeIdRef.current = null
+      setLoadedCompareScopeId(null)
+      setCompareResults([])
+    }
     setSyncResults([])
 
     try {
-      const response = await syncApi.compare(cloudConfig)
+      const response = await syncApi.compare(snapshot)
+      if (!mountedRef.current || requestId !== compareRequestRef.current) return
       setCompareResults(response.data.data)
+      loadedScopeIdRef.current = scopeId
+      setLoadedCompareScopeId(scopeId)
+      setFailedCompareScopeId(null)
     } catch {
+      if (!mountedRef.current || requestId !== compareRequestRef.current) return
       toastError('获取对比数据失败')
+      if (loadedScopeIdRef.current !== scopeId) {
+        setFailedCompareScopeId(scopeId)
+      }
     } finally {
-      setLoading(false)
+      if (mountedRef.current && requestId === compareRequestRef.current) {
+        setLoading(false)
+      }
     }
-  }, [cloudConfig, toastError])
+  }, [clearScheduledRefresh, cloudConfig, toastError])
 
   const testConnection = async () => {
     if (!cloudConfig.host || !cloudConfig.user || !cloudConfig.db_name) {
@@ -181,10 +241,13 @@ export default function DataSyncPanel() {
   }, [loadConfig])
 
   useEffect(() => {
+    mountedRef.current = true
     return () => {
-      if (refreshTimer.current) window.clearTimeout(refreshTimer.current)
+      mountedRef.current = false
+      compareRequestRef.current += 1
+      clearScheduledRefresh()
     }
-  }, [])
+  }, [clearScheduledRefresh])
 
   return (
     <div className="data-sync-panel settings-page">
@@ -201,7 +264,7 @@ export default function DataSyncPanel() {
                 pending={testLoading}
               >
                 <span>{testLoading ? '正在测试...' : '测试连接并下一步'}</span>
-                {!testLoading ? <i aria-hidden="true" className="ri-arrow-right-line" /> : null}
+                {!testLoading ? <JadeIcon name="arrow-right" size="1em" /> : null}
               </Button>
             </>
           }
@@ -236,7 +299,7 @@ export default function DataSyncPanel() {
                 {dbTypeOptions.map((option) => (
                   <Radio key={option.value} value={option.value} variant="card">
                     <span className="sync-db-option-content">
-                      <i aria-hidden="true" className={option.icon} />
+                      <JadeIcon name={option.icon} size="1em" />
                       <span>{option.label}</span>
                     </span>
                   </Radio>
@@ -324,7 +387,14 @@ export default function DataSyncPanel() {
               <span className="sync-connection-host">{cloudConfig.host}</span>
             </div>
             <div className="settings-toolbar__actions">
-              <Button onClick={() => setStep('config')} variant="ghost">
+              <Button
+                onClick={() => {
+                  clearScheduledRefresh()
+                  compareRequestRef.current += 1
+                  setStep('config')
+                }}
+                variant="ghost"
+              >
                 修改配置
               </Button>
               <Button
@@ -332,11 +402,15 @@ export default function DataSyncPanel() {
                 onClick={() => void compareData()}
                 variant="secondary"
               >
-                <i aria-hidden="true" className={`ri-refresh-line ${loading ? 'spinning' : ''}`} />
+                {loading ? <Spinner label="正在重新对比" size="sm" /> : <JadeIcon name="refresh" size="1em" />}
                 <span>重新对比</span>
               </Button>
-              <Button disabled={loading} onClick={() => void startSync()} pending={syncLoading}>
-                {!syncLoading ? <i aria-hidden="true" className="ri-upload-cloud-2-line" /> : null}
+              <Button
+                disabled={loading || !compareDataCurrent || compareResults.length === 0}
+                onClick={() => void startSync()}
+                pending={syncLoading}
+              >
+                {!syncLoading ? <JadeIcon name="upload-cloud" size="1em" /> : null}
                 <span>开始同步</span>
               </Button>
             </div>
@@ -346,8 +420,10 @@ export default function DataSyncPanel() {
             <div>
               <dt>数据表</dt>
               <dd>
-                {loading && compareResults.length === 0 ? (
+                {compareShowingSkeleton ? (
                   <Skeleton height="1.25rem" width="2rem" />
+                ) : compareError ? (
+                  '—'
                 ) : (
                   compareResults.length
                 )}
@@ -356,8 +432,10 @@ export default function DataSyncPanel() {
             <div>
               <dt>待同步</dt>
               <dd>
-                {loading && compareResults.length === 0 ? (
+                {compareShowingSkeleton ? (
                   <Skeleton height="1.25rem" width="2rem" />
+                ) : compareError ? (
+                  '—'
                 ) : (
                   diffCount
                 )}
@@ -369,12 +447,26 @@ export default function DataSyncPanel() {
             </div>
           </dl>
 
-          {loading && compareResults.length === 0 ? (
+          {compareShowingSkeleton ? (
             <SettingsTableSkeleton columns={5} label="正在分析数据库差异" />
+          ) : compareError ? (
+            <EmptyState
+              action={
+                <Button onClick={() => void compareData()} variant="secondary">
+                  重新对比
+                </Button>
+              }
+              className="settings-empty"
+              description="请检查云端连接或配置后重试。"
+              icon={<JadeIcon name="warning" size="1em" />}
+              role="alert"
+              size="md"
+              title="对比数据加载失败"
+            />
           ) : compareResults.length === 0 ? (
             <EmptyState
               className="settings-empty"
-              icon={<i className="ri-inbox-archive-line" />}
+              scene={<EmptyScene name="ledger-empty" size="standard" />}
               size="md"
               title="暂无对比数据"
             />
@@ -419,12 +511,12 @@ export default function DataSyncPanel() {
                       <Table.Cell align="center">
                         {result.local_count !== result.remote_count ? (
                           <Chip size="sm" tone="warning">
-                            <i className="ri-alert-line" />
+                            <JadeIcon name="alert-triangle" size="1em" />
                             <span>差异</span>
                           </Chip>
                         ) : (
                           <Chip size="sm" tone="success">
-                            <i className="ri-check-line" />
+                            <JadeIcon name="check" size="1em" />
                             <span>一致</span>
                           </Chip>
                         )}
@@ -433,12 +525,12 @@ export default function DataSyncPanel() {
                         {syncResult ? (
                           syncResult.success ? (
                             <span className="sync-result-success">
-                              <i className="ri-check-double-line" />
+                              <JadeIcon name="check-double" size="1em" />
                               <span>已同步 {syncResult.synced_count} 条</span>
                             </span>
                           ) : (
                             <span className="sync-result-error" title={syncResult.error_message}>
-                              <i className="ri-error-warning-line" />
+                              <JadeIcon name="warning" size="1em" />
                               <span>同步失败</span>
                             </span>
                           )

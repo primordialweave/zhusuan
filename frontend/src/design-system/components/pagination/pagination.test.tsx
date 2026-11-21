@@ -38,7 +38,7 @@ describe('Pagination', () => {
     expect(screen.getByRole('button', { name: '第 50 页' })).toHaveAttribute('aria-current', 'page')
     expect(screen.getByRole('button', { name: '第 100 页' })).toBeInTheDocument()
     expect(document.querySelectorAll('.ods-pagination__ellipsis')).toHaveLength(2)
-    // Arrows and gaps are icons: text glyphs such as ‹ and … do not sit on the buttons' centre.
-    expect(document.querySelectorAll('.ods-pagination i[class^="ri-"]')).toHaveLength(4)
+    // Arrows and gaps are SVG icons: text glyphs such as ‹ and … do not sit on the buttons' centre.
+    expect(document.querySelectorAll('.ods-pagination [data-slot="jade-icon"]')).toHaveLength(4)
   })
 })

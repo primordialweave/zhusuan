@@ -1,4 +1,5 @@
 import { forwardRef, type HTMLAttributes, type ReactNode } from 'react'
+import { CloseButton } from '../close-button'
 
 export type AlertTone = 'neutral' | 'success' | 'warning' | 'danger' | 'info'
 
@@ -58,15 +59,12 @@ export const Alert = forwardRef<HTMLDivElement, AlertProps>(function Alert(
         </div>
       ) : null}
       {onDismiss ? (
-        <button
-          aria-label={dismissLabel}
+        <CloseButton
           className="ods-alert__dismiss"
           data-slot="dismiss"
+          label={dismissLabel}
           onClick={onDismiss}
-          type="button"
-        >
-          <span aria-hidden="true">×</span>
-        </button>
+        />
       ) : null}
     </div>
   )

@@ -14,4 +14,13 @@ describe('Spinner', () => {
     expect(spinner.querySelector('[data-slot="indicator"]')).toHaveAttribute('aria-hidden', 'true')
     expect(ref.current).toBe(spinner)
   })
+
+  it('omits status semantics when marked decorative inside a labeled control', () => {
+    const { container } = render(<Spinner aria-hidden="true" label="正在检测更新" size="sm" />)
+
+    const spinner = container.querySelector('[data-slot="spinner"]')
+    expect(spinner).toHaveAttribute('aria-hidden', 'true')
+    expect(spinner).not.toHaveAttribute('role')
+    expect(spinner).not.toHaveAttribute('aria-label')
+  })
 })

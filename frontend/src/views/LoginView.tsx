@@ -1,7 +1,16 @@
 import { type FormEvent, useEffect, useRef, useState } from 'react'
 import { Navigate, useNavigate } from 'react-router-dom'
 import ScenePage, { BrushStroke } from '@/components/scene/ScenePage'
-import { Alert, Button, Checkbox, IconButton, Input, InputGroup, Skeleton } from '@/design-system'
+import {
+  Alert,
+  Button,
+  Checkbox,
+  IconButton,
+  Input,
+  InputGroup,
+  JadeIcon,
+  Skeleton,
+} from '@/design-system'
 import { useAuthStore } from '@/stores/auth'
 import { useToastStore } from '@/composables/useToast'
 import { rememberedLogin } from '@/utils/rememberedLogin'
@@ -132,7 +141,7 @@ export default function LoginView() {
           adornmentSpacing="balanced"
           focusAdornmentTone="accent"
           size="lg"
-          startContent={<i aria-hidden="true" className="ri-user-line" />}
+          startContent={<JadeIcon name="user" size="1em" />}
         >
           <Input
             aria-label="用户名 / 邮箱 / 手机号"
@@ -168,12 +177,12 @@ export default function LoginView() {
                 size="md"
                 variant="ghost"
               >
-                <i className={showPassword ? 'ri-eye-line' : 'ri-eye-off-line'} />
+                <JadeIcon name={showPassword ? 'eye' : 'eye-off'} size="1em" />
               </IconButton>
             }
             focusAdornmentTone="accent"
             size="lg"
-            startContent={<i aria-hidden="true" className="ri-lock-line" />}
+            startContent={<JadeIcon name="lock" size="1em" />}
           >
             <Input
               aria-label="密码"
@@ -242,7 +251,7 @@ export default function LoginView() {
         </div>
 
         {loginError ? (
-          <Alert icon={<i className="ri-error-warning-line" />} title={loginError} tone="danger" />
+          <Alert icon={<JadeIcon name="warning" size="1em" />} title={loginError} tone="danger" />
         ) : null}
 
         <Button

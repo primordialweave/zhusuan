@@ -1,0 +1,90 @@
+{
+  "version": "1.2.0",
+  "stage": "pre-publication",
+  "frontend": {
+    "files": 118,
+    "passed": 746,
+    "failed": 0,
+    "max_workers": 1,
+    "typescript": "passed",
+    "eslint": "passed",
+    "production_build": "passed"
+  },
+  "backend": {
+    "top_level_passed": 150,
+    "subtests_passed": 183,
+    "tested_packages": 17,
+    "no_test_packages": 15,
+    "failed": 0,
+    "skipped": 0,
+    "race": true,
+    "vet": "passed",
+    "mod_verify": "passed",
+    "new_lint_issues": 0
+  },
+  "python": {
+    "passed": 32,
+    "failed": 0
+  },
+  "bundle": {
+    "1.1.0": {
+      ".js": {
+        "bytes": 895747,
+        "gzip_bytes": 277491
+      },
+      ".css": {
+        "bytes": 408153,
+        "gzip_bytes": 79197
+      },
+      ".woff": {
+        "bytes": 169092,
+        "gzip_bytes": 168483
+      },
+      ".woff2": {
+        "bytes": 305340,
+        "gzip_bytes": 304556
+      },
+      "all_bytes": 26830988
+    },
+    "1.2.0": {
+      ".js": {
+        "bytes": 955580,
+        "gzip_bytes": 289973
+      },
+      ".css": {
+        "bytes": 294555,
+        "gzip_bytes": 60975
+      },
+      ".woff": {
+        "bytes": 169092,
+        "gzip_bytes": 168483
+      },
+      ".woff2": {
+        "bytes": 116124,
+        "gzip_bytes": 116415
+      },
+      "all_bytes": 26475929
+    }
+  },
+  "browser": {
+    "ego_layouts": 64,
+    "webkit_layouts": 64,
+    "horizontal_overflow": false,
+    "webkit_page_errors": 0,
+    "system_and_app_mid_animation_cancel": true,
+    "keyboard_clear": true,
+    "touch_clear": true,
+    "native_export_fixture_route_change": true,
+    "ten_percent_playback": false,
+    "real_native_save": false
+  },
+  "limits": [
+    "hardware performance",
+    "native Retina",
+    "screen-reader acceptance",
+    "macOS Developer ID/notarization",
+    "Windows Authenticode",
+    "mobile distribution"
+  ],
+  "evidence_root": "/tmp/zhusuan-release-1.2.0"
+}

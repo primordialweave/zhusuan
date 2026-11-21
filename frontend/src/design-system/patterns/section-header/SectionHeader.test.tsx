@@ -1,6 +1,7 @@
 import { render, screen } from '@testing-library/react'
 import { describe, expect, it } from 'vitest'
 import { SectionHeader } from './SectionHeader'
+import { JadeIcon } from '../../components/icon'
 import sectionHeaderCss from './section-header.css?raw'
 
 describe('SectionHeader', () => {
@@ -33,7 +34,7 @@ describe('SectionHeader', () => {
     const { container } = render(
       <SectionHeader
         description="管理系统账户"
-        icon={<i className="ri-team-line" />}
+        icon={<JadeIcon name="users" size="1em" />}
         iconTone="info"
         size="lg"
         title="用户管理"

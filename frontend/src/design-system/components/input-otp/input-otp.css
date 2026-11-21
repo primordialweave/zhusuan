@@ -7,8 +7,9 @@
   width: var(--ods-space-10);
   height: var(--ods-space-12);
   border: 1px solid var(--ods-color-border-default);
-  border-radius: var(--ods-radius-control);
-  background: var(--ods-color-bg-surface);
+  border-radius: var(--ods-radius-md);
+  background: var(--ods-material-jade-sheen), var(--ods-color-bg-surface);
+  box-shadow: var(--ods-material-jade-inset-shadow);
   color: var(--ods-color-fg-default);
   font-family: var(--ods-font-family-mono);
   font-size: var(--ods-font-size-xl);
@@ -16,7 +17,8 @@
   text-align: center;
   transition:
     border-color var(--ods-duration-fast) var(--ods-ease-standard),
-    box-shadow var(--ods-duration-fast) var(--ods-ease-standard);
+    box-shadow var(--ods-duration-fast) var(--ods-ease-standard),
+    background-color var(--ods-duration-fast) var(--ods-ease-standard);
 }
 
 .ods-input-otp[data-size='sm'] .ods-input-otp__slot {
@@ -32,6 +34,8 @@
 
 .ods-input-otp__slot[data-filled] {
   border-color: var(--ods-color-border-strong);
+  background: var(--ods-material-jade-sheen), var(--ods-color-bg-surface-raised);
+  box-shadow: var(--ods-material-jade-control-shadow);
 }
 
 .ods-input-otp__slot:focus-visible {

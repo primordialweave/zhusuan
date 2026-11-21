@@ -65,6 +65,7 @@
 - `[data-theme='dark']` 使用夜雨（`themes/jiangnan-night.css`）。
 - `auto` 是 theme store 中的用户偏好；DOM 只接收解析后的 `light` 或 `dark`。
 - 两个主题必须声明同一组 `--ods-*` theme tokens。契约测试会阻止单主题缺项。
+- 图标玉材质令牌（`--ods-material-jade-icon-base/edge/depth/shadow/specular/tint/on-accent-*/wood`）与共享错峰延迟（`--ods-delay-stagger`）均遵循同一契约，并由 `tokens/contrast.test.ts` 验证普通底面 ≥3:1、主按钮与选中 Dock 渐变底 ≥4.5:1。
 
 ## Canvas 与第三方库
 
