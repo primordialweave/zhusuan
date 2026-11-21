@@ -13,6 +13,7 @@
 - 冻结快照前端116文件650例、ESLint/TypeScript/production build通过；Python发布工具31例通过。
 - Go全量race150顶层183子测试/17测试包通过，0失败/0测试跳过，另10包无测试；vet、模块verify、相对origin/main增量lint0、actionlint1.7.12全部工作流通过。
 - macOS本地打包与发行CI正在进行，run与平台结果将在完成后记录。
+- PR33 CI44867310036与mainCI44868152544四job均成功。首轮Release44868158371 Linux649/650，唯一失败为Analytics测试过早捕获尚未创建Chart的undefined；受控复现确认夹具问题，调整为先动态等待实例labels，再保留实例校验旧响应，产品代码、断言、timeout不变。修复定向12次及14文件内例全过，候选仍未公开。
 - 此前Skeleton验证：前端644例、Ego/WebKit各30种界面/主题加载组合通过；当前P2修复另有12例定向回归通过。本次冻结快照重新全量验证通过。
 - Go docs/handler补充回归、字体清理与1.1.0全平台元数据校验通过；Windows/Linux与macOS发行产物由CI验证。
 - 初轮前端647/650仅三个native恢复测试写死v1.0.2；现读取pkg.version，未削弱等待/状态断言。初轮与冻结快照日志保留。

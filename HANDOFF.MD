@@ -7,6 +7,7 @@
 - 用户明确要求提交并发布，选择1.1.0，覆盖所有此前“待确认/禁止发版”限制。版本元数据、Changelog与下载说明已更新；当前批准范围包括品牌/config/analytics/玉质/Skeleton所有在制品，原design-qa.md删除、root node_modules、非必需生成events/index不纳入。
 - 独立审查修复User/Notification新query失败回显旧data/count，新增失败/重试回归；真正运行Swagger模板补计划批次已收字段、Info/更新路由和Bearer定义。冻结快照前端650/116、Python31、Go race150顶层183子例/17测试包（10包无测试）通过；vet/模块verify/增量lint0/actionlint全过。
 - 隔离已有release worktree `/Users/willxue/.codex/worktrees/release-102-final/Orange`，不占用户3456/9245；保留原始失败日志和snapshot refs。当前本地Mac打包及PR/三平台CI后继续tag/公开/匿名manifest与旧版本不可变验证，不在PR阶段止步。证据 `/tmp/zhusuan-release-1.1.0`。
+- PR33 CI44867310036四job全过，已合入main5d1f54e并推未公开候选v1.1.0。Release44868158371 Linux前端649/650失败：Analytics race用例在passive Chart effect前捕获undefined，waitFor闭包永不更新；受控spy复现旧失败、新动态等待通过，产品/超时/断言不变。仅测试两行顺序修复后14例与12次repeat通过。需新test-only PR合入后更新未公开候选统一重建，已公开1.0.x不动。
 
 ## 1. 当前目录：`/Users/willxue/will/primordialweave/zhusuan`（2026-11-21）
 

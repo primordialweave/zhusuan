@@ -284,8 +284,8 @@ describe('AnalyticsView', () => {
       }) as never,
     )
     await waitFor(() => expect(screen.getByText('¥2,000')).toBeInTheDocument())
+    await waitFor(() => expect(chartInstances.at(-1)?.data.labels).toEqual(['最新周']))
     const trendChart = chartInstances.at(-1)
-    await waitFor(() => expect(trendChart?.data.labels).toEqual(['最新周']))
 
     monthStats.resolve(apiResponse(stats) as never)
     monthTrend.resolve(
