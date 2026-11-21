@@ -1,0 +1,690 @@
+{
+  "tag": "v1.1.0",
+  "url": "https://github.com/primordialweave/zhusuan/releases/tag/v1.1.0",
+  "publishedAt": "2026-11-21T05:41:22Z",
+  "assetCount": 10,
+  "assets": {
+    "zhusuan-v1.1.0-macOS-arm64.dmg": {
+      "size": 49269060,
+      "sha256": "15d77c1464315597a4eb21112dbfa60b967ad97d88582f28d009e3ca4174590f"
+    },
+    "zhusuan-v1.1.0-macOS-arm64.zip": {
+      "size": 45538954,
+      "sha256": "f88ea45ac62f57420415de1ced7054b2dfcc5e0c70be68b720f94be294f31473"
+    },
+    "zhusuan-v1.1.0-macOS-amd64.dmg": {
+      "size": 51398239,
+      "sha256": "ac435b7fdda2c10bf9263aec654c748d1b085411f61e7ae1d0ae75a5ebbde5a3"
+    },
+    "zhusuan-v1.1.0-macOS-amd64.zip": {
+      "size": 47350062,
+      "sha256": "c8063ee1544a9b9d0d0d86f13e491f8a1ff1af095a21418f39a61d51a295ce52"
+    },
+    "zhusuan-v1.1.0-windows-amd64-installer.exe": {
+      "size": 41386678,
+      "sha256": "08a58fb008a0439e4d7ecd215cf1f202248167662e11284fe842a41bb35ddb78"
+    },
+    "zhusuan-v1.1.0-linux-x86_64.AppImage": {
+      "size": 111581688,
+      "sha256": "ffeb63221f5503ac78e82f88d1a0150c2076771a76fa03a70c50d28a2a588ef0"
+    },
+    "zhusuan-v1.1.0-linux-amd64.deb": {
+      "size": 40268898,
+      "sha256": "ff299d3e7cb3404ee456bf9ed3b2bc94745945314b01aa0d808e84c10cb64fb7"
+    },
+    "zhusuan-v1.1.0-linux-amd64.rpm": {
+      "size": 41306588,
+      "sha256": "74b271dfc258fde2c9f1ad955b01baec4f462cdf798abddfdaa4401ac4e03a6d"
+    },
+    "SHA256SUMS": {
+      "size": 794,
+      "sha256": "fe8c4be398e50eee76bcf2c6a1b67d6f66b4142931882ed578d550ea6973072a"
+    },
+    "update.json": {
+      "size": 4458,
+      "sha256": "a50fa73e9a3a81b6bbffd92d29c28d737eb0231988cebe2ab0cd912d51042aa2"
+    }
+  },
+  "anonymousManifestVerified": true,
+  "anonymousHeads": [
+    {
+      "name": "zhusuan-v1.1.0-macOS-arm64.dmg",
+      "status": 200,
+      "length": "49269060"
+    },
+    {
+      "name": "zhusuan-v1.1.0-macOS-arm64.zip",
+      "status": 200,
+      "length": "45538954"
+    },
+    {
+      "name": "zhusuan-v1.1.0-macOS-amd64.dmg",
+      "status": 200,
+      "length": "51398239"
+    },
+    {
+      "name": "zhusuan-v1.1.0-macOS-amd64.zip",
+      "status": 200,
+      "length": "47350062"
+    },
+    {
+      "name": "zhusuan-v1.1.0-windows-amd64-installer.exe",
+      "status": 200,
+      "length": "41386678"
+    },
+    {
+      "name": "zhusuan-v1.1.0-linux-x86_64.AppImage",
+      "status": 200,
+      "length": "111581688"
+    },
+    {
+      "name": "zhusuan-v1.1.0-linux-amd64.deb",
+      "status": 200,
+      "length": "40268898"
+    },
+    {
+      "name": "zhusuan-v1.1.0-linux-amd64.rpm",
+      "status": 200,
+      "length": "41306588"
+    },
+    {
+      "name": "SHA256SUMS",
+      "status": 200,
+      "length": "794"
+    },
+    {
+      "name": "update.json",
+      "status": 200,
+      "length": "4458"
+    }
+  ],
+  "oldReleasesUnchanged": [
+    "v1.0.2",
+    "v1.0.1",
+    "v1.0.0"
+  ],
+  "sourceTarget": {
+    "tag": "v1.1.0",
+    "commit": "044d5b58c4313b56c584308cfd36cb4997f7767f",
+    "tree": "de8344d77bbc96af086c14756a2ae42de21f1998",
+    "pr": 34,
+    "originalCandidate": "5d1f54e95d49699fd857f472431c705397b2acad",
+    "testOnlyRecovery": [
+      "HANDOFF.MD",
+      "docs/release-readiness-1.1.0.md",
+      "frontend/src/views/AnalyticsView.test.tsx"
+    ],
+    "productionSourceUnchanged": true
+  },
+  "releaseRun": 44870825972,
+  "mainCI": 44870819592,
+  "prCI": [
+    44867310036,
+    44869913158
+  ],
+  "initialFailedRun": 44868158371,
+  "macOSPackages": {
+    "verified_at_utc": "2026-11-21T05:53:28.075327+00:00",
+    "scope": "The four downloaded final CI macOS packages in ci-assets; no local-build package was used.",
+    "tag": "v1.1.0",
+    "claimed_source_commit_from_parent": "044d5b58c4313b56c584308cfd36cb4997f7767f",
+    "claimed_ci_run_from_parent": "44870825972",
+    "success": true,
+    "verified_asset_count": 4,
+    "architectures": {
+      "arm64": {
+        "arch": "arm64",
+        "expected_binary_architecture": "arm64",
+        "tag": "v1.1.0",
+        "claimed_ci_run": "44870825972",
+        "claimed_source_commit": "044d5b58c4313b56c584308cfd36cb4997f7767f",
+        "checks": {
+          "zip_paths": {
+            "entry_count": 10,
+            "root": "zhusuan.app",
+            "symlink_count": 0,
+            "crc_verified": true,
+            "declared_uncompressed_bytes": 88218970,
+            "safe_before_extraction": true
+          },
+          "zip_bundle": {
+            "bundle_name": "zhusuan.app",
+            "metadata": {
+              "CFBundleIdentifier": "org.primordialweave.zhusuan",
+              "CFBundleExecutable": "zhusuan",
+              "CFBundleShortVersionString": "1.1.0",
+              "CFBundleVersion": "1.1.0",
+              "CFBundleName": "珠算",
+              "CFBundleDisplayName": "珠算",
+              "LSMinimumSystemVersion": "12.0.0"
+            },
+            "single_architecture_verified": "arm64",
+            "codesign_deep_strict_verified": true,
+            "mach_o_minimum_os": [
+              "12.0"
+            ]
+          },
+          "dmg": {
+            "hdiutil_integrity_verified": true,
+            "mounted_readonly": true,
+            "mountpoint": "/private/tmp/zhusuan-release-1.1.0/.ci-macos-arm64-o_ghvem7/mounted",
+            "root_entries": [
+              "Applications",
+              "珠算.app"
+            ],
+            "applications_symlink": "/Applications",
+            "bundle": {
+              "bundle_name": "珠算.app",
+              "metadata": {
+                "CFBundleIdentifier": "org.primordialweave.zhusuan",
+                "CFBundleExecutable": "zhusuan",
+                "CFBundleShortVersionString": "1.1.0",
+                "CFBundleVersion": "1.1.0",
+                "CFBundleName": "珠算",
+                "CFBundleDisplayName": "珠算",
+                "LSMinimumSystemVersion": "12.0.0"
+              },
+              "single_architecture_verified": "arm64",
+              "codesign_deep_strict_verified": true,
+              "mach_o_minimum_os": [
+                "12.0"
+              ]
+            }
+          },
+          "dmg_detached": true,
+          "temporary_extraction_removed": true
+        },
+        "commands": [
+          {
+            "argv": [
+              "/usr/bin/ditto",
+              "-x",
+              "-k",
+              "/tmp/zhusuan-release-1.1.0/ci-assets/zhusuan-v1.1.0-macOS-arm64.zip",
+              "/private/tmp/zhusuan-release-1.1.0/.ci-macos-arm64-o_ghvem7/zip"
+            ],
+            "returncode": 0,
+            "elapsed_seconds": 0.165,
+            "stdout": "",
+            "stderr": ""
+          },
+          {
+            "argv": [
+              "/usr/bin/lipo",
+              "/private/tmp/zhusuan-release-1.1.0/.ci-macos-arm64-o_ghvem7/zip/zhusuan.app/Contents/MacOS/zhusuan",
+              "-archs"
+            ],
+            "returncode": 0,
+            "elapsed_seconds": 0.017,
+            "stdout": "arm64\n",
+            "stderr": ""
+          },
+          {
+            "argv": [
+              "/usr/bin/codesign",
+              "--verify",
+              "--deep",
+              "--strict",
+              "--verbose=2",
+              "/private/tmp/zhusuan-release-1.1.0/.ci-macos-arm64-o_ghvem7/zip/zhusuan.app"
+            ],
+            "returncode": 0,
+            "elapsed_seconds": 0.048,
+            "stdout": "",
+            "stderr": "/private/tmp/zhusuan-release-1.1.0/.ci-macos-arm64-o_ghvem7/zip/zhusuan.app: valid on disk\n/private/tmp/zhusuan-release-1.1.0/.ci-macos-arm64-o_ghvem7/zip/zhusuan.app: satisfies its Designated Requirement\n"
+          },
+          {
+            "argv": [
+              "/usr/bin/codesign",
+              "-dv",
+              "--verbose=4",
+              "/private/tmp/zhusuan-release-1.1.0/.ci-macos-arm64-o_ghvem7/zip/zhusuan.app"
+            ],
+            "returncode": 0,
+            "elapsed_seconds": 0.01,
+            "stdout": "",
+            "stderr": "Executable=/private/tmp/zhusuan-release-1.1.0/.ci-macos-arm64-o_ghvem7/zip/zhusuan.app/Contents/MacOS/zhusuan\nIdentifier=org.primordialweave.zhusuan\nFormat=app bundle with Mach-O thin (arm64)\nCodeDirectory v=20400 size=634868 flags=0x2(adhoc) hashes=19833+3 location=embedded\nVersionPlatform=1\nVersionMin=786432\nVersionSDK=984320\nHash type=sha256 size=32\nCandidateCDHash sha256=c8586951f099b5c498f1916ba4f0eb4891c647f8\nCandidateCDHashFull sha256=c8586951f099b5c498f1916ba4f0eb4891c647f8f539b821dee5e9728f80423b\nHash choices=sha256\nCMSDigest=c8586951f099b5c498f1916ba4f0eb4891c647f8f539b821dee5e9728f80423b\nCMSDigestType=2\nExecutable Segment base=0\nExecutable Segment limit=65372160\nExecutable Segment flags=0x1\nPage size=4096\nCDHash=c8586951f099b5c498f1916ba4f0eb4891c647f8\nSignature=adhoc\nInfo.plist entries=13\nTeamIdentifier=not set\nSealed Resources version=2 rules=13 files=2\nInternal requirements count=0 size=12\nTotal signatures=1\nChosen signature=1\n"
+          },
+          {
+            "argv": [
+              "/usr/bin/xcrun",
+              "vtool",
+              "-show-build",
+              "/private/tmp/zhusuan-release-1.1.0/.ci-macos-arm64-o_ghvem7/zip/zhusuan.app/Contents/MacOS/zhusuan"
+            ],
+            "returncode": 0,
+            "elapsed_seconds": 0.026,
+            "stdout": "/private/tmp/zhusuan-release-1.1.0/.ci-macos-arm64-o_ghvem7/zip/zhusuan.app/Contents/MacOS/zhusuan:\nLoad command 11\n      cmd LC_BUILD_VERSION\n  cmdsize 32\n platform MACOS\n    minos 12.0\n      sdk 15.5\n   ntools 1\n     tool LD\n  version 1167.5\n",
+            "stderr": ""
+          },
+          {
+            "argv": [
+              "/usr/bin/hdiutil",
+              "verify",
+              "-quiet",
+              "/tmp/zhusuan-release-1.1.0/ci-assets/zhusuan-v1.1.0-macOS-arm64.dmg"
+            ],
+            "returncode": 0,
+            "elapsed_seconds": 1.957,
+            "stdout": "",
+            "stderr": ""
+          },
+          {
+            "argv": [
+              "/usr/bin/hdiutil",
+              "attach",
+              "-plist",
+              "-readonly",
+              "-nobrowse",
+              "-mountpoint",
+              "/private/tmp/zhusuan-release-1.1.0/.ci-macos-arm64-o_ghvem7/mounted",
+              "/tmp/zhusuan-release-1.1.0/ci-assets/zhusuan-v1.1.0-macOS-arm64.dmg"
+            ],
+            "returncode": 0,
+            "elapsed_seconds": 0.206,
+            "stdout": "<?xml version=\"1.0\" encoding=\"UTF-8\"?>\n<!DOCTYPE plist PUBLIC \"-//Apple//DTD PLIST 1.0//EN\" \"http://www.apple.com/DTDs/PropertyList-1.0.dtd\">\n<plist version=\"1.0\">\n<dict>\n\t<key>system-entities</key>\n\t<array>\n\t\t<dict>\n\t\t\t<key>content-hint</key>\n\t\t\t<string>Apple_HFS</string>\n\t\t\t<key>dev-entry</key>\n\t\t\t<string>/dev/disk4s1</string>\n\t\t\t<key>mount-point</key>\n\t\t\t<string>/private/tmp/zhusuan-release-1.1.0/.ci-macos-arm64-o_ghvem7/mounted</string>\n\t\t\t<key>potentially-mountable</key>\n\t\t\t<true/>\n\t\t\t<key>unmapped-content-hint</key>\n\t\t\t<string>48465300-0000-11AA-AA11-00306543ECAC</string>\n\t\t\t<key>volume-kind</key>\n\t\t\t<string>hfs</string>\n\t\t</dict>\n\t\t<dict>\n\t\t\t<key>content-hint</key>\n\t\t\t<string>GUID_partition_scheme</string>\n\t\t\t<key>dev-entry</key>\n\t\t\t<string>/dev/disk4</string>\n\t\t\t<key>potentially-mountable</key>\n\t\t\t<false/>\n\t\t\t<key>unmapped-content-hint</key>\n\t\t\t<string>GUID_partition_scheme</string>\n\t\t</dict>\n\t</array>\n</dict>\n</plist>\n",
+            "stderr": "hdiutil: WARNING: 'hdiutil attach -readonly -nobrowse -mountpoint ...' is deprecated. Please use 'diskutil image attach --readOnly --mountOptions nobrowse --mountPoint ...' instead.\n"
+          },
+          {
+            "argv": [
+              "/usr/bin/lipo",
+              "/private/tmp/zhusuan-release-1.1.0/.ci-macos-arm64-o_ghvem7/mounted/珠算.app/Contents/MacOS/zhusuan",
+              "-archs"
+            ],
+            "returncode": 0,
+            "elapsed_seconds": 0.018,
+            "stdout": "arm64\n",
+            "stderr": ""
+          },
+          {
+            "argv": [
+              "/usr/bin/codesign",
+              "--verify",
+              "--deep",
+              "--strict",
+              "--verbose=2",
+              "/private/tmp/zhusuan-release-1.1.0/.ci-macos-arm64-o_ghvem7/mounted/珠算.app"
+            ],
+            "returncode": 0,
+            "elapsed_seconds": 0.21,
+            "stdout": "",
+            "stderr": "/private/tmp/zhusuan-release-1.1.0/.ci-macos-arm64-o_ghvem7/mounted/珠算.app: valid on disk\n/private/tmp/zhusuan-release-1.1.0/.ci-macos-arm64-o_ghvem7/mounted/珠算.app: satisfies its Designated Requirement\n"
+          },
+          {
+            "argv": [
+              "/usr/bin/codesign",
+              "-dv",
+              "--verbose=4",
+              "/private/tmp/zhusuan-release-1.1.0/.ci-macos-arm64-o_ghvem7/mounted/珠算.app"
+            ],
+            "returncode": 0,
+            "elapsed_seconds": 0.01,
+            "stdout": "",
+            "stderr": "Executable=/private/tmp/zhusuan-release-1.1.0/.ci-macos-arm64-o_ghvem7/mounted/珠算.app/Contents/MacOS/zhusuan\nIdentifier=org.primordialweave.zhusuan\nFormat=app bundle with Mach-O thin (arm64)\nCodeDirectory v=20400 size=634868 flags=0x2(adhoc) hashes=19833+3 location=embedded\nVersionPlatform=1\nVersionMin=786432\nVersionSDK=984320\nHash type=sha256 size=32\nCandidateCDHash sha256=c8586951f099b5c498f1916ba4f0eb4891c647f8\nCandidateCDHashFull sha256=c8586951f099b5c498f1916ba4f0eb4891c647f8f539b821dee5e9728f80423b\nHash choices=sha256\nCMSDigest=c8586951f099b5c498f1916ba4f0eb4891c647f8f539b821dee5e9728f80423b\nCMSDigestType=2\nExecutable Segment base=0\nExecutable Segment limit=65372160\nExecutable Segment flags=0x1\nPage size=4096\nCDHash=c8586951f099b5c498f1916ba4f0eb4891c647f8\nSignature=adhoc\nInfo.plist entries=13\nTeamIdentifier=not set\nSealed Resources version=2 rules=13 files=2\nInternal requirements count=0 size=12\nTotal signatures=1\nChosen signature=1\n"
+          },
+          {
+            "argv": [
+              "/usr/bin/xcrun",
+              "vtool",
+              "-show-build",
+              "/private/tmp/zhusuan-release-1.1.0/.ci-macos-arm64-o_ghvem7/mounted/珠算.app/Contents/MacOS/zhusuan"
+            ],
+            "returncode": 0,
+            "elapsed_seconds": 0.153,
+            "stdout": "/private/tmp/zhusuan-release-1.1.0/.ci-macos-arm64-o_ghvem7/mounted/珠算.app/Contents/MacOS/zhusuan:\nLoad command 11\n      cmd LC_BUILD_VERSION\n  cmdsize 32\n platform MACOS\n    minos 12.0\n      sdk 15.5\n   ntools 1\n     tool LD\n  version 1167.5\n",
+            "stderr": ""
+          },
+          {
+            "argv": [
+              "/usr/bin/hdiutil",
+              "detach",
+              "/private/tmp/zhusuan-release-1.1.0/.ci-macos-arm64-o_ghvem7/mounted"
+            ],
+            "returncode": 0,
+            "elapsed_seconds": 0.07,
+            "stdout": "\"disk4\" ejected.\n",
+            "stderr": "hdiutil: WARNING: 'hdiutil detach ...' is deprecated. Please use 'diskutil eject ...' instead.\n"
+          }
+        ],
+        "success": true,
+        "created_at_utc": "2026-11-21T05:52:26.678036+00:00",
+        "assets": {
+          "zip": "/tmp/zhusuan-release-1.1.0/ci-assets/zhusuan-v1.1.0-macOS-arm64.zip",
+          "dmg": "/tmp/zhusuan-release-1.1.0/ci-assets/zhusuan-v1.1.0-macOS-arm64.dmg"
+        },
+        "boundary": {
+          "app_executed": false,
+          "real_installation_modified": false,
+          "keychain_modified": false,
+          "sources_or_git_modified": false,
+          "asset_hash_vs_ci_digest_verified_here": false,
+          "notarization_or_gatekeeper_acceptance_tested": false,
+          "target_hardware_ui_or_performance_tested": false
+        }
+      },
+      "amd64": {
+        "arch": "amd64",
+        "expected_binary_architecture": "x86_64",
+        "tag": "v1.1.0",
+        "claimed_ci_run": "44870825972",
+        "claimed_source_commit": "044d5b58c4313b56c584308cfd36cb4997f7767f",
+        "checks": {
+          "zip_paths": {
+            "entry_count": 10,
+            "root": "zhusuan.app",
+            "symlink_count": 0,
+            "crc_verified": true,
+            "declared_uncompressed_bytes": 91803194,
+            "safe_before_extraction": true
+          },
+          "zip_bundle": {
+            "bundle_name": "zhusuan.app",
+            "metadata": {
+              "CFBundleIdentifier": "org.primordialweave.zhusuan",
+              "CFBundleExecutable": "zhusuan",
+              "CFBundleShortVersionString": "1.1.0",
+              "CFBundleVersion": "1.1.0",
+              "CFBundleName": "珠算",
+              "CFBundleDisplayName": "珠算",
+              "LSMinimumSystemVersion": "12.0.0"
+            },
+            "single_architecture_verified": "x86_64",
+            "codesign_deep_strict_verified": true,
+            "mach_o_minimum_os": [
+              "12.0"
+            ]
+          },
+          "dmg": {
+            "hdiutil_integrity_verified": true,
+            "mounted_readonly": true,
+            "mountpoint": "/private/tmp/zhusuan-release-1.1.0/.ci-macos-amd64-uadmxplq/mounted",
+            "root_entries": [
+              "Applications",
+              "珠算.app"
+            ],
+            "applications_symlink": "/Applications",
+            "bundle": {
+              "bundle_name": "珠算.app",
+              "metadata": {
+                "CFBundleIdentifier": "org.primordialweave.zhusuan",
+                "CFBundleExecutable": "zhusuan",
+                "CFBundleShortVersionString": "1.1.0",
+                "CFBundleVersion": "1.1.0",
+                "CFBundleName": "珠算",
+                "CFBundleDisplayName": "珠算",
+                "LSMinimumSystemVersion": "12.0.0"
+              },
+              "single_architecture_verified": "x86_64",
+              "codesign_deep_strict_verified": true,
+              "mach_o_minimum_os": [
+                "12.0"
+              ]
+            }
+          },
+          "dmg_detached": true,
+          "temporary_extraction_removed": true
+        },
+        "commands": [
+          {
+            "argv": [
+              "/usr/bin/ditto",
+              "-x",
+              "-k",
+              "/tmp/zhusuan-release-1.1.0/ci-assets/zhusuan-v1.1.0-macOS-amd64.zip",
+              "/private/tmp/zhusuan-release-1.1.0/.ci-macos-amd64-uadmxplq/zip"
+            ],
+            "returncode": 0,
+            "elapsed_seconds": 0.172,
+            "stdout": "",
+            "stderr": ""
+          },
+          {
+            "argv": [
+              "/usr/bin/lipo",
+              "/private/tmp/zhusuan-release-1.1.0/.ci-macos-amd64-uadmxplq/zip/zhusuan.app/Contents/MacOS/zhusuan",
+              "-archs"
+            ],
+            "returncode": 0,
+            "elapsed_seconds": 0.011,
+            "stdout": "x86_64\n",
+            "stderr": ""
+          },
+          {
+            "argv": [
+              "/usr/bin/codesign",
+              "--verify",
+              "--deep",
+              "--strict",
+              "--verbose=2",
+              "/private/tmp/zhusuan-release-1.1.0/.ci-macos-amd64-uadmxplq/zip/zhusuan.app"
+            ],
+            "returncode": 0,
+            "elapsed_seconds": 0.049,
+            "stdout": "",
+            "stderr": "/private/tmp/zhusuan-release-1.1.0/.ci-macos-amd64-uadmxplq/zip/zhusuan.app: valid on disk\n/private/tmp/zhusuan-release-1.1.0/.ci-macos-amd64-uadmxplq/zip/zhusuan.app: satisfies its Designated Requirement\n"
+          },
+          {
+            "argv": [
+              "/usr/bin/codesign",
+              "-dv",
+              "--verbose=4",
+              "/private/tmp/zhusuan-release-1.1.0/.ci-macos-amd64-uadmxplq/zip/zhusuan.app"
+            ],
+            "returncode": 0,
+            "elapsed_seconds": 0.01,
+            "stdout": "",
+            "stderr": "Executable=/private/tmp/zhusuan-release-1.1.0/.ci-macos-amd64-uadmxplq/zip/zhusuan.app/Contents/MacOS/zhusuan\nIdentifier=org.primordialweave.zhusuan\nFormat=app bundle with Mach-O thin (x86_64)\nCodeDirectory v=20400 size=662644 flags=0x2(adhoc) hashes=20701+3 location=embedded\nVersionPlatform=1\nVersionMin=786432\nVersionSDK=984320\nHash type=sha256 size=32\nCandidateCDHash sha256=bed20948163f05ef5cda0ede4a3c66c052f1c431\nCandidateCDHashFull sha256=bed20948163f05ef5cda0ede4a3c66c052f1c431dcbdf938c6d8c93001becb66\nHash choices=sha256\nCMSDigest=bed20948163f05ef5cda0ede4a3c66c052f1c431dcbdf938c6d8c93001becb66\nCMSDigestType=2\nExecutable Segment base=0\nExecutable Segment limit=68808704\nExecutable Segment flags=0x1\nPage size=4096\nCDHash=bed20948163f05ef5cda0ede4a3c66c052f1c431\nSignature=adhoc\nInfo.plist entries=13\nTeamIdentifier=not set\nSealed Resources version=2 rules=13 files=2\nInternal requirements count=0 size=12\nTotal signatures=1\nChosen signature=1\n"
+          },
+          {
+            "argv": [
+              "/usr/bin/xcrun",
+              "vtool",
+              "-show-build",
+              "/private/tmp/zhusuan-release-1.1.0/.ci-macos-amd64-uadmxplq/zip/zhusuan.app/Contents/MacOS/zhusuan"
+            ],
+            "returncode": 0,
+            "elapsed_seconds": 0.025,
+            "stdout": "/private/tmp/zhusuan-release-1.1.0/.ci-macos-amd64-uadmxplq/zip/zhusuan.app/Contents/MacOS/zhusuan:\nLoad command 10\n      cmd LC_BUILD_VERSION\n  cmdsize 32\n platform MACOS\n    minos 12.0\n      sdk 15.5\n   ntools 1\n     tool LD\n  version 1167.5\n",
+            "stderr": ""
+          },
+          {
+            "argv": [
+              "/usr/bin/hdiutil",
+              "verify",
+              "-quiet",
+              "/tmp/zhusuan-release-1.1.0/ci-assets/zhusuan-v1.1.0-macOS-amd64.dmg"
+            ],
+            "returncode": 0,
+            "elapsed_seconds": 3.966,
+            "stdout": "",
+            "stderr": ""
+          },
+          {
+            "argv": [
+              "/usr/bin/hdiutil",
+              "attach",
+              "-plist",
+              "-readonly",
+              "-nobrowse",
+              "-mountpoint",
+              "/private/tmp/zhusuan-release-1.1.0/.ci-macos-amd64-uadmxplq/mounted",
+              "/tmp/zhusuan-release-1.1.0/ci-assets/zhusuan-v1.1.0-macOS-amd64.dmg"
+            ],
+            "returncode": 0,
+            "elapsed_seconds": 0.171,
+            "stdout": "<?xml version=\"1.0\" encoding=\"UTF-8\"?>\n<!DOCTYPE plist PUBLIC \"-//Apple//DTD PLIST 1.0//EN\" \"http://www.apple.com/DTDs/PropertyList-1.0.dtd\">\n<plist version=\"1.0\">\n<dict>\n\t<key>system-entities</key>\n\t<array>\n\t\t<dict>\n\t\t\t<key>content-hint</key>\n\t\t\t<string>Apple_HFS</string>\n\t\t\t<key>dev-entry</key>\n\t\t\t<string>/dev/disk4s1</string>\n\t\t\t<key>mount-point</key>\n\t\t\t<string>/private/tmp/zhusuan-release-1.1.0/.ci-macos-amd64-uadmxplq/mounted</string>\n\t\t\t<key>potentially-mountable</key>\n\t\t\t<true/>\n\t\t\t<key>unmapped-content-hint</key>\n\t\t\t<string>48465300-0000-11AA-AA11-00306543ECAC</string>\n\t\t\t<key>volume-kind</key>\n\t\t\t<string>hfs</string>\n\t\t</dict>\n\t\t<dict>\n\t\t\t<key>content-hint</key>\n\t\t\t<string>GUID_partition_scheme</string>\n\t\t\t<key>dev-entry</key>\n\t\t\t<string>/dev/disk4</string>\n\t\t\t<key>potentially-mountable</key>\n\t\t\t<false/>\n\t\t\t<key>unmapped-content-hint</key>\n\t\t\t<string>GUID_partition_scheme</string>\n\t\t</dict>\n\t</array>\n</dict>\n</plist>\n",
+            "stderr": "hdiutil: WARNING: 'hdiutil attach -readonly -nobrowse -mountpoint ...' is deprecated. Please use 'diskutil image attach --readOnly --mountOptions nobrowse --mountPoint ...' instead.\n"
+          },
+          {
+            "argv": [
+              "/usr/bin/lipo",
+              "/private/tmp/zhusuan-release-1.1.0/.ci-macos-amd64-uadmxplq/mounted/珠算.app/Contents/MacOS/zhusuan",
+              "-archs"
+            ],
+            "returncode": 0,
+            "elapsed_seconds": 0.02,
+            "stdout": "x86_64\n",
+            "stderr": ""
+          },
+          {
+            "argv": [
+              "/usr/bin/codesign",
+              "--verify",
+              "--deep",
+              "--strict",
+              "--verbose=2",
+              "/private/tmp/zhusuan-release-1.1.0/.ci-macos-amd64-uadmxplq/mounted/珠算.app"
+            ],
+            "returncode": 0,
+            "elapsed_seconds": 0.218,
+            "stdout": "",
+            "stderr": "/private/tmp/zhusuan-release-1.1.0/.ci-macos-amd64-uadmxplq/mounted/珠算.app: valid on disk\n/private/tmp/zhusuan-release-1.1.0/.ci-macos-amd64-uadmxplq/mounted/珠算.app: satisfies its Designated Requirement\n"
+          },
+          {
+            "argv": [
+              "/usr/bin/codesign",
+              "-dv",
+              "--verbose=4",
+              "/private/tmp/zhusuan-release-1.1.0/.ci-macos-amd64-uadmxplq/mounted/珠算.app"
+            ],
+            "returncode": 0,
+            "elapsed_seconds": 0.011,
+            "stdout": "",
+            "stderr": "Executable=/private/tmp/zhusuan-release-1.1.0/.ci-macos-amd64-uadmxplq/mounted/珠算.app/Contents/MacOS/zhusuan\nIdentifier=org.primordialweave.zhusuan\nFormat=app bundle with Mach-O thin (x86_64)\nCodeDirectory v=20400 size=662644 flags=0x2(adhoc) hashes=20701+3 location=embedded\nVersionPlatform=1\nVersionMin=786432\nVersionSDK=984320\nHash type=sha256 size=32\nCandidateCDHash sha256=bed20948163f05ef5cda0ede4a3c66c052f1c431\nCandidateCDHashFull sha256=bed20948163f05ef5cda0ede4a3c66c052f1c431dcbdf938c6d8c93001becb66\nHash choices=sha256\nCMSDigest=bed20948163f05ef5cda0ede4a3c66c052f1c431dcbdf938c6d8c93001becb66\nCMSDigestType=2\nExecutable Segment base=0\nExecutable Segment limit=68808704\nExecutable Segment flags=0x1\nPage size=4096\nCDHash=bed20948163f05ef5cda0ede4a3c66c052f1c431\nSignature=adhoc\nInfo.plist entries=13\nTeamIdentifier=not set\nSealed Resources version=2 rules=13 files=2\nInternal requirements count=0 size=12\nTotal signatures=1\nChosen signature=1\n"
+          },
+          {
+            "argv": [
+              "/usr/bin/xcrun",
+              "vtool",
+              "-show-build",
+              "/private/tmp/zhusuan-release-1.1.0/.ci-macos-amd64-uadmxplq/mounted/珠算.app/Contents/MacOS/zhusuan"
+            ],
+            "returncode": 0,
+            "elapsed_seconds": 0.15,
+            "stdout": "/private/tmp/zhusuan-release-1.1.0/.ci-macos-amd64-uadmxplq/mounted/珠算.app/Contents/MacOS/zhusuan:\nLoad command 10\n      cmd LC_BUILD_VERSION\n  cmdsize 32\n platform MACOS\n    minos 12.0\n      sdk 15.5\n   ntools 1\n     tool LD\n  version 1167.5\n",
+            "stderr": ""
+          },
+          {
+            "argv": [
+              "/usr/bin/hdiutil",
+              "detach",
+              "/private/tmp/zhusuan-release-1.1.0/.ci-macos-amd64-uadmxplq/mounted"
+            ],
+            "returncode": 0,
+            "elapsed_seconds": 0.065,
+            "stdout": "\"disk4\" ejected.\n",
+            "stderr": "hdiutil: WARNING: 'hdiutil detach ...' is deprecated. Please use 'diskutil eject ...' instead.\n"
+          }
+        ],
+        "success": true,
+        "created_at_utc": "2026-11-21T05:52:26.678110+00:00",
+        "assets": {
+          "zip": "/tmp/zhusuan-release-1.1.0/ci-assets/zhusuan-v1.1.0-macOS-amd64.zip",
+          "dmg": "/tmp/zhusuan-release-1.1.0/ci-assets/zhusuan-v1.1.0-macOS-amd64.dmg"
+        },
+        "boundary": {
+          "app_executed": false,
+          "real_installation_modified": false,
+          "keychain_modified": false,
+          "sources_or_git_modified": false,
+          "asset_hash_vs_ci_digest_verified_here": false,
+          "notarization_or_gatekeeper_acceptance_tested": false,
+          "target_hardware_ui_or_performance_tested": false
+        }
+      }
+    },
+    "initial_harness_retry": {
+      "cause": "hdiutil returned canonical /private/tmp mountpoints while the first comparison used /tmp; the temporary work path was resolved before comparison.",
+      "initial_dmg_detach_exit_codes": {
+        "arm64": 0,
+        "amd64": 0
+      },
+      "initial_reports": [
+        "/tmp/zhusuan-release-1.1.0/packaged-macos-arm64-verification-initial.json",
+        "/tmp/zhusuan-release-1.1.0/packaged-macos-amd64-verification-initial.json"
+      ],
+      "package_failure": false
+    },
+    "boundary": {
+      "zip_paths_and_crc_checked_before_extraction": true,
+      "read_only_dmg_mounts_and_detach_verified": true,
+      "app_execution_or_native_ui_tested": false,
+      "installed_app_or_database_modified": false,
+      "keychain_or_global_config_modified": false,
+      "source_or_git_modified": false,
+      "code_resigned": false,
+      "hash_vs_ci_digest_checked_by_this_agent": false,
+      "notarization_or_gatekeeper_acceptance_tested": false,
+      "target_hardware_performance_tested": false
+    }
+  },
+  "localPreflight": {
+    "version": "1.1.0",
+    "releaseTarget": {
+      "tag": "v1.1.0",
+      "commit": "044d5b58c4313b56c584308cfd36cb4997f7767f",
+      "tree": "de8344d77bbc96af086c14756a2ae42de21f1998",
+      "pr": 34,
+      "originalCandidate": "5d1f54e95d49699fd857f472431c705397b2acad",
+      "testOnlyRecovery": [
+        "HANDOFF.MD",
+        "docs/release-readiness-1.1.0.md",
+        "frontend/src/views/AnalyticsView.test.tsx"
+      ],
+      "productionSourceUnchanged": true
+    },
+    "frontend": {
+      "files": 116,
+      "passed": 650,
+      "failed": 0
+    },
+    "python": {
+      "passed": 31
+    },
+    "go": {
+      "topPassed": 150,
+      "subPassed": 183,
+      "testPackages": 17,
+      "skippedTests": 0,
+      "packagesWithoutTests": 10
+    },
+    "checks": {
+      "frontendLint": 0,
+      "goVet": 0,
+      "incrementalLint": 0,
+      "actionlint": 0,
+      "modVerify": 0
+    },
+    "localMacPackages": {
+      "zhusuan-v1.1.0-macOS-amd64.dmg": {
+        "bytes": 51529909,
+        "sha256": "7197ec7c79301e7d9a71e9de85bd17d2aeb89f07e7dd83ca8e1cb29f6fc277c6"
+      },
+      "zhusuan-v1.1.0-macOS-arm64.zip": {
+        "bytes": 45189937,
+        "sha256": "5c0baf6d6b8c35b8b299e6348503f7f92c23793d64aa6f422b72764e0570a771"
+      },
+      "zhusuan-v1.1.0-macOS-amd64.zip": {
+        "bytes": 47475432,
+        "sha256": "3f2cfbf215b81457baebda36652e47fa2e78756fd2cd1c19a21d763c4d0fbb14"
+      },
+      "zhusuan-v1.1.0-macOS-arm64.dmg": {
+        "bytes": 49876212,
+        "sha256": "af0e9eb0b65830a63e295f9a8a845fbe2beb991d256b8146f2946cca1f120f3f"
+      }
+    },
+    "sourceIcon": {
+      "sourceStamp": "56ce6bf7c4fd7c026d0fb9c44f9567aab5f6457c19d6e1079d95409756391eaf",
+      "catalogSHA256": "0c51d7483cb242b0af7744da6a5d87880c6ae7733153fc5c6ecf1ce96d0a8e83",
+      "catalogBytes": 4246136,
+      "sourcePNGUnchanged": true
+    },
+    "nativeIconVisual": "NSWorkspace rendered bundle icon reviewed; no added outer white/gray plate",
+    "ci": {
+      "pr33": 44867310036,
+      "result": "success"
+    },
+    "releaseStatus": "published",
+    "sourceIconNote": "Initial tracked catalog hash belongs to preflight; final package catalog/source verified separately. Catalog builds may have non-content timestamps."
+  }
+}

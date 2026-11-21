@@ -2,7 +2,7 @@
 
 ## 1.1.0 与发布入口
 
-**1.1.0** 本次发布包含玉质界面、全界面Skeleton、可配置品牌信息与收款计划批次口径，检查记录见 [release-readiness-1.1.0.md](release-readiness-1.1.0.md)。公开状态以 [v1.1.0 Release](https://github.com/primordialweave/zhusuan/releases/tag/v1.1.0) 为准。
+**1.1.0** 已公开并设latest，本次发布包含玉质界面、全界面Skeleton、可配置品牌信息与收款计划批次口径，检查记录见 [release-readiness-1.1.0.md](release-readiness-1.1.0.md)。公开状态以 [v1.1.0 Release](https://github.com/primordialweave/zhusuan/releases/tag/v1.1.0) 为准。
 
 **1.0.2** 已公开并设latest，包含Windows普通启动时按需UAC、透明胶囊标题栏与全屏、窗口操作串行队列修复。[v1.0.2 Release](https://github.com/primordialweave/zhusuan/releases/tag/v1.0.2) 三平台完整通过，检查证据见 [release-readiness-1.0.2.md](release-readiness-1.0.2.md)。依赖升级另行合入主分支，已发布源码/标签/附件不变。
 

@@ -28,3 +28,13 @@
 ## 保护范围
 
 不连接真实账本/云库，不修改HOME/globalGit配置/Keychain。根node_modules缓存、生成events/index.ts与原design-qa.md删除不纳入本功能提交。旧公开1.0.0/1.0.1/1.0.2标签与附件保持不变；新十附件完整后公开并核匿名更新入口。
+
+## 正式发布结果
+
+北京时间 2026-11-21 13:41:22 已公开并设 latest：[v1.1.0](https://github.com/primordialweave/zhusuan/releases/tag/v1.1.0)。应用标签固定于 `044d5b58c4313b56c584308cfd36cb4997f7767f`；PR33/34 与最终 main CI 均四job成功。最终 [Release44870825972](https://github.com/primordialweave/zhusuan/actions/runs/44870825972) prepare、三平台 build 与 publish 全部成功。
+
+首轮44868158371的Windows/macOS通过、Linux649/650与publish跳过保留为失败历史；受控夹具问题经测试等待顺序修复，仅修改test/docs，未更改应用代码/断言/超时。未公开候选更新后全部三平台统一重建，最终没有配方覆盖。
+
+十附件本地CI载荷与公开API大小/SHA256完全一致，SHA256SUMS和update.json九条资产对应正确；匿名latest manifest内容一致，十download HEAD200与长度通过。公开1.0.0/1.0.1/1.0.2的附件名/大小/digest及标签commit不变。正式两架构ZIP路径/CRC、版本/标识/minOS/唯一架构、ad-hoc deep strict签名及DMG只读目录/Applications链接检查通过，临时mount已detach。当前JS883.22kB/gzip275.49kB，CSS351.37kB/gzip68.45kB；不能据此声明目标设备性能或公证。
+
+机器证据见 [release-verification-1.1.0.json](release-verification-1.1.0.json)。Windows普通用户安装/升级/原生窗口由最终发行runner通过；没有在用户设备替换已安装应用或改真实账本。
