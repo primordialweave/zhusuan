@@ -16,8 +16,10 @@ import {
   ButtonGroup,
   Card,
   CircularProgress,
+  EmptyScene,
   EmptyState,
   IconButton,
+  JadeIcon,
   PageHeader,
   RouterButton,
   SectionHeader,
@@ -72,7 +74,7 @@ export default function ProjectDetailView() {
   const requestedPayment = searchParams.get('payment')
   const toastError = useToastStore((state) => state.error)
   const toastSuccess = useToastStore((state) => state.success)
-  const { exportProject } = useProjectExport()
+  const { exportProject, lastSavedExport } = useProjectExport()
   const [project, setProject] = useState<Project | null>(null)
   const [projectTypes, setProjectTypes] = useState<DictionaryItem[]>([])
   const [projectTypesLoading, setProjectTypesLoading] = useState(true)
@@ -226,7 +228,7 @@ export default function ProjectDetailView() {
               </RouterButton>
             </ButtonGroup>
           }
-          icon={<i className="ri-error-warning-line" />}
+          icon={<JadeIcon name="warning" size="1em" />}
           role="alert"
           title="项目详情加载失败"
         />
@@ -257,7 +259,7 @@ export default function ProjectDetailView() {
           }
           leading={
             <IconButton label="返回项目列表" onClick={() => navigate('/projects')} variant="ghost">
-              <i aria-hidden="true" className="ri-arrow-left-line" />
+              <JadeIcon motionPreset="interactive" name="arrow-left" size="1em" />
             </IconButton>
           }
           title={
@@ -357,7 +359,7 @@ export default function ProjectDetailView() {
               title="编辑项目"
               variant="tertiary"
             >
-              <i aria-hidden="true" className="ri-edit-line" />
+              <JadeIcon motionPreset="interactive" name="edit" size="1em" />
             </IconButton>
             <IconButton
               label={`导出项目：${project.name}`}
@@ -365,7 +367,16 @@ export default function ProjectDetailView() {
               title="导出项目"
               variant="tertiary"
             >
-              <i aria-hidden="true" className="ri-download-2-line" />
+              <JadeIcon
+                motionPreset="interactive"
+                name="download"
+                reaction={
+                  lastSavedExport?.projectId === project.id
+                    ? { eventKey: lastSavedExport.eventKey, kind: 'saved' }
+                    : undefined
+                }
+                size="1em"
+              />
             </IconButton>
           </ButtonGroup>
         }
@@ -380,7 +391,7 @@ export default function ProjectDetailView() {
         }
         leading={
           <IconButton label="返回项目列表" onClick={() => navigate('/projects')} variant="ghost">
-            <i aria-hidden="true" className="ri-arrow-left-line" />
+            <JadeIcon motionPreset="interactive" name="arrow-left" size="1em" />
           </IconButton>
         }
         title={project.name}
@@ -392,14 +403,14 @@ export default function ProjectDetailView() {
             className={`project-detail-tab${activeTab === 'overview' ? ' active' : ''}`}
             value="overview"
           >
-            <i aria-hidden="true" className="ri-layout-grid-line" />
+            <JadeIcon name="layout-grid" size="1em" />
             项目概览
           </Tabs.Tab>
           <Tabs.Tab
             className={`project-detail-tab${activeTab === 'payments' ? ' active' : ''}`}
             value="payments"
           >
-            <i aria-hidden="true" className="ri-secure-payment-line" />
+            <JadeIcon name="payment" size="1em" />
             收款计划
           </Tabs.Tab>
         </Tabs.List>
@@ -476,7 +487,7 @@ export default function ProjectDetailView() {
                     {runwayItems.map((item, index) => (
                       <li data-reached={index + 1 <= runwayStage} key={item.label}>
                         <span aria-hidden="true" className="project-runway__node">
-                          {index + 1 <= runwayStage ? <i className="ri-check-line" /> : index + 1}
+                          {index + 1 <= runwayStage ? <JadeIcon name="check" size="1em" /> : index + 1}
                         </span>
                         <strong>{item.label}</strong>
                         <time dateTime={item.date}>{formatDate(item.date)}</time>
@@ -551,7 +562,7 @@ export default function ProjectDetailView() {
                           tone="accent"
                           variant="inset"
                         >
-                          <i aria-hidden="true" className="ri-calendar-check-line" />
+                          <JadeIcon name="calendar-check" size="1em" />
                         </Surface>
                       </div>
                     </Card.Header>
@@ -571,12 +582,26 @@ export default function ProjectDetailView() {
                             variant="secondary"
                           >
                             查看收款节点
-                            <i aria-hidden="true" className="ri-arrow-right-line" />
+                            <JadeIcon name="arrow-right" size="1em" />
                           </RouterButton>
                         </div>
                       ) : (
                         <div className="project-next-payment project-next-payment--empty">
-                          <i aria-hidden="true" className="ri-checkbox-circle-line" />
+                          <Surface
+                            as="span"
+                            className="project-next-payment__badge"
+                            padding="none"
+                            radius="pill"
+                            tone={payments.length ? 'success' : 'accent'}
+                            variant="inset"
+                          >
+                            <JadeIcon
+                              detail="carved"
+                              name={payments.length ? 'check-circle' : 'calendar-check'}
+                              size={28}
+                              tone={payments.length ? 'success' : 'jade'}
+                            />
+                          </Surface>
                           <strong>
                             {payments.length ? '所有款项均已完成' : '尚未安排收款节点'}
                           </strong>
@@ -608,7 +633,7 @@ export default function ProjectDetailView() {
               <SectionHeader
                 actions={
                   <RouterButton size="sm" to={`/projects/${project.id}/payment/create`}>
-                    <i aria-hidden="true" className="ri-add-line" />
+                    <JadeIcon name="add" size="1em" />
                     添加收款
                   </RouterButton>
                 }
@@ -627,7 +652,7 @@ export default function ProjectDetailView() {
                       </RouterButton>
                     }
                     description="创建收款节点后，可在这里跟踪到账进度。"
-                    icon={<i className="ri-secure-payment-line" />}
+                    scene={<EmptyScene name="plans-empty" size="hero" />}
                     size="lg"
                     title="暂无收款计划"
                   />
@@ -657,7 +682,7 @@ export default function ProjectDetailView() {
                           tone="accent"
                           variant="inset"
                         >
-                          <i aria-hidden="true" className="ri-secure-payment-line" />
+                          <JadeIcon name="payment" size="1em" />
                         </Surface>
                         <div>
                           <div className="payment-title-row">
@@ -681,9 +706,9 @@ export default function ProjectDetailView() {
                             aria-label={`${getPaymentStageLabel(payment.stage)}：确认收款`}
                             onClick={() => void confirmPayment(payment.id)}
                             size="sm"
-                            variant="ghost"
+                            variant="tertiary"
                           >
-                            <i aria-hidden="true" className="ri-check-double-line" />
+                            <JadeIcon name="check-double" size="1em" />
                             确认收款
                           </Button>
                         ) : null}

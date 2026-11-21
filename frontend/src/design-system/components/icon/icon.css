@@ -1,0 +1,368 @@
+/* Shared root SVG defs stay out of layout flow while keeping gradients active in WebKit. */
+.ods-jade-icon-defs {
+  position: absolute;
+  width: 0;
+  height: 0;
+  overflow: hidden;
+  pointer-events: none;
+}
+
+/* CSS stop-color ensures reliable theme-reactive gradients in both Chromium and WebKit. */
+.ods-jade-stop--jade-edge {
+  stop-color: var(--ods-material-jade-icon-edge);
+}
+
+.ods-jade-stop--jade-base {
+  stop-color: var(--ods-material-jade-icon-base);
+}
+
+.ods-jade-stop--jade-depth {
+  stop-color: var(--ods-material-jade-icon-depth);
+}
+
+.ods-jade-stop--on-accent-edge {
+  stop-color: var(--ods-material-jade-icon-on-accent-edge);
+}
+
+.ods-jade-stop--on-accent-base {
+  stop-color: var(--ods-material-jade-icon-on-accent-base);
+}
+
+.ods-jade-stop--on-accent-depth {
+  stop-color: var(--ods-material-jade-icon-on-accent-depth);
+}
+
+.ods-jade-stop--success {
+  stop-color: var(--ods-color-status-success);
+}
+
+.ods-jade-stop--warning {
+  stop-color: var(--ods-color-status-warning);
+}
+
+.ods-jade-stop--danger {
+  stop-color: var(--ods-color-status-danger);
+}
+
+.ods-jade-stop--info {
+  stop-color: var(--ods-color-status-info);
+}
+
+.ods-jade-stop--specular {
+  stop-color: var(--ods-material-jade-icon-specular);
+}
+
+.ods-jade-stop--tint {
+  stop-color: var(--ods-material-jade-icon-tint);
+}
+
+.ods-jade-stop--wood {
+  stop-color: var(--ods-material-jade-icon-wood);
+}
+
+.ods-jade-icon {
+  --ods-jade-icon-specular-opacity: 0.14;
+  --ods-jade-icon-tint-opacity: 0.72;
+
+  display: inline-block;
+  flex: 0 0 auto;
+  max-width: none;
+  overflow: visible;
+  vertical-align: middle;
+}
+
+/* Inline icons beside button/tab labels scale slightly above 1em to match CJK cap-height. */
+.ods-button:not(.ods-icon-button) > .ods-jade-icon,
+.ods-tabs__tab > .ods-jade-icon {
+  font-size: 1.18em;
+}
+
+.ods-jade-icon[data-detail='carved'] {
+  --ods-jade-icon-specular-opacity: 0.24;
+  --ods-jade-icon-tint-opacity: 1;
+}
+
+.ods-jade-icon[data-tone='inverse'] {
+  color: var(--ods-color-fg-inverse);
+}
+
+.ods-jade-icon[data-tone='muted'] {
+  color: var(--ods-color-fg-muted);
+}
+
+.ods-jade-icon__glyph-layers {
+  opacity: 1;
+  transition: opacity var(--ods-duration-instant) var(--ods-ease-standard);
+}
+
+.ods-jade-icon[data-reaction-active='true'] .ods-jade-icon__glyph-layers {
+  opacity: 0;
+  transition-duration: var(--ods-duration-press);
+}
+
+.ods-jade-icon__reaction-check {
+  opacity: 0;
+  pointer-events: none;
+  transition: opacity var(--ods-duration-instant) var(--ods-ease-standard);
+}
+
+.ods-jade-icon__reaction-check[data-active='true'] {
+  opacity: 1;
+  transition-duration: var(--ods-duration-press);
+}
+
+.ods-jade-icon__depth {
+  pointer-events: none;
+}
+
+.ods-jade-icon__tint {
+  fill: url(#ods-jade-icon-grad-tint);
+  opacity: var(--ods-jade-icon-tint-opacity);
+  stroke: none;
+  pointer-events: none;
+}
+
+/* Keep danger icons' inner wash in soft cinnabar instead of green jade over rust-red. */
+.ods-button[data-tone='danger'] .ods-jade-icon__tint,
+.ods-button[data-variant='danger'] .ods-jade-icon__tint,
+.ods-jade-icon[data-tone='danger'] .ods-jade-icon__tint {
+  fill: var(--ods-color-status-danger-soft);
+}
+
+.ods-jade-icon__inner-tint {
+  fill: url(#ods-jade-icon-grad-tint);
+  opacity: var(--ods-jade-icon-tint-opacity);
+}
+
+.ods-jade-icon__depth .ods-jade-icon__inner-tint,
+.ods-jade-icon__specular .ods-jade-icon__inner-tint {
+  fill: none;
+  opacity: 0;
+}
+
+.ods-jade-icon__bead-fill {
+  fill: url(#ods-jade-icon-grad-tint);
+}
+
+.ods-jade-icon__depth .ods-jade-icon__bead-fill,
+.ods-jade-icon__specular .ods-jade-icon__bead-fill {
+  fill: none;
+}
+
+.ods-jade-icon__bar-group rect {
+  fill: url(#ods-jade-icon-grad-tint);
+}
+
+.ods-jade-icon__depth .ods-jade-icon__bar-group rect {
+  fill: var(--ods-material-jade-icon-shadow);
+  fill-opacity: 0.4;
+}
+
+.ods-jade-icon__specular .ods-jade-icon__bar-group rect {
+  fill: url(#ods-jade-icon-grad-specular);
+  fill-opacity: 0.45;
+}
+
+.ods-jade-icon__specular {
+  opacity: var(--ods-jade-icon-specular-opacity);
+  pointer-events: none;
+  transition: opacity var(--ods-duration-instant) var(--ods-ease-standard);
+}
+
+/* Always bind SVG part origins to the 24x24 viewBox rather than child fill-box. */
+.ods-jade-icon__part {
+  transform-box: view-box;
+  transition: transform var(--ods-duration-fast) var(--ods-ease-spring);
+}
+
+.ods-button:not([data-variant='bare']) .ods-jade-icon {
+  transition: transform var(--ods-duration-fast) var(--ods-ease-spring);
+}
+
+.ods-jade-icon__part[data-jade-part='edit-pen'] {
+  transform-origin: 5.25px 16.45px;
+}
+
+.ods-jade-icon__part[data-jade-part='trash-lid'] {
+  transform-origin: 18px 7px;
+}
+
+.ods-jade-icon__part[data-jade-part='eye-pupil'],
+.ods-jade-icon__part[data-jade-part='add-plus'],
+.ods-jade-icon__part[data-jade-part='close-x'],
+.ods-jade-icon__part[data-jade-part='refresh-ring'],
+.ods-jade-icon__part[data-jade-part='forbid-slash'] {
+  transform-origin: 12px 12px;
+}
+
+.ods-jade-icon__part[data-jade-part='lock-shackle'] {
+  transform-origin: 12px 10px;
+}
+
+.ods-jade-icon__part[data-jade-part='download-arrow'],
+.ods-jade-icon__part[data-jade-part='upload-arrow'] {
+  transition-duration: var(--ods-duration-fast);
+}
+
+.ods-jade-icon__part[data-jade-part='arrow-left'],
+.ods-jade-icon__part[data-jade-part='arrow-right'],
+.ods-jade-icon__part[data-jade-part='logout-arrow'] {
+  transition-duration: var(--ods-duration-instant);
+}
+
+.ods-jade-icon__part[data-jade-part='dock-folder-flap'] {
+  transform-origin: 4px 10px;
+}
+
+.ods-jade-icon__part[data-jade-part='dock-settings-gear'] {
+  transform-origin: 12px 12px;
+}
+
+.ods-jade-icon__part[data-jade-part='bell-body'] {
+  transform-origin: 12px 4px;
+}
+
+/* Keyboard focus and hover brighten specular glint without moving geometry. */
+:is(.ods-button, .ods-router-link, .ods-router-nav-link, .ods-snippet__copy):focus-visible
+  .ods-jade-icon {
+  --ods-jade-icon-specular-opacity: 0.24;
+}
+
+/* Active press settles the icon cleanly and dims specular glint; parent owns the press scale. */
+:is(.ods-button, .ods-router-link, .ods-router-nav-link, .ods-snippet__copy):active:not(:disabled)
+  .ods-jade-icon {
+  --ods-jade-icon-specular-opacity: 0.08;
+}
+
+.ods-button:not([data-variant='bare']):active:not(:disabled):not([aria-disabled='true'])
+  .ods-jade-icon {
+  transform: scale(0.92);
+}
+
+/* Pointer hover micro-motion: strictly fine pointers, reversible, cancelled while pressed. */
+@media (hover: hover) and (pointer: fine) {
+  :is(.ods-button, .ods-router-link, .ods-snippet__copy):hover:not(:disabled):not(
+      [aria-disabled='true']
+    ):not(:active)
+    .ods-jade-icon {
+    --ods-jade-icon-specular-opacity: 0.28;
+  }
+
+  .ods-button:not([data-variant='bare']):hover:not(:disabled):not([aria-disabled='true']):not(
+      :active
+    )
+    .ods-jade-icon {
+    transform: scale(1.08);
+  }
+
+  .ods-router-nav-link[data-appearance='dock']:not([aria-current='page']):hover:not(:active)
+    .ods-jade-icon[data-detail='carved'] {
+    --ods-jade-icon-specular-opacity: 0.32;
+  }
+
+  :is(.ods-button, .ods-router-link):hover:not(:disabled):not([aria-disabled='true']):not(:active)
+    .ods-jade-icon__part[data-jade-part='edit-pen'] {
+    transform: rotate(-8deg) translate(0.4px, -0.4px);
+  }
+
+  .ods-button:hover:not(:disabled):not([aria-disabled='true']):not(:active)
+    .ods-jade-icon__part[data-jade-part='trash-lid'] {
+    transform: rotate(-14deg) translateY(-1px);
+  }
+
+  .ods-button:hover:not(:disabled):not([aria-disabled='true']):not(:active)
+    .ods-jade-icon__part[data-jade-part='eye-pupil'] {
+    transform: scale(1.22);
+  }
+
+  .ods-button:hover:not(:disabled):not([aria-disabled='true']):not(:active)
+    .ods-jade-icon__part[data-jade-part='lock-shackle'] {
+    transform: translateY(-1.4px);
+  }
+
+  .ods-button:hover:not(:disabled):not([aria-disabled='true']):not(:active)
+    .ods-jade-icon__part[data-jade-part='forbid-slash'] {
+    transform: rotate(14deg);
+  }
+
+  .ods-button:hover:not(:disabled):not([aria-disabled='true']):not(:active)
+    .ods-jade-icon__part[data-jade-part='add-plus'] {
+    transform: rotate(90deg);
+  }
+
+  .ods-button:hover:not(:disabled):not([aria-disabled='true']):not(:active)
+    .ods-jade-icon__part[data-jade-part='close-x'] {
+    transform: rotate(90deg);
+  }
+
+  .ods-button:hover:not(:disabled):not([aria-disabled='true']):not(:active)
+    .ods-jade-icon__part[data-jade-part='refresh-ring'] {
+    transform: rotate(45deg);
+  }
+
+  :is(.ods-button, .ods-router-link):hover:not(:disabled):not([aria-disabled='true']):not(:active)
+    .ods-jade-icon__part[data-jade-part='download-arrow'] {
+    transform: translateY(2px);
+  }
+
+  .ods-button:hover:not(:disabled):not([aria-disabled='true']):not(:active)
+    .ods-jade-icon__part[data-jade-part='upload-arrow'] {
+    transform: translateY(-1.8px);
+  }
+
+  :is(.ods-button, .ods-router-link):hover:not(:disabled):not([aria-disabled='true']):not(:active)
+    .ods-jade-icon__part[data-jade-part='arrow-left'] {
+    transform: translateX(-2px);
+  }
+
+  :is(.ods-button, .ods-router-link):hover:not(:disabled):not([aria-disabled='true']):not(:active)
+    .ods-jade-icon__part[data-jade-part='arrow-right'] {
+    transform: translateX(2px);
+  }
+
+  .ods-button:hover:not(:disabled):not([aria-disabled='true']):not(:active)
+    .ods-jade-icon__part[data-jade-part='logout-arrow'] {
+    transform: translateX(2px);
+  }
+
+  /* Dock selected item stays calm on hover; only unselected entries give subtle part cues. */
+  .ods-router-nav-link[data-appearance='dock']:not([aria-current='page']):hover:not(:active)
+    .ods-jade-icon[data-motion-preset='interactive']
+    .ods-jade-icon__part[data-jade-part='dock-folder-flap'] {
+    transform: rotate(-4deg);
+  }
+
+  .ods-router-nav-link[data-appearance='dock']:not([aria-current='page']):hover:not(:active)
+    .ods-jade-icon[data-motion-preset='interactive']
+    .ods-jade-icon__part[data-jade-part='dock-calendar-bead'] {
+    transform: translateY(1px);
+  }
+
+  .ods-router-nav-link[data-appearance='dock']:not([aria-current='page']):hover:not(:active)
+    .ods-jade-icon[data-motion-preset='interactive']
+    .ods-jade-icon__part[data-jade-part='dock-analytics-top'] {
+    transform: translateY(-1px);
+  }
+
+  .ods-router-nav-link[data-appearance='dock']:not([aria-current='page']):hover:not(:active)
+    .ods-jade-icon[data-motion-preset='interactive']
+    .ods-jade-icon__part[data-jade-part='dock-settings-gear'] {
+    transform: rotate(6deg);
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .ods-jade-icon,
+  .ods-jade-icon__part {
+    transform: none !important;
+    animation: none !important;
+    transition: none !important;
+  }
+}
+
+:root[data-motion='reduced'] .ods-jade-icon,
+:root[data-motion='reduced'] .ods-jade-icon__part {
+  transform: none !important;
+  animation: none !important;
+  transition: none !important;
+}

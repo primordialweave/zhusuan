@@ -245,4 +245,18 @@ describe('UserManagement search', () => {
       await createRequest.promise
     })
   })
+
+  it('uses distinct row button hierarchy for edit, reset password, and delete actions', async () => {
+    render(<UserManagement />)
+    expect(await screen.findByText(managedUser.email)).toBeInTheDocument()
+
+    const editButton = screen.getByRole('button', { name: '编辑用户' })
+    const resetButton = screen.getByRole('button', { name: '重置用户密码' })
+    const deleteButton = screen.getByRole('button', { name: '删除用户' })
+
+    expect(editButton).toHaveAttribute('data-variant', 'tertiary')
+    expect(resetButton).toHaveAttribute('data-variant', 'secondary')
+    expect(deleteButton).toHaveAttribute('data-variant', 'tertiary')
+    expect(deleteButton).toHaveAttribute('data-tone', 'danger')
+  })
 })

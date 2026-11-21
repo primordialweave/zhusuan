@@ -9,12 +9,23 @@ import tempfile
 from pathlib import Path
 
 
-def catalog_source_digest(source, icon):
-    # A changed composition must invalidate the checked-in catalog on older Xcode, too.
+def resolve_dark_source(source, dark_source=None):
+    if dark_source is not None:
+        return Path(dark_source)
+    candidate = source.with_name(f'{source.stem}-dark{source.suffix}')
+    return candidate if candidate.is_file() else None
+
+
+def catalog_source_digest(source, icon, dark_source=None):
+    # A changed composition or dark-appearance artwork must invalidate the checked-in catalog on older Xcode, too.
+    resolved_dark = resolve_dark_source(source, dark_source)
     digest = hashlib.sha256()
     digest.update(source.read_bytes())
     digest.update(b'\0')
     digest.update((icon/'icon.json').read_bytes())
+    if resolved_dark is not None:
+        digest.update(b'\0')
+        digest.update(resolved_dark.read_bytes())
     return digest.hexdigest()
 
 
@@ -33,11 +44,12 @@ def verify_catalog(resource, digest):
         raise ValueError('Modern icon catalog is missing/stale; regenerate with Xcode 26 or newer')
 
 
-def build_icon(source, target):
+def build_icon(source, target, dark_source=None):
     target.parent.mkdir(parents=True, exist_ok=True)
     resource = target.parent
     icon = resource/'AppIcon.icon'
-    digest = catalog_source_digest(source, icon)
+    resolved_dark = resolve_dark_source(source, dark_source)
+    digest = catalog_source_digest(source, icon, resolved_dark)
     modern = supports_icon_composer()
     if not modern:
         verify_catalog(resource, digest)
@@ -52,6 +64,8 @@ def build_icon(source, target):
         if modern:
             (icon/'Assets').mkdir(parents=True, exist_ok=True)
             subprocess.run(['/usr/bin/sips', '-s', 'format', 'png', '-z', '1024', '1024', str(source), '--out', str(icon/'Assets/Artwork.png')], check=True, capture_output=True, timeout=30)
+            if resolved_dark is not None:
+                subprocess.run(['/usr/bin/sips', '-s', 'format', 'png', '-z', '1024', '1024', str(resolved_dark), '--out', str(icon/'Assets/Artwork-Dark.png')], check=True, capture_output=True, timeout=30)
             compiled = Path(temporary)/'compiled'; compiled.mkdir()
             subprocess.run(['xcrun', 'actool', str(icon), '--compile', str(compiled), '--platform', 'macosx', '--minimum-deployment-target', '15.0', '--app-icon', 'AppIcon', '--include-all-app-icons', '--output-partial-info-plist', str(compiled/'partial.plist')], check=True, capture_output=True, timeout=120)
             shutil.copy2(compiled/'Assets.car', resource/'Assets.car')
@@ -61,6 +75,7 @@ def build_icon(source, target):
 if __name__ == '__main__':
     parser = argparse.ArgumentParser(description=__doc__)
     parser.add_argument('--input', type=Path, default=Path('build/appicon.png'))
+    parser.add_argument('--dark-input', type=Path, default=None)
     parser.add_argument('--output', type=Path, default=Path('build/darwin/icons.icns'))
     args = parser.parse_args()
-    build_icon(args.input.resolve(), args.output.resolve())
+    build_icon(args.input.resolve(), args.output.resolve(), args.dark_input.resolve() if args.dark_input else None)

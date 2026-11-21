@@ -7,8 +7,10 @@ import {
   Button,
   Chip,
   Divider,
+  EmptyScene,
   EmptyState,
   IconButton,
+  JadeIcon,
   Popover,
   Skeleton,
   type ChipTone,
@@ -39,13 +41,18 @@ export default function NotificationEntry() {
   const [selectedNotification, setSelectedNotification] = useState<Notification | null>(null)
   const [lingering, setLingering] = useState(false)
   const [loading, setLoading] = useState(false)
-  const [loadedUserId, setLoadedUserId] = useState<number | null | undefined>(null)
+  const [attemptedUserId, setAttemptedUserId] = useState<number | null | undefined>(null)
+  const [baselineUserId, setBaselineUserId] = useState<number | null | undefined>(null)
+  const [loadFailedUserId, setLoadFailedUserId] = useState<number | null | undefined>(null)
+  const [newUnreadEventKey, setNewUnreadEventKey] = useState(0)
   const triggerRef = useRef<HTMLButtonElement>(null)
   const isAuthenticatedRef = useRef(isAuthenticated)
   const isMountedRef = useRef(false)
   const refreshGenerationRef = useRef(0)
   const sessionGenerationRef = useRef(0)
   const pendingReadMutationsRef = useRef(0)
+  const baselineUserIdRef = useRef<number | null | undefined>(null)
+  const prevUnreadCountRef = useRef<number | null>(null)
 
   useLayoutEffect(() => {
     isAuthenticatedRef.current = isAuthenticated
@@ -72,6 +79,7 @@ export default function NotificationEntry() {
     const refreshGeneration = ++refreshGenerationRef.current
     const sessionGeneration = sessionGenerationRef.current
     setLoading(true)
+    setLoadFailedUserId((current) => (current === userId ? null : current))
 
     try {
       const [countRes, listRes] = await Promise.all([
@@ -87,10 +95,32 @@ export default function NotificationEntry() {
       ) {
         return
       }
-      setUnreadCount(countRes.data.data.count)
+      const nextCount = countRes.data.data.count
+      const hadUserBaseline = baselineUserIdRef.current === userId
+      if (
+        hadUserBaseline &&
+        prevUnreadCountRef.current !== null &&
+        nextCount > prevUnreadCountRef.current
+      ) {
+        setNewUnreadEventKey((key) => key + 1)
+      }
+      prevUnreadCountRef.current = nextCount
+      setUnreadCount(nextCount)
       setRecentNotifications(listRes.data.data.list)
+      baselineUserIdRef.current = userId
+      setBaselineUserId(userId)
+      setLoadFailedUserId(null)
     } catch {
       // Notification polling should never break primary navigation.
+      if (
+        isMountedRef.current &&
+        isAuthenticatedRef.current &&
+        refreshGeneration === refreshGenerationRef.current &&
+        sessionGeneration === sessionGenerationRef.current &&
+        baselineUserIdRef.current !== userId
+      ) {
+        setLoadFailedUserId(userId)
+      }
     } finally {
       if (
         isMountedRef.current &&
@@ -99,7 +129,7 @@ export default function NotificationEntry() {
         sessionGeneration === sessionGenerationRef.current
       ) {
         setLoading(false)
-        setLoadedUserId(userId)
+        setAttemptedUserId(userId)
       }
     }
   }, [userId])
@@ -108,7 +138,15 @@ export default function NotificationEntry() {
     refreshGenerationRef.current += 1
     sessionGenerationRef.current += 1
     pendingReadMutationsRef.current = 0
-    if (!isAuthenticated) return
+    if (!isAuthenticated) {
+      baselineUserIdRef.current = null
+      prevUnreadCountRef.current = null
+      return
+    }
+    if (baselineUserIdRef.current !== userId) {
+      baselineUserIdRef.current = null
+      prevUnreadCountRef.current = null
+    }
 
     const initialRefresh = window.setTimeout(refreshNotifications, 0)
     const interval = window.setInterval(refreshNotifications, 30000)
@@ -119,7 +157,7 @@ export default function NotificationEntry() {
       sessionGenerationRef.current += 1
       pendingReadMutationsRef.current = 0
     }
-  }, [isAuthenticated, refreshNotifications])
+  }, [isAuthenticated, refreshNotifications, userId])
 
   const handleNotificationClick = async (item: Notification) => {
     setOpen(false)
@@ -143,7 +181,11 @@ export default function NotificationEntry() {
       }
 
       refreshGenerationRef.current += 1
-      setUnreadCount((count) => Math.max(0, count - 1))
+      setUnreadCount((count) => {
+        const nextCount = Math.max(0, count - 1)
+        prevUnreadCountRef.current = nextCount
+        return nextCount
+      })
       setRecentNotifications((items) =>
         items.map((notification) =>
           notification.id === item.id ? { ...notification, is_read: true } : notification,
@@ -160,11 +202,15 @@ export default function NotificationEntry() {
 
   // The trigger outlives its popover and detail so focus has somewhere to return, then leaves
   // once focus moves on.
-  const initialLoading = isAuthenticated && loadedUserId !== userId
+  const initialLoading = isAuthenticated && attemptedUserId !== userId
+  const hasBaseline = isAuthenticated && baselineUserId === userId
+  const hasLoadError = isAuthenticated && !hasBaseline && loadFailedUserId === userId
+  const visibleUnreadCount = hasBaseline ? unreadCount : 0
+  const visibleNotifications = hasBaseline ? recentNotifications : []
   const showTrigger =
     isAuthenticated &&
     !initialLoading &&
-    (unreadCount > 0 || open || selectedNotification !== null || lingering)
+    (visibleUnreadCount > 0 || open || selectedNotification !== null || lingering)
 
   return (
     <>
@@ -195,14 +241,23 @@ export default function NotificationEntry() {
           <Popover.Trigger>
             <IconButton
               className="app-notification-entry__trigger"
-              label={unreadCount > 0 ? `查看通知，${unreadCount} 条未读` : '查看通知'}
+              label={visibleUnreadCount > 0 ? `查看通知，${visibleUnreadCount} 条未读` : '查看通知'}
               onBlur={() => setLingering(false)}
               ref={triggerRef}
               size="lg"
               variant="secondary"
             >
-              <Badge dot invisible={unreadCount === 0} tone="danger">
-                <i aria-hidden="true" className="ri-notification-3-line" />
+              <Badge dot invisible={visibleUnreadCount === 0} tone="danger">
+                <JadeIcon
+                  motionPreset="interactive"
+                  name="bell"
+                  reaction={
+                    newUnreadEventKey > 0
+                      ? { eventKey: newUnreadEventKey, kind: 'newUnread' }
+                      : undefined
+                  }
+                  size="1em"
+                />
               </Badge>
             </IconButton>
           </Popover.Trigger>
@@ -228,7 +283,8 @@ export default function NotificationEntry() {
             </div>
             <Divider />
             <div aria-busy={loading} className="app-notification-entry__list">
-              {loading && recentNotifications.length === 0 ? (
+              {(loading && visibleNotifications.length === 0 && !hasLoadError) ||
+              (!hasBaseline && !hasLoadError) ? (
                 <div
                   aria-label="正在加载最近通知"
                   className="app-notification-entry__loading"
@@ -238,15 +294,34 @@ export default function NotificationEntry() {
                   <Skeleton height="0.875rem" width="40%" />
                   <Skeleton height="1rem" width="60%" />
                 </div>
-              ) : recentNotifications.length === 0 ? (
+              ) : hasLoadError ? (
+                <EmptyState
+                  action={
+                    <Button
+                      onClick={() => void refreshNotifications()}
+                      size="sm"
+                      variant="secondary"
+                    >
+                      重试
+                    </Button>
+                  }
+                  className="app-notification-entry__empty"
+                  headingLevel={4}
+                  icon={<JadeIcon name="warning" size="1em" />}
+                  role="alert"
+                  size="sm"
+                  title="通知加载失败"
+                />
+              ) : visibleNotifications.length === 0 ? (
                 <EmptyState
                   className="app-notification-entry__empty"
                   headingLevel={4}
+                  scene={<EmptyScene name="notifications-empty" size="compact" />}
                   size="sm"
                   title="暂无通知"
                 />
               ) : (
-                recentNotifications.map((item, index) => (
+                visibleNotifications.map((item, index) => (
                   <Fragment key={item.id}>
                     <Button
                       autoHeight
@@ -265,7 +340,7 @@ export default function NotificationEntry() {
                         {new Date(item.create_time).toLocaleDateString()}
                       </span>
                     </Button>
-                    {index < recentNotifications.length - 1 ? <Divider /> : null}
+                    {index < visibleNotifications.length - 1 ? <Divider /> : null}
                   </Fragment>
                 ))
               )}

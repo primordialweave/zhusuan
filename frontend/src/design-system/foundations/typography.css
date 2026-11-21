@@ -73,19 +73,3 @@ p {
   font-family: var(--ods-font-family-mono);
   font-variant-numeric: tabular-nums;
 }
-
-/*
- * Icon-font glyphs. The glyph fills a one-em square, so the box has to be exactly that square:
- * with an inherited line height the box is taller than the glyph and centring it in a button
- * or beside a label leaves the glyph visibly off. Inline, the square's own baseline already
- * puts it on the optical centre of Chinese text, so it is nudged by a hair and no more.
- */
-[class^='ri-'],
-[class*=' ri-'] {
-  display: inline-flex;
-  flex: 0 0 auto;
-  align-items: center;
-  justify-content: center;
-  line-height: 1;
-  vertical-align: 0.03em;
-}

@@ -116,6 +116,7 @@
 
   /* Motion */
   --ods-ref-duration-0: 0ms;
+  --ods-ref-duration-40: 40ms;
   --ods-ref-duration-100: 100ms;
   --ods-ref-duration-140: 140ms;
   --ods-ref-duration-160: 160ms;

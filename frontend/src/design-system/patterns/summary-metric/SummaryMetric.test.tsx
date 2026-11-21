@@ -7,12 +7,7 @@ import { SummaryMetric } from './SummaryMetric'
 describe('SummaryMetric', () => {
   it('renders its icon, label, and value without inventing a trend', () => {
     const { container } = render(
-      <SummaryMetric
-        icon="ri-checkbox-circle-line"
-        label="已结算"
-        status="data"
-        value="¥8,000.00"
-      />,
+      <SummaryMetric icon="check-circle" label="已结算" status="data" value="¥8,000.00" />,
     )
 
     expect(screen.getByText('已结算')).toBeInTheDocument()
@@ -20,9 +15,9 @@ describe('SummaryMetric', () => {
     expect(screen.getByRole('article')).toHaveAttribute('data-motion', 'entrance')
     expect(screen.getByRole('article')).toHaveAttribute('data-motion-item')
     expect(screen.getByRole('article')).toHaveClass('ods-summary-metric')
-    expect(container.querySelector('.ri-checkbox-circle-line')?.parentElement).toHaveClass(
-      'ods-surface',
-    )
+    expect(
+      container.querySelector('[data-slot="jade-icon"][data-icon="check-circle"]')?.parentElement,
+    ).toHaveClass('ods-surface')
     expect(container.querySelector('.ods-summary-metric__icon')).toHaveAttribute(
       'data-tone',
       'accent',
@@ -33,7 +28,7 @@ describe('SummaryMetric', () => {
   it('shows supplied trend and stacked metadata through the public pattern API', () => {
     const { rerender } = render(
       <SummaryMetric
-        icon="ri-time-line"
+        icon="calendar"
         label="待结算"
         status="data"
         trend={{
@@ -66,16 +61,14 @@ describe('SummaryMetric', () => {
   })
 
   it('distinguishes loading and error from a real zero value', () => {
-    const { rerender } = render(
-      <SummaryMetric icon="ri-time-line" label="待结算" status="loading" />,
-    )
+    const { rerender } = render(<SummaryMetric icon="calendar" label="待结算" status="loading" />)
 
     expect(screen.getByText('待结算加载中')).toBeInTheDocument()
 
-    rerender(<SummaryMetric icon="ri-time-line" label="待结算" status="error" />)
+    rerender(<SummaryMetric icon="calendar" label="待结算" status="error" />)
     expect(screen.getByText('暂不可用')).toBeInTheDocument()
 
-    rerender(<SummaryMetric icon="ri-time-line" label="待结算" status="data" value="0" />)
+    rerender(<SummaryMetric icon="calendar" label="待结算" status="data" value="0" />)
     expect(screen.getByText('0')).toBeInTheDocument()
   })
 })

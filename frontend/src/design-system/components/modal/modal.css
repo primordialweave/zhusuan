@@ -30,8 +30,8 @@
   margin: auto;
   border: var(--ods-material-glass-border-subtle);
   border-radius: var(--ods-radius-shell);
-  background: var(--ods-color-bg-surface-raised);
-  box-shadow: var(--ods-shadow-modal);
+  background: var(--ods-material-jade-sheen), var(--ods-color-bg-surface-raised);
+  box-shadow: var(--ods-material-glass-shadow-inner), var(--ods-shadow-modal);
   color: var(--ods-color-fg-default);
   outline: none;
   /* Materialize: scale + fade together, spring settle. */
@@ -116,28 +116,6 @@
   position: absolute;
   inset-block-start: var(--ods-space-4);
   inset-inline-end: var(--ods-space-4);
-  display: grid;
-  width: var(--ods-space-8);
-  height: var(--ods-space-8);
-  place-items: center;
-  border: 0;
-  border-radius: var(--ods-radius-pill);
-  background: transparent;
-  color: var(--ods-color-fg-muted);
-  cursor: pointer;
-  transition:
-    background-color var(--ods-duration-fast) var(--ods-ease-standard),
-    color var(--ods-duration-fast) var(--ods-ease-standard);
-}
-
-.ods-modal__close:hover {
-  background: var(--ods-color-bg-surface-hover);
-  color: var(--ods-color-fg-default);
-}
-
-.ods-modal__close:focus-visible {
-  outline: var(--ods-focus-ring-width) solid var(--ods-color-border-focus);
-  outline-offset: var(--ods-focus-ring-offset);
 }
 
 @keyframes ods-modal-scrim-in {

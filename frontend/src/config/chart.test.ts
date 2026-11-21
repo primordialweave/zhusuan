@@ -15,5 +15,14 @@ describe('Chart configuration', () => {
     })
     expect(CHART_FONT_SIZE).toBe(14)
     expect(CHART_FONT_LINE_HEIGHT).toBe(1.5)
+    expect(Chart.defaults.elements.line).toMatchObject({
+      borderCapStyle: 'round',
+      borderJoinStyle: 'round',
+    })
+    expect(Chart.defaults.elements.bar).toMatchObject({ borderRadius: 8 })
+    expect(Chart.defaults.plugins.tooltip).toMatchObject({
+      cornerRadius: 14,
+      usePointStyle: true,
+    })
   })
 })

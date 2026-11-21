@@ -1,5 +1,6 @@
 import { forwardRef, useMemo, useRef, useState, type ReactNode } from 'react'
 import { useFieldControlProps } from '../field/fieldContext'
+import { JadeIcon } from '../icon'
 import { Popover, usePopoverClose } from '../popover'
 import { Listbox } from '../listbox'
 
@@ -139,7 +140,7 @@ export const Select = forwardRef<HTMLButtonElement, SelectProps>(function Select
             {selected ? selected.label : placeholder}
           </span>
           <span aria-hidden="true" className="ods-select__caret" data-open={open || undefined}>
-            <i className="ri-arrow-down-s-line" />
+            <JadeIcon name="chevron-down" size="1em" />
           </span>
         </button>
       </Popover.Trigger>
@@ -150,7 +151,7 @@ export const Select = forwardRef<HTMLButtonElement, SelectProps>(function Select
           onClick={clearSelection}
           type="button"
         >
-          <i aria-hidden="true" className="ri-close-line" />
+          <JadeIcon name="close" size="1em" />
         </button>
       ) : null}
       <Popover.Content

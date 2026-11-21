@@ -19,10 +19,13 @@ import {
   Divider,
   Drawer,
   Dropdown,
+  EmptyScene,
+  EmptyState,
   Field,
   Image,
   Input,
   InputOtp,
+  JadeIcon,
   Kbd,
   Link,
   Listbox,
@@ -54,6 +57,14 @@ import {
 const buttonVariants = ['primary', 'secondary', 'tertiary', 'outline', 'ghost', 'danger'] as const
 const chipTones = ['neutral', 'accent', 'success', 'warning', 'danger', 'info'] as const
 const alertTones = ['neutral', 'success', 'warning', 'danger', 'info'] as const
+const showcaseActionIcons = ['edit', 'download', 'add', 'arrow-left', 'close', 'search'] as const
+const showcaseDockIcons = [
+  { label: '工作台', name: 'dock-dashboard' as const },
+  { label: '项目', name: 'dock-projects' as const },
+  { label: '日历', name: 'dock-calendar' as const },
+  { label: '分析', name: 'dock-analytics' as const },
+  { label: '设置', name: 'dock-settings' as const },
+]
 
 interface ShowcaseSectionProps {
   children: ReactNode
@@ -560,6 +571,118 @@ export default function DesignSystemView() {
             </Table.Row>
           </Table.Body>
         </Table.Root>
+      </ShowcaseSection>
+
+      <ShowcaseSection
+        title="玉质图标 JadeIcon"
+        description="圆润通透玉材质：16 / 20 / 32px 比例、五入口雕玉 Dock 与真实按钮表面对比度。"
+      >
+        <div className="design-showcase__stack">
+          <div className="design-showcase__icon-strip">
+            {showcaseActionIcons.map((name) => (
+              <Surface key={name} padding="sm" variant="inset">
+                <div className="design-showcase__icon-cell">
+                  <div className="design-showcase__icon-sizes">
+                    <JadeIcon name={name} size={16} tone="jade" />
+                    <JadeIcon name={name} size={20} tone="jade" />
+                    <JadeIcon detail="carved" name={name} size={32} tone="jade" />
+                  </div>
+                  <span className="design-showcase__surface-note">{name}</span>
+                </div>
+              </Surface>
+            ))}
+          </div>
+
+          <div className="design-showcase__icon-strip">
+            {showcaseDockIcons.map((item, index) => {
+              const selected = index === 0
+              return (
+                <div
+                  className={
+                    selected
+                      ? 'design-showcase__dock-chip design-showcase__dock-chip--selected'
+                      : 'design-showcase__dock-chip'
+                  }
+                  key={item.name}
+                >
+                  <JadeIcon
+                    detail="carved"
+                    name={item.name}
+                    size={32}
+                    tone={selected ? 'on-accent' : 'jade'}
+                  />
+                  <span>{item.label}</span>
+                </div>
+              )
+            })}
+          </div>
+
+          <div className="design-showcase__row">
+            <Button variant="primary">
+              <JadeIcon name="add" size={18} />
+              <span>新建项目</span>
+            </Button>
+            <Button variant="secondary">
+              <JadeIcon motionPreset="interactive" name="download" size={18} />
+              <span>导出报表</span>
+            </Button>
+            <Button variant="tertiary">
+              <JadeIcon motionPreset="interactive" name="edit" size={18} />
+              <span>编辑</span>
+            </Button>
+            <Button variant="outline">
+              <JadeIcon name="search" size={18} />
+              <span>筛选</span>
+            </Button>
+            <Button variant="ghost">
+              <JadeIcon motionPreset="interactive" name="arrow-left" size={18} />
+              <span>返回</span>
+            </Button>
+            <Button variant="danger">
+              <JadeIcon name="close" size={18} />
+              <span>删除</span>
+            </Button>
+            <Button disabled variant="secondary">
+              <JadeIcon motionPreset="interactive" name="download" size={18} />
+              <span>已禁用</span>
+            </Button>
+          </div>
+        </div>
+      </ShowcaseSection>
+
+      <ShowcaseSection
+        title="珠算空态场景 EmptyScene"
+        description="统一圆润玉珠与算盘语汇：hero 96px、standard 72px 与 compact 40px 三档比例。"
+      >
+        <div className="design-showcase__grid">
+          <Surface padding="md" variant="inset">
+            <EmptyState
+              action={
+                <Button size="sm" variant="primary">
+                  <JadeIcon name="add" size={16} />
+                  <span>新建项目</span>
+                </Button>
+              }
+              scene={<EmptyScene name="projects-empty" size="hero" />}
+              size="md"
+              title="暂无项目"
+            />
+          </Surface>
+          <Surface padding="md" variant="inset">
+            <EmptyState
+              scene={<EmptyScene name="plans-empty" size="standard" />}
+              size="md"
+              title="暂无收款计划"
+            />
+          </Surface>
+          <Surface padding="md" variant="inset">
+            <EmptyState
+              scene={<EmptyScene name="search-empty" size="compact" />}
+              size="sm"
+              title="没有匹配结果"
+            />
+          </Surface>
+        </div>
       </ShowcaseSection>
 
       <ShowcaseSection

@@ -7,7 +7,15 @@
       "layers": [
         {
           "name": "Artwork",
-          "image-name": "Artwork.png",
+          "image-name-specializations": [
+            {
+              "value": "Artwork.png"
+            },
+            {
+              "appearance": "dark",
+              "value": "Artwork-Dark.png"
+            }
+          ],
           "glass": false,
           "position": {
             "scale": 1.18,

@@ -54,6 +54,15 @@
   transition-timing-function: var(--ods-ease-standard) !important;
 }
 
+/* Keep interactive jade icon parts and reaction overlays free from forced 200ms opacity transitions. */
+:root.theme-transitioning .ods-jade-icon__part,
+:root.theme-transitioning .ods-jade-icon__specular,
+:root.theme-transitioning .ods-jade-icon__glyph-layers,
+:root.theme-transitioning .ods-jade-icon__reaction-check {
+  transition-property: none !important;
+  transition-duration: 0ms !important;
+}
+
 @media (prefers-reduced-motion: reduce) {
   html:focus-within {
     scroll-behavior: auto;

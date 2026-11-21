@@ -31,6 +31,23 @@ class MacOSIconTests(unittest.TestCase):
             with self.assertRaisesRegex(ValueError, 'missing/stale'):
                 macos_icon.verify_catalog(directory, macos_icon.catalog_source_digest(source, icon))
 
+    def test_dark_artwork_change_invalidates_catalog(self):
+        with tempfile.TemporaryDirectory() as temporary:
+            directory = Path(temporary)
+            source = directory/'appicon.png'
+            dark_source = directory/'appicon-dark.png'
+            source.write_bytes(b'light artwork')
+            dark_source.write_bytes(b'dark artwork v1')
+            icon = directory/'AppIcon.icon'
+            icon.mkdir()
+            (icon/'icon.json').write_text('{"fill":"none","scale":1.18}')
+            (directory/'Assets.car').write_bytes(b'compiled icon catalog')
+            (directory/'Assets.car.source.sha256').write_text(macos_icon.catalog_source_digest(source, icon))
+            macos_icon.verify_catalog(directory, macos_icon.catalog_source_digest(source, icon))
+            dark_source.write_bytes(b'dark artwork v2')
+            with self.assertRaisesRegex(ValueError, 'missing/stale'):
+                macos_icon.verify_catalog(directory, macos_icon.catalog_source_digest(source, icon))
+
     def test_missing_catalog_stamp_has_an_actionable_error(self):
         with tempfile.TemporaryDirectory() as temporary:
             directory = Path(temporary)

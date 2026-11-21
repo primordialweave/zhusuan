@@ -290,7 +290,7 @@
   flex: 0 0 auto;
   align-items: center;
   justify-content: flex-end;
-  gap: var(--ods-space-1);
+  gap: var(--ods-space-2);
 }
 
 .settings-field--full {
@@ -646,8 +646,9 @@
   flex: 0 0 auto;
   align-items: center;
   padding: var(--ods-space-2) var(--ods-space-3);
+  border: 1px solid var(--ods-color-border-subtle);
   border-radius: var(--ods-radius-md);
-  background: var(--ods-ref-color-mist-100);
+  background: var(--ods-color-bg-canvas-subtle);
 }
 
 .about-logo {

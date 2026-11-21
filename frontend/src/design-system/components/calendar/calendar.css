@@ -37,27 +37,7 @@
 }
 
 .ods-calendar__nav {
-  display: grid;
-  width: var(--ods-space-8);
-  height: var(--ods-space-8);
-  place-items: center;
-  border: 0;
   border-radius: var(--ods-radius-sm);
-  background: transparent;
-  color: var(--ods-color-fg-muted);
-  font-size: var(--ods-font-size-lg);
-  cursor: pointer;
-  transition: background-color var(--ods-duration-fast) var(--ods-ease-standard);
-}
-
-.ods-calendar__nav:hover {
-  background: var(--ods-color-bg-surface-hover);
-  color: var(--ods-color-fg-default);
-}
-
-.ods-calendar__nav:focus-visible {
-  outline: var(--ods-focus-ring-width) solid var(--ods-color-border-focus);
-  outline-offset: var(--ods-focus-ring-offset);
 }
 
 .ods-calendar__weekdays,
@@ -270,34 +250,8 @@
   gap: var(--ods-space-3);
 }
 
-.ods-calendar[data-layout='board'] .ods-calendar__nav {
-  width: var(--ods-control-height-md);
-  height: var(--ods-control-height-md);
-  border: 1px solid var(--ods-color-border-default);
-  border-radius: var(--ods-radius-md);
-  background: var(--ods-material-jade-sheen);
-  box-shadow: var(--ods-material-jade-control-shadow);
-  color: var(--ods-color-fg-default);
-}
-
-@media (hover: hover) and (pointer: fine) {
-  .ods-calendar[data-layout='board'] .ods-calendar__nav:hover:not(:disabled) {
-    border-color: var(--ods-color-border-strong);
-    background: var(--ods-material-jade-sheen), var(--ods-color-bg-surface-hover);
-  }
-}
-
-.ods-calendar[data-layout='board'] .ods-calendar__nav:active:not(:disabled) {
-  box-shadow: var(--ods-material-jade-inset-shadow);
-}
-
-.ods-calendar[data-layout='board'] .ods-calendar__nav:disabled {
-  box-shadow: none;
-  color: var(--ods-color-fg-disabled);
-  cursor: not-allowed;
-}
-
 /* The three controls read as one group: same corner, same line. */
+.ods-calendar[data-layout='board'] .ods-calendar__nav,
 .ods-calendar[data-layout='board'] .ods-calendar__today {
   border-color: var(--ods-color-border-default);
   border-radius: var(--ods-radius-md);

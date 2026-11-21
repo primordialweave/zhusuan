@@ -9,6 +9,7 @@ import {
   type HTMLAttributes,
   type ReactNode,
 } from 'react'
+import { JadeIcon } from '../icon'
 
 interface AccordionContextValue {
   baseId: string
@@ -113,7 +114,7 @@ export const AccordionItem = forwardRef<HTMLDivElement, AccordionItemProps>(func
             {subtitle ? <span className="ods-accordion__subtitle">{subtitle}</span> : null}
           </span>
           <span aria-hidden="true" className="ods-accordion__indicator" data-slot="indicator">
-            <i className="ri-arrow-right-s-line" />
+            <JadeIcon name="chevron-right" size="1em" />
           </span>
         </button>
       </h3>

@@ -8,12 +8,13 @@
   align-items: start;
   gap: var(--ods-space-3);
   padding: var(--ods-space-4) var(--ods-space-5);
-  border: 1px solid color-mix(in srgb, var(--ods-alert-color) 22%, transparent);
+  border: 1px solid color-mix(in srgb, var(--ods-alert-color) 24%, transparent);
   border-radius: var(--ods-radius-panel);
   background:
+    var(--ods-material-jade-sheen),
     linear-gradient(var(--ods-alert-tint), var(--ods-alert-tint)),
     var(--ods-color-bg-surface-raised);
-  box-shadow: var(--ods-shadow-soft);
+  box-shadow: var(--ods-material-jade-control-shadow), var(--ods-shadow-soft);
   color: var(--ods-color-fg-default);
   overflow: hidden;
 }
@@ -43,8 +44,11 @@
   width: var(--ods-space-8);
   height: var(--ods-space-8);
   place-items: center;
-  border-radius: var(--ods-radius-control);
-  background: color-mix(in srgb, var(--ods-alert-color) 14%, transparent);
+  border-radius: var(--ods-radius-pill);
+  background:
+    var(--ods-material-jade-sheen),
+    color-mix(in srgb, var(--ods-alert-color) 16%, transparent);
+  box-shadow: var(--ods-material-jade-control-shadow);
   color: var(--ods-alert-color);
   font-size: var(--ods-font-size-lg);
   line-height: var(--ods-line-height-tight);
@@ -75,31 +79,4 @@
 .ods-alert__action {
   display: flex;
   align-items: center;
-}
-
-.ods-alert__dismiss {
-  display: grid;
-  width: var(--ods-control-height-sm);
-  height: var(--ods-control-height-sm);
-  padding: var(--ods-space-0);
-  place-items: center;
-  border: 0;
-  border-radius: var(--ods-radius-pill);
-  background: transparent;
-  color: var(--ods-color-fg-muted);
-  font: inherit;
-  cursor: pointer;
-  transition:
-    background-color var(--ods-duration-fast) var(--ods-ease-standard),
-    color var(--ods-duration-fast) var(--ods-ease-standard);
-}
-
-.ods-alert__dismiss:hover {
-  background: var(--ods-color-bg-surface-hover);
-  color: var(--ods-color-fg-default);
-}
-
-.ods-alert__dismiss:focus-visible {
-  outline: var(--ods-focus-ring-width) solid var(--ods-color-border-focus);
-  outline-offset: var(--ods-focus-ring-offset);
 }

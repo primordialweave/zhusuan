@@ -3,7 +3,8 @@
   flex-direction: column;
   border: 1px solid var(--ods-color-border-default);
   border-radius: var(--ods-radius-panel);
-  background: var(--ods-color-bg-surface-raised);
+  background: var(--ods-material-jade-sheen), var(--ods-color-bg-surface-raised);
+  box-shadow: var(--ods-material-jade-control-shadow), var(--ods-shadow-soft);
   overflow: hidden;
 }
 
@@ -87,4 +88,8 @@
   .ods-accordion__indicator {
     transition: none;
   }
+}
+
+:root[data-motion='reduced'] .ods-accordion__indicator {
+  transition: none;
 }

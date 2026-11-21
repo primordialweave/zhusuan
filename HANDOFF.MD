@@ -2,6 +2,14 @@
 
 接手任何任务前先读这份文档。它只记两类东西：**当前在制品的状态**，和**已经踩过的坑**。踩到新坑就追加到第 2 节，状态变了就改第 1 节。
 
+## 1. 当前任务：1.2.0 提交与发布（2026-11-22）
+
+- 用户明确要求“提交代码，发布新版本 v1.2.0”，覆盖此前实施阶段“不提交/不发版/待确认”的限制。当前范围为全部玉质 SVG 图标、品牌空态、交互动效、组件/图表打磨及平台图标；版本已统一为 1.2.0。
+- 本地前端 117 文件/741 用例、非修改式 ESLint、真实 app TypeScript 检查通过；Go race 150 顶层/183 子测试、17 测试包通过，无失败/跳过；vet、module verify、增量 lint 0、Python 32 例通过。独立评审未发现阻塞问题。
+- `Assets.car` 来源摘要与浅/深 PNG 和 icon.json 一致，Aqua/DarkAqua 图组不同；ictool Default/Dark 已导出复核。深浅特化为系统资源目录能力，Wails 运行时 Dock 仍显式使用浅色嵌入 PNG，不能声称 live Dock 双态已实现。
+- 证据 `/tmp/zhusuan-release-1.2.0`；独立演示副本和 3488/9352 供最终浏览器复核。真实账本、用户开发服务、已安装应用和旧路径兼容 symlink 保留。历史 design-qa.md 删除、根 node_modules 和生成 events/index.ts 不纳入本次提交。
+- 接续完成浏览器验收、冻结源码、PR/main CI、v1.2.0 三平台 Release、正式附件/匿名 latest 与旧公开资产不可变验证。发布未完成前不要宣称已公开；所有已公开标签与附件禁止移动/覆盖。
+
 ## 1. 已完成：1.1.0提交与公开发布（2026-11-21）
 
 - 用户明确要求提交并发布，选择1.1.0，覆盖所有此前“待确认/禁止发版”限制。版本元数据、Changelog与下载说明已更新；当前批准范围包括品牌/config/analytics/玉质/Skeleton所有在制品，原design-qa.md删除、root node_modules、非必需生成events/index不纳入。
@@ -588,3 +596,29 @@
 - 原生用户库只读backup后在私有副本匿名化标识并运行独立3466/9331实际API/UI：计划134200、批次已收134200、现金131200、pending0、rate100%，趋势现金合计131200。截图docs/screenshots/analytics/collection-rate-consistent.png，JSONdocs/analytics-collection-verification.json；原真实数据库未改。
 - 新回归先证明旧口径失败，再验证跨期提前/延后/无实际日期、用户隔离/边界、外期计划本期现金、旧缓存与失效、导出/空态/趋势。新后端测试最初占共享projectID1污染旧夹具，已加自有数据/缓存逐例cleanup，首次失败保留日志；修正后全量Go race149顶层181子测试/16包通过，frontend619/116文件、ESLint/productionbuild、vet/增量lint0通过。新API需前后端同步运行。
 - 仍保持本地品牌/config等已授权在制品，不提交/推送/发版，等用户确认。独立review无阻塞，自有预览/后端结束后关闭，不停止用户dev服务。
+
+
+### 2.16 SVG 渐变与轴对齐线段隐形坑（2026-11-21）
+
+- **单条水平或垂直 SVG `<path>` 使用默认 `gradientUnits="objectBoundingBox"` 渐变会完全不可见。** 本次实测 `EmptyScene` 中算盘横梁 `<path d="M22 45H138" stroke="url(#ods-jade-icon-grad-wood)" />` 在浏览器中整条消失——原因是严格水平/垂直线段的包围盒高度或宽度为 `0`，按 SVG 规范 `objectBoundingBox` 渐变在零面积 bbox 上不会渲染。
+- 规避规则：所有用于 `stroke`（包括 24×24 图标的水平底线/箭头杆和 160×112 场景的算盘横梁/算档）的共享 `<linearGradient>` 必须显式声明 `gradientUnits="userSpaceOnUse"` 并绑定到对应 `viewBox` 坐标；有厚度的结构件（如算盘中梁）优先用带圆角与微高光的 `<rect>` 实体块，而不是单线 `<path>`。仅明确有面积的椭圆玉珠保留 `objectBoundingBox` 径向渐变。
+
+### 2.17 IconButton 水平内边距优先级导致 SVG 图标被压成 6px（2026-11-21）
+
+- **原因**：`button.css` 中 `.ods-button[data-size='sm']`（优先级 `(0,2,0)`）设置了 `padding-inline: 12px`，覆盖了 `.ods-icon-button`（优先级 `(0,1,0)`）的 `padding-inline: 0`，使 32px 宽的 `IconButton[size="sm"]` 内部内容区仅剩 `6px`（`lg` 更被压到 `0px`）。旧版 Remix 字体 `<i>` 会直接溢出内容区显示完整字号，但迁移为 `<svg>` 后命中了 `reset.css` 的 `svg { max-width: 100%; }`，直接把操作图标压成 6px 小点。
+- **修复**：在 `button.css` 提升 `.ods-button.ods-icon-button[data-size='sm' | 'lg']` 的 `padding-inline: var(--ods-space-0)` 优先级并补充 `Button.test.tsx` 契约断言；在 `icon.css` 为 `.ods-jade-icon` 显式声明 `max-width: none`，并为按钮/Tab 内联图标按中文视觉字高略微补齐比例。
+
+### 2.18 ODS Button 双属性 tone 悬停规则优先级与浅/深主题 tertiary 悬停对比度（2026-11-21）
+
+- **悬停优先级坑**：`button.css` 中 `.ods-button[data-variant]:active:not(:disabled)` 与 `@media (prefers-reduced-motion: reduce)` 的 `transform: none` 选择器优先级均为 `(0,4,0)`。如果在双属性规则 `.ods-button[data-variant='tertiary'][data-tone='danger']:hover:not(:disabled)`（优先级 `(0,5,0)`）里重复声明 `transform: translateY(-1px)`，会压过按下反馈 `scale(0.97)` 和系统级减少动效规则。规避：让双属性 tone 悬停规则仅覆写配色/描边，继承单属性 `tertiary:hover` 的 `(0,4,0)` 位移声明，并在 `Button.test.tsx` 锁定回归断言。
+- **悬停对比度坑**：烟雨浅色主题的 `--ods-color-accent-soft` 是 `0.26`，夜雨深色是 `0.20`；旧版 `tertiary:hover` 写死 `0.20` 导致浅色下悬停反而变淡，而拉到 `0.30` 又会让夜雨 `#22362f` 卡片面上的 `#a0d7af` 对比度跌至 `4.39:1`（< 4.5:1）。调整为 `0.28` 搭配边框加深（`42%`）后，浅色（`4.63:1`）与深色（`4.55:1`）均满足 ≥ 4.5:1 且悬停层次清晰。
+
+### 2.19 SVG 单弧闭环圆（`0.01px` 偏移）圆心翻转坑（2026-11-21）
+
+- **现象**：数据分析 `StructureDonut` 顶部出现一个错位突出的白色半透明弧环。根因是使用了单弧 `<path d="M50 11.4 A38.6 38.6 0 1 0 49.99 11.4" />` 试图画圆环——当终点在起点左侧 `0.01px` 且 `sweep-flag=0`（逆时针）时，SVG 圆弧几何解出的圆心落在 `(50, 11.4 - 38.6) = (50, -27.2)`（环图上方），而非 `(50, 50)`。
+- **规避规则**：凡用 `<path>` 绘制完整圆环或圆盘，一律拆成两段精确 180° 半圆弧（如 `M50 11.4 A38.6 38.6 0 1 1 50 88.6 A38.6 38.6 0 1 1 50 11.4 Z`），绝不用单弧近零偏移技巧。同时避免在业务 CSS 中写裸十六进制色值（遵守 ODS tokens 契约）。
+
+### 2.20 macOS Icon Composer `icon.json` 深浅双态静默忽略坑（2026-11-21）
+
+- **现象**：在 `build/darwin/AppIcon.icon/icon.json` 中同时声明普通键（如 `"image-name"` 或 `"hidden"`）和对应的 `*-specializations`（如 `"image-name-specializations"` 或 `"hidden-specializations"`），或者误用 `"appearances": [{"appearance": "luminosity", "value": "dark"}]` 嵌套写法时，`xcrun actool` **不会报错**，但会静默忽略深色特化，编译出的 `Assets.car` 中 `NSAppearanceNameAqua` 与 `NSAppearanceNameDarkAqua` 完全相同且只打进浅色图。
+- **规避规则**：`icon.json` 中普通键与 `*-specializations` **互斥**，深浅双态应只保留 `"image-name-specializations": [{"value": "Artwork.png"}, {"appearance": "dark", "value": "Artwork-Dark.png"}]`（同时将 `build/appicon-dark.png` 纳入 `scripts/build_macos_icon.py` 的 `catalog_source_digest` 与 `build/Taskfile.yml` 的 `sources`）。每次重编 `Assets.car` 后，必须同时用 `xcrun assetutil --info build/darwin/Assets.car` 核验两张图均已编入且 `Aqua` / `DarkAqua` 的 `IconGroup` SHA1 不同，并用 `/Applications/Xcode.app/Contents/Applications/Icon Composer.app/Contents/Executables/ictool` 导出 `Default` / `Dark` 双态预览确认。

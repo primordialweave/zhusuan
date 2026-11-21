@@ -4,8 +4,9 @@
   height: var(--ods-control-height-md);
   overflow: hidden;
   border: 1px solid var(--ods-color-border-default);
-  border-radius: var(--ods-radius-control);
-  background: var(--ods-color-bg-surface);
+  border-radius: var(--ods-radius-md);
+  background: var(--ods-material-jade-sheen), var(--ods-color-bg-surface);
+  box-shadow: var(--ods-material-jade-inset-shadow);
   transition:
     border-color var(--ods-duration-fast) var(--ods-ease-standard),
     box-shadow var(--ods-duration-fast) var(--ods-ease-standard);
@@ -49,33 +50,14 @@
   -webkit-appearance: none;
 }
 
-.ods-number-input__button {
-  display: inline-flex;
+.ods-number-input .ods-button.ods-icon-button.ods-number-input__button {
+  --ods-button-hover-scale: 1;
+
   width: var(--ods-space-8);
   height: 100%;
-  flex: 0 0 auto;
-  align-items: center;
-  justify-content: center;
-  border: 0;
-  background: transparent;
-  color: var(--ods-color-fg-muted);
-  font-size: var(--ods-font-size-lg);
-  cursor: pointer;
-  transition:
-    background-color var(--ods-duration-fast) var(--ods-ease-standard),
-    color var(--ods-duration-fast) var(--ods-ease-standard);
+  border-radius: 0;
 }
 
-.ods-number-input__button:hover:not(:disabled) {
-  background: var(--ods-color-bg-surface-hover);
+.ods-number-input .ods-button.ods-icon-button.ods-number-input__button:hover:not(:disabled) {
   color: var(--ods-color-accent-text);
-}
-
-.ods-number-input__button:active:not(:disabled) {
-  background: var(--ods-color-bg-surface-pressed);
-}
-
-.ods-number-input__button:disabled {
-  color: var(--ods-color-fg-disabled);
-  cursor: not-allowed;
 }

@@ -13,4 +13,26 @@ if (Chart.defaults?.font) {
   })
 }
 
+if (Chart.defaults?.elements?.line) {
+  Object.assign(Chart.defaults.elements.line, {
+    borderCapStyle: 'round',
+    borderJoinStyle: 'round',
+  })
+}
+
+if (Chart.defaults?.elements?.bar) {
+  Object.assign(Chart.defaults.elements.bar, {
+    borderRadius: 8,
+  })
+}
+
+if (Chart.defaults?.plugins?.tooltip) {
+  Object.assign(Chart.defaults.plugins.tooltip, {
+    boxPadding: 6,
+    cornerRadius: 14,
+    padding: 12,
+    usePointStyle: true,
+  })
+}
+
 export default Chart

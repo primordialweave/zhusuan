@@ -1,10 +1,12 @@
 import {
   Button,
   DatePicker,
+  EmptyScene,
   EmptyState,
   Field,
   FormGrid,
   FormSection,
+  JadeIcon,
   Select,
   Surface,
   TextArea,
@@ -66,7 +68,7 @@ export function PaymentPlanEditor({
   const actions =
     installment && items.length > 0 ? (
       <Button onClick={addItem} size="sm" type="button">
-        <i aria-hidden="true" className="ri-add-line" />
+        <JadeIcon name="add" size="1em" />
         添加分期
       </Button>
     ) : null
@@ -83,13 +85,13 @@ export function PaymentPlanEditor({
           action={
             installment ? (
               <Button onClick={addItem} size="sm" type="button">
-                <i aria-hidden="true" className="ri-add-line" />
+                <JadeIcon name="add" size="1em" />
                 添加分期
               </Button>
             ) : null
           }
           description="当前项目还没有可保存的收款节点。"
-          icon={<i className="ri-secure-payment-line" />}
+          scene={<EmptyScene name="plans-empty" size="standard" />}
           size="md"
           title="暂无收款计划"
         />
@@ -114,10 +116,11 @@ export function PaymentPlanEditor({
                       onItemsChange(items.filter((_, itemIndex) => itemIndex !== index))
                     }
                     size="sm"
+                    tone="danger"
                     type="button"
-                    variant="ghost"
+                    variant="tertiary"
                   >
-                    <i aria-hidden="true" className="ri-delete-bin-line" />
+                    <JadeIcon name="trash" size="1em" />
                     删除
                   </Button>
                 </div>

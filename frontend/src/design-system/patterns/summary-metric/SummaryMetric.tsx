@@ -1,5 +1,6 @@
 import type { ComponentPropsWithoutRef, ReactNode } from 'react'
 import { Chip, type ChipTone } from '../../components/chip'
+import { JadeIcon, JADE_ICON_REGISTRY, type JadeIconName } from '../../components/icon'
 import {
   Card,
   Surface,
@@ -17,7 +18,7 @@ export interface MetricTrend {
 
 interface SummaryMetricBaseProps extends Omit<ComponentPropsWithoutRef<'article'>, 'children'> {
   errorValue?: ReactNode
-  icon?: ReactNode | string
+  icon?: ReactNode | JadeIconName
   iconTone?: SurfaceTone
   iconAppearance?: 'plain' | 'inset'
   label: ReactNode
@@ -59,20 +60,25 @@ export function SummaryMetric({
         : value
   const trendTone: ChipTone =
     trend?.tone === 'positive' ? 'success' : trend?.tone === 'negative' ? 'danger' : 'neutral'
-  const iconContent = typeof icon === 'string' ? <i className={icon} /> : icon
+  const iconContent =
+    typeof icon === 'string' && icon in JADE_ICON_REGISTRY ? (
+      <JadeIcon name={icon as JadeIconName} size="1em" />
+    ) : (
+      icon
+    )
   const trailing =
     meta ??
     (status === 'data' && trend ? (
       <Chip aria-label={trend.accessibleLabel} size="sm" tone={trendTone}>
-        <i
-          aria-hidden="true"
-          className={
+        <JadeIcon
+          name={
             trend.direction === 'up'
-              ? 'ri-arrow-up-line'
+              ? 'arrow-up'
               : trend.direction === 'down'
-                ? 'ri-arrow-down-line'
-                : 'ri-subtract-line'
+                ? 'arrow-down'
+                : 'minus'
           }
+          size="1em"
         />
         {trend.label}
       </Chip>

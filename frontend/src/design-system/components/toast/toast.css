@@ -25,6 +25,7 @@
   border: 1px solid color-mix(in srgb, var(--ods-toast-color) 30%, transparent);
   border-radius: var(--ods-radius-pill);
   background:
+    var(--ods-material-jade-sheen),
     linear-gradient(
       90deg,
       color-mix(in srgb, var(--ods-toast-color) 10%, transparent),

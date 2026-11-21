@@ -7,6 +7,8 @@ import {
   type HTMLAttributes,
   type ReactNode,
 } from 'react'
+import { IconButton } from '../button'
+import { JadeIcon } from '../icon'
 
 export type SnippetSize = 'sm' | 'md' | 'lg'
 
@@ -94,16 +96,24 @@ export const Snippet = forwardRef<HTMLDivElement, SnippetProps>(function Snippet
         {children}
       </pre>
       {disableCopy ? null : (
-        <button
-          aria-label={copied ? copiedLabel : copyLabel}
+        <IconButton
           className="ods-snippet__copy"
           data-copied={copied || undefined}
           data-slot="copy"
+          label={copied ? copiedLabel : copyLabel}
           onClick={() => void handleCopy()}
-          type="button"
+          size="sm"
+          variant="ghost"
         >
-          <span aria-hidden="true">{copied ? '✓' : '⧉'}</span>
-        </button>
+          <span aria-hidden="true" className="ods-snippet__copy-icon">
+            <span className="ods-snippet__copy-glyph ods-snippet__copy-glyph--copy">
+              <JadeIcon name="copy" size="1em" />
+            </span>
+            <span className="ods-snippet__copy-glyph ods-snippet__copy-glyph--check">
+              <JadeIcon name="check" size="1em" />
+            </span>
+          </span>
+        </IconButton>
       )}
     </div>
   )

@@ -3,7 +3,8 @@
   overflow-x: auto;
   border: 1px solid var(--ods-color-border-default);
   border-radius: var(--ods-radius-panel);
-  background: var(--ods-color-bg-surface);
+  background: var(--ods-material-jade-sheen), var(--ods-color-bg-surface);
+  box-shadow: var(--ods-material-jade-control-shadow), var(--ods-shadow-soft);
 }
 
 .ods-table {
@@ -15,7 +16,7 @@
 
 .ods-table__column {
   padding: var(--ods-space-3) var(--ods-space-4);
-  background: var(--ods-color-bg-canvas-subtle);
+  background: var(--ods-material-jade-sheen), var(--ods-color-bg-canvas-subtle);
   color: var(--ods-color-fg-muted);
   font-weight: var(--ods-font-weight-semibold);
   text-align: start;
@@ -96,6 +97,7 @@
   border: 0;
   border-radius: 0;
   background: transparent;
+  box-shadow: none;
 }
 
 .ods-table[data-variant='plain'] .ods-table__column {

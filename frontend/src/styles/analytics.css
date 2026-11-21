@@ -215,16 +215,92 @@
   min-height: 6.5rem;
   max-height: 14rem;
   flex: 1 1 0;
+  overflow: visible;
+  filter: drop-shadow(0 6px 12px var(--ods-material-jade-icon-shadow));
+  transition:
+    transform var(--ods-duration-fast) var(--ods-ease-spring),
+    filter var(--ods-duration-fast) var(--ods-ease-standard);
+}
+
+@media (hover: hover) and (pointer: fine) {
+  .analytics-donut:hover {
+    transform: translateY(-1.5px) scale(1.025);
+    filter: drop-shadow(0 8px 14px var(--ods-material-jade-icon-shadow)) brightness(1.03);
+  }
 }
 
 .analytics-donut circle {
   fill: none;
   stroke: var(--ods-data-part-pending);
   stroke-width: 22.8;
+  transition: stroke-dasharray var(--ods-duration-hero) var(--ods-ease-emphasized);
 }
 
 .analytics-donut circle[data-part='paid'] {
   stroke: var(--ods-data-part-paid);
+}
+
+.analytics-donut__stop--paid-light {
+  stop-color: var(--ods-color-accent-hover);
+}
+
+.analytics-donut__stop--paid-base {
+  stop-color: var(--ods-data-part-paid);
+}
+
+.analytics-donut__stop--paid-depth {
+  stop-color: var(--ods-color-accent-text);
+}
+
+.analytics-donut__stop--pending-light {
+  stop-color: var(--ods-data-part-pending);
+}
+
+.analytics-donut__stop--pending-base {
+  stop-color: var(--ods-color-status-warning);
+  stop-opacity: 0.78;
+}
+
+.analytics-donut__stop--crest {
+  stop-color: var(--ods-color-fg-brand-surface);
+}
+
+/* Pure semantic token (no color-mix) so SVG <stop> never falls back to black on macOS 12 WebKit. */
+.analytics-donut__stop--bounce {
+  stop-color: var(--ods-data-part-pending);
+}
+
+.analytics-donut__stop--shadow {
+  stop-color: var(--ods-material-jade-icon-depth);
+}
+
+.analytics-donut__torus {
+  stroke-width: 22.8;
+  pointer-events: none;
+}
+
+.analytics-donut__crest {
+  stroke-width: 4.2;
+  stroke-linecap: round;
+  pointer-events: none;
+}
+
+.analytics-donut__outer-rim {
+  stroke-width: 1.2;
+  stroke-linecap: round;
+  pointer-events: none;
+}
+
+.analytics-donut__bounce {
+  stroke-width: 12;
+  stroke-linecap: round;
+  pointer-events: none;
+}
+
+.analytics-donut__inner-rim {
+  stroke-width: 1.2;
+  stroke-linecap: round;
+  pointer-events: none;
 }
 
 .analytics-structure__legend {
@@ -329,4 +405,16 @@
     animation: none;
     transform: none;
   }
+
+  .analytics-donut,
+  .analytics-donut:hover {
+    transform: none;
+    transition-duration: 0ms;
+  }
+}
+
+:root[data-motion='reduced'] .analytics-donut,
+:root[data-motion='reduced'] .analytics-donut:hover {
+  transform: none;
+  transition-duration: 0ms;
 }

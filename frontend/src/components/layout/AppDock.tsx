@@ -31,7 +31,7 @@ export default function AppDock() {
           active={item.key === activeKey}
           appearance="dock"
           className="app-dock__link"
-          icon={<DockIcon name={item.key} />}
+          icon={<DockIcon active={item.key === activeKey} name={item.key} />}
           key={item.key}
           to={item.path}
         >

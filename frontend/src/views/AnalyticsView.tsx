@@ -1,6 +1,6 @@
 import dayjs from 'dayjs'
-import type { ChartConfiguration, ScriptableContext } from 'chart.js'
-import { useCallback, useEffect, useMemo, useRef, useState } from 'react'
+import type { ChartConfiguration, Plugin, ScriptableContext } from 'chart.js'
+import { useCallback, useEffect, useId, useMemo, useRef, useState } from 'react'
 import {
   dashboardApi,
   type DashboardScope,
@@ -9,7 +9,17 @@ import {
 } from '@/api/dashboard'
 import Chart from '@/config/chart'
 import { useReducedMotion } from '@/hooks/useReducedMotion'
-import { Button, EmptyState, PageHeader, Select, Skeleton, Table, Tabs } from '@/design-system'
+import {
+  Button,
+  EmptyScene,
+  EmptyState,
+  JadeIcon,
+  PageHeader,
+  Select,
+  Skeleton,
+  Table,
+  Tabs,
+} from '@/design-system'
 import { useToastStore } from '@/composables/useToast'
 import { useThemeStore } from '@/stores/theme'
 import { exportCsv } from '@/utils/csv'
@@ -107,11 +117,19 @@ const readToken = (name: string, fallback: string) => {
 const DONUT_RADIUS = 38.6
 const DONUT_CIRCUMFERENCE = 2 * Math.PI * DONUT_RADIUS
 
-/** Two butt-ended ring segments, clockwise from twelve o'clock: received, then pending. */
+/** Two convex translucent jade-bangle ring segments, clockwise from twelve o'clock: received, then pending. */
 function StructureDonut({ paid, pending }: { paid: number; pending: number }) {
+  const uid = useId().replace(/[^a-zA-Z0-9_-]/g, '')
   const total = paid + pending
   const paidShare = total > 0 ? paid / total : 0
   const paidPercent = Math.round(paidShare * 100)
+  const paidGradId = `donut-paid-${uid}`
+  const pendingGradId = `donut-pending-${uid}`
+  const torusGradId = `donut-torus-${uid}`
+  const crestGradId = `donut-crest-${uid}`
+  const outerRimGradId = `donut-outer-rim-${uid}`
+  const bounceGradId = `donut-bounce-${uid}`
+  const innerRimGradId = `donut-inner-rim-${uid}`
 
   return (
     <svg
@@ -120,17 +138,146 @@ function StructureDonut({ paid, pending }: { paid: number; pending: number }) {
       role="img"
       viewBox="0 0 100 100"
     >
-      <circle cx="50" cy="50" data-part="pending" r={DONUT_RADIUS} />
+      <defs>
+        <linearGradient
+          gradientUnits="userSpaceOnUse"
+          id={paidGradId}
+          x1="14"
+          x2="86"
+          y1="12"
+          y2="88"
+        >
+          <stop className="analytics-donut__stop--paid-light" offset="0%" />
+          <stop className="analytics-donut__stop--paid-base" offset="52%" />
+          <stop className="analytics-donut__stop--paid-depth" offset="100%" />
+        </linearGradient>
+        <linearGradient
+          gradientUnits="userSpaceOnUse"
+          id={pendingGradId}
+          x1="14"
+          x2="86"
+          y1="12"
+          y2="88"
+        >
+          <stop className="analytics-donut__stop--pending-light" offset="0%" />
+          <stop className="analytics-donut__stop--pending-base" offset="100%" />
+        </linearGradient>
+        {/* Off-center radial 3D torus profile: hydrated translucent jade without uniform milky banding. */}
+        <radialGradient cx="47.5" cy="46.5" gradientUnits="userSpaceOnUse" id={torusGradId} r="50">
+          <stop className="analytics-donut__stop--shadow" offset="53%" stopOpacity="0.24" />
+          <stop className="analytics-donut__stop--shadow" offset="63%" stopOpacity="0.03" />
+          <stop className="analytics-donut__stop--crest" offset="74.5%" stopOpacity="0.28" />
+          <stop className="analytics-donut__stop--crest" offset="84%" stopOpacity="0.02" />
+          <stop className="analytics-donut__stop--shadow" offset="94%" stopOpacity="0.14" />
+          <stop className="analytics-donut__stop--shadow" offset="100%" stopOpacity="0.28" />
+        </radialGradient>
+        {/* Primary directional specular highlight curving along the upper-left raised jade ridge. */}
+        <linearGradient
+          gradientUnits="userSpaceOnUse"
+          id={crestGradId}
+          x1="16"
+          x2="68"
+          y1="34"
+          y2="17"
+        >
+          <stop className="analytics-donut__stop--crest" offset="0%" stopOpacity="0" />
+          <stop className="analytics-donut__stop--crest" offset="44%" stopOpacity="0.64" />
+          <stop className="analytics-donut__stop--crest" offset="100%" stopOpacity="0" />
+        </linearGradient>
+        {/* Delicate upper-left crystalline glass rim along the outer bangle contour. */}
+        <linearGradient
+          gradientUnits="userSpaceOnUse"
+          id={outerRimGradId}
+          x1="3.4"
+          x2="68.4"
+          y1="34.9"
+          y2="4.6"
+        >
+          <stop className="analytics-donut__stop--crest" offset="0%" stopOpacity="0" />
+          <stop className="analytics-donut__stop--crest" offset="48%" stopOpacity="0.54" />
+          <stop className="analytics-donut__stop--crest" offset="100%" stopOpacity="0" />
+        </linearGradient>
+        {/* Broad, soft subsurface warmth glowing from within the lower-right belly (no double white band). */}
+        <linearGradient
+          gradientUnits="userSpaceOnUse"
+          id={bounceGradId}
+          x1="87"
+          x2="40"
+          y1="63"
+          y2="88"
+        >
+          <stop className="analytics-donut__stop--bounce" offset="0%" stopOpacity="0" />
+          <stop className="analytics-donut__stop--bounce" offset="50%" stopOpacity="0.22" />
+          <stop className="analytics-donut__stop--bounce" offset="100%" stopOpacity="0" />
+        </linearGradient>
+        {/* Fine catchlight on the lower-right inner hole wall facing the upper-left light. */}
+        <linearGradient
+          gradientUnits="userSpaceOnUse"
+          id={innerRimGradId}
+          x1="77"
+          x2="43"
+          y1="57"
+          y2="77"
+        >
+          <stop className="analytics-donut__stop--crest" offset="0%" stopOpacity="0" />
+          <stop className="analytics-donut__stop--crest" offset="50%" stopOpacity="0.34" />
+          <stop className="analytics-donut__stop--crest" offset="100%" stopOpacity="0" />
+        </linearGradient>
+      </defs>
+      <circle
+        cx="50"
+        cy="50"
+        data-part="pending"
+        r={DONUT_RADIUS}
+        stroke={`url(#${pendingGradId})`}
+      />
       {paidShare > 0 ? (
         <circle
           cx="50"
           cy="50"
           data-part="paid"
           r={DONUT_RADIUS}
+          stroke={`url(#${paidGradId})`}
           strokeDasharray={`${(paidShare * DONUT_CIRCUMFERENCE).toFixed(3)} ${DONUT_CIRCUMFERENCE.toFixed(3)}`}
           transform="rotate(-90 50 50)"
         />
       ) : null}
+      {/* Exact two-semicircle ring path coincident with the data circles for 3D convex bangle shading (keeps only 2 data circles). */}
+      <path
+        aria-hidden="true"
+        className="analytics-donut__torus"
+        d="M50 11.4 A38.6 38.6 0 1 1 50 88.6 A38.6 38.6 0 1 1 50 11.4 Z"
+        fill="none"
+        stroke={`url(#${torusGradId})`}
+      />
+      <path
+        aria-hidden="true"
+        className="analytics-donut__bounce"
+        d="M86.84 63.41 A39.2 39.2 0 0 1 39.85 87.86"
+        fill="none"
+        stroke={`url(#${bounceGradId})`}
+      />
+      <path
+        aria-hidden="true"
+        className="analytics-donut__crest"
+        d="M16.1 34.2 A37.4 37.4 0 0 1 67.6 17.0"
+        fill="none"
+        stroke={`url(#${crestGradId})`}
+      />
+      <path
+        aria-hidden="true"
+        className="analytics-donut__outer-rim"
+        d="M3.4 34.86 A49 49 0 0 1 68.36 4.57"
+        fill="none"
+        stroke={`url(#${outerRimGradId})`}
+      />
+      <path
+        aria-hidden="true"
+        className="analytics-donut__inner-rim"
+        d="M77.43 57.35 A28.4 28.4 0 0 1 42.65 77.43"
+        fill="none"
+        stroke={`url(#${innerRimGradId})`}
+      />
     </svg>
   )
 }
@@ -143,6 +290,7 @@ export default function AnalyticsView() {
   const [activePeriod, setActivePeriod] = useState<Period>('month')
   const [calendar, setCalendar] = useState<CalendarChoice>({ month: 0, year: thisYear })
   const [exporting, setExporting] = useState(false)
+  const [savedExportKey, setSavedExportKey] = useState(0)
   const scope = useMemo<DashboardScope>(
     () => (activePeriod === 'custom' ? calendar : activePeriod),
     [activePeriod, calendar],
@@ -202,12 +350,17 @@ export default function AnalyticsView() {
         '--ods-data-series-actual-fill',
         isDark ? 'rgba(133, 188, 139, 0.2)' : 'rgba(98, 149, 105, 0.2)',
       ),
+      actualFillMid: isDark ? 'rgba(133, 188, 139, 0.07)' : 'rgba(98, 149, 105, 0.07)',
+      actualGlow: isDark ? 'rgba(133, 188, 139, 0.28)' : 'rgba(75, 127, 88, 0.22)',
+      actualLight: readToken('--ods-material-jade-icon-edge', isDark ? '#c8e9d1' : '#538a6d'),
       axis: readToken('--ods-color-border-strong', isDark ? '#799588' : '#a9bfb0'),
+      crosshair: isDark ? 'rgba(160, 215, 175, 0.26)' : 'rgba(45, 101, 74, 0.2)',
       grid: readToken(
         '--ods-data-grid',
         isDark ? 'rgba(229, 242, 233, 0.1)' : 'rgba(24, 57, 44, 0.1)',
       ),
       planned: readToken('--ods-data-series-planned', isDark ? '#e3c574' : '#8d6c29'),
+      pointBg: readToken('--ods-data-point-bg', isDark ? '#22362f' : '#f6fbf6'),
       text: readToken('--ods-color-fg-muted', isDark ? '#adc2b6' : '#4f655a'),
       tooltipBackground: readToken('--ods-data-tooltip-bg', isDark ? '#22362f' : '#f6fbf6'),
       tooltipBorder: readToken('--ods-data-tooltip-border', isDark ? '#3d564b' : '#cedcd1'),
@@ -221,14 +374,57 @@ export default function AnalyticsView() {
     const context = trendCanvas.current?.getContext('2d')
     if (!context) return
 
-    // The area under the received line fades towards the axis.
+    // Layered translucent jade mist under the actual receipt curve.
     const areaFill = ({ chart }: ScriptableContext<'line'>) => {
       const area = chart.chartArea
       if (!area || typeof chart.ctx?.createLinearGradient !== 'function') return colors.actualFill
       const gradient = chart.ctx.createLinearGradient(0, area.top, 0, area.bottom)
       gradient.addColorStop(0, colors.actualFill)
+      gradient.addColorStop(0.58, colors.actualFillMid)
       gradient.addColorStop(1, 'rgba(0, 0, 0, 0)')
       return gradient
+    }
+
+    // Gentle luminous jade gradient along the primary curve.
+    const actualStroke = ({ chart }: ScriptableContext<'line'>) => {
+      const area = chart.chartArea
+      if (!area || typeof chart.ctx?.createLinearGradient !== 'function') return colors.actual
+      const gradient = chart.ctx.createLinearGradient(area.left, area.top, area.right, area.bottom)
+      gradient.addColorStop(0, colors.actualLight)
+      gradient.addColorStop(0.55, colors.actual)
+      gradient.addColorStop(1, colors.actual)
+      return gradient
+    }
+
+    const jadeChartPlugin: Plugin<'line'> = {
+      id: 'odsJadeChartFinish',
+      beforeDatasetsDraw(chart) {
+        const active = chart.tooltip?.getActiveElements?.()
+        if (!active?.length) return
+        const { chartArea, ctx } = chart
+        if (!chartArea || typeof ctx?.save !== 'function') return
+        const x = active[0].element.x
+        ctx.save()
+        ctx.beginPath()
+        ctx.setLineDash([4, 4])
+        ctx.lineWidth = 1
+        ctx.strokeStyle = colors.crosshair
+        ctx.moveTo(x, chartArea.top)
+        ctx.lineTo(x, chartArea.bottom)
+        ctx.stroke()
+        ctx.restore()
+      },
+      beforeDatasetDraw(chart, args) {
+        if (args.index !== 0 || typeof chart.ctx?.save !== 'function') return
+        chart.ctx.save()
+        chart.ctx.shadowColor = colors.actualGlow
+        chart.ctx.shadowBlur = 10
+        chart.ctx.shadowOffsetY = 4
+      },
+      afterDatasetDraw(chart, args) {
+        if (args.index !== 0 || typeof chart.ctx?.restore !== 'function') return
+        chart.ctx.restore()
+      },
     }
 
     const config: ChartConfiguration<'line'> = {
@@ -236,11 +432,16 @@ export default function AnalyticsView() {
         datasets: [
           {
             backgroundColor: areaFill,
-            borderColor: colors.actual,
+            borderColor: actualStroke,
             borderWidth: 3,
             data: [],
             fill: 'origin',
             label: '实际收款',
+            pointHoverBackgroundColor: colors.pointBg,
+            pointHoverBorderColor: colors.actual,
+            pointHoverBorderWidth: 2.5,
+            pointStyle: 'circle',
+            tension: 0.34,
           },
           {
             borderColor: colors.planned,
@@ -249,6 +450,11 @@ export default function AnalyticsView() {
             data: [],
             fill: false,
             label: '计划收款',
+            pointHoverBackgroundColor: colors.pointBg,
+            pointHoverBorderColor: colors.planned,
+            pointHoverBorderWidth: 2.5,
+            pointStyle: 'circle',
+            tension: 0.34,
           },
         ],
         labels: [],
@@ -256,8 +462,12 @@ export default function AnalyticsView() {
       options: {
         animation: { duration: reducedMotion ? 0 : 280, easing: 'easeOutCubic' },
         elements: {
-          line: { borderCapStyle: 'round', cubicInterpolationMode: 'monotone' },
-          point: { hitRadius: 12, hoverRadius: 4, radius: 0 },
+          line: {
+            borderCapStyle: 'round',
+            borderJoinStyle: 'round',
+            cubicInterpolationMode: 'monotone',
+          },
+          point: { hitRadius: 14, hoverRadius: 6.5, radius: 0 },
         },
         interaction: { intersect: false, mode: 'index' },
         maintainAspectRatio: false,
@@ -266,13 +476,19 @@ export default function AnalyticsView() {
           tooltip: {
             backgroundColor: colors.tooltipBackground,
             bodyColor: colors.tooltipText,
+            bodySpacing: 5,
             borderColor: colors.tooltipBorder,
             borderWidth: 1,
+            boxPadding: 6,
             callbacks: {
               label: (item) =>
                 `${item.dataset.label ?? '金额'}：${formatCurrency(Number(item.raw))}`,
             },
+            cornerRadius: 14,
+            padding: { bottom: 10, left: 14, right: 14, top: 10 },
             titleColor: colors.tooltipText,
+            titleMarginBottom: 6,
+            usePointStyle: true,
           },
         },
         responsive: true,
@@ -295,6 +511,7 @@ export default function AnalyticsView() {
           },
         },
       },
+      plugins: [jadeChartPlugin],
       type: 'line',
     }
     trendChart.current = new Chart(context, config)
@@ -430,7 +647,10 @@ export default function AnalyticsView() {
     setExporting(true)
     try {
       const result = await exportCsv(`珠算-数据分析-${periodName}.csv`, rows)
-      if (result.status === 'saved') toastSuccess('报表已导出')
+      if (result.status === 'saved') {
+        toastSuccess('报表已导出')
+        if (isMountedRef.current) setSavedExportKey((key) => key + 1)
+      }
     } catch {
       toastError('导出失败，请重试')
     } finally {
@@ -482,7 +702,14 @@ export default function AnalyticsView() {
               pending={exporting}
               variant="outline"
             >
-              <i aria-hidden="true" className="ri-download-line" />
+              <JadeIcon
+                motionPreset="interactive"
+                name="download"
+                reaction={
+                  savedExportKey > 0 ? { eventKey: savedExportKey, kind: 'saved' } : undefined
+                }
+                size="1em"
+              />
               <span>导出报表</span>
             </Button>
           </div>
@@ -546,14 +773,14 @@ export default function AnalyticsView() {
                         action={retryAction}
                         className="analytics-chart-empty"
                         description="请检查连接后重新加载"
-                        icon={<i className="ri-line-chart-line" />}
+                        icon={<JadeIcon name="warning" size="1em" />}
                         size="sm"
                         title="趋势数据暂不可用"
                       />
                     ) : !hasTrendData ? (
                       <EmptyState
                         className="analytics-chart-empty"
-                        icon={<i className="ri-line-chart-line" />}
+                        scene={<EmptyScene name="trend-empty" size="compact" />}
                         size="sm"
                         title="本期暂无回款趋势"
                       />
@@ -626,14 +853,14 @@ export default function AnalyticsView() {
                         action={retryAction}
                         className="analytics-chart-empty"
                         description="请检查连接后重新加载"
-                        icon={<i className="ri-donut-chart-line" />}
+                        icon={<JadeIcon name="warning" size="1em" />}
                         size="sm"
                         title="收款结构暂不可用"
                       />
                     ) : !hasStructureData ? (
                       <EmptyState
                         className="analytics-chart-empty"
-                        icon={<i className="ri-donut-chart-line" />}
+                        scene={<EmptyScene name="structure-empty" size="compact" />}
                         size="sm"
                         title="本期暂无收款结构"
                       />

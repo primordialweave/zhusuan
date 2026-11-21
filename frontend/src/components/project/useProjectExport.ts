@@ -26,6 +26,11 @@ const loadLabels = async (): Promise<ProjectExportLabels> => {
   return { method, stage, type }
 }
 
+export interface SavedProjectExportEvent {
+  eventKey: number
+  projectId: number
+}
+
 /**
  * Exports one project with its payment plan as a CSV. Pass the payments when the page already
  * has them; otherwise they are fetched first.
@@ -34,6 +39,7 @@ export function useProjectExport() {
   const toastError = useToastStore((state) => state.error)
   const toastSuccess = useToastStore((state) => state.success)
   const [exportingId, setExportingId] = useState<number | null>(null)
+  const [lastSavedExport, setLastSavedExport] = useState<SavedProjectExportEvent | null>(null)
 
   const exportProject = useCallback(
     async (project: Project, knownPayments?: Payment[]) => {
@@ -48,7 +54,13 @@ export function useProjectExport() {
           projectExportFilename(project),
           buildProjectExportRows(project, payments, labels),
         )
-        if (result.status === 'saved') toastSuccess('项目已导出')
+        if (result.status === 'saved') {
+          toastSuccess('项目已导出')
+          setLastSavedExport((current) => ({
+            eventKey: (current?.eventKey ?? 0) + 1,
+            projectId: project.id,
+          }))
+        }
       } catch {
         toastError('导出失败，请重试')
       } finally {
@@ -58,5 +70,5 @@ export function useProjectExport() {
     [toastError, toastSuccess],
   )
 
-  return { exportProject, exportingId }
+  return { exportProject, exportingId, lastSavedExport }
 }

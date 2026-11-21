@@ -25,6 +25,7 @@ import {
   FormSection,
   IconButton,
   Input,
+  JadeIcon,
   PageHeader,
   ProgressBar,
   Select,
@@ -359,7 +360,7 @@ export default function ProjectCreateView() {
       <PageHeader
         leading={
           <IconButton label="返回上一页" onClick={() => navigate(-1)} variant="ghost">
-            <i aria-hidden="true" className="ri-arrow-left-line" />
+            <JadeIcon motionPreset="interactive" name="arrow-left" size="1em" />
           </IconButton>
         }
         title={isEdit ? '编辑项目' : '创建项目'}
@@ -368,7 +369,7 @@ export default function ProjectCreateView() {
       {isEdit && loadErrorProjectId === projectId ? (
         <EmptyState
           action={<Button onClick={() => void loadProject(projectId)}>重试</Button>}
-          icon={<i className="ri-error-warning-line" />}
+          icon={<JadeIcon name="warning" size="1em" />}
           role="alert"
           title="项目详情加载失败"
         />
@@ -634,10 +635,7 @@ export default function ProjectCreateView() {
 
               <div className="project-plan-check" data-state={planState}>
                 <Surface padding="none" radius="control" tone="accent" variant="inset">
-                  <i
-                    aria-hidden="true"
-                    className={planAligned ? 'ri-check-line' : 'ri-scales-3-line'}
-                  />
+                  <JadeIcon name={planAligned ? 'check' : 'scales'} size="1em" />
                 </Surface>
                 <div className="project-plan-check__content">
                   <span>计划金额</span>
@@ -656,7 +654,7 @@ export default function ProjectCreateView() {
             </Card.Root>
 
             <p className="project-form-aside__note">
-              <i aria-hidden="true" className="ri-shield-check-line" />
+              <JadeIcon name="shield-check" size={16} tone="success" />
               保存后将同步生成项目台账与收款跟踪记录
             </p>
           </aside>

@@ -1,4 +1,12 @@
-import { forwardRef, type ButtonHTMLAttributes, type ReactNode } from 'react'
+import {
+  forwardRef,
+  useRef,
+  type ButtonHTMLAttributes,
+  type MouseEventHandler,
+  type PointerEventHandler,
+  type ReactNode,
+} from 'react'
+import { triggerButtonIconPulse, triggerButtonRipple } from './buttonMotion'
 
 export type ButtonVariant =
   | 'primary'
@@ -32,6 +40,8 @@ export const Button = forwardRef<HTMLButtonElement, ButtonProps>(function Button
     className,
     disabled,
     fullWidth = false,
+    onClick,
+    onPointerDown,
     pending = false,
     size = 'md',
     tone = 'neutral',
@@ -39,8 +49,39 @@ export const Button = forwardRef<HTMLButtonElement, ButtonProps>(function Button
     variant = 'primary',
     ...props
   },
-  ref,
+  forwardedRef,
 ) {
+  const buttonRef = useRef<HTMLButtonElement | null>(null)
+  const rippleRef = useRef<HTMLSpanElement | null>(null)
+  const inactive = Boolean(disabled || pending)
+  const interactiveSurface = variant !== 'bare'
+
+  const setButtonRef = (node: HTMLButtonElement | null) => {
+    buttonRef.current = node
+    if (typeof forwardedRef === 'function') {
+      forwardedRef(node)
+    } else if (forwardedRef) {
+      forwardedRef.current = node
+    }
+  }
+
+  const handlePointerDown: PointerEventHandler<HTMLButtonElement> = (event) => {
+    if (!inactive && interactiveSurface && event.button === 0) {
+      triggerButtonRipple(buttonRef.current, rippleRef.current, event.clientX, event.clientY)
+    }
+    onPointerDown?.(event)
+  }
+
+  const handleClick: MouseEventHandler<HTMLButtonElement> = (event) => {
+    if (!inactive && interactiveSurface) {
+      if (event.detail === 0) {
+        triggerButtonRipple(buttonRef.current, rippleRef.current)
+      }
+      triggerButtonIconPulse(buttonRef.current)
+    }
+    onClick?.(event)
+  }
+
   return (
     <button
       {...props}
@@ -53,10 +94,15 @@ export const Button = forwardRef<HTMLButtonElement, ButtonProps>(function Button
       data-slot="button"
       data-tone={tone}
       data-variant={variant}
-      disabled={disabled || pending}
-      ref={ref}
+      disabled={inactive}
+      onClick={handleClick}
+      onPointerDown={handlePointerDown}
+      ref={setButtonRef}
       type={type}
     >
+      {interactiveSurface ? (
+        <span aria-hidden="true" className="ods-button__ripple" ref={rippleRef} />
+      ) : null}
       {children}
     </button>
   )

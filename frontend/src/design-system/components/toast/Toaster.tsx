@@ -1,12 +1,13 @@
 import { useSyncExternalStore } from 'react'
 import { createPortal } from 'react-dom'
+import { JadeIcon, type JadeIconName } from '../icon'
 import { dismissToast, getToasts, subscribeToasts, type ToastTone } from './toastStore'
 
-const ICON_BY_TONE: Record<ToastTone, string> = {
-  success: 'ri-checkbox-circle-fill',
-  error: 'ri-close-circle-fill',
-  warning: 'ri-error-warning-fill',
-  info: 'ri-information-fill',
+const ICON_BY_TONE: Record<ToastTone, JadeIconName> = {
+  success: 'check-circle',
+  error: 'close-circle',
+  warning: 'warning',
+  info: 'info',
 }
 
 export interface ToasterProps {
@@ -31,7 +32,7 @@ export function Toaster({ dismissLabel = '点击关闭' }: ToasterProps) {
           type="button"
         >
           <span aria-hidden="true" className="ods-toast__icon" data-slot="icon">
-            <i className={ICON_BY_TONE[item.tone]} />
+            <JadeIcon name={ICON_BY_TONE[item.tone]} size="1em" />
           </span>
           <span className="ods-toast__message" data-slot="message">
             {item.message}

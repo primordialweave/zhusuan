@@ -2,6 +2,7 @@ import { screen } from '@testing-library/react'
 import { describe, expect, it } from 'vitest'
 import { render } from '@/test/render'
 import { DataList } from './DataList'
+import { JadeIcon } from '../../components/icon'
 import dataListCss from './data-list.css?raw'
 
 describe('DataList', () => {
@@ -11,7 +12,7 @@ describe('DataList', () => {
         <DataList.Item>
           <DataList.Link
             density="comfortable"
-            icon={<i className="ri-arrow-right-s-line" />}
+            icon={<JadeIcon name="chevron-right" size="1em" />}
             markerTone="danger"
             to="/projects/42"
           >

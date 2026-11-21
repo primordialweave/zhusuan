@@ -19,6 +19,7 @@
 @import './components/drawer/drawer.css';
 @import './components/empty-state/empty-state.css';
 @import './components/field/field.css';
+@import './components/icon/icon.css';
 @import './components/image/image.css';
 @import './components/input/input.css';
 @import './components/input-otp/input-otp.css';

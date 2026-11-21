@@ -132,4 +132,80 @@ describe('DictionaryManagement request integrity', () => {
       await createRequest.promise
     })
   })
+
+  it('shows a category load error instead of a fake empty state when dictionary list fails and recovers on retry', async () => {
+    const user = userEvent.setup()
+    vi.mocked(dictionaryApi.list)
+      .mockRejectedValueOnce(new Error('categories unavailable'))
+      .mockResolvedValueOnce(response(dictionaries) as never)
+    vi.mocked(dictionaryApi.getItems).mockResolvedValueOnce(
+      response([dictionaryItem(3, 1, '咨询服务')]) as never,
+    )
+
+    render(<DictionaryManagement />)
+
+    expect(await screen.findByRole('alert')).toHaveTextContent('字典分类加载失败')
+    expect(screen.queryByText('字典还没有条目')).not.toBeInTheDocument()
+    expect(screen.getByRole('button', { name: '新增条目' })).toBeDisabled()
+
+    await user.click(screen.getByRole('button', { name: '重新加载' }))
+    expect(await screen.findByRole('row', { name: /咨询服务/ })).toBeInTheDocument()
+  })
+
+  it('shows a scope-specific error without leaking old rows when switching to a failing dictionary', async () => {
+    const user = userEvent.setup()
+    vi.mocked(dictionaryApi.getItems)
+      .mockReset()
+      .mockResolvedValueOnce(response([dictionaryItem(1, 1, '软件项目')]) as never)
+      .mockRejectedValueOnce(new Error('stage items failed'))
+      .mockResolvedValueOnce(response([dictionaryItem(2, 2, '首付款')]) as never)
+
+    render(<DictionaryManagement />)
+
+    expect(await screen.findByRole('row', { name: /软件项目/ })).toBeInTheDocument()
+    await user.click(screen.getByRole('tab', { name: /收款阶段/ }))
+
+    expect(await screen.findByRole('alert')).toHaveTextContent('收款阶段条目加载失败')
+    expect(screen.queryByText('软件项目')).not.toBeInTheDocument()
+    expect(screen.queryByText('收款阶段还没有条目')).not.toBeInTheDocument()
+
+    await user.click(screen.getByRole('button', { name: '重试' }))
+    expect(await screen.findByRole('row', { name: /首付款/ })).toBeInTheDocument()
+  })
+
+  it('preserves loaded rows when a same-scope refresh fails after saving', async () => {
+    const user = userEvent.setup()
+    vi.mocked(dictionaryApi.getItems)
+      .mockReset()
+      .mockResolvedValueOnce(response([dictionaryItem(1, 1, '软件项目')]) as never)
+      .mockRejectedValueOnce(new Error('refresh failed'))
+    vi.mocked(dictionaryApi.createItem).mockResolvedValueOnce(undefined as never)
+
+    render(<DictionaryManagement />)
+
+    expect(await screen.findByRole('row', { name: /软件项目/ })).toBeInTheDocument()
+    await user.click(screen.getByRole('button', { name: /新增条目/ }))
+    await user.type(screen.getByLabelText('名称 (Label)'), '新分类')
+    await user.type(screen.getByLabelText('值 (Value)'), 'new-cat')
+    await user.click(screen.getByRole('button', { name: '保存' }))
+
+    await waitFor(() => expect(dictionaryApi.getItems).toHaveBeenCalledTimes(2))
+    expect(screen.getByRole('row', { name: /软件项目/ })).toBeInTheDocument()
+    expect(screen.queryByText('项目类型条目加载失败')).not.toBeInTheDocument()
+  })
+
+  it('uses distinct row button hierarchy for edit and delete dictionary actions', async () => {
+    vi.mocked(dictionaryApi.getItems).mockResolvedValueOnce(
+      response([dictionaryItem(1, 1, '软件项目')]) as never,
+    )
+    render(<DictionaryManagement />)
+    expect(await screen.findByRole('row', { name: /软件项目/ })).toBeInTheDocument()
+
+    const editButton = screen.getByRole('button', { name: '编辑字典条目' })
+    const deleteButton = screen.getByRole('button', { name: '删除字典条目' })
+
+    expect(editButton).toHaveAttribute('data-variant', 'tertiary')
+    expect(deleteButton).toHaveAttribute('data-variant', 'tertiary')
+    expect(deleteButton).toHaveAttribute('data-tone', 'danger')
+  })
 })

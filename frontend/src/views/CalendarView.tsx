@@ -7,7 +7,9 @@ import {
   Button,
   Calendar,
   Chip,
+  EmptyScene,
   EmptyState,
+  JadeIcon,
   PageHeader,
   RouterLink,
   Skeleton,
@@ -320,13 +322,13 @@ export default function CalendarView() {
                       重试
                     </Button>
                   }
-                  icon={<i className="ri-wifi-off-line" />}
+                  icon={<JadeIcon name="wifi-off" size="1em" />}
                   size="sm"
                   title="收款计划暂时不可用"
                 />
               ) : selectedDatePayments.length === 0 ? (
                 <EmptyState
-                  icon={<i className="ri-calendar-check-line" />}
+                  scene={<EmptyScene name="calendar-empty" size="compact" />}
                   size="sm"
                   title="该日无收款计划"
                 />

@@ -12,6 +12,7 @@ import {
   type ReactNode,
   type Ref,
 } from 'react'
+import { JadeIcon } from '../icon'
 
 interface ListboxContextValue {
   activeValue: string | null
@@ -187,7 +188,7 @@ export const ListboxItem = forwardRef<HTMLLIElement, ListboxItemProps>(function 
         {description ? <span className="ods-listbox__description">{description}</span> : null}
       </span>
       <span aria-hidden="true" className="ods-listbox__check" data-slot="check">
-        ✓
+        <JadeIcon name="check" size="1em" />
       </span>
     </li>
   )

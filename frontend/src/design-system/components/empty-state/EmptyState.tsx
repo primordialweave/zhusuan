@@ -1,4 +1,5 @@
 import { forwardRef, type HTMLAttributes, type ReactNode } from 'react'
+import { JadeIcon } from '../icon'
 
 export interface EmptyStateProps extends Omit<
   HTMLAttributes<HTMLDivElement>,
@@ -8,11 +9,13 @@ export interface EmptyStateProps extends Omit<
   description?: ReactNode
   headingLevel?: 2 | 3 | 4
   icon?: ReactNode
+  /** Brand empty-state illustration; replaces the default badge-backed icon slot. */
+  scene?: ReactNode
   size?: 'lg' | 'md' | 'sm'
   title: ReactNode
 }
 
-const defaultIcon = <i className="ri-inbox-2-line" />
+const defaultIcon = <JadeIcon name="inbox" size="1em" />
 
 export const EmptyState = forwardRef<HTMLDivElement, EmptyStateProps>(function EmptyState(
   {
@@ -21,6 +24,7 @@ export const EmptyState = forwardRef<HTMLDivElement, EmptyStateProps>(function E
     description,
     headingLevel = 3,
     icon = defaultIcon,
+    scene,
     size = 'md',
     title,
     ...props
@@ -33,11 +37,16 @@ export const EmptyState = forwardRef<HTMLDivElement, EmptyStateProps>(function E
     <div
       {...props}
       className={['ods-empty-state', className].filter(Boolean).join(' ')}
+      data-presentation={scene ? 'scene' : 'icon'}
       data-size={size}
       data-slot="empty-state"
       ref={ref}
     >
-      {icon ? (
+      {scene ? (
+        <span aria-hidden="true" className="ods-empty-state__scene" data-slot="scene">
+          {scene}
+        </span>
+      ) : icon ? (
         <span aria-hidden="true" className="ods-empty-state__icon" data-slot="icon">
           {icon}
         </span>

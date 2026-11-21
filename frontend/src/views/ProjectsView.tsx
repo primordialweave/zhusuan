@@ -7,8 +7,10 @@ import {
   AlertDialog,
   Button,
   Dropdown,
+  EmptyScene,
   EmptyState,
   IconButton,
+  JadeIcon,
   PaginationBar,
   PageHeader,
   ProgressBar,
@@ -203,7 +205,7 @@ export default function ProjectsView() {
               value={activeFilter}
             />
             <RouterButton to="/projects/create">
-              <i aria-hidden="true" className="ri-add-line" />
+              <JadeIcon name="add" size="1em" />
               <span>新建项目</span>
             </RouterButton>
           </>
@@ -252,11 +254,11 @@ export default function ProjectsView() {
                         size="sm"
                         variant="secondary"
                       >
-                        <i aria-hidden="true" className="ri-refresh-line" />
+                        <JadeIcon name="refresh" size="1em" />
                         重试
                       </Button>
                     }
-                    icon={<i className="ri-error-warning-line" />}
+                    icon={<JadeIcon name="warning" size="1em" />}
                     title="项目列表加载失败"
                     tone="danger"
                   >
@@ -333,7 +335,7 @@ export default function ProjectsView() {
                           onClick={(event) => event.stopPropagation()}
                           variant="ghost"
                         >
-                          <i aria-hidden="true" className="ri-more-fill" />
+                          <JadeIcon name="more" size="1em" />
                         </IconButton>
                       </Dropdown.Trigger>
                       <Dropdown.Menu
@@ -342,15 +344,13 @@ export default function ProjectsView() {
                       >
                         <Dropdown.Item
                           onSelect={() => navigate(`/projects/edit/${project.id}`)}
-                          startContent={<i aria-hidden="true" className="ri-edit-line" />}
+                          startContent={<JadeIcon name="edit" size="1em" />}
                         >
                           编辑项目
                         </Dropdown.Item>
                         <Dropdown.Item
                           onSelect={() => navigate(`/projects/${project.id}/payment/create`)}
-                          startContent={
-                            <i aria-hidden="true" className="ri-money-dollar-box-line" />
-                          }
+                          startContent={<JadeIcon name="currency" size="1em" />}
                         >
                           添加收款
                         </Dropdown.Item>
@@ -359,7 +359,7 @@ export default function ProjectsView() {
                             setActiveDropdownId(null)
                             void exportProject(project)
                           }}
-                          startContent={<i aria-hidden="true" className="ri-download-2-line" />}
+                          startContent={<JadeIcon name="download" size="1em" />}
                         >
                           导出项目
                         </Dropdown.Item>
@@ -368,7 +368,7 @@ export default function ProjectsView() {
                             setActiveDropdownId(null)
                             setConfirmation({ action: 'archive', projectId: project.id })
                           }}
-                          startContent={<i aria-hidden="true" className="ri-archive-line" />}
+                          startContent={<JadeIcon name="archive" size="1em" />}
                         >
                           归档项目
                         </Dropdown.Item>
@@ -377,7 +377,7 @@ export default function ProjectsView() {
                             setActiveDropdownId(null)
                             setConfirmation({ action: 'delete', projectId: project.id })
                           }}
-                          startContent={<i aria-hidden="true" className="ri-delete-bin-line" />}
+                          startContent={<JadeIcon name="trash" size="1em" />}
                           tone="danger"
                         >
                           删除项目
@@ -438,7 +438,12 @@ export default function ProjectsView() {
                         </RouterButton>
                       )
                     }
-                    icon={<i className="ri-folder-open-line" />}
+                    scene={
+                      <EmptyScene
+                        name={isFiltered ? 'search-empty' : 'projects-empty'}
+                        size={isFiltered ? 'standard' : 'hero'}
+                      />
+                    }
                     size="lg"
                     title={isFiltered ? '没有符合条件的项目' : '还没有项目'}
                   />

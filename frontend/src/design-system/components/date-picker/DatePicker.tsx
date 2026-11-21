@@ -3,6 +3,7 @@ import { forwardRef, useState } from 'react'
 import { Popover, usePopoverClose } from '../popover'
 import { Calendar } from '../calendar'
 import { useFieldControlProps } from '../field/fieldContext'
+import { JadeIcon } from '../icon'
 
 export type DatePickerSize = 'sm' | 'md' | 'lg'
 
@@ -100,7 +101,7 @@ export const DatePicker = forwardRef<HTMLButtonElement, DatePickerProps>(functio
           type="button"
         >
           <span aria-hidden="true" className="ods-date-picker__icon">
-            <i className="ri-calendar-line" />
+            <JadeIcon name="calendar" size="1em" />
           </span>
           <span className="ods-date-picker__value" data-placeholder={display ? undefined : ''}>
             {display || placeholder}

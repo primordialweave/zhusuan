@@ -41,11 +41,6 @@
   letter-spacing: 0.08em;
 }
 
-.not-found__footer i {
-  color: var(--ods-color-accent-text);
-  font-size: var(--ods-font-size-xl);
-}
-
 .not-found__footer span {
   padding-inline-start: var(--ods-space-3);
   border-inline-start: 1px solid var(--ods-color-border-strong);

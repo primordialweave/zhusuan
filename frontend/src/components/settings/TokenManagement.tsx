@@ -1,4 +1,4 @@
-import { useCallback, useEffect, useMemo, useState, type ReactNode } from 'react'
+import { useCallback, useEffect, useMemo, useRef, useState, type ReactNode } from 'react'
 import { tokenApi, type PersonalAccessToken } from '@/api/token'
 import { useConfirm } from '@/composables/useConfirm'
 import { useToastStore } from '@/composables/useToast'
@@ -6,11 +6,13 @@ import {
   Alert,
   Button,
   Chip,
+  EmptyScene,
   EmptyState,
   Field,
   FormActions,
   IconButton,
   Input,
+  JadeIcon,
   Modal,
   Radio,
   RadioGroup,
@@ -69,30 +71,54 @@ export default function TokenManagement({ actions }: TokenManagementProps) {
   const toastWarning = useToastStore((state) => state.warning)
   const [tokens, setTokens] = useState<PersonalAccessToken[]>([])
   const [loading, setLoading] = useState(true)
+  const [hasLoaded, setHasLoaded] = useState(false)
+  const [loadFailed, setLoadFailed] = useState(false)
   const [showCreateModal, setShowCreateModal] = useState(false)
   const [showSuccessModal, setShowSuccessModal] = useState(false)
   const [creating, setCreating] = useState(false)
   const [newTokenValue, setNewTokenValue] = useState('')
   const [createForm, setCreateForm] = useState({ expires_in: 30, name: '' })
+  const mountedRef = useRef(false)
+  const requestIdRef = useRef(0)
+  const hasLoadedRef = useRef(false)
 
   const activeTokens = useMemo(() => tokens.filter((token) => token.status === 1), [tokens])
   const revokedTokens = useMemo(() => tokens.filter((token) => token.status !== 1), [tokens])
+  const showingSkeleton = !hasLoaded && !loadFailed
+  const showLoadError = !hasLoaded && loadFailed
 
   const fetchTokens = useCallback(async () => {
+    const requestId = ++requestIdRef.current
     setLoading(true)
+    setLoadFailed(false)
     try {
       const response = await tokenApi.list()
+      if (!mountedRef.current || requestId !== requestIdRef.current) return
       setTokens(response.data.data)
+      hasLoadedRef.current = true
+      setHasLoaded(true)
+      setLoadFailed(false)
     } catch {
+      if (!mountedRef.current || requestId !== requestIdRef.current) return
       toastError('获取令牌列表失败')
+      if (!hasLoadedRef.current) {
+        setLoadFailed(true)
+      }
     } finally {
-      setLoading(false)
+      if (mountedRef.current && requestId === requestIdRef.current) {
+        setLoading(false)
+      }
     }
   }, [toastError])
 
   useEffect(() => {
+    mountedRef.current = true
     const timer = window.setTimeout(fetchTokens, 0)
-    return () => window.clearTimeout(timer)
+    return () => {
+      mountedRef.current = false
+      requestIdRef.current += 1
+      window.clearTimeout(timer)
+    }
   }, [fetchTokens])
 
   const openCreateModal = () => {
@@ -113,15 +139,20 @@ export default function TokenManagement({ actions }: TokenManagementProps) {
         expires_in: createForm.expires_in,
         name: createForm.name.trim(),
       })
+      if (!mountedRef.current) return
       setNewTokenValue(response.data.data.token)
       setShowCreateModal(false)
       setShowSuccessModal(true)
       toastSuccess('令牌生成成功')
+      if (tokens.length === 0) {
+        hasLoadedRef.current = false
+        setHasLoaded(false)
+      }
       await fetchTokens()
     } catch {
-      toastError('创建失败')
+      if (mountedRef.current) toastError('创建失败')
     } finally {
-      setCreating(false)
+      if (mountedRef.current) setCreating(false)
     }
   }
 
@@ -168,19 +199,33 @@ export default function TokenManagement({ actions }: TokenManagementProps) {
         <div className="settings-toolbar__actions">
           {actions}
           <Button onClick={openCreateModal}>
-            <i aria-hidden="true" className="ri-add-line" />
+            <JadeIcon name="add" size="1em" />
             <span>生成新令牌</span>
           </Button>
         </div>
       </div>
 
-      {loading && tokens.length === 0 ? (
+      {showingSkeleton ? (
         <SettingsTableSkeleton columns={6} label="正在加载令牌列表" />
+      ) : showLoadError ? (
+        <EmptyState
+          action={
+            <Button onClick={() => void fetchTokens()} variant="secondary">
+              重新加载
+            </Button>
+          }
+          className="settings-empty"
+          description="暂时无法读取访问令牌列表，请重试。"
+          icon={<JadeIcon name="warning" size="1em" />}
+          role="alert"
+          size="lg"
+          title="令牌列表加载失败"
+        />
       ) : tokens.length === 0 ? (
         <EmptyState
           className="settings-empty"
           description="个人访问令牌 (PAT) 用于 API 认证"
-          icon={<i className="ri-key-2-line" />}
+          scene={<EmptyScene name="tokens-empty" size="standard" />}
           size="lg"
           title="暂无访问令牌"
         />
@@ -233,9 +278,9 @@ export default function TokenManagement({ actions }: TokenManagementProps) {
                           onClick={() => void handleRevoke(token)}
                           size="sm"
                           title="撤销"
-                          variant="ghost"
+                          variant="secondary"
                         >
-                          <i className="ri-forbid-line" />
+                          <JadeIcon name="forbid" size="1em" />
                         </IconButton>
                       ) : null}
                       <IconButton
@@ -244,9 +289,9 @@ export default function TokenManagement({ actions }: TokenManagementProps) {
                         size="sm"
                         title={active ? '删除' : '彻底删除'}
                         tone="danger"
-                        variant="ghost"
+                        variant="tertiary"
                       >
-                        <i className="ri-delete-bin-line" />
+                        <JadeIcon name="trash" size="1em" />
                       </IconButton>
                     </div>
                   </Table.Cell>
@@ -328,7 +373,7 @@ export default function TokenManagement({ actions }: TokenManagementProps) {
         <Modal.Header>令牌生成成功</Modal.Header>
         <Modal.Body className="settings-modal-body">
           <Alert
-            icon={<i className="ri-shield-keyhole-line" />}
+            icon={<JadeIcon name="shield" size="1em" />}
             title="请立即保存您的令牌"
             tone="success"
           />
@@ -353,11 +398,11 @@ export default function TokenManagement({ actions }: TokenManagementProps) {
 
           <div className="dev-security-tips">
             <div className="dev-tip">
-              <i className="ri-lock-line" />
+              <JadeIcon name="lock" size="1em" />
               <span>不要分享或公开您的令牌</span>
             </div>
             <div className="dev-tip">
-              <i className="ri-shield-star-line" />
+              <JadeIcon name="shield-star" size="1em" />
               <span>建议存储在密码管理器中</span>
             </div>
           </div>
@@ -370,7 +415,7 @@ export default function TokenManagement({ actions }: TokenManagementProps) {
               setNewTokenValue('')
             }}
           >
-            <i className="ri-check-line" />
+            <JadeIcon name="check" size="1em" />
             <span>我已保存</span>
           </Button>
         </Modal.Footer>

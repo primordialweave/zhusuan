@@ -1,3 +1,4 @@
+import { useId } from 'react'
 import { Button, Skeleton, Surface } from '@/design-system'
 import { formatAmount } from '@/utils/format'
 import { PAYMENT_SUMMARY_SCOPES, type PaymentSummaryScope } from './paymentSummaryScope'
@@ -30,6 +31,7 @@ const SLICE_RADIUS = PIE_RADIUS / 2
 const SLICE_CIRCUMFERENCE = 2 * Math.PI * SLICE_RADIUS
 
 function SummaryPie({ paid, pending }: { paid: number; pending: number }) {
+  const uid = useId().replace(/[^a-zA-Z0-9_-]/g, '')
   // Negative amounts carry accounting meaning in the text; they never draw a negative slice.
   const paidPart = Math.max(0, paid)
   const pendingPart = Math.max(0, pending)
@@ -39,9 +41,51 @@ function SummaryPie({ paid, pending }: { paid: number; pending: number }) {
     total > 0
       ? `已收 ${Math.round(paidShare * 100)}%，待收 ${100 - Math.round(paidShare * 100)}%`
       : '暂无收款数据'
+  const domeVolumeId = `summary-pie-volume-${uid}`
+  const bounceId = `summary-pie-bounce-${uid}`
+  const catchlightId = `summary-pie-catchlight-${uid}`
+  const rimId = `summary-pie-rim-${uid}`
 
   return (
-    <svg aria-label={label} className="payment-summary__pie" role="img" viewBox="0 0 32 32">
+    <svg
+      aria-label={label}
+      className="payment-summary__pie payment-summary__pie-svg"
+      role="img"
+      viewBox="0 0 32 32"
+    >
+      <defs>
+        {/* Convex jade cabochon volume: sunlit dome curving into rich outer rim occlusion. */}
+        <radialGradient cx="37%" cy="30%" id={domeVolumeId} r="68%">
+          <stop className="payment-summary__highlight-stop" offset="0%" stopOpacity="0.46" />
+          <stop className="payment-summary__highlight-stop" offset="38%" stopOpacity="0.08" />
+          <stop className="payment-summary__rim-stop" offset="74%" stopOpacity="0.06" />
+          <stop className="payment-summary__rim-stop" offset="100%" stopOpacity="0.44" />
+        </radialGradient>
+        {/* Bottom-right translucent subsurface bounce matching the jade beads beside it. */}
+        <radialGradient cx="65%" cy="84%" id={bounceId} r="48%">
+          <stop className="payment-summary__bounce-stop" offset="0%" stopOpacity="0.48" />
+          <stop className="payment-summary__bounce-stop" offset="60%" stopOpacity="0.12" />
+          <stop className="payment-summary__bounce-stop" offset="100%" stopOpacity="0" />
+        </radialGradient>
+        {/* Crisp upper-left pearl-jade specular catchlight. */}
+        <radialGradient cx="50%" cy="50%" id={catchlightId} r="50%">
+          <stop className="payment-summary__highlight-stop" offset="0%" stopOpacity="0.88" />
+          <stop className="payment-summary__highlight-stop" offset="56%" stopOpacity="0.24" />
+          <stop className="payment-summary__highlight-stop" offset="100%" stopOpacity="0" />
+        </radialGradient>
+        <linearGradient
+          gradientUnits="userSpaceOnUse"
+          id={rimId}
+          x1="2"
+          x2="23"
+          y1="12"
+          y2="2"
+        >
+          <stop className="payment-summary__highlight-stop" offset="0%" stopOpacity="0" />
+          <stop className="payment-summary__highlight-stop" offset="50%" stopOpacity="0.68" />
+          <stop className="payment-summary__highlight-stop" offset="100%" stopOpacity="0" />
+        </linearGradient>
+      </defs>
       <circle
         cx={PIE_RADIUS}
         cy={PIE_RADIUS}
@@ -56,6 +100,41 @@ function SummaryPie({ paid, pending }: { paid: number; pending: number }) {
         strokeDasharray={`${(paidShare * SLICE_CIRCUMFERENCE).toFixed(3)} ${SLICE_CIRCUMFERENCE.toFixed(3)}`}
         transform={`rotate(-90 ${PIE_RADIUS} ${PIE_RADIUS})`}
       />
+      {total > 0 ? (
+        <>
+          <path
+            aria-hidden="true"
+            className="payment-summary__glaze"
+            d="M16 0 A16 16 0 1 1 16 32 A16 16 0 1 1 16 0 Z"
+            fill={`url(#${domeVolumeId})`}
+          />
+          <path
+            aria-hidden="true"
+            className="payment-summary__glaze"
+            d="M16 0 A16 16 0 1 1 16 32 A16 16 0 1 1 16 0 Z"
+            fill={`url(#${bounceId})`}
+          />
+          <ellipse
+            aria-hidden="true"
+            className="payment-summary__glaze"
+            cx="10.8"
+            cy="8.1"
+            fill={`url(#${catchlightId})`}
+            rx="4.6"
+            ry="2.5"
+            transform="rotate(-28 10.8 8.1)"
+          />
+          <path
+            aria-hidden="true"
+            className="payment-summary__glaze"
+            d="M1.41 12.09 A15.1 15.1 0 0 1 22.38 2.31"
+            fill="none"
+            stroke={`url(#${rimId})`}
+            strokeLinecap="round"
+            strokeWidth="1.1"
+          />
+        </>
+      ) : null}
     </svg>
   )
 }

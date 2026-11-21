@@ -19,6 +19,7 @@ import {
   Field,
   FormActions,
   IconButton,
+  JadeIcon,
   PageHeader,
   Skeleton,
 } from '@/design-system'
@@ -215,7 +216,7 @@ export default function PaymentCreateView() {
         description={routeProjectId ? currentProject?.name : undefined}
         leading={
           <IconButton label="返回上一页" onClick={() => navigate(-1)} variant="ghost">
-            <i aria-hidden="true" className="ri-arrow-left-line" />
+            <JadeIcon motionPreset="interactive" name="arrow-left" size="1em" />
           </IconButton>
         }
         title="创建收款计划"
@@ -223,9 +224,10 @@ export default function PaymentCreateView() {
 
       {projectLoadFailed ? (
         <EmptyState
-          title="所属项目加载失败"
-          role="alert"
           action={<Button onClick={() => void loadProjects()}>重试</Button>}
+          icon={<JadeIcon name="warning" size="1em" />}
+          role="alert"
+          title="所属项目加载失败"
         />
       ) : null}
       {saveIssue ? (

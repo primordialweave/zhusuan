@@ -6,7 +6,6 @@ import './styles/login.css'
 import './styles/design-showcase.css'
 // ODS owns tokens, foundations, components, and patterns; Tailwind is loaded once by main.css.
 import './design-system/styles.css'
-import 'remixicon/fonts/remixicon.css'
 
 import '@fontsource/jetbrains-mono/400.css'
 import '@fontsource/jetbrains-mono/500.css'
