@@ -56,6 +56,7 @@ const emptyStats: DashboardStats = {
   overdue_amount: 0,
   overdue_trend: 0,
   paid_amount: 0,
+  planned_received_amount: 0,
   paid_trend: 0,
   pending_amount: 0,
   pending_trend: 0,
@@ -163,10 +164,11 @@ export default function AnalyticsView() {
     }
   }, [])
 
-  // Overdue is part of pending; the structure shows received against everything still due.
+  // The rate and structure follow the same planned cohort, including receipts outside this period.
+  // Actual cash receipts remain in paid_amount and in the trend's actual_values.
   const pendingAmount = Math.max(0, stats.pending_amount)
   const overdueAmount = Math.max(0, stats.overdue_amount)
-  const paidAmount = Math.max(0, stats.paid_amount)
+  const plannedReceivedAmount = Math.max(0, stats.planned_received_amount)
 
   const hasTrendData = useMemo(
     () =>
@@ -175,7 +177,7 @@ export default function AnalyticsView() {
     [trend.actual_values, trend.expected_values],
   )
 
-  const hasStructureData = paidAmount + pendingAmount > 0
+  const hasStructureData = plannedReceivedAmount + pendingAmount > 0
 
   const periodName =
     activePeriod === 'custom' ? calendarName(calendar) : getPeriodLabel(activePeriod)
@@ -380,7 +382,7 @@ export default function AnalyticsView() {
   const metrics = [
     { label: '平均到账偏差', value: getCollectionTimingLabel(stats.avg_collection_days) },
     { label: '预期收款', value: formatAmount(stats.total_amount) },
-    { label: '收款率', value: formatShare(stats.paid_amount, stats.total_amount) },
+    { label: '收款率', value: formatShare(stats.planned_received_amount, stats.total_amount) },
     { label: '逾期比例', value: formatShare(stats.overdue_amount, stats.total_amount) },
   ]
 
@@ -411,10 +413,11 @@ export default function AnalyticsView() {
       ['日期范围', rangeLabel],
       ['平均到账偏差（天，提前为负）', stats.avg_collection_days],
       ['应收金额', stats.total_amount],
-      ['已收金额', stats.paid_amount],
+      ['本期计划已收金额', stats.planned_received_amount],
+      ['本期实际到账金额', stats.paid_amount],
       ['待收未逾期金额', Math.max(0, stats.pending_amount - stats.overdue_amount)],
       ['逾期金额', stats.overdue_amount],
-      ['收款率', formatShare(stats.paid_amount, stats.total_amount)],
+      ['收款率', formatShare(stats.planned_received_amount, stats.total_amount)],
       ['逾期比例', formatShare(stats.overdue_amount, stats.total_amount)],
       [],
       ['趋势周期', '实际收款', '预期收款'],
@@ -456,6 +459,7 @@ export default function AnalyticsView() {
               <div className="analytics-calendar">
                 <Select
                   aria-label="统计年份"
+                  clearable={false}
                   onValueChange={(value) => chooseCalendar({ year: Number(value) })}
                   options={yearOptions}
                   value={String(calendar.year)}
@@ -463,6 +467,7 @@ export default function AnalyticsView() {
                 />
                 <Select
                   aria-label="统计月份"
+                  clearable={false}
                   onValueChange={(value) => chooseCalendar({ month: Number(value) })}
                   options={monthOptions}
                   value={String(calendar.month)}
@@ -602,10 +607,19 @@ export default function AnalyticsView() {
                     {isLoading ? (
                       <div
                         aria-label="收款结构加载中"
-                        className="analytics-chart-state"
+                        className="analytics-chart-state analytics-structure"
                         role="status"
                       >
-                        <Skeleton height="100%" width="100%" />
+                        <Skeleton className="analytics-loading-donut" shape="ring" />
+                        <div className="analytics-loading-legend">
+                          {[0, 1].map((row) => (
+                            <div className="analytics-loading-legend-row" key={row}>
+                              <Skeleton height="0.875rem" shape="circle" width="0.875rem" />
+                              <Skeleton height="1rem" width="4rem" />
+                              <Skeleton height="1rem" width="5rem" />
+                            </div>
+                          ))}
+                        </div>
                       </div>
                     ) : loadError ? (
                       <EmptyState
@@ -625,11 +639,11 @@ export default function AnalyticsView() {
                       />
                     ) : (
                       <div className="analytics-structure">
-                        <StructureDonut paid={paidAmount} pending={pendingAmount} />
+                        <StructureDonut paid={plannedReceivedAmount} pending={pendingAmount} />
                         <dl className="analytics-structure__legend">
                           <div className="analytics-structure__row" data-part="paid">
                             <dt>已收款</dt>
-                            <dd>{formatAmount(stats.paid_amount)}</dd>
+                            <dd>{formatAmount(stats.planned_received_amount)}</dd>
                           </div>
                           <div className="analytics-structure__row" data-part="pending">
                             <dt>待收款</dt>

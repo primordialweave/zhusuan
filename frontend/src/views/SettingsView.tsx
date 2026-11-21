@@ -1,11 +1,13 @@
-import { useEffect, useId, useMemo, useRef, useState } from 'react'
+import { useCallback, useEffect, useId, useMemo, useRef, useState } from 'react'
 import { useNavigate, useSearchParams } from 'react-router-dom'
 import { Browser } from '@wailsio/runtime'
 import type { User } from '@/api/auth'
+import { DEFAULT_APP_SLOGAN, DEFAULT_WECHAT_PUBLIC_ACCOUNT, systemApi } from '@/api/system'
 import DataSyncPanel from '@/components/settings/DataSyncPanel'
 import DictionaryManagement from '@/components/settings/DictionaryManagement'
 import NotificationManagement from '@/components/settings/NotificationManagement'
 import SettingsGroup from '@/components/settings/SettingsGroup'
+import { SettingsFormSkeleton } from '@/components/settings/SettingsSkeleton'
 import TokenManagement from '@/components/settings/TokenManagement'
 import UserManagement from '@/components/settings/UserManagement'
 import { useConfirm } from '@/composables/useConfirm'
@@ -14,6 +16,7 @@ import {
   Avatar,
   Button,
   Chip,
+  EmptyState,
   Field,
   FormGrid,
   Image,
@@ -23,6 +26,7 @@ import {
   Radio,
   RadioGroup,
   RouterButton,
+  Skeleton,
   Switch,
   Tabs,
 } from '@/design-system'
@@ -135,12 +139,55 @@ export default function SettingsView() {
   })
   const [checkingUpdate, setCheckingUpdate] = useState(false)
   const [appVersion, setAppVersion] = useState(pkg.version)
+  const [appSlogan, setAppSlogan] = useState(DEFAULT_APP_SLOGAN)
+  const [brandingLoaded, setBrandingLoaded] = useState(false)
+  const [profileLoaded, setProfileLoaded] = useState(Boolean(user))
+  const [updaterStatusLoaded, setUpdaterStatusLoaded] = useState(() => !appUpdater.isAvailable())
+  const [wechatPublicAccount, setWechatPublicAccount] = useState(DEFAULT_WECHAT_PUBLIC_ACCOUNT)
   const [updateStatus, setUpdateStatus] = useState<UpdateStatus | null>(null)
   const [updating, setUpdating] = useState(false)
   const [cancellingUpdate, setCancellingUpdate] = useState(false)
   const mountedRef = useRef(false)
   const updateRequestRef = useRef(false)
   const updateGenerationRef = useRef(0)
+  const profileLoadGenerationRef = useRef(0)
+
+  const loadProfile = useCallback(async () => {
+    const generation = ++profileLoadGenerationRef.current
+    setProfileLoaded(false)
+    try {
+      await refreshUser()
+    } catch {
+      // A missing user after this attempt is presented as a retryable loading failure.
+    } finally {
+      if (mountedRef.current && generation === profileLoadGenerationRef.current) {
+        setProfileLoaded(true)
+      }
+    }
+  }, [refreshUser])
+
+  useEffect(() => {
+    if (searchParams.get('tab') !== 'about') return
+    let active = true
+    void systemApi
+      .info()
+      .then(({ data }) => {
+        if (!active) return
+        setAppSlogan(data.data.slogan?.trim() || DEFAULT_APP_SLOGAN)
+        setWechatPublicAccount(
+          data.data.wechat_public_account?.trim() || DEFAULT_WECHAT_PUBLIC_ACCOUNT,
+        )
+      })
+      .catch(() => {
+        // The default stays useful when older backends do not expose branding yet.
+      })
+      .finally(() => {
+        if (active) setBrandingLoaded(true)
+      })
+    return () => {
+      active = false
+    }
+  }, [searchParams])
 
   useEffect(() => {
     mountedRef.current = true
@@ -165,6 +212,9 @@ export default function SettingsView() {
       })
       .catch(() => {
         // The normal check action reports service failures; restoring old progress is optional.
+      })
+      .finally(() => {
+        if (active && generation === updateGenerationRef.current) setUpdaterStatusLoaded(true)
       })
     return () => {
       active = false
@@ -221,10 +271,13 @@ export default function SettingsView() {
 
   useEffect(() => {
     const timer = window.setTimeout(() => {
-      void refreshUser()
+      void loadProfile()
     }, 0)
-    return () => window.clearTimeout(timer)
-  }, [refreshUser])
+    return () => {
+      window.clearTimeout(timer)
+      profileLoadGenerationRef.current += 1
+    }
+  }, [loadProfile])
 
   useEffect(() => {
     const timer = window.setTimeout(() => {
@@ -559,7 +612,18 @@ export default function SettingsView() {
         <div className="settings-page">
           <SettingsGroup>
             <div className="about-hero">
-              <Image alt="" className="about-logo" src="/zhusuan.png" />
+              <div className="about-brandmark">
+                <Image
+                  alt=""
+                  background="transparent"
+                  className="about-logo"
+                  disableAnimation
+                  fit="contain"
+                  radius="none"
+                  showSkeleton
+                  src="/玉雕风珠算字标.png"
+                />
+              </div>
               <div className="about-hero__copy">
                 <div className="about-hero__name">
                   <h2 className="about-title">珠算</h2>
@@ -567,30 +631,43 @@ export default function SettingsView() {
                     v{appVersion}
                   </Chip>
                 </div>
-                <span className="about-tagline">小旭姐专属记账工具</span>
-              </div>
-              <Button
-                disabled={updating}
-                onClick={() => void checkUpdate()}
-                pending={checkingUpdate}
-                variant="outline"
-              >
-                <i
-                  aria-hidden="true"
-                  className={`ri-loop-left-line ${checkingUpdate ? 'spinning' : ''}`}
-                />
-                <span>
-                  {checkingUpdate
-                    ? '正在检测更新...'
-                    : updating
-                      ? updateStatus?.state === 'restarting'
-                        ? '正在重启'
-                        : '正在更新'
-                      : updateStatus?.state === 'error'
-                        ? '重试更新'
-                        : '检测更新'}
+                <span
+                  aria-busy={!brandingLoaded}
+                  aria-label={!brandingLoaded ? '正在加载应用介绍' : undefined}
+                  className="about-tagline"
+                  role={!brandingLoaded ? 'status' : undefined}
+                >
+                  {brandingLoaded ? appSlogan : <Skeleton height="1rem" width="12rem" />}
                 </span>
-              </Button>
+              </div>
+              {!updaterStatusLoaded ? (
+                <div aria-label="正在恢复更新状态" role="status">
+                  <Skeleton height="var(--ods-control-height-md)" width="8rem" />
+                </div>
+              ) : (
+                <Button
+                  disabled={updating}
+                  onClick={() => void checkUpdate()}
+                  pending={checkingUpdate}
+                  variant="outline"
+                >
+                  <i
+                    aria-hidden="true"
+                    className={`ri-loop-left-line ${checkingUpdate ? 'spinning' : ''}`}
+                  />
+                  <span>
+                    {checkingUpdate
+                      ? '正在检测更新...'
+                      : updating
+                        ? updateStatus?.state === 'restarting'
+                          ? '正在重启'
+                          : '正在更新'
+                        : updateStatus?.state === 'error'
+                          ? '重试更新'
+                          : '检测更新'}
+                  </span>
+                </Button>
+              )}
             </div>
             {updateStatus ? (
               <div className="about-update" data-state={updateStatus.state}>
@@ -651,7 +728,9 @@ export default function SettingsView() {
               </li>
               <li className="settings-row">
                 <span className="settings-row__title">微信公众号</span>
-                <span className="settings-row__value">为学书院</span>
+                <span aria-busy={!brandingLoaded} className="settings-row__value">
+                  {brandingLoaded ? wechatPublicAccount : <Skeleton height="1rem" width="6rem" />}
+                </span>
               </li>
               <li className="settings-row">
                 <span className="settings-row__title" id={`${rowId}-source-title`}>
@@ -680,6 +759,71 @@ export default function SettingsView() {
             </ul>
           </SettingsGroup>
         </div>
+      )
+    }
+
+    if (!profileLoaded && !user) {
+      return (
+        <div className="settings-page">
+          <SettingsGroup>
+            <div
+              aria-busy="true"
+              aria-label="正在加载账户概览"
+              className="settings-account"
+              role="status"
+            >
+              <Skeleton
+                className="settings-loading__avatar"
+                height="var(--ods-space-10)"
+                shape="circle"
+                width="var(--ods-space-10)"
+              />
+              <div className="settings-account__copy">
+                <span className="settings-account__name settings-loading__account-name">
+                  <Skeleton height="var(--ods-font-size-lg)" width="7rem" />
+                </span>
+                <span className="settings-account__meta settings-loading__account-meta">
+                  <Skeleton height="var(--ods-font-size-sm)" width="4rem" />
+                  <Skeleton height="var(--ods-space-5)" width="3rem" />
+                </span>
+              </div>
+              <Skeleton
+                className="settings-loading__account-action"
+                height="var(--ods-control-height-md)"
+                width="7.5rem"
+              />
+            </div>
+          </SettingsGroup>
+          <SettingsGroup
+            footer={<Skeleton height="var(--ods-control-height-md)" width="7.5rem" />}
+            title="个人信息"
+          >
+            <SettingsFormSkeleton columns={3} fields={5} label="正在加载个人信息" />
+          </SettingsGroup>
+          <SettingsGroup
+            footer={<Skeleton height="var(--ods-control-height-md)" width="7.5rem" />}
+            title="安全设置"
+          >
+            <SettingsFormSkeleton columns={3} fields={3} label="正在加载账户信息" />
+          </SettingsGroup>
+        </div>
+      )
+    }
+
+    if (!user) {
+      return (
+        <SettingsGroup title="个人信息">
+          <EmptyState
+            action={
+              <Button onClick={() => void loadProfile()} variant="secondary">
+                重新加载个人信息
+              </Button>
+            }
+            className="settings-empty"
+            description="暂时无法读取账户资料，请重试。"
+            title="个人信息加载失败"
+          />
+        </SettingsGroup>
       )
     }
 

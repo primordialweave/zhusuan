@@ -12,9 +12,10 @@ import {
   Radio,
   RadioGroup,
   Select,
-  Spinner,
+  Skeleton,
   Table,
 } from '@/design-system'
+import { SettingsFormSkeleton, SettingsTableSkeleton } from './SettingsSkeleton'
 import SettingsGroup from './SettingsGroup'
 
 const defaultConfig: SyncConfig = {
@@ -50,12 +51,14 @@ export default function DataSyncPanel() {
   const toastWarning = useToastStore((state) => state.warning)
   const [cloudConfig, setCloudConfig] = useState<SyncConfig>(defaultConfig)
   const [loading, setLoading] = useState(false)
+  const [configLoading, setConfigLoading] = useState(true)
   const [testLoading, setTestLoading] = useState(false)
   const [syncLoading, setSyncLoading] = useState(false)
   const [compareResults, setCompareResults] = useState<TableCompareResult[]>([])
   const [syncResults, setSyncResults] = useState<SyncResult[]>([])
   const [step, setStep] = useState<'compare' | 'config' | 'sync'>('config')
   const refreshTimer = useRef<number | null>(null)
+  const comparisonConfigRef = useRef<string | null>(null)
 
   const diffCount = useMemo(
     () => compareResults.filter((result) => result.local_count !== result.remote_count).length,
@@ -87,7 +90,9 @@ export default function DataSyncPanel() {
   const compareData = useCallback(async () => {
     setLoading(true)
     setStep('compare')
-    setCompareResults([])
+    const configKey = JSON.stringify(cloudConfig)
+    if (comparisonConfigRef.current !== configKey) setCompareResults([])
+    comparisonConfigRef.current = configKey
     setSyncResults([])
 
     try {
@@ -165,6 +170,8 @@ export default function DataSyncPanel() {
       }))
     } catch {
       toastError('加载同步配置失败')
+    } finally {
+      setConfigLoading(false)
     }
   }, [toastError])
 
@@ -188,7 +195,11 @@ export default function DataSyncPanel() {
               <span className="settings-group__note">
                 本地数据单向同步到云端；数据库凭据只用于本机连接
               </span>
-              <Button onClick={() => void testConnection()} pending={testLoading}>
+              <Button
+                disabled={configLoading}
+                onClick={() => void testConnection()}
+                pending={testLoading}
+              >
                 <span>{testLoading ? '正在测试...' : '测试连接并下一步'}</span>
                 {!testLoading ? <i aria-hidden="true" className="ri-arrow-right-line" /> : null}
               </Button>
@@ -196,87 +207,108 @@ export default function DataSyncPanel() {
           }
           title="云端数据库"
         >
-          <div className="sync-config">
-            <RadioGroup
-              aria-label="数据库类型"
-              columns={3}
-              onValueChange={handleDbTypeChange}
-              value={cloudConfig.db_type}
-            >
-              {dbTypeOptions.map((option) => (
-                <Radio key={option.value} value={option.value} variant="card">
-                  <span className="sync-db-option-content">
-                    <i aria-hidden="true" className={option.icon} />
-                    <span>{option.label}</span>
-                  </span>
-                </Radio>
-              ))}
-            </RadioGroup>
+          {configLoading ? (
+            <div className="sync-config">
+              <RadioGroup
+                aria-hidden="true"
+                columns={3}
+                disabled
+                onValueChange={() => undefined}
+                value=""
+              >
+                {dbTypeOptions.map((option) => (
+                  <Skeleton
+                    height="calc(var(--ods-font-size-sm) * var(--ods-line-height-body) + var(--ods-space-3) * 2 + 2px)"
+                    key={option.value}
+                  />
+                ))}
+              </RadioGroup>
+              <SettingsFormSkeleton columns={3} label="正在加载同步配置" wideFields={[0]} />
+            </div>
+          ) : (
+            <div className="sync-config">
+              <RadioGroup
+                aria-label="数据库类型"
+                columns={3}
+                onValueChange={handleDbTypeChange}
+                value={cloudConfig.db_type}
+              >
+                {dbTypeOptions.map((option) => (
+                  <Radio key={option.value} value={option.value} variant="card">
+                    <span className="sync-db-option-content">
+                      <i aria-hidden="true" className={option.icon} />
+                      <span>{option.label}</span>
+                    </span>
+                  </Radio>
+                ))}
+              </RadioGroup>
 
-            <FormGrid columns={3}>
-              <Field.Root className="settings-field--wide">
-                <Field.Label>主机地址</Field.Label>
-                <Input
-                  onChange={(event) => updateConfig({ host: event.target.value })}
-                  placeholder="例如: aws-0-ap-northeast-1.pooler.supabase.com"
-                  type="text"
-                  value={cloudConfig.host}
-                />
-              </Field.Root>
-              <Field.Root>
-                <Field.Label>端口</Field.Label>
-                <Input
-                  inputMode="numeric"
-                  onChange={(event) =>
-                    updateConfig({ port: Number(event.target.value.replace(/\D/g, '')) })
-                  }
-                  type="text"
-                  value={cloudConfig.port || ''}
-                />
-              </Field.Root>
-              <Field.Root>
-                <Field.Label>数据库名</Field.Label>
-                <Input
-                  onChange={(event) => updateConfig({ db_name: event.target.value })}
-                  placeholder="例如: postgres"
-                  type="text"
-                  value={cloudConfig.db_name}
-                />
-              </Field.Root>
-              <Field.Root>
-                <Field.Label>用户名</Field.Label>
-                <Input
-                  onChange={(event) => updateConfig({ user: event.target.value })}
-                  type="text"
-                  value={cloudConfig.user}
-                />
-              </Field.Root>
-              <Field.Root>
-                <Field.Label>密码</Field.Label>
-                <Input
-                  onChange={(event) => updateConfig({ password: event.target.value })}
-                  placeholder="••••••••"
-                  type="password"
-                  value={cloudConfig.password || ''}
-                />
-              </Field.Root>
-              {cloudConfig.db_type === 'postgres' ? (
-                <Field.Root>
-                  <Field.Label>SSL 模式</Field.Label>
-                  <Select
-                    aria-label="SSL 模式"
-                    onValueChange={(value) => updateConfig({ ssl_mode: value })}
-                    options={[
-                      { label: 'Disable', value: 'disable' },
-                      { label: 'Require (推荐)', value: 'require' },
-                      { label: 'Verify Full', value: 'verify-full' },
-                    ]}
-                    value={cloudConfig.ssl_mode || 'require'}
+              <FormGrid columns={3}>
+                <Field.Root className="settings-field--wide">
+                  <Field.Label>主机地址</Field.Label>
+                  <Input
+                    onChange={(event) => updateConfig({ host: event.target.value })}
+                    placeholder="例如: aws-0-ap-northeast-1.pooler.supabase.com"
+                    type="text"
+                    value={cloudConfig.host}
                   />
                 </Field.Root>
-              ) : null}
-            </FormGrid>
-          </div>
+                <Field.Root>
+                  <Field.Label>端口</Field.Label>
+                  <Input
+                    inputMode="numeric"
+                    onChange={(event) =>
+                      updateConfig({ port: Number(event.target.value.replace(/\D/g, '')) })
+                    }
+                    type="text"
+                    value={cloudConfig.port || ''}
+                  />
+                </Field.Root>
+                <Field.Root>
+                  <Field.Label>数据库名</Field.Label>
+                  <Input
+                    onChange={(event) => updateConfig({ db_name: event.target.value })}
+                    placeholder="例如: postgres"
+                    type="text"
+                    value={cloudConfig.db_name}
+                  />
+                </Field.Root>
+                <Field.Root>
+                  <Field.Label>用户名</Field.Label>
+                  <Input
+                    onChange={(event) => updateConfig({ user: event.target.value })}
+                    type="text"
+                    value={cloudConfig.user}
+                  />
+                </Field.Root>
+                <Field.Root>
+                  <Field.Label>密码</Field.Label>
+                  <Input
+                    onChange={(event) => updateConfig({ password: event.target.value })}
+                    placeholder="••••••••"
+                    type="password"
+                    value={cloudConfig.password || ''}
+                  />
+                </Field.Root>
+                {cloudConfig.db_type === 'postgres' ? (
+                  <Field.Root>
+                    <Field.Label>SSL 模式</Field.Label>
+                    <Select
+                      aria-label="SSL 模式"
+                      clearable={false}
+                      onValueChange={(value) => updateConfig({ ssl_mode: value })}
+                      options={[
+                        { label: 'Disable', value: 'disable' },
+                        { label: 'Require (推荐)', value: 'require' },
+                        { label: 'Verify Full', value: 'verify-full' },
+                      ]}
+                      value={cloudConfig.ssl_mode || 'require'}
+                    />
+                  </Field.Root>
+                ) : null}
+              </FormGrid>
+            </div>
+          )}
         </SettingsGroup>
       ) : (
         <>
@@ -313,20 +345,32 @@ export default function DataSyncPanel() {
           <dl className="settings-stats">
             <div>
               <dt>数据表</dt>
-              <dd>{compareResults.length}</dd>
+              <dd>
+                {loading && compareResults.length === 0 ? (
+                  <Skeleton height="1.25rem" width="2rem" />
+                ) : (
+                  compareResults.length
+                )}
+              </dd>
             </div>
             <div>
               <dt>待同步</dt>
-              <dd>{diffCount}</dd>
+              <dd>
+                {loading && compareResults.length === 0 ? (
+                  <Skeleton height="1.25rem" width="2rem" />
+                ) : (
+                  diffCount
+                )}
+              </dd>
             </div>
             <div>
               <dt>已同步</dt>
-              <dd>{syncedCount}</dd>
+              <dd>{syncLoading ? <Skeleton height="1.25rem" width="2rem" /> : syncedCount}</dd>
             </div>
           </dl>
 
-          {loading ? (
-            <Spinner className="settings-empty" label="正在分析数据库差异" size="lg" />
+          {loading && compareResults.length === 0 ? (
+            <SettingsTableSkeleton columns={5} label="正在分析数据库差异" />
           ) : compareResults.length === 0 ? (
             <EmptyState
               className="settings-empty"
@@ -335,7 +379,11 @@ export default function DataSyncPanel() {
               title="暂无对比数据"
             />
           ) : (
-            <Table.Root aria-label="数据对比明细" className="settings-table">
+            <Table.Root
+              aria-busy={loading || syncLoading}
+              aria-label="数据对比明细"
+              className="settings-table"
+            >
               <Table.Header>
                 <Table.Row>
                   <Table.Column>数据表</Table.Column>

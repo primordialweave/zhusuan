@@ -1,7 +1,7 @@
 import { type FormEvent, useEffect, useRef, useState } from 'react'
 import { Navigate, useNavigate } from 'react-router-dom'
 import ScenePage, { BrushStroke } from '@/components/scene/ScenePage'
-import { Alert, Button, Checkbox, IconButton, Input, InputGroup } from '@/design-system'
+import { Alert, Button, Checkbox, IconButton, Input, InputGroup, Skeleton } from '@/design-system'
 import { useAuthStore } from '@/stores/auth'
 import { useToastStore } from '@/composables/useToast'
 import { rememberedLogin } from '@/utils/rememberedLogin'
@@ -26,6 +26,7 @@ export default function LoginView() {
     () => canRememberPassword && window.localStorage.getItem('rememberPassword') === 'true',
   )
   const [restoring, setRestoring] = useState(rememberPassword)
+  const [credentialsEdited, setCredentialsEdited] = useState(false)
   const [submitting, setSubmitting] = useState(false)
   const [forgetting, setForgetting] = useState(false)
   const editedRef = useRef(false)
@@ -142,6 +143,7 @@ export default function LoginView() {
             disabled={submitting || forgetting}
             onChange={(event) => {
               editedRef.current = true
+              setCredentialsEdited(true)
               setUsername(event.target.value)
               if (autofilledRef.current) {
                 setPassword('')
@@ -156,41 +158,54 @@ export default function LoginView() {
           />
         </InputGroup>
 
-        <InputGroup
-          adornmentSpacing="balanced"
-          endContent={
-            <IconButton
-              label={showPassword ? '隐藏密码' : '显示密码'}
-              onClick={() => setShowPassword((value) => !value)}
-              size="md"
-              variant="ghost"
-            >
-              <i className={showPassword ? 'ri-eye-line' : 'ri-eye-off-line'} />
-            </IconButton>
-          }
-          focusAdornmentTone="accent"
-          size="lg"
-          startContent={<i aria-hidden="true" className="ri-lock-line" />}
-        >
-          <Input
-            aria-label="密码"
-            autoCapitalize="off"
-            autoComplete="current-password"
-            autoCorrect="off"
-            name="password"
-            disabled={submitting || forgetting}
-            onChange={(event) => {
-              editedRef.current = true
-              autofilledRef.current = false
-              setPassword(event.target.value)
-            }}
-            placeholder="密码"
+        <div className="login-field">
+          <InputGroup
+            adornmentSpacing="balanced"
+            endContent={
+              <IconButton
+                label={showPassword ? '隐藏密码' : '显示密码'}
+                onClick={() => setShowPassword((value) => !value)}
+                size="md"
+                variant="ghost"
+              >
+                <i className={showPassword ? 'ri-eye-line' : 'ri-eye-off-line'} />
+              </IconButton>
+            }
+            focusAdornmentTone="accent"
             size="lg"
-            spellCheck={false}
-            type={showPassword ? 'text' : 'password'}
-            value={password}
-          />
-        </InputGroup>
+            startContent={<i aria-hidden="true" className="ri-lock-line" />}
+          >
+            <Input
+              aria-label="密码"
+              autoCapitalize="off"
+              autoComplete="current-password"
+              autoCorrect="off"
+              name="password"
+              disabled={submitting || forgetting}
+              onChange={(event) => {
+                editedRef.current = true
+                setCredentialsEdited(true)
+                autofilledRef.current = false
+                setPassword(event.target.value)
+              }}
+              placeholder={restoring && !credentialsEdited ? '' : '密码'}
+              size="lg"
+              spellCheck={false}
+              type={showPassword ? 'text' : 'password'}
+              value={password}
+            />
+          </InputGroup>
+          {restoring && !credentialsEdited ? (
+            <div
+              aria-busy="true"
+              aria-label="正在读取登录信息"
+              className="login-field__loading"
+              role="status"
+            >
+              <Skeleton height="var(--ods-font-size-md)" width="65%" />
+            </div>
+          ) : null}
+        </div>
 
         <div className="login-form__options">
           <Checkbox

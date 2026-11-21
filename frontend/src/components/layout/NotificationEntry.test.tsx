@@ -66,6 +66,24 @@ describe('NotificationEntry', () => {
     signOut()
   })
 
+  test('uses a dock skeleton until both initial notification requests settle', async () => {
+    const countRequest = createDeferred<unknown>()
+    const listRequest = createDeferred<unknown>()
+    vi.mocked(notificationApi.getUnreadCount).mockReturnValueOnce(countRequest.promise as never)
+    vi.mocked(notificationApi.list).mockReturnValueOnce(listRequest.promise as never)
+    signIn()
+    render(<NotificationEntry />, { initialEntries: ['/dashboard'] })
+
+    expect(screen.getByRole('status', { name: '正在加载最近通知' })).toBeInTheDocument()
+    await waitFor(() => expect(notificationApi.list).toHaveBeenCalledOnce())
+    await act(async () => countRequest.resolve({ data: { data: { count: 1 } } }))
+    expect(screen.getByRole('status', { name: '正在加载最近通知' })).toBeInTheDocument()
+    await act(async () => listRequest.resolve({ data: { data: { list: [unreadNotification] } } }))
+
+    expect(await findTrigger()).toHaveAccessibleName('查看通知，1 条未读')
+    expect(screen.queryByRole('status', { name: '正在加载最近通知' })).not.toBeInTheDocument()
+  })
+
   test('does not poll or render a trigger while signed out', async () => {
     render(<NotificationEntry />, { initialEntries: ['/dashboard'] })
 

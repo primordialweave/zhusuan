@@ -9,7 +9,7 @@ describe('Checkbox', () => {
   it('transitions only transform on the visual control', () => {
     const controlRule = checkboxCss.match(/\.ods-checkbox__control\s*\{([^}]+)\}/)?.[1]
     const activeRule = checkboxCss.match(
-      /\.ods-checkbox:active \.ods-checkbox__control\s*\{([^}]+)\}/,
+      /\.ods-checkbox:active:not\(\[data-disabled='true'\]\) \.ods-checkbox__control\s*\{([^}]+)\}/,
     )?.[1]
     const transitionValue = controlRule
       ?.match(/transition:\s*([\s\S]*?);/)?.[1]
@@ -23,7 +23,7 @@ describe('Checkbox', () => {
     expect(activeRule).toContain('--ods-checkbox-transform-duration: var(--ods-duration-press)')
     expect(activeRule).toContain('transform: scale(0.97)')
     expect(checkboxCss).toMatch(
-      /@media \(prefers-reduced-motion: reduce\)[\s\S]*\.ods-checkbox:active \.ods-checkbox__control\s*\{[\s\S]*transform:\s*none/,
+      /@media \(prefers-reduced-motion: reduce\)[\s\S]*\.ods-checkbox:active:not\(\[data-disabled='true'\]\) \.ods-checkbox__control\s*\{[\s\S]*transform:\s*none/,
     )
   })
 

@@ -45,7 +45,8 @@
 
 .ods-chip[data-variant='soft'] {
   border-color: color-mix(in srgb, var(--ods-chip-color) 18%, transparent);
-  background: var(--ods-chip-soft);
+  background: var(--ods-material-jade-sheen), var(--ods-chip-soft);
+  box-shadow: var(--ods-material-jade-control-shadow);
 }
 
 .ods-chip[data-variant='outline'] {

@@ -6,6 +6,8 @@ import type { PaymentSummaryScope } from '@/components/dashboard/paymentSummaryS
 interface PaymentSummaryState {
   paid: number
   pending: number
+  refreshing: boolean
+  scope: PaymentSummaryScope
   status: PaymentSummaryStatus
 }
 
@@ -25,6 +27,8 @@ export function usePaymentSummary(scope: PaymentSummaryScope = 'all') {
   const [state, setState] = useState<PaymentSummaryState>({
     paid: 0,
     pending: 0,
+    refreshing: false,
+    scope,
     status: 'loading',
   })
   const controllerRef = useRef<AbortController | null>(null)
@@ -33,16 +37,26 @@ export function usePaymentSummary(scope: PaymentSummaryScope = 'all') {
     controllerRef.current?.abort()
     const controller = new AbortController()
     controllerRef.current = controller
-    setState((current) => (current.status === 'data' ? current : { ...current, status: 'loading' }))
+    setState((current) =>
+      current.status === 'data' && current.scope === scope
+        ? { ...current, refreshing: true }
+        : { ...current, refreshing: false, scope, status: 'loading' },
+    )
 
     try {
       const response = await dashboardApi.getStats(requestScope(scope), controller.signal)
       if (controller.signal.aborted) return
       const stats = response.data.data
-      setState({ paid: stats.paid_amount, pending: stats.pending_amount, status: 'data' })
+      setState({
+        paid: stats.paid_amount,
+        pending: stats.pending_amount,
+        refreshing: false,
+        scope,
+        status: 'data',
+      })
     } catch {
       if (controller.signal.aborted) return
-      setState((current) => ({ ...current, status: 'error' }))
+      setState((current) => ({ ...current, refreshing: false, scope, status: 'error' }))
     }
   }, [scope])
 
@@ -55,5 +69,9 @@ export function usePaymentSummary(scope: PaymentSummaryScope = 'all') {
     }
   }, [load])
 
-  return { ...state, retry: load }
+  return {
+    ...state,
+    retry: load,
+    status: state.scope === scope ? state.status : ('loading' as const),
+  }
 }

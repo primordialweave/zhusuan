@@ -3,7 +3,8 @@
   display: block;
   overflow: hidden;
   border-radius: var(--ods-radius-sm);
-  background: var(--ods-color-bg-surface-hover);
+  background: var(--ods-material-jade-sheen), var(--ods-color-bg-surface-hover);
+  box-shadow: var(--ods-material-jade-inset-shadow);
 }
 
 .ods-skeleton[data-shape='text'] {
@@ -11,9 +12,14 @@
   border-radius: var(--ods-radius-xs);
 }
 
-.ods-skeleton[data-shape='circle'] {
+.ods-skeleton[data-shape='circle'],
+.ods-skeleton[data-shape='ring'] {
   aspect-ratio: 1;
   border-radius: var(--ods-radius-pill);
+}
+
+.ods-skeleton[data-shape='ring'] {
+  mask-image: radial-gradient(circle, transparent 48%, black 49%);
 }
 
 .ods-skeleton[data-animation='shimmer']::after {
@@ -54,4 +60,9 @@
   .ods-skeleton::after {
     animation: none !important;
   }
+}
+
+:root[data-motion='reduced'] .ods-skeleton,
+:root[data-motion='reduced'] .ods-skeleton::after {
+  animation: none !important;
 }

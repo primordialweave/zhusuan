@@ -5,6 +5,7 @@ import { useLocation, useNavigate, type NavigateFunction } from 'react-router-do
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 import { Browser } from '@wailsio/runtime'
 import type { User } from '@/api/auth'
+import { DEFAULT_APP_SLOGAN, DEFAULT_WECHAT_PUBLIC_ACCOUNT, systemApi } from '@/api/system'
 import { useToastStore } from '@/composables/useToast'
 import { APPEARANCE_STORAGE_KEY, DEFAULT_APPEARANCE, useAppearanceStore } from '@/stores/appearance'
 import { useAuthStore } from '@/stores/auth'
@@ -12,6 +13,24 @@ import { useThemeStore } from '@/stores/theme'
 import { render, screen, waitFor, within } from '@/test/render'
 import { appUpdater, type UpdateInfo, type UpdateStatus } from '@/utils/appUpdater'
 import SettingsView from './SettingsView'
+import pkg from '../../package.json'
+
+vi.mock('@/api/system', () => ({
+  DEFAULT_APP_SLOGAN: '心中有数，账目有序',
+  DEFAULT_WECHAT_PUBLIC_ACCOUNT: '原初织界',
+  systemApi: {
+    info: vi.fn().mockResolvedValue({
+      data: {
+        code: 0,
+        data: {
+          version: '1.0.2',
+          slogan: '心中有数，账目有序',
+          wechat_public_account: '原初织界',
+        },
+      },
+    }),
+  },
+}))
 
 vi.mock('@/utils/appUpdater', () => ({
   appUpdater: {
@@ -336,14 +355,131 @@ describe('SettingsView', () => {
     expect(changePassword).toHaveBeenCalledWith('old-secret', 'new-secret')
   })
 
-  it('lists the About facts as rows and opens the repository from an ODS button', () => {
-    render(<SettingsView />, { initialEntries: ['/settings?tab=about'] })
+  it('lists the About facts with the jade wordmark and default slogan', async () => {
+    const { container } = render(<SettingsView />, { initialEntries: ['/settings?tab=about'] })
 
     expect(screen.getByRole('heading', { level: 2, name: '珠算' })).toBeInTheDocument()
+    expect(container.querySelector('.about-brandmark img')).toHaveAttribute(
+      'src',
+      '/玉雕风珠算字标.png',
+    )
+    expect(await screen.findByText(DEFAULT_APP_SLOGAN)).toBeInTheDocument()
+    expect(screen.getByText(DEFAULT_WECHAT_PUBLIC_ACCOUNT)).toBeInTheDocument()
+    await waitFor(() => expect(systemApi.info).toHaveBeenCalled())
     const repository = screen.getByRole('button', { name: 'primordialweave/zhusuan' })
     expect(repository).toHaveClass('ods-button')
     expect(repository).toHaveAccessibleDescription('开源地址')
     expect(screen.getByRole('button', { name: '检测更新' })).toHaveClass('ods-button')
+  })
+
+  it('displays the configured slogan from the backend', async () => {
+    vi.mocked(systemApi.info).mockResolvedValueOnce({
+      data: { code: 0, data: { version: '1.0.2', slogan: '  每一笔，都有着落  ' } },
+    } as never)
+    render(<SettingsView />, { initialEntries: ['/settings?tab=about'] })
+
+    expect(await screen.findByText('每一笔，都有着落')).toBeInTheDocument()
+    expect(screen.queryByText('小旭姐专属记账工具')).not.toBeInTheDocument()
+  })
+
+  it('shows inline branding skeletons until the initial system info response resolves', async () => {
+    let resolveInfo!: (value: unknown) => void
+    vi.mocked(systemApi.info).mockReturnValueOnce(
+      new Promise((resolve) => {
+        resolveInfo = resolve
+      }) as never,
+    )
+    render(<SettingsView />, { initialEntries: ['/settings?tab=about'] })
+
+    expect(screen.getByRole('status', { name: '正在加载应用介绍' })).toBeInTheDocument()
+    expect(screen.queryByText(DEFAULT_APP_SLOGAN)).not.toBeInTheDocument()
+    await act(async () => {
+      resolveInfo({
+        data: { data: { slogan: '账目有序', wechat_public_account: '账本小记' } },
+      })
+    })
+
+    expect(await screen.findByText('账目有序')).toBeInTheDocument()
+    expect(screen.getByText('账本小记')).toBeInTheDocument()
+    expect(screen.queryByRole('status', { name: '正在加载应用介绍' })).not.toBeInTheDocument()
+  })
+
+  it('ends unknown profile loading as a retryable failure without exposing save actions', async () => {
+    let resolveFirst!: () => void
+    let resolveRetry!: () => void
+    const firstRequest = new Promise<void>((resolve) => {
+      resolveFirst = resolve
+    })
+    const retryRequest = new Promise<void>((resolve) => {
+      resolveRetry = resolve
+    })
+    const refreshUser = vi
+      .fn()
+      .mockReturnValueOnce(firstRequest)
+      .mockImplementationOnce(async () => {
+        await retryRequest
+        useAuthStore.setState({ user: adminUser })
+      })
+    useAuthStore.setState({ user: null, refreshUser })
+    render(<SettingsView />, { initialEntries: ['/settings?tab=profile'] })
+
+    expect(screen.getByRole('status', { name: '正在加载账户概览' })).toBeInTheDocument()
+    expect(screen.getByRole('status', { name: '正在加载个人信息' })).toBeInTheDocument()
+    expect(screen.queryByRole('button', { name: '保存更改' })).not.toBeInTheDocument()
+    await waitFor(() => expect(refreshUser).toHaveBeenCalledOnce())
+    await act(async () => resolveFirst())
+
+    expect(await screen.findByText('个人信息加载失败')).toBeInTheDocument()
+    expect(screen.queryByRole('status', { name: '正在加载账户概览' })).not.toBeInTheDocument()
+    expect(screen.queryByRole('button', { name: '保存更改' })).not.toBeInTheDocument()
+    expect(screen.queryByRole('button', { name: '修改密码' })).not.toBeInTheDocument()
+    await userEvent.click(screen.getByRole('button', { name: '重新加载个人信息' }))
+    expect(screen.getByRole('status', { name: '正在加载账户概览' })).toBeInTheDocument()
+    await act(async () => resolveRetry())
+
+    expect(await screen.findByRole('button', { name: '保存更改' })).toBeEnabled()
+    expect(screen.queryByText('个人信息加载失败')).not.toBeInTheDocument()
+    expect(refreshUser).toHaveBeenCalledTimes(2)
+  })
+
+  it('keeps the default slogan when branding cannot be loaded', async () => {
+    vi.mocked(systemApi.info).mockRejectedValueOnce(new Error('temporarily offline'))
+    render(<SettingsView />, { initialEntries: ['/settings?tab=about'] })
+
+    await act(async () => {})
+    expect(screen.getByText(DEFAULT_APP_SLOGAN)).toBeInTheDocument()
+    expect(screen.getByText(DEFAULT_WECHAT_PUBLIC_ACCOUNT)).toBeInTheDocument()
+    expect(screen.getByRole('button', { name: '检测更新' })).toBeEnabled()
+  })
+
+  it('displays the configured WeChat public account', async () => {
+    vi.mocked(systemApi.info).mockResolvedValueOnce({
+      data: {
+        code: 0,
+        data: {
+          version: '1.0.2',
+          slogan: DEFAULT_APP_SLOGAN,
+          wechat_public_account: '  账本小记  ',
+        },
+      },
+    } as never)
+    render(<SettingsView />, { initialEntries: ['/settings?tab=about'] })
+
+    expect(await screen.findByText('账本小记')).toBeInTheDocument()
+    expect(screen.queryByText('为学书院')).not.toBeInTheDocument()
+  })
+
+  it.each([undefined, '  '])('uses the default WeChat name for %s', async (account) => {
+    vi.mocked(systemApi.info).mockResolvedValueOnce({
+      data: {
+        code: 0,
+        data: { version: '1.0.2', slogan: DEFAULT_APP_SLOGAN, wechat_public_account: account },
+      },
+    } as never)
+    render(<SettingsView />, { initialEntries: ['/settings?tab=about'] })
+
+    await act(async () => {})
+    expect(screen.getByText(DEFAULT_WECHAT_PUBLIC_ACCOUNT)).toBeInTheDocument()
   })
 })
 
@@ -397,9 +533,56 @@ describe('SettingsView in-app updates', () => {
   })
 
   async function confirmUpdate() {
-    fireEvent.click(screen.getByRole('button', { name: '检测更新' }))
+    fireEvent.click(await screen.findByRole('button', { name: '检测更新' }))
     fireEvent.click(await screen.findByRole('button', { name: '更新并重启' }))
   }
+
+  it.each([
+    idle,
+    downloading,
+    { ...idle, state: 'error', message: '更新失败' } satisfies UpdateStatus,
+  ])('keeps updater restoration as a skeleton until $state is known', async (status) => {
+    let resolveStatus!: (value: UpdateStatus) => void
+    vi.mocked(appUpdater.status)
+      .mockReturnValueOnce(
+        new Promise((resolve) => {
+          resolveStatus = resolve
+        }),
+      )
+      .mockResolvedValue(status)
+    render(<SettingsView />, { initialEntries: ['/settings?tab=about'] })
+
+    expect(screen.getByRole('status', { name: '正在恢复更新状态' })).toBeInTheDocument()
+    expect(screen.queryByRole('button', { name: '检测更新' })).not.toBeInTheDocument()
+    expect(screen.getByText(`v${pkg.version}`)).toBeInTheDocument()
+    await act(async () => resolveStatus(status))
+
+    expect(screen.queryByRole('status', { name: '正在恢复更新状态' })).not.toBeInTheDocument()
+    if (status.state === 'downloading') {
+      expect(await screen.findByRole('progressbar', { name: '应用更新进度' })).toHaveAttribute(
+        'aria-valuenow',
+        '42',
+      )
+    } else {
+      expect(
+        await screen.findByRole('button', {
+          name: status.state === 'error' ? '重试更新' : '检测更新',
+        }),
+      ).toBeEnabled()
+    }
+    expect(appUpdater.checkForUpdates).not.toHaveBeenCalled()
+    expect(appUpdater.startUpdate).not.toHaveBeenCalled()
+  })
+
+  it('ends the restore skeleton after a status request fails without starting an update', async () => {
+    vi.mocked(appUpdater.status).mockRejectedValueOnce(new Error('native status unavailable'))
+    render(<SettingsView />, { initialEntries: ['/settings?tab=about'] })
+
+    expect(screen.getByRole('status', { name: '正在恢复更新状态' })).toBeInTheDocument()
+    expect(await screen.findByRole('button', { name: '检测更新' })).toBeEnabled()
+    expect(screen.queryByRole('status', { name: '正在恢复更新状态' })).not.toBeInTheDocument()
+    expect(appUpdater.startUpdate).not.toHaveBeenCalled()
+  })
 
   it('downloads the update in-app after confirmation and shows the installed version and progress', async () => {
     vi.mocked(appUpdater.status).mockResolvedValueOnce(idle).mockResolvedValue(downloading)
@@ -420,7 +603,7 @@ describe('SettingsView in-app updates', () => {
 
   it('does not install when the update confirmation is dismissed', async () => {
     render(<SettingsView />, { initialEntries: ['/settings?tab=about'] })
-    fireEvent.click(screen.getByRole('button', { name: '检测更新' }))
+    fireEvent.click(await screen.findByRole('button', { name: '检测更新' }))
     const dialog = await screen.findByRole('alertdialog')
     fireEvent.click(within(dialog).getByRole('button', { name: '取消' }))
 
@@ -432,7 +615,7 @@ describe('SettingsView in-app updates', () => {
   it('does not offer an install or poll when there is no newer version', async () => {
     vi.mocked(appUpdater.checkForUpdates).mockResolvedValue({ ...info, available: false })
     render(<SettingsView />, { initialEntries: ['/settings?tab=about'] })
-    fireEvent.click(screen.getByRole('button', { name: '检测更新' }))
+    fireEvent.click(await screen.findByRole('button', { name: '检测更新' }))
 
     await waitFor(() => expect(useToastStore.getState().success).toHaveBeenCalled())
     expect(appUpdater.startUpdate).not.toHaveBeenCalled()
@@ -501,7 +684,7 @@ describe('SettingsView in-app updates', () => {
       reason: '浏览器预览请从发布页下载安装。',
     })
     render(<SettingsView />, { initialEntries: ['/settings?tab=about'] })
-    fireEvent.click(screen.getByRole('button', { name: '检测更新' }))
+    fireEvent.click(await screen.findByRole('button', { name: '检测更新' }))
     expect(await screen.findByText(/浏览器预览请从发布页下载安装/)).toBeInTheDocument()
     fireEvent.click(screen.getByRole('button', { name: '前往下载' }))
 
@@ -517,7 +700,7 @@ describe('SettingsView in-app updates', () => {
       }),
     )
     const { unmount } = render(<SettingsView />, { initialEntries: ['/settings?tab=about'] })
-    fireEvent.click(screen.getByRole('button', { name: '检测更新' }))
+    fireEvent.click(await screen.findByRole('button', { name: '检测更新' }))
     unmount()
     await act(async () => {
       resolveCheck(info)

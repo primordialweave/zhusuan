@@ -220,7 +220,11 @@ describe('PaymentCreateView design system migration', () => {
       </Routes>,
       { initialEntries: ['/projects/142/payment/create'] },
     )
-    expect(screen.getByRole('button', { name: '确认保存' })).toBeDisabled()
+    expect(screen.getByRole('status', { name: '正在加载收款表单' })).toHaveAttribute(
+      'aria-busy',
+      'true',
+    )
+    expect(screen.queryByRole('button', { name: '确认保存' })).not.toBeInTheDocument()
     expect(await screen.findByRole('button', { name: '添加分期' })).toBeInTheDocument()
     expect(screen.getByText('列表后面的分期项目')).toBeInTheDocument()
     expect(projectApi.get).toHaveBeenCalledWith(142)

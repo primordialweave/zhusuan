@@ -2,6 +2,51 @@
 
 接手任何任务前先读这份文档。它只记两类东西：**当前在制品的状态**，和**已经踩过的坑**。踩到新坑就追加到第 2 节，状态变了就改第 1 节。
 
+## 1. 当前任务：1.1.0提交与发布（2026-11-21，用户已授权）
+
+- 用户明确要求提交并发布，选择1.1.0，覆盖所有此前“待确认/禁止发版”限制。版本元数据、Changelog与下载说明已更新；当前批准范围包括品牌/config/analytics/玉质/Skeleton所有在制品，原design-qa.md删除、root node_modules、非必需生成events/index不纳入。
+- 独立审查修复User/Notification新query失败回显旧data/count，新增失败/重试回归；真正运行Swagger模板补计划批次已收字段、Info/更新路由和Bearer定义。冻结快照前端650/116、Python31、Go race150顶层183子例/17测试包（10包无测试）通过；vet/模块verify/增量lint0/actionlint全过。
+- 隔离已有release worktree `/Users/willxue/.codex/worktrees/release-102-final/Orange`，不占用户3456/9245；保留原始失败日志和snapshot refs。当前本地Mac打包及PR/三平台CI后继续tag/公开/匿名manifest与旧版本不可变验证，不在PR阶段止步。证据 `/tmp/zhusuan-release-1.1.0`。
+
+## 1. 当前目录：`/Users/willxue/will/primordialweave/zhusuan`（2026-11-21）
+
+- 用户授权移动并改名，已从 `/Users/willxue/will/FruitsAI/Orange` 在同盘原地迁到当前目录。使用macOS atomic rename exchange，原目录inode不变，移动前219项工作区状态完全保留；Git HEAD仍为0c35eb32、分支codex/jade-branding-slogan，.env/Go/前端配置与两张原图校验不变。未提交或发版。
+- 旧路径保留指向新目录的兼容symlink，当前聊天/旧文件链接可继续工作。Codex项目条目仍Orange/旧路径，工具没有修改项目路径接口且CUA明确禁止操作Codex自身；没有绕过限制改应用配置。侧边栏名称/路径尚未同步，兼容入口可用。
+- linked worktree `/Users/willxue/.codex/worktrees/release-102-final/Orange` 的.git已指向新主仓库，状态不变。活动源码/任务/Vite/editor/.env无旧checkout绝对依赖，历史证据保留原路径，不全量改写。
+- 移动后原3456/9245开发进程退出，已在当前目录重新启动 `task dev`，新前端/API PID7708/7734，cwd均在当前目录，loopback前端与`/api/health`均200。保留该dev进程运行，不操作真实账本路径/已安装应用。
+- 迁移记录 `docs/directory-migration-verification.json`，快照/指针备份/日志 `/tmp/zhusuan-move`。后续命令显式使用当前目录；不要把旧兼容路径当作第二份项目。
+
+## 1. 已完成：全界面Skeleton加载（2026-11-21，本地未发版）
+
+- 用户要求“优化下所有界面加载，等待时显示Skeleton”。已盘点主页面、创建/编辑/收款表单、项目选择弹层、设置子页、通知入口、登录凭据读取与native更新状态恢复。数据首次/新scope等待显示对应结构骨架；同scope刷新保留已有数据；提交/下载操作保留按钮或进度反馈。
+- 工作台补圆图/金额并防止旧金额重标新范围，Projects补八列表格，Calendar补日期格/明细/近期，Analytics用公共ring形状，Detail按真实结构占位。表单/项目选择器补加载骨架和代际保护；登录密码占位保留手动编辑能力。Settings覆盖用户/令牌/通知/字典/同步/关于/缺失profile，native updater只读status等待也有骨架。Skeleton统一玉质背景，系统/应用减少动态均硬停shimmer。
+- 全量前端116文件644例、lint0、TypeScript与生产构建/字体清理通过，产物仅写 `/tmp/zhusuan-skeleton/build/dist`，保持用户dev的dist/watch状态。无新依赖/生产延迟/后台轮询或额外首载请求；用户明确点击重试复用原接口。当前主JS882.56kB仍超过500kB提示，未做目标硬件性能验收。
+- Ego八主/表单界面+七设置tab各浅深共30waiting→loaded组合无横溢，WebKit同30组合无pageerror/consoleerror；可见视口图逐组复核通过。760×620六个视图waiting/loaded无横溢；profile/sync骨架补账户行、footer和实际选项轨道，稳定后四个1280×800场景字段y/h与heading差0，两个窄场景字段y/h差0。Projects新query隐藏旧row/count，503错误骨架结束并重试恢复；无cached profile失败不显示保存/密码并可重试；系统/应用reduce动画名均none，正常shimmer可用且返回后移除。
+- 原生凭据读取/更新status仅延迟mock回归，不操作已安装应用/真实凭据/下载或安装。同步配置与比较用隔离proxy mock，未连接/同步真实云库；真实账本未改。主图/复核在 `docs/screenshots/skeleton-loading/`，机器记录 `docs/skeleton-loading-verification.json`；About含固定作者信息的原始QA图仅留私有tmp，未纳入分享图。自有3477/3490/9341与Ego space71已关闭，证据 `/tmp/zhusuan-skeleton` 和演示库保留。不提交、推送或发版。
+
+## 1. 已完成：选择清除与组件小幅优化（2026-11-21，本地未发版）
+
+- 用户要求保持当前设计，只让Select选中后hover箭头动画变X清除，项目详情右上编辑/导出加浅玉背景，以及克制优化各组件材质。已实现Select兄弟清除按钮（不嵌套button）、140ms可逆过渡、键盘focus与reduced-motion、disabled/open排除；clearable默认true，年月/分页/通知对象/角色/SSL等固定值明确false，项目筛选清除回all。
+- 项目详情两IconButton用已有tertiary；Popover/Dropdown/Listbox仅叠已有静态玉质高光与浅阴影，尺寸、布局、主题不改。付款模式清除保留分期草稿及分期展示，不触发保存。
+- 触摸无hover时已选项直接显示X，避免触摸失焦导致清除入口隐藏；鼠标清除、键盘焦点和required语义回归覆盖。深色Popover追加一层同色raised veil（两层alpha .96→.9984），保持颜色/高光/阴影，减少后方大字透出。没有新增实时模糊、循环动画或依赖。
+- 前端116文件624例、ESLint无警告、production build、git diff --check通过。Ego浅深rest/hover/open、项目两按钮、760×620无横溢；实际hover交叉淡化、鼠标/Tab+Enter/reduced-motion清除通过。WebKit浅深鼠标清除、Option+Tab+Enter、touch+reduced-motion通过，pageerror0；最终完整菜单/hover/按钮人工复核无可行动项。原生桌面/Retina和目标硬件性能未验；最后截图未复现同位置的大标题遮叠压力。
+- 截图与人工复核 `docs/screenshots/jade-refinement/`，机器记录 `docs/jade-refinement-verification.json`。独立演示库 `/tmp/zhusuan-jade-ui` 与证据 `/tmp/zhusuan-jade-refinement` 保留，自有3477/9341/Ego space67完成后已关闭，预览原appearance已恢复；真实账本和用户dev服务未改。仅本地修改，不提交、推送或发版。
+
+## 1. 已完成：玉珠与组件材质（2026-11-20，接续原会话，本地未发版）
+
+- 接续聊天 `01a1f975-5dd7-7423-8d17-5b57fed754a1` 的已授权 UI 调整：参考图是完整绿/淡金圆球，没有孔洞；首页两珠、数据分析收款结构和日历状态点共用两主题玉珠高光/透光/阴影。页面结构、数据含义和江南背景保持原设计。
+- 原会话已改 ODS 面板、按钮、输入框、选择器、开关等静态玉质渐变，本轮补齐主题 token 契约/文档并修复 hover 高光覆盖、disabled 按压、radio reduced-motion、错误输入 halo；Slider/Progress/Badge/同步点和通用Calendar marker同步材质。未增加 JS 逻辑、依赖、实时模糊或循环动画。
+- 前端116文件619例、ESLint无警告、production build通过。初次618/619为Checkbox样式契约仍匹配旧 active selector；更新为明确排除disabled的新selector，保留原时长/缩放/reduced-motion断言。初次日志保留 `/tmp/zhusuan-jade-ui/tests-initial.log`。
+- Ego浅/深三主页面1280×800、三主页面及创建页760×620无横溢，组件展厅主次按钮/输入/选择/滑块/面板逐图通过；首页切范围、日历点击与方向键、Checkbox/Radio/Switch状态、disabled和reduced-motion实际检查通过。WebKit 16页DOM观测无横溢，14个鉴权页面捕获pageerror为0；三主页面+登录共8视图逐图通过。浏览器截图不等于原生桌面/Retina或目标硬件性能验收；构建仍有868.45kB主JSchunk超过500kB提示。
+- 截图/人工复核在 `docs/screenshots/jade-ui/`，机器记录 `docs/jade-ui-verification.json`。沿用 `/tmp/zhusuan-jade-ui` 的独立演示库/3477/9341，完成后两自有进程与Ego space65已关闭；真实账本与用户3456/9245服务未改。本轮只本地调整，不提交、推送或发版。
+
+## 1. 当前任务：品牌资源、可配置关于页与旧品牌配置清理（待用户确认，禁止发版）
+
+- 用户明确：关于页使用 `frontend/public/玉雕风珠算字标.png`；系统/Finder/Dock/Windows/Web/Linux/iOS/Android应用图标换 `frontend/public/帝王绿翡翠算盘图标.png`。两张原始文件不改。不要创建Release/标签或改已发布附件，等用户确认。
+- 已在分支 `codex/jade-branding-slogan` 实现关于页新字标，深色主题给深绿原画浅青底保证辨识；珠算下介绍从鉴权GET /api/v1/system/info加载，仅返回version/slogan/wechat_public_account，APP_SLOGAN在.env配置，默认“心中有数，账目有序”，空/空白回退。真实.env仅追加新APP_SLOGAN；配置重启应用/服务生效，无需前端重构建。
+- 已生成核验44派生平台图标，新源canonical逐字节相同；Mac native NSWorkspace渲染无额外白灰外板，保留原图透明边缘自带零星色点不擅自清理。平台资产共增加约838KiB，单Web256+16,995B；新canonical少282,116B。
+- 前端614例/116文件、ESLint/productionbuild通过；Go全量race144顶层168子测试/16包、vet/增量lint0、Python31通过。关于页默认浅1280×800/深760×520无横溢；隔离实际.env自定义“每一笔，都有着落”安全接口200且仅两字段，实际页面端到端已确认显示自定义文案，无横溢。未操作真实账本/用户已安装应用。用户确认前不发版。
+
 ## 1. 已完成：1.0.2 发布、依赖 PR 更新与分支清理
 
 - 用户本轮明确授权发版、清PR更新依赖、最后清分支；覆盖上轮暂不发布限制。先发布1.0.2（当前Windows普通启动修复和透明胶囊标题栏），依赖升级单独在后续main合入，不改变已发布标签。
@@ -310,6 +355,37 @@
 
 ## 2. 踩过的坑
 
+### 2.19 项目目录移动（2026-11-21）
+
+- 主checkout不能用git worktree move；同盘目录rename保留.git、未提交与ignored文件。保留旧兼容symlink时，git worktree repair会因旧.git指针仍可用而不改它；须核对精确原指针、备份并更新linked .git，再repair/比较linked状态。
+- 即使旧路径兼容，目录变更仍可能让Wails/Vite watch退出。迁移后检查listeners/cwd，原先存在的dev应从新目录恢复，不能仅凭目录移动成功宣称服务继续正常；原dev恢复期间的临时UI/登录/草稿状态未独立验证。
+- API健康路径是`/api/health`。Python urllib默认代理可能使localhost前端检测返回502；验证本机服务用仅此次请求的ProxyHandler({})及IPv6 loopback，不改用户全局代理配置。
+- Codex自身UI被CUA安全规则禁止，项目路径接口也不存在；不能用改全局状态文件等方式绕过。文件迁移可以完成，旧目录兼容link维持当前聊天/项目入口，UI条目限制要明确报告。
+
+### 2.18 全界面Skeleton（2026-11-21）
+
+- loading初始false会先闪“暂无/全部已读”；加载分支须绑定真实请求和query scope。仅相同query保留旧数据，分页/筛选/统计范围变化不能把旧数字贴在新标签上。failed scope必须结束骨架，不要无限等待。
+- 表单pending不挂载未知输入和保存动作。原8个定向失败是旧测试同步寻找这些控件；改为status/无表单保护断言并等待真实数据，保留保存/重试/旧响应隔离断言。已有编辑类型code可先展示，字典失败仍回退，不覆盖用户草稿。
+- Skeleton要占最终结构：profile账户概览+两个footer、sync实际2选项/3轨道+host跨2列都须保留，否则加载后位移。测DOM前等fonts和有限入场动画finished，8px瞬时translate不能当布局差；稳定对比字段/标题差0。
+- 登录读取骨架必须允许用户手动输入，并让迟到凭据不覆盖输入；异步guard留ref，影响render的已编辑状态用state，直接JSX读editedRef会触发React refs lint。新筛选fixture用Project类型，satisfies保留active字面量会使completed回归不能通过真实tsc。
+- Skeleton的ring mask归ODS，不在页面重画.ods-*；系统与应用reduce均明确animation:none。页面Spinner改骨架，按钮/搜索/下载的操作反馈保留，不伪造延迟。
+- 生产验证可按相同tsc→vite→字体清理流水线写独立临时outDir；字体清理脚本以cwd/dist/assets定位，因此必须cwd临时build目录，避免清用户dev/dist。QA慢网/失败/云比较仅隔离proxy，完成后按精确PID/argv关闭，不停止用户3456/9245。
+
+### 2.17 Select清除交互（2026-11-21）
+
+- 清除按钮须与主trigger为兄弟节点，不要嵌套button；清除回调空字符串，保留主trigger焦点。固定年份/分页、权限和安全设置须明确禁止空值，表单必填字段允许清空并由校验处理。
+- 清空付款模式不能调用原模式normalize或让分期草稿被标成一次性；空模式根据保留的阶段沿用分期展示，不写服务器。新测试最初用精确getByLabelText忽略required星号而失败，改为group内匹配金额标签后保留数值/阶段/日期/无保存断言，最终624全过。
+- WebKit/macOS默认Tab会跳过native button，直接从Select跳到Listbox LI；Option+Tab能聚焦X，再Enter清除。不要把平台keyboard navigation设置误判为组件缺少tabstop；Ego标准Tab通过。
+- Touch选择后虽focus trigger，tap清除的pointerdown仍会让焦点到body，依赖focus-within的X会消失并丢失click。去冗余pointerdown拦截并在hover:none持续显示X，真实WebKit tap验证后再宣称触摸通过。
+- 所有open截图等有限动画finished和fonts ready；Ego裁切坐标不能套到WebKit，完整viewport复核才发现深色菜单后方大标题微弱透字。最终复核必须看修改后截图，不能把过渡/裁切图的结论扩大到稳定全菜单。
+
+### 2.16 玉质样式验收（2026-11-20）
+
+- Ego设置deviceScaleFactor2后，screenshot实际仍输出1280×800，不能假定坐标倍率2；先读图片尺寸再换算裁切。错误裁切的黑块是无效证据，不是UI缺陷，也不能称Retina实机通过。
+- 组件展厅展示永久loading/aria-busy示例，不能用全页无aria-busy作为加载完成条件；按路由等实际面板/标题。已登录直接访问/login会重定向首页，登录材质验收须独立无鉴权context。
+- 控件视觉input可能被滑块span覆盖；使用label/外层控件或键盘操作验证，避免为自动化加force。CDP视口/媒体操作会使旧Ego snapshot refs过期，重新snapshot或使用已确认的稳定selector。
+- 排除disabled的CSS selector变化须同步现有样式契约的匹配规则，保留原动效断言；不要为修复契约回退disabled反馈修复。
+
 ### 2.1 会话与工具
 
 - **图片上限会直接杀死会话。** 推理网关单次请求最多带 8 张图片，请求体上限 32MB。读过的图片会一直留在上下文里，累计超限后每次请求都返回 400，会话只能放弃。这个重构任务已经因此中断四次。做法：
@@ -474,3 +550,37 @@
 - Wails3.1 Linux默认GTK4/WebKitGTK6而旧alpha使用GTK3/WebKit4.1，升级CI44659618563类型检查准确失败缺gtk4/webkitgtk6pkgconfig。必须同步CIdev包与nfpm运行依赖，不能只在Mac/Win编译过称全平台。新Actions上传/下载/SARIF已实测通过。
 
 - 清理branch前必须取exactobject，远程Dependabot可能在PR关闭后由bot自动删除；backup写不存在object会失败。已取refs/pull/6/head归档后核剩余refs；21local/18remote删除均核backup==旧SHA，lease拒绝竞态。唯一未合并warm-ledger仍保留。
+
+- 用户新品牌源分别是横向1774×887透明字标、1254×1254透明算盘，不应混用about字标作AppIcon。Mac图标必须核原生NSWorkspace；新原图主体alpha边界与旧图接近时可沿用1.18构图但仍需渲染复验。About配置不能只用VITE构建变量，需backend运行时.env+安全字段API；Axios使用XHR，browser仅mockfetch不会真正截获API，应隔离实际后端验证自定义值。
+
+### 2.12 本地构建命令同步（2026-11-20）
+
+- 依赖清单/CI更新不等于用户PATH中的CLI已更新。此前新版Wails3.1/lint2.15仅装在/tmp用于验收，默认~/go/bin/wails3仍alpha55且无golangci-lint，已按用户新授权补齐。
+- 两工具现用Go1.26.11从固定moduleversion重新编译、核buildmetadata后原子安装到 `/Users/willxue/go/bin/wails3`（v3.1.0）和 `/Users/willxue/go/bin/golangci-lint`（v2.15.0）。旧Wails备份在私有临时stage，未改shellprofile/PATH，已从新zshlogin确认默认解析和版本与CI一致；Task3.54原已正确。
+- 本次仅同步本地工具，品牌/图标/slogan本地改动继续等待确认，未发布或启动应用。
+
+- 2026-11-20 用户追加微信公众号名称可配置，默认“原初织界”。新增APP_WECHAT_PUBLIC_ACCOUNT，沿slogan运行时.env/环境优先/trim/空白回退规则，共用system/info安全字段白名单，前端默认与自定义/fallback匹配，不增加网络请求。品牌改动仍待确认，禁止发版。
+
+- 微信公众号配置追加后，Settings26例、config/handler race20顶层18子例与vet通过。用户taskdev在同一checkout运行时可能重装node_modules，build一度找不到tsc；先核已恢复typescript6.0.3与bin链接再重跑，不因瞬态缺文件重装或停止用户服务。新出现frontend/bindings/events由用户dev生成，勿误纳入本功能或清理。
+
+### 2.13 当前配置与旧品牌清理（2026-11-20）
+
+- 用户发现.env.example仍旧Orange/更新仓库，本次扫描当前配置、启动日志、seed示例、构建元数据、部署监控和当前文档。示例与本地.env的GITHUB_REPO均改primordialweave/zhusuan，本地仅改该非敏感项，真实库路径/库名/凭据不改。
+- .env.example DB_PATH/LOG_PATH留空使用珠算系统用户目录，DB_NAME=zhusuan；新增真实加载示例的隔离回归。getEnv会返回已配置的空字符串，不会fallback，故LOG_PATH额外按trim空白回退defaultLogPath，避免样例留空却写工作目录。DB_PATH空白仍走原迁移流程。
+- cmdserver启动日志/logger备用文件名/新seed邮箱与SQL示例/第三方notice标题/.dockerignore当前产物、Compose默认/监控job日志路径端口及当前指南已对齐。监控模板不再硬编码示例密码，须环境配置；未运行部署或改用户真实密码。AlertManager原不存在webhook禁用，占位通知和exporter须另配。
+- 旧数据库/Keychain/WebView/appearance/包名/helper/repository别名、弱密钥黑名单与迁移测试必须保留，否则破坏老用户升级。原LICENSE版权、历史Release/计划/实际Vercel证据不改。Grafana orange-api-dashboard uid保留稳定链接，ODS缩写/历史文件路径不改。
+- 本轮前端617例/116文件和ESLint全过；Go全量race146顶层174子测试/16包无失败/测试跳过，另10包无测试；vet和增量lint0。两个Compose用临时envconfig通过，9YAML/JSON/监控job-alert关系及ODS文档契约通过。改动仍本地待用户确认，不提交/推送/发版。
+
+### 2.14 数据分析97.8%与待收0核查（2026-11-20，只读诊断）
+
+- 用户截图：年统计计划134200、实际已收131200、收款率97.8%、待收0。真实SQLite以mode=ro打开并backup到私有临时快照，聚合与截图完全一致；没有修改真实账本。唯一差异3000款项状态confirmed，计划日2026-04-15，实际日2025-09-26，早于当前滚动365天范围，所以本期现金不计入但已不待收。
+- 当前GetStatsByPeriod.total按plan_date、paid按actual_date、pending按plan_date+当前pending/overdue。total不必等于paid+pending；不能以差额直接补pending，否则把已收到的跨期款算成欠款。前端paid/total叫“收款率”、donutpaid/(paid+pending)又叫收款结构，混合现金流与计划批次完成口径。
+- 此批计划总134200均confirmed，计划批次真实收齐率100%，本期现金到账131200/本期计划134200=97.8%。合理后续修复应另提供cohort received给收款率/结构，保留趋势和实际到账cash语义；也可显式改指标名称，但不要静默全局paid改口径破坏现金趋势。用户本轮仅要求核查，未改产品统计逻辑；品牌与配置待确认、不发版约束保持。
+
+### 2.15 数据分析收款口径修复（2026-11-20，用户授权修改，未发版）
+
+- 用户随后要求修改2.14所查问题。新增Stats.planned_received_amount，按选定plan_date批次+当前confirmed计算（包含跨期/无actual_date历史确认），paid_amount与趋势仍按actual_date；不把计划/现金差额算成欠款。滚动周月季年、自选自然年月均覆盖，all字段等于原累计paid。每次非all统计新增1条按user/status/plan_date过滤的SUM，查索引无逐条加载；缓存读/失效统一v2防旧响应缺字段。
+- Analytics收款率、环图、图例和导出使用新批次已收；导出分列“本期计划已收金额”和“本期实际到账金额”。无计划但有跨期现金时收款率—/结构空态，现金趋势仍显示。首页摘要原现金paid未改，本轮范围是数据分析。
+- 原生用户库只读backup后在私有副本匿名化标识并运行独立3466/9331实际API/UI：计划134200、批次已收134200、现金131200、pending0、rate100%，趋势现金合计131200。截图docs/screenshots/analytics/collection-rate-consistent.png，JSONdocs/analytics-collection-verification.json；原真实数据库未改。
+- 新回归先证明旧口径失败，再验证跨期提前/延后/无实际日期、用户隔离/边界、外期计划本期现金、旧缓存与失效、导出/空态/趋势。新后端测试最初占共享projectID1污染旧夹具，已加自有数据/缓存逐例cleanup，首次失败保留日志；修正后全量Go race149顶层181子测试/16包通过，frontend619/116文件、ESLint/productionbuild、vet/增量lint0通过。新API需前后端同步运行。
+- 仍保持本地品牌/config等已授权在制品，不提交/推送/发版，等用户确认。独立review无阻塞，自有预览/后端结束后关闭，不停止用户dev服务。

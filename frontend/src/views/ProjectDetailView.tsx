@@ -29,6 +29,7 @@ import { useProjectExport } from '@/components/project/useProjectExport'
 import { useToastStore } from '@/composables/useToast'
 import { formatCurrency, formatDate } from '@/utils/format'
 import '@/styles/project-domain.css'
+import '@/styles/main-page-loading.css'
 
 const paymentStageLabels: Record<string, string> = {
   all: '全款',
@@ -74,8 +75,10 @@ export default function ProjectDetailView() {
   const { exportProject } = useProjectExport()
   const [project, setProject] = useState<Project | null>(null)
   const [projectTypes, setProjectTypes] = useState<DictionaryItem[]>([])
+  const [projectTypesLoading, setProjectTypesLoading] = useState(true)
   const [payments, setPayments] = useState<Payment[]>([])
   const [loadErrorProjectId, setLoadErrorProjectId] = useState<number | null>(null)
+  const [loadingProjectId, setLoadingProjectId] = useState<number | null>(null)
   const positionedPaymentRef = useRef<string | null>(null)
   const isMountedRef = useRef(false)
   const loadGenerationRef = useRef(0)
@@ -106,6 +109,9 @@ export default function ProjectDetailView() {
       .catch(() => {
         // A dictionary failure must not prevent viewing the project or its payment plan.
       })
+      .finally(() => {
+        if (active) setProjectTypesLoading(false)
+      })
     return () => {
       active = false
     }
@@ -128,6 +134,7 @@ export default function ProjectDetailView() {
 
       const loadGeneration = ++loadGenerationRef.current
       setLoadErrorProjectId(null)
+      setLoadingProjectId(requestedProjectId)
       try {
         const [projectRes, paymentsRes] = await Promise.all([
           projectApi.get(requestedProjectId),
@@ -152,6 +159,14 @@ export default function ProjectDetailView() {
         }
         setLoadErrorProjectId(requestedProjectId)
         toastError('获取项目详情失败')
+      } finally {
+        if (
+          isMountedRef.current &&
+          loadGeneration === loadGenerationRef.current &&
+          activeProjectIdRef.current === requestedProjectId
+        ) {
+          setLoadingProjectId(null)
+        }
       }
     },
     [toastError],
@@ -221,10 +236,74 @@ export default function ProjectDetailView() {
 
   if (!project || project.id !== projectId) {
     return (
-      <Card.Root aria-label="正在加载项目详情" className="project-detail-loading">
-        <Skeleton height={28} shape="text" width="42%" />
-        <Skeleton height={160} />
-      </Card.Root>
+      <div
+        aria-busy="true"
+        aria-label="正在加载项目详情"
+        className="project-detail-view project-detail-loading"
+        role="status"
+      >
+        <PageHeader
+          actions={
+            <div className="main-loading-row">
+              <Skeleton height="2.5rem" width="2.5rem" />
+              <Skeleton height="2.5rem" width="2.5rem" />
+            </div>
+          }
+          description={
+            <div className="main-loading-row">
+              <Skeleton height="1rem" width="60%" />
+              <Skeleton height="1.5rem" width="4rem" />
+            </div>
+          }
+          leading={
+            <IconButton label="返回项目列表" onClick={() => navigate('/projects')} variant="ghost">
+              <i aria-hidden="true" className="ri-arrow-left-line" />
+            </IconButton>
+          }
+          title={
+            <>
+              <span className="ods-sr-only">项目详情</span>
+              <Skeleton height="2.5rem" width="min(100%, 28rem)" />
+            </>
+          }
+        />
+        <Skeleton height="2.5rem" width="14rem" />
+        {activeTab === 'payments' ? (
+          <div className="main-loading-stack main-detail-loading-payments">
+            <Skeleton height="1.5rem" width="7rem" />
+            {[0, 1, 2].map((row) => (
+              <div className="main-detail-loading-payment main-loading-row" key={row}>
+                <Skeleton height="2.5rem" shape="circle" width="2.5rem" />
+                <div className="main-loading-stack">
+                  <Skeleton height="1.25rem" width="40%" />
+                  <Skeleton height="1rem" width="65%" />
+                </div>
+                <Skeleton height="1.25rem" width="5rem" />
+              </div>
+            ))}
+          </div>
+        ) : (
+          <>
+            <div className="main-detail-loading-overview">
+              <div className="main-loading-stack">
+                <Skeleton height="1rem" width="4rem" />
+                <Skeleton height="3rem" width="50%" />
+                <Skeleton height="1rem" width="78%" />
+              </div>
+              <Skeleton height="5.5rem" shape="circle" width="5.5rem" />
+            </div>
+            <div className="main-detail-loading-columns">
+              {[0, 1, 2].map((column) => (
+                <div className="main-loading-stack" key={column}>
+                  <Skeleton height="1rem" width="40%" />
+                  <Skeleton height="1.75rem" width="65%" />
+                  <Skeleton height="1rem" width="75%" />
+                </div>
+              ))}
+            </div>
+          </>
+        )}
+      </div>
     )
   }
 
@@ -256,7 +335,19 @@ export default function ProjectDetailView() {
   ]
 
   return (
-    <div className="project-detail-view" data-motion-scope="project-detail">
+    <div
+      aria-busy={loadingProjectId === projectId || undefined}
+      className="project-detail-view"
+      data-motion-scope="project-detail"
+    >
+      {loadingProjectId === projectId ? (
+        <>
+          <span className="ods-sr-only" role="status">
+            正在更新项目详情
+          </span>
+          <Skeleton className="project-detail-load-indicator" height={2} />
+        </>
+      ) : null}
       <PageHeader
         actions={
           <ButtonGroup aria-label="项目操作" className="project-detail-actions">
@@ -264,7 +355,7 @@ export default function ProjectDetailView() {
               label="编辑项目"
               onClick={() => navigate(`/projects/edit/${project.id}`)}
               title="编辑项目"
-              variant="ghost"
+              variant="tertiary"
             >
               <i aria-hidden="true" className="ri-edit-line" />
             </IconButton>
@@ -272,7 +363,7 @@ export default function ProjectDetailView() {
               label={`导出项目：${project.name}`}
               onClick={() => void exportProject(project, payments)}
               title="导出项目"
-              variant="ghost"
+              variant="tertiary"
             >
               <i aria-hidden="true" className="ri-download-2-line" />
             </IconButton>
@@ -405,7 +496,15 @@ export default function ProjectDetailView() {
                     <dl className="project-record-list">
                       <div>
                         <dt>项目类型</dt>
-                        <dd>{projectTypeLabel}</dd>
+                        <dd aria-busy={projectTypesLoading || undefined}>
+                          {projectTypesLoading ? (
+                            <span aria-label="正在加载项目类型" role="status">
+                              <Skeleton height="1rem" width="6rem" />
+                            </span>
+                          ) : (
+                            projectTypeLabel
+                          )}
+                        </dd>
                       </div>
                       <div>
                         <dt>付款方式</dt>

@@ -22,10 +22,15 @@
     color var(--ods-duration-fast) var(--ods-ease-standard);
 }
 
-.ods-listbox__item:hover,
 .ods-listbox__item:focus-visible {
-  background: var(--ods-color-bg-surface-hover);
+  background: var(--ods-material-jade-sheen), var(--ods-color-bg-surface-hover);
   outline: none;
+}
+
+@media (hover: hover) and (pointer: fine) {
+  .ods-listbox__item:hover:not([aria-disabled='true']):not([data-selected='true']) {
+    background: var(--ods-material-jade-sheen), var(--ods-color-bg-surface-hover);
+  }
 }
 
 .ods-listbox__item:focus-visible {
@@ -33,7 +38,7 @@
 }
 
 .ods-listbox__item[data-selected='true'] {
-  background: var(--ods-color-accent-soft);
+  background: var(--ods-material-jade-sheen), var(--ods-color-accent-soft);
   color: var(--ods-color-accent-text);
   font-weight: var(--ods-font-weight-semibold);
 }

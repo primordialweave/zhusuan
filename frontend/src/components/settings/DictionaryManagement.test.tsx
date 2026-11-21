@@ -52,6 +52,25 @@ describe('DictionaryManagement request integrity', () => {
     vi.mocked(dictionaryApi.getItems).mockResolvedValue(response([]) as never)
   })
 
+  it('shows dictionary and item skeletons until their independent requests resolve', async () => {
+    const listRequest = deferred<ReturnType<typeof response<Dictionary[]>>>()
+    const itemsRequest = deferred<ReturnType<typeof response<DictionaryItem[]>>>()
+    vi.mocked(dictionaryApi.list).mockReturnValueOnce(listRequest.promise as never)
+    vi.mocked(dictionaryApi.getItems).mockReturnValueOnce(itemsRequest.promise as never)
+    render(<DictionaryManagement />)
+
+    expect(screen.getByRole('status', { name: '正在加载字典' })).toBeInTheDocument()
+    expect(screen.queryByText('字典还没有条目')).not.toBeInTheDocument()
+    await waitFor(() => expect(dictionaryApi.list).toHaveBeenCalledOnce())
+    await act(async () => listRequest.resolve(response(dictionaries)))
+    await waitFor(() => expect(dictionaryApi.getItems).toHaveBeenCalledOnce())
+    expect(screen.getByRole('status', { name: '正在加载项目类型条目' })).toBeInTheDocument()
+    await act(async () => itemsRequest.resolve(response([dictionaryItem(9, 1, '加载完成的类型')])))
+
+    expect(await screen.findByRole('row', { name: /加载完成的类型/ })).toBeInTheDocument()
+    expect(screen.queryByRole('status', { name: '正在加载项目类型条目' })).not.toBeInTheDocument()
+  })
+
   it('restores the actual trigger when pointer activation did not focus it', async () => {
     const user = userEvent.setup()
     render(<DictionaryManagement />)

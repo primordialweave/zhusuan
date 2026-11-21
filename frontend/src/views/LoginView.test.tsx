@@ -125,7 +125,12 @@ describe('LoginView', () => {
       }),
     )
     render(<LoginView />)
+    expect(screen.getByRole('status', { name: '正在读取登录信息' })).toHaveAttribute(
+      'aria-busy',
+      'true',
+    )
     enterCredentials()
+    expect(screen.queryByRole('status', { name: '正在读取登录信息' })).not.toBeInTheDocument()
 
     await act(async () => {
       resolve({ username: 'admin', password: 'old-password' })

@@ -1,0 +1,1402 @@
+{
+  "date": "2026-11-21",
+  "scope": "Every data-loading main view, form, settings section and project/notification popover; static pages keep available content",
+  "tests": {
+    "files": 116,
+    "passed": 644,
+    "failed": 0
+  },
+  "lint": {
+    "exitCode": 0,
+    "warnings": 0
+  },
+  "productionBuild": {
+    "typecheckExitCode": 0,
+    "viteExitCode": 0,
+    "fontCleanupExitCode": 0,
+    "output": "/tmp/zhusuan-skeleton/build/dist",
+    "commands": [
+      "typescript/bin/tsc --build",
+      "vite build --mode production --outDir /tmp/zhusuan-skeleton/build/dist --emptyOutDir",
+      "cleanup-remixicon-assets.mjs with cwd=/tmp/zhusuan-skeleton/build"
+    ],
+    "note": "Equivalent production pipeline writes to a temporary output, preserving the user dev app dist/watch state",
+    "bundleWarning": "882.56 kB main JS chunk exceeds 500 kB threshold"
+  },
+  "egoMain": [
+    {
+      "route": "dashboard",
+      "loading": {
+        "path": "/dashboard",
+        "theme": "light",
+        "count": 4,
+        "overflow": false,
+        "busy": [
+          "收款摘要",
+          "正在加载最近通知"
+        ],
+        "surface": {
+          "x": 450.3984375,
+          "y": 575.6875,
+          "width": 379.203125,
+          "height": 94.140625
+        }
+      },
+      "loaded": {
+        "overflow": false,
+        "surface": {
+          "x": 460.85546875,
+          "y": 575.6875,
+          "width": 358.2890625,
+          "height": 94.140625
+        }
+      }
+    },
+    {
+      "route": "projects",
+      "loading": {
+        "path": "/projects",
+        "theme": "light",
+        "count": 37,
+        "overflow": false,
+        "busy": [
+          null,
+          "搜索项目",
+          "项目列表",
+          "正在加载最近通知"
+        ],
+        "surface": {
+          "x": 32,
+          "y": 44,
+          "width": 1216,
+          "height": 637.6015625
+        }
+      },
+      "loaded": {
+        "overflow": false,
+        "surface": {
+          "x": 32,
+          "y": 44,
+          "width": 1216,
+          "height": 637.6015625
+        }
+      }
+    },
+    {
+      "route": "analytics",
+      "loading": {
+        "path": "/analytics",
+        "theme": "light",
+        "count": 13,
+        "overflow": false,
+        "busy": [
+          "关键指标",
+          "正在加载最近通知"
+        ],
+        "surface": {
+          "x": 32,
+          "y": 44,
+          "width": 1216,
+          "height": 637.6015625
+        }
+      },
+      "loaded": {
+        "overflow": false,
+        "surface": {
+          "x": 32,
+          "y": 44,
+          "width": 1216,
+          "height": 637.6015625
+        }
+      }
+    },
+    {
+      "route": "calendar",
+      "loading": {
+        "path": "/calendar",
+        "theme": "light",
+        "count": 45,
+        "overflow": false,
+        "busy": [
+          null,
+          "收款明细",
+          "正在加载最近通知"
+        ],
+        "surface": {
+          "x": 32,
+          "y": 44,
+          "width": 1216,
+          "height": 637.6015625
+        }
+      },
+      "loaded": {
+        "overflow": false,
+        "surface": {
+          "x": 32,
+          "y": 44,
+          "width": 1216,
+          "height": 637.6015625
+        }
+      }
+    },
+    {
+      "route": "projects/1?tab=payments",
+      "loading": {
+        "path": "/projects/1",
+        "theme": "light",
+        "count": 20,
+        "overflow": false,
+        "busy": [
+          "正在加载项目详情",
+          "正在加载最近通知"
+        ],
+        "surface": {
+          "x": 32,
+          "y": 44,
+          "width": 1216,
+          "height": 637.6015625
+        }
+      },
+      "loaded": {
+        "overflow": false,
+        "surface": {
+          "x": 32,
+          "y": 44,
+          "width": 1216,
+          "height": 637.6015625
+        }
+      }
+    },
+    {
+      "route": "projects/edit/1",
+      "loading": {
+        "path": "/projects/edit/1",
+        "theme": "light",
+        "count": 47,
+        "overflow": false,
+        "busy": [
+          "正在加载项目表单",
+          "正在加载最近通知"
+        ],
+        "surface": {
+          "x": 32,
+          "y": 44,
+          "width": 1216,
+          "height": 637.6015625
+        }
+      },
+      "loaded": {
+        "overflow": false,
+        "surface": {
+          "x": 32,
+          "y": 44,
+          "width": 1216,
+          "height": 637.6015625
+        }
+      }
+    },
+    {
+      "route": "payment/create",
+      "loading": {
+        "path": "/payment/create",
+        "theme": "light",
+        "count": 15,
+        "overflow": false,
+        "busy": [
+          "正在加载收款表单",
+          "正在加载最近通知"
+        ],
+        "surface": {
+          "x": 32,
+          "y": 44,
+          "width": 1216,
+          "height": 637.6015625
+        }
+      },
+      "loaded": {
+        "overflow": false,
+        "surface": {
+          "x": 32,
+          "y": 44,
+          "width": 1216,
+          "height": 637.6015625
+        }
+      }
+    },
+    {
+      "route": "projects/create",
+      "loading": {
+        "path": "/projects/create",
+        "theme": "light",
+        "count": 2,
+        "overflow": false,
+        "busy": [
+          "正在加载最近通知"
+        ],
+        "surface": {
+          "x": 32,
+          "y": 44,
+          "width": 1216,
+          "height": 637.6015625
+        }
+      },
+      "loaded": {
+        "overflow": false,
+        "surface": {
+          "x": 32,
+          "y": 44,
+          "width": 1216,
+          "height": 637.6015625
+        }
+      }
+    },
+    {
+      "route": "dashboard",
+      "loading": {
+        "path": "/dashboard",
+        "theme": "dark",
+        "count": 4,
+        "overflow": false,
+        "busy": [
+          "收款摘要",
+          "正在加载最近通知"
+        ],
+        "surface": {
+          "x": 450.3984375,
+          "y": 575.6875,
+          "width": 379.203125,
+          "height": 94.140625
+        }
+      },
+      "loaded": {
+        "overflow": false,
+        "surface": {
+          "x": 460.85546875,
+          "y": 575.6875,
+          "width": 358.2890625,
+          "height": 94.140625
+        }
+      }
+    },
+    {
+      "route": "projects",
+      "loading": {
+        "path": "/projects",
+        "theme": "dark",
+        "count": 37,
+        "overflow": false,
+        "busy": [
+          null,
+          "搜索项目",
+          "项目列表",
+          "正在加载最近通知"
+        ],
+        "surface": {
+          "x": 32,
+          "y": 44,
+          "width": 1216,
+          "height": 637.6015625
+        }
+      },
+      "loaded": {
+        "overflow": false,
+        "surface": {
+          "x": 32,
+          "y": 44,
+          "width": 1216,
+          "height": 637.6015625
+        }
+      }
+    },
+    {
+      "route": "analytics",
+      "loading": {
+        "path": "/analytics",
+        "theme": "dark",
+        "count": 13,
+        "overflow": false,
+        "busy": [
+          "关键指标",
+          "正在加载最近通知"
+        ],
+        "surface": {
+          "x": 32,
+          "y": 44,
+          "width": 1216,
+          "height": 637.6015625
+        }
+      },
+      "loaded": {
+        "overflow": false,
+        "surface": {
+          "x": 32,
+          "y": 44,
+          "width": 1216,
+          "height": 637.6015625
+        }
+      }
+    },
+    {
+      "route": "calendar",
+      "loading": {
+        "path": "/calendar",
+        "theme": "dark",
+        "count": 45,
+        "overflow": false,
+        "busy": [
+          null,
+          "收款明细",
+          "正在加载最近通知"
+        ],
+        "surface": {
+          "x": 32,
+          "y": 44,
+          "width": 1216,
+          "height": 637.6015625
+        }
+      },
+      "loaded": {
+        "overflow": false,
+        "surface": {
+          "x": 32,
+          "y": 44,
+          "width": 1216,
+          "height": 637.6015625
+        }
+      }
+    },
+    {
+      "route": "projects/1?tab=payments",
+      "loading": {
+        "path": "/projects/1",
+        "theme": "dark",
+        "count": 20,
+        "overflow": false,
+        "busy": [
+          "正在加载项目详情",
+          "正在加载最近通知"
+        ],
+        "surface": {
+          "x": 32,
+          "y": 44,
+          "width": 1216,
+          "height": 637.6015625
+        }
+      },
+      "loaded": {
+        "overflow": false,
+        "surface": {
+          "x": 32,
+          "y": 44,
+          "width": 1216,
+          "height": 637.6015625
+        }
+      }
+    },
+    {
+      "route": "projects/edit/1",
+      "loading": {
+        "path": "/projects/edit/1",
+        "theme": "dark",
+        "count": 47,
+        "overflow": false,
+        "busy": [
+          "正在加载项目表单",
+          "正在加载最近通知"
+        ],
+        "surface": {
+          "x": 32,
+          "y": 44,
+          "width": 1216,
+          "height": 637.6015625
+        }
+      },
+      "loaded": {
+        "overflow": false,
+        "surface": {
+          "x": 32,
+          "y": 44,
+          "width": 1216,
+          "height": 637.6015625
+        }
+      }
+    },
+    {
+      "route": "payment/create",
+      "loading": {
+        "path": "/payment/create",
+        "theme": "dark",
+        "count": 15,
+        "overflow": false,
+        "busy": [
+          "正在加载收款表单",
+          "正在加载最近通知"
+        ],
+        "surface": {
+          "x": 32,
+          "y": 44,
+          "width": 1216,
+          "height": 637.6015625
+        }
+      },
+      "loaded": {
+        "overflow": false,
+        "surface": {
+          "x": 32,
+          "y": 44,
+          "width": 1216,
+          "height": 637.6015625
+        }
+      }
+    },
+    {
+      "route": "projects/create",
+      "loading": {
+        "path": "/projects/create",
+        "theme": "dark",
+        "count": 2,
+        "overflow": false,
+        "busy": [
+          "正在加载最近通知"
+        ],
+        "surface": {
+          "x": 32,
+          "y": 44,
+          "width": 1216,
+          "height": 637.6015625
+        }
+      },
+      "loaded": {
+        "overflow": false,
+        "surface": {
+          "x": 32,
+          "y": 44,
+          "width": 1216,
+          "height": 637.6015625
+        }
+      }
+    }
+  ],
+  "egoSettings": [
+    {
+      "tab": "users",
+      "loading": {
+        "theme": "light",
+        "path": "?tab=users",
+        "count": 30,
+        "overflow": false,
+        "busy": [
+          "正在加载用户列表"
+        ]
+      },
+      "loaded": {
+        "overflow": false,
+        "headings": []
+      }
+    },
+    {
+      "tab": "developer",
+      "loading": {
+        "theme": "light",
+        "path": "?tab=developer",
+        "count": 30,
+        "overflow": false,
+        "busy": [
+          "正在加载令牌列表"
+        ]
+      },
+      "loaded": {
+        "overflow": false,
+        "headings": [
+          "访问令牌"
+        ]
+      }
+    },
+    {
+      "tab": "notification",
+      "loading": {
+        "theme": "light",
+        "path": "?tab=notification",
+        "count": 9,
+        "overflow": false,
+        "busy": [
+          "正在加载通知列表"
+        ]
+      },
+      "loaded": {
+        "overflow": false,
+        "headings": [
+          "全部已读"
+        ]
+      }
+    },
+    {
+      "tab": "dictionary",
+      "loading": {
+        "theme": "light",
+        "path": "?tab=dictionary",
+        "count": 23,
+        "overflow": false,
+        "busy": [
+          "正在加载字典"
+        ]
+      },
+      "loaded": {
+        "overflow": false,
+        "headings": []
+      }
+    },
+    {
+      "tab": "data-sync",
+      "loading": {
+        "theme": "light",
+        "path": "?tab=data-sync",
+        "count": 12,
+        "overflow": false,
+        "busy": [
+          "正在加载同步配置"
+        ]
+      },
+      "loaded": {
+        "overflow": false,
+        "headings": [
+          "云端数据库"
+        ]
+      }
+    },
+    {
+      "tab": "about",
+      "loading": {
+        "theme": "light",
+        "path": "?tab=about",
+        "count": 2,
+        "overflow": false,
+        "busy": [
+          "正在加载应用介绍",
+          null
+        ]
+      },
+      "loaded": {
+        "overflow": false,
+        "headings": [
+          "珠算"
+        ]
+      }
+    },
+    {
+      "tab": "profile",
+      "loading": {
+        "theme": "light",
+        "path": "?tab=profile",
+        "count": 16,
+        "overflow": false,
+        "busy": [
+          "正在加载个人信息",
+          "正在加载账户信息"
+        ]
+      },
+      "loaded": {
+        "overflow": false,
+        "headings": [
+          "个人信息",
+          "安全设置"
+        ]
+      }
+    },
+    {
+      "tab": "users",
+      "loading": {
+        "theme": "dark",
+        "path": "?tab=users",
+        "count": 30,
+        "overflow": false,
+        "busy": [
+          "正在加载用户列表"
+        ]
+      },
+      "loaded": {
+        "overflow": false,
+        "headings": []
+      }
+    },
+    {
+      "tab": "developer",
+      "loading": {
+        "theme": "dark",
+        "path": "?tab=developer",
+        "count": 30,
+        "overflow": false,
+        "busy": [
+          "正在加载令牌列表"
+        ]
+      },
+      "loaded": {
+        "overflow": false,
+        "headings": [
+          "访问令牌"
+        ]
+      }
+    },
+    {
+      "tab": "notification",
+      "loading": {
+        "theme": "dark",
+        "path": "?tab=notification",
+        "count": 9,
+        "overflow": false,
+        "busy": [
+          "正在加载通知列表"
+        ]
+      },
+      "loaded": {
+        "overflow": false,
+        "headings": [
+          "全部已读"
+        ]
+      }
+    },
+    {
+      "tab": "dictionary",
+      "loading": {
+        "theme": "dark",
+        "path": "?tab=dictionary",
+        "count": 23,
+        "overflow": false,
+        "busy": [
+          "正在加载字典"
+        ]
+      },
+      "loaded": {
+        "overflow": false,
+        "headings": []
+      }
+    },
+    {
+      "tab": "data-sync",
+      "loading": {
+        "theme": "dark",
+        "path": "?tab=data-sync",
+        "count": 12,
+        "overflow": false,
+        "busy": [
+          "正在加载同步配置"
+        ]
+      },
+      "loaded": {
+        "overflow": false,
+        "headings": [
+          "云端数据库"
+        ]
+      }
+    },
+    {
+      "tab": "about",
+      "loading": {
+        "theme": "dark",
+        "path": "?tab=about",
+        "count": 2,
+        "overflow": false,
+        "busy": [
+          "正在加载应用介绍",
+          null
+        ]
+      },
+      "loaded": {
+        "overflow": false,
+        "headings": [
+          "珠算"
+        ]
+      }
+    },
+    {
+      "tab": "profile",
+      "loading": {
+        "theme": "dark",
+        "path": "?tab=profile",
+        "count": 16,
+        "overflow": false,
+        "busy": [
+          "正在加载个人信息",
+          "正在加载账户信息"
+        ]
+      },
+      "loaded": {
+        "overflow": false,
+        "headings": [
+          "个人信息",
+          "安全设置"
+        ]
+      }
+    }
+  ],
+  "webkit": {
+    "pages": [
+      {
+        "route": "dashboard",
+        "loading": {
+          "theme": "light",
+          "count": 4,
+          "overflow": false
+        },
+        "loaded": {
+          "overflow": false
+        }
+      },
+      {
+        "route": "projects",
+        "loading": {
+          "theme": "light",
+          "count": 39,
+          "overflow": false
+        },
+        "loaded": {
+          "overflow": false
+        }
+      },
+      {
+        "route": "analytics",
+        "loading": {
+          "theme": "light",
+          "count": 13,
+          "overflow": false
+        },
+        "loaded": {
+          "overflow": false
+        }
+      },
+      {
+        "route": "calendar",
+        "loading": {
+          "theme": "light",
+          "count": 45,
+          "overflow": false
+        },
+        "loaded": {
+          "overflow": false
+        }
+      },
+      {
+        "route": "projects/1?tab=payments",
+        "loading": {
+          "theme": "light",
+          "count": 20,
+          "overflow": false
+        },
+        "loaded": {
+          "overflow": false
+        }
+      },
+      {
+        "route": "projects/edit/1",
+        "loading": {
+          "theme": "light",
+          "count": 47,
+          "overflow": false
+        },
+        "loaded": {
+          "overflow": false
+        }
+      },
+      {
+        "route": "payment/create",
+        "loading": {
+          "theme": "light",
+          "count": 15,
+          "overflow": false
+        },
+        "loaded": {
+          "overflow": false
+        }
+      },
+      {
+        "route": "projects/create",
+        "loading": {
+          "theme": "light",
+          "count": 2,
+          "overflow": false
+        },
+        "loaded": {
+          "overflow": false
+        }
+      },
+      {
+        "route": "settings?tab=users",
+        "loading": {
+          "theme": "light",
+          "count": 31,
+          "overflow": false
+        },
+        "loaded": {
+          "overflow": false
+        }
+      },
+      {
+        "route": "settings?tab=developer",
+        "loading": {
+          "theme": "light",
+          "count": 31,
+          "overflow": false
+        },
+        "loaded": {
+          "overflow": false
+        }
+      },
+      {
+        "route": "settings?tab=notification",
+        "loading": {
+          "theme": "light",
+          "count": 10,
+          "overflow": false
+        },
+        "loaded": {
+          "overflow": false
+        }
+      },
+      {
+        "route": "settings?tab=dictionary",
+        "loading": {
+          "theme": "light",
+          "count": 24,
+          "overflow": false
+        },
+        "loaded": {
+          "overflow": false
+        }
+      },
+      {
+        "route": "settings?tab=data-sync",
+        "loading": {
+          "theme": "light",
+          "count": 15,
+          "overflow": false
+        },
+        "loaded": {
+          "overflow": false
+        }
+      },
+      {
+        "route": "settings?tab=about",
+        "loading": {
+          "theme": "light",
+          "count": 3,
+          "overflow": false
+        },
+        "loaded": {
+          "overflow": false
+        }
+      },
+      {
+        "route": "settings?tab=profile",
+        "loading": {
+          "theme": "light",
+          "count": 24,
+          "overflow": false
+        },
+        "loaded": {
+          "overflow": false
+        }
+      },
+      {
+        "route": "dashboard",
+        "loading": {
+          "theme": "dark",
+          "count": 4,
+          "overflow": false
+        },
+        "loaded": {
+          "overflow": false
+        }
+      },
+      {
+        "route": "projects",
+        "loading": {
+          "theme": "dark",
+          "count": 39,
+          "overflow": false
+        },
+        "loaded": {
+          "overflow": false
+        }
+      },
+      {
+        "route": "analytics",
+        "loading": {
+          "theme": "dark",
+          "count": 13,
+          "overflow": false
+        },
+        "loaded": {
+          "overflow": false
+        }
+      },
+      {
+        "route": "calendar",
+        "loading": {
+          "theme": "dark",
+          "count": 45,
+          "overflow": false
+        },
+        "loaded": {
+          "overflow": false
+        }
+      },
+      {
+        "route": "projects/1?tab=payments",
+        "loading": {
+          "theme": "dark",
+          "count": 20,
+          "overflow": false
+        },
+        "loaded": {
+          "overflow": false
+        }
+      },
+      {
+        "route": "projects/edit/1",
+        "loading": {
+          "theme": "dark",
+          "count": 47,
+          "overflow": false
+        },
+        "loaded": {
+          "overflow": false
+        }
+      },
+      {
+        "route": "payment/create",
+        "loading": {
+          "theme": "dark",
+          "count": 15,
+          "overflow": false
+        },
+        "loaded": {
+          "overflow": false
+        }
+      },
+      {
+        "route": "projects/create",
+        "loading": {
+          "theme": "dark",
+          "count": 2,
+          "overflow": false
+        },
+        "loaded": {
+          "overflow": false
+        }
+      },
+      {
+        "route": "settings?tab=users",
+        "loading": {
+          "theme": "dark",
+          "count": 31,
+          "overflow": false
+        },
+        "loaded": {
+          "overflow": false
+        }
+      },
+      {
+        "route": "settings?tab=developer",
+        "loading": {
+          "theme": "dark",
+          "count": 31,
+          "overflow": false
+        },
+        "loaded": {
+          "overflow": false
+        }
+      },
+      {
+        "route": "settings?tab=notification",
+        "loading": {
+          "theme": "dark",
+          "count": 10,
+          "overflow": false
+        },
+        "loaded": {
+          "overflow": false
+        }
+      },
+      {
+        "route": "settings?tab=dictionary",
+        "loading": {
+          "theme": "dark",
+          "count": 24,
+          "overflow": false
+        },
+        "loaded": {
+          "overflow": false
+        }
+      },
+      {
+        "route": "settings?tab=data-sync",
+        "loading": {
+          "theme": "dark",
+          "count": 15,
+          "overflow": false
+        },
+        "loaded": {
+          "overflow": false
+        }
+      },
+      {
+        "route": "settings?tab=about",
+        "loading": {
+          "theme": "dark",
+          "count": 3,
+          "overflow": false
+        },
+        "loaded": {
+          "overflow": false
+        }
+      },
+      {
+        "route": "settings?tab=profile",
+        "loading": {
+          "theme": "dark",
+          "count": 24,
+          "overflow": false
+        },
+        "loaded": {
+          "overflow": false
+        }
+      }
+    ],
+    "errors": []
+  },
+  "narrow": [
+    {
+      "route": "projects",
+      "before": {
+        "width": 760,
+        "scrollWidth": 760,
+        "fields": null
+      },
+      "after": {
+        "width": 760,
+        "scrollWidth": 760,
+        "fields": null
+      }
+    },
+    {
+      "route": "analytics",
+      "before": {
+        "width": 760,
+        "scrollWidth": 760,
+        "fields": null
+      },
+      "after": {
+        "width": 760,
+        "scrollWidth": 760,
+        "fields": null
+      }
+    },
+    {
+      "route": "calendar",
+      "before": {
+        "width": 760,
+        "scrollWidth": 760,
+        "fields": null
+      },
+      "after": {
+        "width": 760,
+        "scrollWidth": 760,
+        "fields": null
+      }
+    },
+    {
+      "route": "projects/edit/1",
+      "before": {
+        "width": 760,
+        "scrollWidth": 760,
+        "fields": null
+      },
+      "after": {
+        "width": 760,
+        "scrollWidth": 760,
+        "fields": null
+      }
+    },
+    {
+      "route": "settings?tab=data-sync",
+      "before": {
+        "width": 760,
+        "scrollWidth": 760,
+        "fields": {
+          "x": 57.71875,
+          "y": 298,
+          "w": 644.5625,
+          "h": 514
+        }
+      },
+      "after": {
+        "width": 760,
+        "scrollWidth": 760,
+        "fields": {
+          "x": 57.71875,
+          "y": 298,
+          "w": 644.5625,
+          "h": 514
+        }
+      }
+    },
+    {
+      "route": "settings?tab=profile",
+      "before": {
+        "width": 760,
+        "scrollWidth": 760,
+        "fields": {
+          "x": 57.71875,
+          "y": 329.3984375,
+          "w": 644.5625,
+          "h": 425
+        }
+      },
+      "after": {
+        "width": 760,
+        "scrollWidth": 760,
+        "fields": {
+          "x": 57.71875,
+          "y": 329.3984375,
+          "w": 644.5625,
+          "h": 425
+        }
+      }
+    }
+  ],
+  "settingsGeometry": [
+    {
+      "theme": "light",
+      "tab": "profile",
+      "before": {
+        "headings": [
+          {
+            "text": "个人信息",
+            "y": 170.234375
+          },
+          {
+            "text": "安全设置",
+            "y": 467.234375
+          }
+        ],
+        "account": {
+          "x": 298.21875,
+          "y": 85.9375,
+          "w": 880.5625,
+          "h": 48.3984375
+        },
+        "fields": {
+          "x": 298.21875,
+          "y": 216.3359375,
+          "w": 880.5625,
+          "h": 158
+        },
+        "overflow": false
+      },
+      "after": {
+        "headings": [
+          {
+            "text": "个人信息",
+            "y": 170.234375
+          },
+          {
+            "text": "安全设置",
+            "y": 467.234375
+          }
+        ],
+        "account": {
+          "x": 298.21875,
+          "y": 85.9375,
+          "w": 880.5625,
+          "h": 48.3984375
+        },
+        "fields": {
+          "x": 298.21875,
+          "y": 216.3359375,
+          "w": 880.5625,
+          "h": 158
+        },
+        "overflow": false
+      }
+    },
+    {
+      "theme": "light",
+      "tab": "data-sync",
+      "before": {
+        "headings": [
+          {
+            "text": "云端数据库",
+            "y": 71.8359375
+          }
+        ],
+        "account": null,
+        "fields": {
+          "x": 298.21875,
+          "y": 184.9375,
+          "w": 880.5625,
+          "h": 247
+        },
+        "overflow": false
+      },
+      "after": {
+        "headings": [
+          {
+            "text": "云端数据库",
+            "y": 71.8359375
+          }
+        ],
+        "account": null,
+        "fields": {
+          "x": 298.21875,
+          "y": 184.9375,
+          "w": 880.5625,
+          "h": 247
+        },
+        "overflow": false
+      }
+    },
+    {
+      "theme": "dark",
+      "tab": "profile",
+      "before": {
+        "headings": [
+          {
+            "text": "个人信息",
+            "y": 170.234375
+          },
+          {
+            "text": "安全设置",
+            "y": 467.234375
+          }
+        ],
+        "account": {
+          "x": 298.21875,
+          "y": 85.9375,
+          "w": 880.5625,
+          "h": 48.3984375
+        },
+        "fields": {
+          "x": 298.21875,
+          "y": 216.3359375,
+          "w": 880.5625,
+          "h": 158
+        },
+        "overflow": false
+      },
+      "after": {
+        "headings": [
+          {
+            "text": "个人信息",
+            "y": 170.234375
+          },
+          {
+            "text": "安全设置",
+            "y": 467.234375
+          }
+        ],
+        "account": {
+          "x": 298.21875,
+          "y": 85.9375,
+          "w": 880.5625,
+          "h": 48.3984375
+        },
+        "fields": {
+          "x": 298.21875,
+          "y": 216.3359375,
+          "w": 880.5625,
+          "h": 158
+        },
+        "overflow": false
+      }
+    },
+    {
+      "theme": "dark",
+      "tab": "data-sync",
+      "before": {
+        "headings": [
+          {
+            "text": "云端数据库",
+            "y": 71.8359375
+          }
+        ],
+        "account": null,
+        "fields": {
+          "x": 298.21875,
+          "y": 184.9375,
+          "w": 880.5625,
+          "h": 247
+        },
+        "overflow": false
+      },
+      "after": {
+        "headings": [
+          {
+            "text": "云端数据库",
+            "y": 71.8359375
+          }
+        ],
+        "account": null,
+        "fields": {
+          "x": 298.21875,
+          "y": 184.9375,
+          "w": 880.5625,
+          "h": 247
+        },
+        "overflow": false
+      }
+    }
+  ],
+  "queryAndError": {
+    "failure": {
+      "skeletonCount": 0,
+      "busy": "false",
+      "text": "项目管理\n全部状态\n新建项目\n项目名称\t客户\t截止日期\t合同金额\t已收款\t收款进度\t状态\t\n操作\n\n\n项目列表加载失败\n暂时无法获取项目数据，请稍后重试。\n重试"
+    },
+    "retryLoaded": true,
+    "filterLoading": {
+      "oldRows": 0,
+      "count": 38
+    },
+    "filtered": "松间小店\n\t松间设计\t2026-11-15\t¥8,000\t¥8,000\t\n¥8,000 / ¥8,000\n100%\n\t已完成\t"
+  },
+  "recoveryAndMotion": {
+    "profileFailure": {
+      "skeletons": 0,
+      "hasSave": false,
+      "hasPassword": false
+    },
+    "profileRetry": true,
+    "motion": {
+      "normal": "ods-skeleton-shimmer",
+      "appReduced": "none",
+      "systemReduced": "none"
+    },
+    "skeletonRemoved": true
+  },
+  "sync": [
+    {
+      "theme": "light",
+      "comparisonSkeletons": 27,
+      "comparisonLoaded": true,
+      "cloudConnection": "mocked isolated proxy only"
+    },
+    {
+      "theme": "dark",
+      "comparisonSkeletons": 27,
+      "comparisonLoaded": true,
+      "cloudConnection": "mocked isolated proxy only"
+    }
+  ],
+  "projectPicker": {
+    "deferredInitialAndRepeatedSearchTestPassed": true,
+    "slowSearchSkeletonThenDataObserved": true
+  },
+  "nativeReadStates": "Remembered credential retrieval and initial updater status use deferred unit mocks; no installed app credentials, download or installation touched",
+  "data": "Synthetic isolated demonstration database; sync test/compare intercepted by QA proxy, no real cloud connection or sync",
+  "visualCoverage": "Ego eight main/form views and seven settings tabs in both themes; WebKit four main and four settings views in both themes. Screenshots cover visible viewport only.",
+  "limitations": [
+    "WebKit browser validation, not native WKWebView/Retina acceptance",
+    "No target hardware performance benchmark"
+  ],
+  "implementation": "Existing Skeleton component, four shapes including ring, static jade background/shadows; no new dependency, production delay, background polling or extra initial API fetch. Explicit profile retry reuses the existing refresh endpoint."
+}

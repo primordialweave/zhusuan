@@ -3,6 +3,7 @@ import { useNavigate, useParams } from 'react-router-dom'
 import { dictionaryApi } from '@/api/dictionary'
 import { projectApi, type Payment, type ProjectRequest } from '@/api/project'
 import { PaymentPlanEditor } from '@/components/project/PaymentPlanEditor'
+import { ProjectFormSkeleton } from '@/components/project/ProjectFormSkeleton'
 import { MoneyInput } from '@/components/project/MoneyInput'
 import { validateProject, validatePaymentPlan } from '@/components/project/formValidation'
 import { createPaymentPlanItem, type PaymentPlanItem } from '@/components/project/paymentPlan'
@@ -27,6 +28,7 @@ import {
   PageHeader,
   ProgressBar,
   Select,
+  Skeleton,
   Surface,
   TextArea,
   type SelectOption,
@@ -105,6 +107,7 @@ export default function ProjectCreateView() {
   const showValidation = validationScope === (id ?? 'new')
   const fieldErrors = showValidation ? validateProject(form, amountText) : {}
   const [projectTypes, setProjectTypes] = useState<SelectOption[]>(defaultProjectTypeOptions)
+  const [loadingProjectTypes, setLoadingProjectTypes] = useState(true)
   const [paymentItems, setPaymentItems] = useState<PaymentPlanItem[]>([createPaymentPlanItem()])
   const paymentSaveStateRef = useRef(createPaymentPlanSaveState())
   const savedProjectRef = useRef<{ id: number; signature: string } | null>(null)
@@ -120,7 +123,9 @@ export default function ProjectCreateView() {
   const projectId = id ? Number(id) : null
   const activeProjectIdRef = useRef<number | null>(projectId)
   const isEdit = projectId !== null
-  const isInstallment = form.payment_method === '分期付款'
+  const isInstallment =
+    form.payment_method === '分期付款' ||
+    (!form.payment_method && paymentItems.some((item) => item.stage !== 'all'))
   const projectTypeOptions =
     form.type && !projectTypes.some((option) => option.value === form.type)
       ? [...projectTypes, { label: form.type, value: form.type }]
@@ -175,6 +180,9 @@ export default function ProjectCreateView() {
       })
       .catch(() => {
         if (active) toastError('获取项目类型失败，暂时显示默认选项')
+      })
+      .finally(() => {
+        if (active) setLoadingProjectTypes(false)
       })
     return () => {
       active = false
@@ -372,272 +380,288 @@ export default function ProjectCreateView() {
         </Alert>
       ) : null}
 
-      <div className="project-compose-layout">
-        <Card.Root className="project-form-card" padding="none" variant="transparent">
-          <form
-            aria-label="项目编辑表单"
-            className="project-form"
-            noValidate
-            onSubmit={handleSubmit}
-          >
-            <FormSection className="project-form-section" title="基本信息">
-              <FormGrid columns={2}>
-                <Field.Root required invalid={Boolean(fieldErrors.name)}>
-                  <Field.Label>项目名称</Field.Label>
-                  <Input
-                    autoCapitalize="off"
-                    autoComplete="off"
-                    autoCorrect="off"
-                    onChange={(event) => updateForm({ name: event.currentTarget.value })}
-                    placeholder="请输入项目名称"
-                    spellCheck={false}
-                    type="text"
-                    value={form.name}
-                  />
-                  {fieldErrors.name ? <Field.Error>{fieldErrors.name}</Field.Error> : null}
-                </Field.Root>
+      {isEdit && loadedProjectId !== projectId ? (
+        loadErrorProjectId !== projectId ? (
+          <ProjectFormSkeleton />
+        ) : null
+      ) : (
+        <div className="project-compose-layout">
+          <Card.Root className="project-form-card" padding="none" variant="transparent">
+            <form
+              aria-label="项目编辑表单"
+              className="project-form"
+              noValidate
+              onSubmit={handleSubmit}
+            >
+              <FormSection className="project-form-section" title="基本信息">
+                <FormGrid columns={2}>
+                  <Field.Root required invalid={Boolean(fieldErrors.name)}>
+                    <Field.Label>项目名称</Field.Label>
+                    <Input
+                      autoCapitalize="off"
+                      autoComplete="off"
+                      autoCorrect="off"
+                      onChange={(event) => updateForm({ name: event.currentTarget.value })}
+                      placeholder="请输入项目名称"
+                      spellCheck={false}
+                      type="text"
+                      value={form.name}
+                    />
+                    {fieldErrors.name ? <Field.Error>{fieldErrors.name}</Field.Error> : null}
+                  </Field.Root>
 
-                <Field.Root required invalid={Boolean(fieldErrors.company)}>
-                  <Field.Label>客户名称</Field.Label>
-                  <Input
-                    autoCapitalize="off"
-                    autoComplete="off"
-                    autoCorrect="off"
-                    onChange={(event) => updateForm({ company: event.currentTarget.value })}
-                    placeholder="请输入客户名称"
-                    spellCheck={false}
-                    type="text"
-                    value={form.company}
-                  />
-                  {fieldErrors.company ? <Field.Error>{fieldErrors.company}</Field.Error> : null}
-                </Field.Root>
+                  <Field.Root required invalid={Boolean(fieldErrors.company)}>
+                    <Field.Label>客户名称</Field.Label>
+                    <Input
+                      autoCapitalize="off"
+                      autoComplete="off"
+                      autoCorrect="off"
+                      onChange={(event) => updateForm({ company: event.currentTarget.value })}
+                      placeholder="请输入客户名称"
+                      spellCheck={false}
+                      type="text"
+                      value={form.company}
+                    />
+                    {fieldErrors.company ? <Field.Error>{fieldErrors.company}</Field.Error> : null}
+                  </Field.Root>
 
-                <Field.Root required invalid={Boolean(fieldErrors.type)}>
-                  <Field.Label>项目类型</Field.Label>
-                  <Select
-                    aria-label="项目类型"
-                    onValueChange={(value) => updateForm({ type: value })}
-                    options={projectTypeOptions}
-                    placeholder="请选择项目类型"
-                    value={form.type}
-                  />
-                  {fieldErrors.type ? <Field.Error>{fieldErrors.type}</Field.Error> : null}
-                </Field.Root>
+                  <Field.Root required invalid={Boolean(fieldErrors.type)}>
+                    <Field.Label>项目类型</Field.Label>
+                    {loadingProjectTypes && !form.type ? (
+                      <div aria-label="正在加载项目类型" role="status">
+                        <Skeleton height="var(--ods-control-height-md)" />
+                      </div>
+                    ) : (
+                      <Select
+                        aria-label="项目类型"
+                        onValueChange={(value) => updateForm({ type: value })}
+                        options={projectTypeOptions}
+                        placeholder="请选择项目类型"
+                        value={form.type}
+                      />
+                    )}
+                    {fieldErrors.type ? <Field.Error>{fieldErrors.type}</Field.Error> : null}
+                  </Field.Root>
 
-                <Field.Root required invalid={Boolean(fieldErrors.status)}>
-                  <Field.Label>项目状态</Field.Label>
-                  <Select
-                    aria-label="项目状态"
-                    onValueChange={(value) => updateForm({ status: value })}
-                    options={projectStatusOptions}
-                    value={form.status}
-                  />
-                  {fieldErrors.status ? <Field.Error>{fieldErrors.status}</Field.Error> : null}
-                </Field.Root>
+                  <Field.Root required invalid={Boolean(fieldErrors.status)}>
+                    <Field.Label>项目状态</Field.Label>
+                    <Select
+                      aria-label="项目状态"
+                      onValueChange={(value) => updateForm({ status: value })}
+                      options={projectStatusOptions}
+                      value={form.status}
+                    />
+                    {fieldErrors.status ? <Field.Error>{fieldErrors.status}</Field.Error> : null}
+                  </Field.Root>
 
-                <Field.Root required invalid={Boolean(fieldErrors.start_date)}>
-                  <Field.Label>开始日期</Field.Label>
-                  <DatePicker
-                    aria-label="开始日期"
-                    onValueChange={(value) => updateForm({ start_date: value })}
-                    placeholder="请选择开始日期"
-                    value={form.start_date}
-                  />
-                  {fieldErrors.start_date ? (
-                    <Field.Error>{fieldErrors.start_date}</Field.Error>
-                  ) : null}
-                </Field.Root>
+                  <Field.Root required invalid={Boolean(fieldErrors.start_date)}>
+                    <Field.Label>开始日期</Field.Label>
+                    <DatePicker
+                      aria-label="开始日期"
+                      onValueChange={(value) => updateForm({ start_date: value })}
+                      placeholder="请选择开始日期"
+                      value={form.start_date}
+                    />
+                    {fieldErrors.start_date ? (
+                      <Field.Error>{fieldErrors.start_date}</Field.Error>
+                    ) : null}
+                  </Field.Root>
 
-                <Field.Root required invalid={Boolean(fieldErrors.end_date)}>
-                  <Field.Label>截止日期</Field.Label>
-                  <DatePicker
-                    aria-label="截止日期"
-                    min={form.start_date || undefined}
-                    onValueChange={(value) => updateForm({ end_date: value })}
-                    placeholder="请选择截止日期"
-                    value={form.end_date}
-                  />
-                  {fieldErrors.end_date ? <Field.Error>{fieldErrors.end_date}</Field.Error> : null}
-                </Field.Root>
-              </FormGrid>
-            </FormSection>
+                  <Field.Root required invalid={Boolean(fieldErrors.end_date)}>
+                    <Field.Label>截止日期</Field.Label>
+                    <DatePicker
+                      aria-label="截止日期"
+                      min={form.start_date || undefined}
+                      onValueChange={(value) => updateForm({ end_date: value })}
+                      placeholder="请选择截止日期"
+                      value={form.end_date}
+                    />
+                    {fieldErrors.end_date ? (
+                      <Field.Error>{fieldErrors.end_date}</Field.Error>
+                    ) : null}
+                  </Field.Root>
+                </FormGrid>
+              </FormSection>
 
-            <FormSection className="project-form-section" title="合同信息">
-              <FormGrid columns={2}>
-                <Field.Root required invalid={Boolean(fieldErrors.total_amount)}>
-                  <Field.Label>合同总金额 (¥)</Field.Label>
-                  <MoneyInput
-                    onValueChange={(value) => {
-                      setAmountText(value)
-                      updateForm({ total_amount: Number(value) || 0 })
-                    }}
-                    placeholder="0.00"
-                    value={amountText}
-                  />
-                  {fieldErrors.total_amount ? (
-                    <Field.Error>{fieldErrors.total_amount}</Field.Error>
-                  ) : null}
-                </Field.Root>
+              <FormSection className="project-form-section" title="合同信息">
+                <FormGrid columns={2}>
+                  <Field.Root required invalid={Boolean(fieldErrors.total_amount)}>
+                    <Field.Label>合同总金额 (¥)</Field.Label>
+                    <MoneyInput
+                      onValueChange={(value) => {
+                        setAmountText(value)
+                        updateForm({ total_amount: Number(value) || 0 })
+                      }}
+                      placeholder="0.00"
+                      value={amountText}
+                    />
+                    {fieldErrors.total_amount ? (
+                      <Field.Error>{fieldErrors.total_amount}</Field.Error>
+                    ) : null}
+                  </Field.Root>
 
-                <Field.Root required invalid={Boolean(fieldErrors.contract_date)}>
-                  <Field.Label>合同日期</Field.Label>
-                  <DatePicker
-                    aria-label="合同日期"
-                    onValueChange={(value) => updateForm({ contract_date: value })}
-                    placeholder="请选择合同日期"
-                    value={form.contract_date || ''}
-                  />
-                  {fieldErrors.contract_date ? (
-                    <Field.Error>{fieldErrors.contract_date}</Field.Error>
-                  ) : null}
-                </Field.Root>
+                  <Field.Root required invalid={Boolean(fieldErrors.contract_date)}>
+                    <Field.Label>合同日期</Field.Label>
+                    <DatePicker
+                      aria-label="合同日期"
+                      onValueChange={(value) => updateForm({ contract_date: value })}
+                      placeholder="请选择合同日期"
+                      value={form.contract_date || ''}
+                    />
+                    {fieldErrors.contract_date ? (
+                      <Field.Error>{fieldErrors.contract_date}</Field.Error>
+                    ) : null}
+                  </Field.Root>
 
-                <Field.Root>
-                  <Field.Label>合同编号</Field.Label>
-                  <Input
-                    autoCapitalize="off"
-                    autoComplete="off"
-                    autoCorrect="off"
-                    onChange={(event) => updateForm({ contract_number: event.currentTarget.value })}
-                    placeholder="选择合同日期后自动生成"
-                    spellCheck={false}
-                    type="text"
-                    value={form.contract_number || ''}
-                  />
-                </Field.Root>
+                  <Field.Root>
+                    <Field.Label>合同编号</Field.Label>
+                    <Input
+                      autoCapitalize="off"
+                      autoComplete="off"
+                      autoCorrect="off"
+                      onChange={(event) =>
+                        updateForm({ contract_number: event.currentTarget.value })
+                      }
+                      placeholder="选择合同日期后自动生成"
+                      spellCheck={false}
+                      type="text"
+                      value={form.contract_number || ''}
+                    />
+                  </Field.Root>
 
-                <Field.Root required invalid={Boolean(fieldErrors.payment_method)}>
-                  <Field.Label>付款模式</Field.Label>
-                  <Select
-                    aria-label="付款模式"
-                    onValueChange={(value) => {
-                      updateForm({ payment_method: value })
-                      ensurePaymentItems(value)
-                    }}
-                    options={paymentMethodOptions}
-                    value={form.payment_method}
-                  />
-                  {fieldErrors.payment_method ? (
-                    <Field.Error>{fieldErrors.payment_method}</Field.Error>
-                  ) : null}
-                </Field.Root>
-              </FormGrid>
-            </FormSection>
+                  <Field.Root required invalid={Boolean(fieldErrors.payment_method)}>
+                    <Field.Label>付款模式</Field.Label>
+                    <Select
+                      aria-label="付款模式"
+                      onValueChange={(value) => {
+                        updateForm({ payment_method: value })
+                        if (value) ensurePaymentItems(value)
+                      }}
+                      options={paymentMethodOptions}
+                      value={form.payment_method}
+                    />
+                    {fieldErrors.payment_method ? (
+                      <Field.Error>{fieldErrors.payment_method}</Field.Error>
+                    ) : null}
+                  </Field.Root>
+                </FormGrid>
+              </FormSection>
 
-            <PaymentPlanEditor
-              className="project-form-section"
-              installment={isInstallment}
-              errors={paymentErrors}
-              items={paymentItems}
-              onItemsChange={setPaymentItems}
-              stageOptions={isInstallment ? installmentStageOptions : oneTimeStageOptions}
-              title="收款计划"
-            />
-
-            <FormSection className="project-form-section" title="补充说明">
-              <Field.Root>
-                <Field.Label>项目描述</Field.Label>
-                <TextArea
-                  onChange={(event) => updateForm({ description: event.currentTarget.value })}
-                  placeholder="请输入项目描述（选填）"
-                  rows={4}
-                  value={form.description || ''}
-                />
-              </Field.Root>
-            </FormSection>
-
-            <div className="project-form-actions-shell">
-              <FormActions>
-                <Button onClick={() => navigate(-1)} type="button" variant="ghost">
-                  取消
-                </Button>
-                <Button
-                  disabled={isEdit && loadedProjectId !== projectId}
-                  pending={saving}
-                  type="submit"
-                >
-                  {saving ? '保存中...' : '确认保存'}
-                </Button>
-              </FormActions>
-            </div>
-          </form>
-        </Card.Root>
-
-        <aside aria-label="项目草稿摘要" className="project-form-aside">
-          <Card.Root className="project-draft-card" padding="none" variant="transparent">
-            <div className="project-draft-card__heading">
-              <h2>{form.name.trim() || '未命名项目'}</h2>
-              <p>{form.company.trim() || '客户待填写'}</p>
-            </div>
-
-            <div className="project-draft-progress">
-              <div>
-                <span>档案完整度</span>
-                <strong>{completion}%</strong>
-              </div>
-              <ProgressBar
-                label="项目档案完整度"
-                motion="reveal"
-                size="sm"
-                value={completion}
-                valueLabel={`${completion}%`}
+              <PaymentPlanEditor
+                className="project-form-section"
+                installment={isInstallment}
+                errors={paymentErrors}
+                items={paymentItems}
+                onItemsChange={setPaymentItems}
+                stageOptions={isInstallment ? installmentStageOptions : oneTimeStageOptions}
+                title="收款计划"
               />
-            </div>
 
-            <dl className="project-draft-meta">
-              <div>
-                <dt>项目状态</dt>
-                <dd>
-                  <ProjectStatusChip status={form.status || 'active'} />
-                </dd>
-              </div>
-              <div>
-                <dt>项目类型</dt>
-                <dd>{getOptionLabel(projectTypeOptions, form.type)}</dd>
-              </div>
-              <div>
-                <dt>合同总额</dt>
-                <dd>{formatCurrency(form.total_amount)}</dd>
-              </div>
-              <div>
-                <dt>付款模式</dt>
-                <dd>{form.payment_method || '待填写'}</dd>
-              </div>
-              <div>
-                <dt>收款节点</dt>
-                <dd>{paymentItems.length} 笔</dd>
-              </div>
-            </dl>
+              <FormSection className="project-form-section" title="补充说明">
+                <Field.Root>
+                  <Field.Label>项目描述</Field.Label>
+                  <TextArea
+                    onChange={(event) => updateForm({ description: event.currentTarget.value })}
+                    placeholder="请输入项目描述（选填）"
+                    rows={4}
+                    value={form.description || ''}
+                  />
+                </Field.Root>
+              </FormSection>
 
-            <div className="project-plan-check" data-state={planState}>
-              <Surface padding="none" radius="control" tone="accent" variant="inset">
-                <i
-                  aria-hidden="true"
-                  className={planAligned ? 'ri-check-line' : 'ri-scales-3-line'}
-                />
-              </Surface>
-              <div className="project-plan-check__content">
-                <span>计划金额</span>
-                <strong>{formatCurrency(plannedAmount)}</strong>
-                <small>
-                  {!form.total_amount
-                    ? '填写合同金额后自动核对'
-                    : planAligned
-                      ? '与合同金额一致'
-                      : planDifference > 0
-                        ? `还有 ${formatCurrency(planDifference)} 待分配`
-                        : `已超出 ${formatCurrency(Math.abs(planDifference))}`}
-                </small>
+              <div className="project-form-actions-shell">
+                <FormActions>
+                  <Button onClick={() => navigate(-1)} type="button" variant="ghost">
+                    取消
+                  </Button>
+                  <Button
+                    disabled={isEdit && loadedProjectId !== projectId}
+                    pending={saving}
+                    type="submit"
+                  >
+                    {saving ? '保存中...' : '确认保存'}
+                  </Button>
+                </FormActions>
               </div>
-            </div>
+            </form>
           </Card.Root>
 
-          <p className="project-form-aside__note">
-            <i aria-hidden="true" className="ri-shield-check-line" />
-            保存后将同步生成项目台账与收款跟踪记录
-          </p>
-        </aside>
-      </div>
+          <aside aria-label="项目草稿摘要" className="project-form-aside">
+            <Card.Root className="project-draft-card" padding="none" variant="transparent">
+              <div className="project-draft-card__heading">
+                <h2>{form.name.trim() || '未命名项目'}</h2>
+                <p>{form.company.trim() || '客户待填写'}</p>
+              </div>
+
+              <div className="project-draft-progress">
+                <div>
+                  <span>档案完整度</span>
+                  <strong>{completion}%</strong>
+                </div>
+                <ProgressBar
+                  label="项目档案完整度"
+                  motion="reveal"
+                  size="sm"
+                  value={completion}
+                  valueLabel={`${completion}%`}
+                />
+              </div>
+
+              <dl className="project-draft-meta">
+                <div>
+                  <dt>项目状态</dt>
+                  <dd>
+                    <ProjectStatusChip status={form.status || 'active'} />
+                  </dd>
+                </div>
+                <div>
+                  <dt>项目类型</dt>
+                  <dd>{getOptionLabel(projectTypeOptions, form.type)}</dd>
+                </div>
+                <div>
+                  <dt>合同总额</dt>
+                  <dd>{formatCurrency(form.total_amount)}</dd>
+                </div>
+                <div>
+                  <dt>付款模式</dt>
+                  <dd>{form.payment_method || '待填写'}</dd>
+                </div>
+                <div>
+                  <dt>收款节点</dt>
+                  <dd>{paymentItems.length} 笔</dd>
+                </div>
+              </dl>
+
+              <div className="project-plan-check" data-state={planState}>
+                <Surface padding="none" radius="control" tone="accent" variant="inset">
+                  <i
+                    aria-hidden="true"
+                    className={planAligned ? 'ri-check-line' : 'ri-scales-3-line'}
+                  />
+                </Surface>
+                <div className="project-plan-check__content">
+                  <span>计划金额</span>
+                  <strong>{formatCurrency(plannedAmount)}</strong>
+                  <small>
+                    {!form.total_amount
+                      ? '填写合同金额后自动核对'
+                      : planAligned
+                        ? '与合同金额一致'
+                        : planDifference > 0
+                          ? `还有 ${formatCurrency(planDifference)} 待分配`
+                          : `已超出 ${formatCurrency(Math.abs(planDifference))}`}
+                  </small>
+                </div>
+              </div>
+            </Card.Root>
+
+            <p className="project-form-aside__note">
+              <i aria-hidden="true" className="ri-shield-check-line" />
+              保存后将同步生成项目台账与收款跟踪记录
+            </p>
+          </aside>
+        </div>
+      )}
     </div>
   )
 }

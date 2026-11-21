@@ -1,6 +1,6 @@
-# Orange Design System
+# 珠算设计系统（ODS）
 
-Orange Design System（ODS）是 Orange 桌面应用的视觉与交互公共层。它将烟雨（浅色）与夜雨（深色）两套江南主题、macOS/Wails 桌面壳层约束和无障碍行为整理为稳定 API，使页面不再依赖散落的颜色、尺寸和全局 class。
+珠算设计系统（保留 ODS 名称与 `ods-*` API）是珠算桌面应用的视觉与交互公共层。它将烟雨（浅色）与夜雨（深色）两套江南主题、macOS/Wails 桌面壳层约束和无障碍行为整理为稳定 API，使页面不再依赖散落的颜色、尺寸和全局 class。
 
 ## 目标
 
@@ -17,7 +17,7 @@ frontend/src/design-system/
   tokens/         reference、semantic、themes
   foundations/    reset、typography、focus、motion、accessibility
   components/     可复用交互组件
-  patterns/       Orange 产品级组合模式
+  patterns/       珠算产品级组合模式
   internal/       不公开的状态和无障碍辅助逻辑
   dev/            开发态 Design System Gallery
   styles.css      唯一 CSS 入口与 cascade layer 顺序
@@ -57,7 +57,7 @@ export type { ButtonProps } from "./components/button";
 - 键盘、focus、ARIA 和 collection 交互契约。
 - variant、size、loading、invalid 等一致状态模型。
 
-ODS 不安装 HeroUI、不复制其源码、不复刻全部组件目录，也不沿用其品牌视觉。Orange 的 token、CSS、组件实现和产品模式均由本项目维护。Calendar、ComboBox 等复杂组件在 Phase 2 再独立评估 React Aria 等无障碍 primitives。
+ODS 不安装 HeroUI、不复制其源码、不复刻全部组件目录，也不沿用其品牌视觉。珠算的 token、CSS、组件实现和产品模式均由本项目维护。Calendar、ComboBox 等复杂组件在 Phase 2 再独立评估 React Aria 等无障碍 primitives。
 
 ## 相关文档
 

@@ -82,9 +82,9 @@
     }
   ],
   "schemaVersion": 39,
-  "tags": ["orange", "api"],
+  "tags": ["zhusuan", "api"],
   "templating": { "list": [] },
   "time": { "from": "now-1h", "to": "now" },
-  "title": "Orange API Dashboard",
+  "title": "珠算 API Dashboard",
   "uid": "orange-api-dashboard"
 }

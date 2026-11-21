@@ -62,7 +62,7 @@ func Seed(db *gorm.DB) error {
 		// 使用 GORM 模型创建，不显式指定自增主键 id，
 		// 以保证在 PostgreSQL/MySQL 下自增序列正确前进，避免后续注册主键冲突。
 		users := []models.User{
-			{Username: "admin", Password: string(adminPasswordHash), Name: "管理员", Email: "admin@orange.com", Phone: "13800000000", Role: "admin", Department: "技术部", Position: "系统管理员", Status: 1},
+			{Username: "admin", Password: string(adminPasswordHash), Name: "管理员", Email: "admin@example.com", Phone: "13800000000", Role: "admin", Department: "技术部", Position: "系统管理员", Status: 1},
 			{Username: "xu", Password: string(userPasswordHash), Name: "郑旭", Email: "xu@company.com", Phone: "13800000001", Role: "user", Department: "技术部", Position: "项目经理", Status: 1},
 		}
 		if err := tx.Create(&users).Error; err != nil {

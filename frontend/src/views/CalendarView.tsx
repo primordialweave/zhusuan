@@ -265,10 +265,13 @@ export default function CalendarView() {
 
   const renderDayContent = useCallback(
     (date: string) => {
+      if (loading && date.startsWith(monthKey)) {
+        return <Skeleton className="calendar-day-loading" height="0.45rem" width="72%" />
+      }
       const summary = daySummaries.get(date)
       return summary ? <DayEntries summary={summary} /> : null
     },
-    [daySummaries],
+    [daySummaries, loading, monthKey],
   )
 
   return (
@@ -299,8 +302,16 @@ export default function CalendarView() {
               <h2 className="calendar-detail__heading">{formatDayHeading(selectedDate)}</h2>
               {loading ? (
                 <div aria-label="正在加载收款计划" className="calendar-loading-list" role="status">
-                  <Skeleton height="3.75rem" />
-                  <Skeleton height="3.75rem" />
+                  {[0, 1].map((row) => (
+                    <div className="calendar-loading-entry" key={row}>
+                      <div className="calendar-loading-identity">
+                        <Skeleton height="1rem" width="75%" />
+                        <Skeleton height="0.75rem" width="48%" />
+                      </div>
+                      <Skeleton height="1rem" width="4rem" />
+                      <Skeleton height="1.5rem" width="3rem" />
+                    </div>
+                  ))}
                 </div>
               ) : loadError ? (
                 <EmptyState
@@ -328,10 +339,23 @@ export default function CalendarView() {
               )}
             </section>
 
-            {loading || loadError ? null : (
+            {loadError ? null : (
               <section className="calendar-detail__section">
                 <h2 className="calendar-detail__heading">近期收款</h2>
-                {upcomingPayments.length === 0 ? (
+                {loading ? (
+                  <div
+                    aria-label="正在加载近期收款"
+                    className="calendar-loading-list"
+                    role="status"
+                  >
+                    {[0, 1, 2].map((row) => (
+                      <div className="calendar-loading-upcoming" key={row}>
+                        <Skeleton height="1rem" width="4rem" />
+                        <Skeleton height="1rem" width="72%" />
+                      </div>
+                    ))}
+                  </div>
+                ) : upcomingPayments.length === 0 ? (
                   <p className="calendar-detail__empty">本月没有其他待收款项</p>
                 ) : (
                   <ul className="calendar-upcoming">

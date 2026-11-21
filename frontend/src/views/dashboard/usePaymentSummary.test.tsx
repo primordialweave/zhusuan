@@ -69,12 +69,14 @@ describe('usePaymentSummary', () => {
       void result.current.retry()
     })
     expect(result.current).toMatchObject({ paid: 100, pending: 50, status: 'data' })
+    expect(result.current.refreshing).toBe(true)
 
     await act(async () => {
       refresh.resolve(statsResponse(150, 0))
       await refresh.promise
     })
     expect(result.current).toMatchObject({ paid: 150, pending: 0, status: 'data' })
+    expect(result.current.refreshing).toBe(false)
   })
 
   it('ignores a response that arrives after the workbench was left', async () => {
@@ -135,5 +137,25 @@ describe('usePaymentSummary', () => {
         expect.any(AbortSignal),
       ),
     )
+  })
+
+  it('marks a new scope loading before its request starts so old amounts are not relabelled', async () => {
+    const next = createDeferred<never>()
+    vi.mocked(dashboardApi.getStats)
+      .mockResolvedValueOnce(statsResponse(900, 100))
+      .mockReturnValueOnce(next.promise)
+    const { rerender, result } = renderHook(({ scope }) => usePaymentSummary(scope), {
+      initialProps: { scope: 'all' as 'all' | 'month' },
+    })
+    await waitFor(() => expect(result.current.status).toBe('data'))
+
+    rerender({ scope: 'month' })
+    expect(result.current.status).toBe('loading')
+    await waitFor(() => expect(dashboardApi.getStats).toHaveBeenCalledTimes(2))
+    await act(async () => {
+      next.resolve(statsResponse(20, 5))
+      await next.promise
+    })
+    expect(result.current).toMatchObject({ paid: 20, pending: 5, status: 'data' })
   })
 })

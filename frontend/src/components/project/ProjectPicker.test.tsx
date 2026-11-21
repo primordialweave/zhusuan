@@ -13,6 +13,29 @@ const reply = (list: Project[], total: number) => ({ data: { data: { list, total
 describe('paged project picker', () => {
   beforeEach(() => vi.clearAllMocks())
 
+  it('shows skeletons while the first page is pending and does not get stuck on a repeated search', async () => {
+    let finish!: (value: never) => void
+    vi.mocked(projectApi.list).mockReturnValue(
+      new Promise((resolve) => {
+        finish = resolve
+      }),
+    )
+    const user = userEvent.setup()
+    render(<ProjectPicker onValueChange={() => undefined} />)
+
+    await user.click(screen.getByRole('button', { name: '选择项目' }))
+    const status = screen.getByRole('status', { name: '正在加载项目' })
+    expect(status.querySelectorAll('[data-slot="skeleton"]')).toHaveLength(5)
+    expect(screen.queryByText('没有匹配项目')).not.toBeInTheDocument()
+    await waitFor(() => expect(projectApi.list).toHaveBeenCalled())
+
+    finish(reply([project(1)], 1) as never)
+    await screen.findByRole('option', { name: '项目1' })
+    await user.type(screen.getByRole('searchbox', { name: '搜索所属项目' }), '{Enter}')
+    expect(screen.queryByRole('status', { name: '正在加载项目' })).not.toBeInTheDocument()
+    expect(projectApi.list).toHaveBeenCalledTimes(1)
+  })
+
   it('loads only on demand, changes pages, and finds projects beyond the first 100', async () => {
     vi.mocked(projectApi.list).mockImplementation((params) =>
       Promise.resolve(

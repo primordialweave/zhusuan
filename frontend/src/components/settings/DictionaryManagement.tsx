@@ -11,9 +11,11 @@ import {
   IconButton,
   Input,
   Modal,
+  Skeleton,
   Table,
   Tabs,
 } from '@/design-system'
+import { SettingsTableSkeleton } from './SettingsSkeleton'
 
 interface DictionaryItemForm {
   id: number
@@ -37,6 +39,9 @@ export default function DictionaryManagement() {
   const [activeDictId, setActiveDictId] = useState('')
   const [dictionaries, setDictionaries] = useState<Dictionary[]>([])
   const [activeDictItems, setActiveDictItems] = useState<DictionaryItem[]>([])
+  const [dictionariesLoading, setDictionariesLoading] = useState(true)
+  const [itemsLoading, setItemsLoading] = useState(true)
+  const [itemsScope, setItemsScope] = useState('')
   const [showModal, setShowModal] = useState(false)
   const [isEditing, setIsEditing] = useState(false)
   const [modalForm, setModalForm] = useState<DictionaryItemForm>(emptyForm)
@@ -46,6 +51,7 @@ export default function DictionaryManagement() {
   const submitInFlightRef = useRef(false)
   const returnFocusRef = useRef<HTMLButtonElement | null>(null)
   const nameInputRef = useRef<HTMLInputElement | null>(null)
+  const loadedItemsCodeRef = useRef('')
 
   const activeDictName = useMemo(() => {
     const dictionary = dictionaries.find((item) => item.code === activeDictId)
@@ -56,11 +62,19 @@ export default function DictionaryManagement() {
     async (code: string) => {
       if (!code) return
       const requestId = ++itemsRequestRef.current
+      setItemsLoading(true)
+      if (loadedItemsCodeRef.current !== code) setActiveDictItems([])
       try {
         const response = await dictionaryApi.getItems(code)
         if (requestId === itemsRequestRef.current) setActiveDictItems(response.data.data)
       } catch {
         if (requestId === itemsRequestRef.current) toastError('获取字典项失败')
+      } finally {
+        if (requestId === itemsRequestRef.current) {
+          loadedItemsCodeRef.current = code
+          setItemsScope(code)
+          setItemsLoading(false)
+        }
       }
     },
     [toastError],
@@ -68,6 +82,7 @@ export default function DictionaryManagement() {
 
   const fetchDictionaries = useCallback(async () => {
     const requestId = ++dictionariesRequestRef.current
+    setDictionariesLoading(true)
     try {
       const response = await dictionaryApi.list()
       const nextDictionaries = response.data.data
@@ -77,6 +92,8 @@ export default function DictionaryManagement() {
       }
     } catch {
       if (requestId === dictionariesRequestRef.current) toastError('获取字典失败')
+    } finally {
+      if (requestId === dictionariesRequestRef.current) setDictionariesLoading(false)
     }
   }, [toastError])
 
@@ -178,17 +195,30 @@ export default function DictionaryManagement() {
     }
   }
 
+  const showItemSkeleton =
+    dictionariesLoading ||
+    (Boolean(activeDictId) &&
+      (itemsScope !== activeDictId || (itemsLoading && activeDictItems.length === 0)))
+
   return (
     <div className="dict-management settings-page">
       <Tabs.Root className="dict-layout" onValueChange={setActiveDictId} value={activeDictId}>
         <div className="settings-toolbar">
-          <Tabs.List aria-label="字典分类" variant="accent">
-            {dictionaries.map((dictionary) => (
-              <Tabs.Tab key={dictionary.id} value={dictionary.code}>
-                {dictionary.name}
-              </Tabs.Tab>
-            ))}
-          </Tabs.List>
+          {dictionariesLoading && dictionaries.length === 0 ? (
+            <div aria-hidden="true" className="settings-loading__tabs">
+              <Skeleton height="2rem" width="6rem" />
+              <Skeleton height="2rem" width="6rem" />
+              <Skeleton height="2rem" width="6rem" />
+            </div>
+          ) : (
+            <Tabs.List aria-label="字典分类" variant="accent">
+              {dictionaries.map((dictionary) => (
+                <Tabs.Tab key={dictionary.id} value={dictionary.code}>
+                  {dictionary.name}
+                </Tabs.Tab>
+              ))}
+            </Tabs.List>
+          )}
           <Button disabled={!activeDictId} onClick={openAddModal}>
             <i aria-hidden="true" className="ri-add-line" />
             <span>新增条目</span>
@@ -196,7 +226,12 @@ export default function DictionaryManagement() {
         </div>
 
         <Tabs.Panel value={activeDictId}>
-          {activeDictItems.length === 0 ? (
+          {showItemSkeleton ? (
+            <SettingsTableSkeleton
+              columns={4}
+              label={dictionariesLoading ? '正在加载字典' : `正在加载${activeDictName}条目`}
+            />
+          ) : activeDictItems.length === 0 ? (
             <EmptyState
               className="settings-empty"
               icon={<i aria-hidden="true" className="ri-file-list-3-line" />}
@@ -204,7 +239,11 @@ export default function DictionaryManagement() {
               title={`${activeDictName || '字典'}还没有条目`}
             />
           ) : (
-            <Table.Root aria-label={`${activeDictName}条目`} className="settings-table">
+            <Table.Root
+              aria-busy={itemsLoading}
+              aria-label={`${activeDictName}条目`}
+              className="settings-table"
+            >
               <Table.Header>
                 <Table.Row>
                   <Table.Column>名称</Table.Column>

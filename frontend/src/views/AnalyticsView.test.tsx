@@ -58,6 +58,7 @@ const stats: DashboardStats = {
   overdue_amount: 50,
   overdue_trend: -1,
   paid_amount: 750,
+  planned_received_amount: 800,
   paid_trend: 5,
   pending_amount: 200,
   pending_trend: 3,
@@ -138,22 +139,80 @@ describe('AnalyticsView', () => {
     expect(figures.map((figure) => figure.textContent)).toEqual([
       '平均到账偏差延后 12 天',
       '预期收款¥1,000',
-      '收款率75%',
+      '收款率80%',
       '逾期比例5%',
     ])
     expect(screen.queryByLabelText(/上升|下降|持平/)).not.toBeInTheDocument()
   })
 
-  it('shows a dash instead of a zero rate when nothing is planned in the period', async () => {
+  it('counts early receipts toward the planned collection rate and structure while retaining cash flow', async () => {
+    const user = userEvent.setup()
+    exportCsv.mockResolvedValue({ path: '/tmp/report.csv', status: 'saved' })
     vi.mocked(dashboardApi.getStats).mockResolvedValue(
-      apiResponse({ ...stats, overdue_amount: 0, paid_amount: 300, total_amount: 0 }) as never,
+      apiResponse({
+        ...stats,
+        total_amount: 134_200,
+        paid_amount: 131_200,
+        planned_received_amount: 134_200,
+        pending_amount: 0,
+        overdue_amount: 0,
+      }) as never,
+    )
+    vi.mocked(dashboardApi.getIncomeTrend).mockResolvedValue(
+      apiResponse({
+        actual_values: [131_200],
+        expected_values: [134_200],
+        labels: ['2026-04'],
+      }) as never,
     )
     render(<AnalyticsView />)
 
-    await screen.findByText('¥0')
+    await waitFor(() => expect(screen.getByLabelText('关键指标')).toHaveTextContent('收款率100%'))
+    const structure = within(screen.getByRole('region', { name: '收款结构' }))
+    expect(structure.getByText('已收款').closest('div')).toHaveTextContent('已收款¥134,200')
+    expect(structure.getByText('待收款').closest('div')).toHaveTextContent('待收款¥0')
+    expect(structure.getByRole('img', { name: '已收款 100%，待收款 0%' })).toBeInTheDocument()
+    await waitFor(() => expect(chartInstances.at(-1)?.data.datasets[0].data).toEqual([131_200]))
+
+    await user.click(screen.getByRole('button', { name: '导出报表' }))
+    await waitFor(() => expect(exportCsv).toHaveBeenCalledOnce())
+    const rows = exportCsv.mock.calls[0][1]
+    expect(rows).toContainEqual(['本期计划已收金额', 134_200])
+    expect(rows).toContainEqual(['本期实际到账金额', 131_200])
+    expect(rows).toContainEqual(['收款率', '100%'])
+    expect(rows).toContainEqual(['2026-04', 131_200, 134_200])
+  })
+
+  it('excludes receipts from other planned periods from the collection rate and structure', async () => {
+    vi.mocked(dashboardApi.getStats).mockResolvedValue(
+      apiResponse({ ...stats, paid_amount: 1_500 }) as never,
+    )
+    render(<AnalyticsView />)
+
+    await waitFor(() => expect(screen.getByLabelText('关键指标')).toHaveTextContent('收款率80%'))
+    const structure = within(screen.getByRole('region', { name: '收款结构' }))
+    expect(structure.getByText('已收款').closest('div')).toHaveTextContent('已收款¥800')
+    expect(structure.getByRole('img', { name: '已收款 80%，待收款 20%' })).toBeInTheDocument()
+  })
+
+  it('shows a dash instead of a zero rate when nothing is planned in the period', async () => {
+    vi.mocked(dashboardApi.getStats).mockResolvedValue(
+      apiResponse({
+        ...stats,
+        overdue_amount: 0,
+        paid_amount: 300,
+        planned_received_amount: 0,
+        pending_amount: 0,
+        total_amount: 0,
+      }) as never,
+    )
+    render(<AnalyticsView />)
+
+    await screen.findByText('本期暂无收款结构')
     const figures = [...screen.getByLabelText('关键指标').querySelectorAll('.analytics-metric')]
     expect(figures[2]).toHaveTextContent('收款率—')
     expect(figures[3]).toHaveTextContent('逾期比例—')
+    expect(screen.getByText('本期暂无收款结构')).toBeInTheDocument()
   })
 
   it('draws the trend as a solid received line over a dashed planned line', async () => {
@@ -281,14 +340,14 @@ describe('AnalyticsView', () => {
 
     await screen.findByText('¥1,000')
     const structure = within(screen.getByRole('region', { name: '收款结构' }))
-    // 750 received against 200 still due: 79% / 21%. Overdue is inside pending, not a third part.
-    expect(structure.getByRole('img', { name: '已收款 79%，待收款 21%' })).toBeInTheDocument()
+    // This planned cohort is 800 received / 200 outstanding; cash receipts are a separate metric.
+    expect(structure.getByRole('img', { name: '已收款 80%，待收款 20%' })).toBeInTheDocument()
     expect(
       [...structure.getByRole('img').querySelectorAll('circle')].map((part) =>
         part.getAttribute('data-part'),
       ),
     ).toEqual(['pending', 'paid'])
-    expect(structure.getByText('已收款').closest('div')).toHaveTextContent('已收款¥750')
+    expect(structure.getByText('已收款').closest('div')).toHaveTextContent('已收款¥800')
     expect(structure.getByText('待收款').closest('div')).toHaveTextContent('待收款¥200其中逾期 ¥50')
   })
 
@@ -308,6 +367,7 @@ describe('AnalyticsView', () => {
         ...stats,
         overdue_amount: 0,
         paid_amount: 0,
+        planned_received_amount: 0,
         pending_amount: 0,
         total_amount: 0,
       }) as never,

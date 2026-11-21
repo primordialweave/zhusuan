@@ -41,7 +41,7 @@ func main() {
 	}
 
 	go func() {
-		slog.Info("Starting Orange API server", "addr", addr)
+		slog.Info("Starting Zhusuan API server", "addr", addr)
 		if err := server.ListenAndServe(); err != nil && !errors.Is(err, http.ErrServerClosed) {
 			log.Fatalf("API server failed: %v", err)
 		}

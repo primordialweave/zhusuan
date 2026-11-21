@@ -26,7 +26,7 @@ groups:
 
       # 服务不可用
       - alert: ServiceDown
-        expr: up{job="orange-api"} == 0
+        expr: up{job="zhusuan-api"} == 0
         for: 1m
         labels:
           severity: critical

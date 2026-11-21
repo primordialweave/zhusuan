@@ -9,9 +9,9 @@
 
 </div>
 
-珠算基于 Wails v3、Go 和 React 构建，管理项目合同、分期收款、待收与逾期款项。原 Orange 仓库已迁入 [Primordial Weave](https://github.com/primordialweave/zhusuan)，当前版本为 **1.0.2**。[下载安装包](https://github.com/primordialweave/zhusuan/releases/tag/v1.0.2)。
+珠算基于 Wails v3、Go 和 React 构建，管理项目合同、分期收款、待收与逾期款项。原 Orange 仓库已迁入 [Primordial Weave](https://github.com/primordialweave/zhusuan)，当前版本为 **1.1.0**。[下载安装包](https://github.com/primordialweave/zhusuan/releases/tag/v1.1.0)。
 
-macOS 下载：[Apple Silicon（M 系列）DMG](https://github.com/primordialweave/zhusuan/releases/download/v1.0.2/zhusuan-v1.0.2-macOS-arm64.dmg) · [Intel DMG](https://github.com/primordialweave/zhusuan/releases/download/v1.0.2/zhusuan-v1.0.2-macOS-amd64.dmg)。打开后将珠算拖入 Applications，再从应用程序文件夹启动。
+macOS 下载：[Apple Silicon（M 系列）DMG](https://github.com/primordialweave/zhusuan/releases/download/v1.1.0/zhusuan-v1.1.0-macOS-arm64.dmg) · [Intel DMG](https://github.com/primordialweave/zhusuan/releases/download/v1.1.0/zhusuan-v1.1.0-macOS-amd64.dmg)。打开后将珠算拖入 Applications，再从应用程序文件夹启动。
 
 ## 功能
 
@@ -83,6 +83,9 @@ task dev
 旧 Orange 默认数据库在首次启动时通过 SQLite 一致快照迁入新目录，原库保留，已有新库不覆盖。非空自定义 `DB_PATH` 继续使用原路径。Windows 首次安装使用新的用户目录，不继承 Orange 安装位置；完成安装后需要以原用户启动一次珠算；保存的登录信息与必要外观设置按新身份迁移。详见 [迁移说明](docs/migration.md)。
 
 `.env` 可配置 `DB_TYPE`、`DB_PATH`、云端数据库连接、`API_SERVER_PORT`、`GITHUB_REPO` 和日志选项。生产环境必须配置随机 `JWT_SECRET`，限制外部 API/metrics 的访问，保持数据库与备份目录只对必要用户可读写。JWT 使用当前用户状态/角色校验；退出登录清除本地会话，不能据此宣称服务端令牌即时撤销。
+
+关于页介绍可在 `.env` 设置 `APP_SLOGAN="心中有数，账目有序"`，修改后重启应用或 API 服务生效。未配置、空值或仅空白时使用此默认文案；该介绍由后端提供，无需重新构建前端。微信公众号名称通过 `APP_WECHAT_PUBLIC_ACCOUNT="原初织界"` 配置，默认“原初织界”，遵循相同的重启与留空回退规则。
+
 
 ## 检查与发布
 

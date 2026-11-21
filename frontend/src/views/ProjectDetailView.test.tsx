@@ -104,6 +104,27 @@ function renderProjectDetail(initialEntry: string) {
 }
 
 describe('ProjectDetailView payment deep links', () => {
+  it('keeps the page in a skeleton state until both the project and payment plan arrive', async () => {
+    const pending = createDeferred<Awaited<ReturnType<typeof projectApi.get>>>()
+    vi.mocked(projectApi.get).mockReturnValue(pending.promise)
+    const { container } = renderProjectDetail('/projects/42')
+
+    expect(screen.getByRole('status', { name: '正在加载项目详情' })).toHaveAttribute(
+      'aria-busy',
+      'true',
+    )
+    expect(container.querySelector('[data-slot="skeleton"]')).toBeInTheDocument()
+    expect(screen.queryByText('¥100,000.00')).not.toBeInTheDocument()
+    await waitFor(() => expect(projectApi.get).toHaveBeenCalledWith(42))
+
+    await act(async () => {
+      pending.resolve(apiResponse(project) as never)
+      await pending.promise
+    })
+    expect(await screen.findByRole('heading', { name: '星轨项目' })).toBeInTheDocument()
+    expect(screen.queryByRole('status', { name: '正在加载项目详情' })).not.toBeInTheDocument()
+  })
+
   beforeEach(() => {
     vi.clearAllMocks()
     vi.mocked(dictionaryApi.getItems).mockResolvedValue(apiResponse(projectTypes) as never)
@@ -164,8 +185,9 @@ describe('ProjectDetailView payment deep links', () => {
     )
     renderProjectDetail('/projects/42')
 
-    expect(await screen.findByText('medicine')).toBeInTheDocument()
-    expect(screen.getByRole('heading', { name: project.name })).toBeInTheDocument()
+    expect(await screen.findByRole('heading', { name: project.name })).toBeInTheDocument()
+    expect(screen.getByRole('status', { name: '正在加载项目类型' })).toBeInTheDocument()
+    expect(screen.queryByText('medicine')).not.toBeInTheDocument()
 
     await act(async () => {
       dictionary.resolve(apiResponse(projectTypes) as never)

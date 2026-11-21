@@ -1,6 +1,6 @@
-# Orange 项目贡献指南
+# 珠算项目贡献指南
 
-感谢你考虑为 Orange 项目做出贡献！🎉
+感谢你考虑为珠算项目做出贡献！🎉
 
 ## 📋 目录
 
@@ -35,7 +35,7 @@
 5. **环境信息**：
    - 操作系统（Windows/Linux/macOS）
    - Go 版本
-   - Orange 版本
+   - 珠算版本
 6. **截图**：如果适用，添加截图帮助解释问题
 7. **日志**：相关的错误日志
 
@@ -58,8 +58,8 @@
 
 ```bash
 # Fork 后克隆你的仓库
-git clone https://github.com/YOUR_USERNAME/Orange.git
-cd Orange
+git clone https://github.com/YOUR_USERNAME/zhusuan.git
+cd zhusuan
 
 # 添加上游仓库
 git remote add upstream https://github.com/primordialweave/zhusuan.git
@@ -86,17 +86,19 @@ git checkout -b fix/your-bug-fix
 ```bash
 # 安装依赖
 go mod download
-cd frontend && npm install
+cd frontend
+npm ci
+node node_modules/eslint/bin/eslint.js src --max-warnings=0
+npm run test:run
+npm run build
+cd ..
 
-# 运行测试
-go test ./...
-
-# 代码检查
-go vet ./...
-golangci-lint run
-
-# 构建验证
-go build
+# 前端构建完成后再检查 Go，避免 embed 读取正在重建的 dist
+# 排除需要独立构建标签的移动端脚手架
+go test -mod=readonly . ./internal/... ./cmd/...
+go vet -mod=readonly . ./internal/... ./cmd/...
+golangci-lint run . ./internal/... ./cmd/...
+go build -mod=readonly .
 ```
 
 ### 4. 提交更改

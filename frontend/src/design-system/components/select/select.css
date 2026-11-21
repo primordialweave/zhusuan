@@ -9,7 +9,8 @@
   padding-inline: var(--ods-control-padding-inline-md);
   border: 1px solid var(--ods-color-border-default);
   border-radius: var(--ods-radius-control);
-  background: var(--ods-color-bg-surface);
+  background: var(--ods-material-jade-sheen), var(--ods-color-bg-surface);
+  box-shadow: var(--ods-material-jade-inset-shadow);
   color: var(--ods-color-fg-default);
   font-family: var(--ods-font-family-body);
   font-size: var(--ods-font-size-md);
@@ -39,7 +40,9 @@
 
 .ods-select:focus-visible {
   border-color: var(--ods-color-border-focus);
-  box-shadow: 0 0 0 4px var(--ods-color-accent-soft);
+  box-shadow:
+    var(--ods-material-jade-inset-shadow),
+    0 0 0 4px var(--ods-color-accent-soft);
   outline: none;
 }
 
@@ -49,6 +52,7 @@
 
 .ods-select:disabled {
   background: var(--ods-color-bg-canvas-subtle);
+  box-shadow: none;
   color: var(--ods-color-fg-disabled);
   cursor: not-allowed;
 }
@@ -70,11 +74,87 @@
   color: var(--ods-color-fg-muted);
   font-size: var(--ods-font-size-lg);
   line-height: 1;
-  transition: transform var(--ods-duration-fast) var(--ods-ease-spring);
+  justify-content: center;
+  width: var(--ods-space-5);
+  transition:
+    opacity var(--ods-duration-instant) var(--ods-ease-standard),
+    transform var(--ods-duration-instant) var(--ods-ease-standard);
 }
 
 .ods-select__caret[data-open='true'] {
   transform: rotate(180deg);
+}
+
+.ods-select__clear {
+  position: absolute;
+  top: 50%;
+  inset-inline-end: calc(var(--ods-control-padding-inline-md) - var(--ods-space-1));
+  display: inline-flex;
+  width: calc(var(--ods-space-5) + var(--ods-space-2));
+  height: calc(var(--ods-space-5) + var(--ods-space-2));
+  align-items: center;
+  justify-content: center;
+  padding: 0;
+  border: 1px solid transparent;
+  border-radius: var(--ods-radius-pill);
+  background: transparent;
+  color: var(--ods-color-fg-muted);
+  font-size: var(--ods-font-size-lg);
+  cursor: pointer;
+  opacity: 0;
+  pointer-events: none;
+  transform: translateY(-50%) scale(0.8) rotate(-45deg);
+  transition:
+    opacity var(--ods-duration-instant) var(--ods-ease-standard),
+    transform var(--ods-duration-instant) var(--ods-ease-standard);
+}
+
+.ods-select-root:focus-within .ods-select[data-clearable='true'] .ods-select__caret {
+  opacity: 0;
+  transform: scale(0.8) rotate(45deg);
+}
+
+.ods-select-root:focus-within .ods-select__clear {
+  opacity: 1;
+  pointer-events: auto;
+  transform: translateY(-50%);
+}
+
+@media (hover: hover) and (pointer: fine) {
+  .ods-select-root:hover .ods-select[data-clearable='true'] .ods-select__caret {
+    opacity: 0;
+    transform: scale(0.8) rotate(45deg);
+  }
+
+  .ods-select-root:hover .ods-select__clear {
+    opacity: 1;
+    pointer-events: auto;
+    transform: translateY(-50%);
+  }
+
+  .ods-select__clear:hover {
+    background: var(--ods-material-jade-sheen), var(--ods-color-accent-soft);
+    color: var(--ods-color-accent-text);
+  }
+}
+
+.ods-select__clear:focus-visible {
+  outline: var(--ods-focus-ring-width) solid var(--ods-color-border-focus);
+  outline-offset: 1px;
+}
+
+/* A touch pointer has no hover; keep the clear target stable through its tap. */
+@media (hover: none) {
+  .ods-select[data-clearable='true'] .ods-select__caret {
+    opacity: 0;
+    transform: none;
+  }
+
+  .ods-select__clear {
+    opacity: 1;
+    pointer-events: auto;
+    transform: translateY(-50%);
+  }
 }
 
 .ods-select__popover {
@@ -87,7 +167,8 @@
 }
 
 @media (prefers-reduced-motion: reduce) {
-  .ods-select__caret {
+  .ods-select__caret,
+  .ods-select__clear {
     transition: none;
   }
 }

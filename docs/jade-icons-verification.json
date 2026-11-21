@@ -1,0 +1,235 @@
+{
+  "source": "/Users/willxue/will/FruitsAI/Orange/frontend/public/帝王绿翡翠算盘图标.png",
+  "source_sha256": "b6c938ba2cb8af426660a3d331e7884e4a33fcaaccc1018cda9a19ca46957c23",
+  "source_size": [
+    1254,
+    1254
+  ],
+  "source_unchanged": true,
+  "master_matches_source": true,
+  "catalog_source_digest": "56ce6bf7c4fd7c026d0fb9c44f9567aab5f6457c19d6e1079d95409756391eaf",
+  "mac_composition_scale": 1.18,
+  "asset_count": 44,
+  "files": [
+    {
+      "path": "build/linux/icons/256/zhusuan.png",
+      "bytes": 82497,
+      "sha256": "1ed93fd205aa709ee01cfcd3693b8e64ab8d5367b74802adc8a11e6adf897ceb"
+    },
+    {
+      "path": "build/linux/icons/128/zhusuan.png",
+      "bytes": 26065,
+      "sha256": "9b5595a40b86409ae14ee85691c313e34eeba28f65d3042bdbe04fb2243cc93e"
+    },
+    {
+      "path": "build/linux/icons/512/zhusuan.png",
+      "bytes": 282122,
+      "sha256": "b85f1344524dff3bc0bfd10a176144eede83eca55d357887c703573189060d75"
+    },
+    {
+      "path": "build/windows/msix/Assets/SplashScreen.png",
+      "bytes": 113241,
+      "sha256": "8dc145916515f06e1be707440d1d126e91edfea281fe77d1facf71defc99ed9b"
+    },
+    {
+      "path": "build/windows/msix/Assets/Square150x150Logo.png",
+      "bytes": 33703,
+      "sha256": "58ea1da4a22528ed31b058f7310f3ada6c31572ce64e0dcfde2ee98c394d3f35"
+    },
+    {
+      "path": "build/windows/msix/Assets/StoreLogo.png",
+      "bytes": 5465,
+      "sha256": "67742d951a02b38fe12ed9976e6e8a4a6bee68bdcc6fa79def5d530d21e769b4"
+    },
+    {
+      "path": "build/windows/msix/Assets/Wide310x150Logo.png",
+      "bytes": 34719,
+      "sha256": "2e6bd6560b94b401b1e82a20c07144a0f1a199354935c1c6bce5fe0e0c4b455d"
+    },
+    {
+      "path": "build/windows/msix/Assets/AppIcon.png",
+      "bytes": 82497,
+      "sha256": "1ed93fd205aa709ee01cfcd3693b8e64ab8d5367b74802adc8a11e6adf897ceb"
+    },
+    {
+      "path": "build/windows/msix/Assets/Square44x44Logo.png",
+      "bytes": 4479,
+      "sha256": "5db3abf43517577a31d90ab091c67c98584b963eea59e74474cc91a47aac1630"
+    },
+    {
+      "path": "build/android/app/src/main/res/mipmap-mdpi/ic_launcher.png",
+      "bytes": 5190,
+      "sha256": "659df7abe680fb8b2ecb78670b1a31e960f6c90fcc9c0fd4f51eef2cdac0a344"
+    },
+    {
+      "path": "build/android/app/src/main/res/mipmap-mdpi/ic_launcher_round.png",
+      "bytes": 5181,
+      "sha256": "4143ef805da67606912c78eeb400b35277bd991b54ee5e8e5acc346a9a7a156a"
+    },
+    {
+      "path": "build/android/app/src/main/res/mipmap-hdpi/ic_launcher.png",
+      "bytes": 10075,
+      "sha256": "d061e31fe3c4f7653a080e1a7aabc65916ea90cb7b206b17d0179c82e127d633"
+    },
+    {
+      "path": "build/android/app/src/main/res/mipmap-hdpi/ic_launcher_round.png",
+      "bytes": 10053,
+      "sha256": "e920e1c92df4ab1ad6bde2a8b0f59762df0167965b52ebb0bb86c690540fb500"
+    },
+    {
+      "path": "build/android/app/src/main/res/mipmap-xxxhdpi/ic_launcher.png",
+      "bytes": 51050,
+      "sha256": "64aab6ab67a153de70224bba264441bee191fe91fb62fb5801a1f3bdccd73b10"
+    },
+    {
+      "path": "build/android/app/src/main/res/mipmap-xxxhdpi/ic_launcher_round.png",
+      "bytes": 50993,
+      "sha256": "395d2fdac9e60ec3e74da5667433537ab64cc7e6d2d28a906d92d3bdd43439e6"
+    },
+    {
+      "path": "build/android/app/src/main/res/mipmap-xxhdpi/ic_launcher.png",
+      "bytes": 31694,
+      "sha256": "8885035217bfc1ff704e3570847fee14bac6f09932d42b49e976dd4874596d9a"
+    },
+    {
+      "path": "build/android/app/src/main/res/mipmap-xxhdpi/ic_launcher_round.png",
+      "bytes": 31588,
+      "sha256": "fe8af313040d7a0b3462726e291767520ed59ebd28c7f710b925671b64d4aa2d"
+    },
+    {
+      "path": "build/android/app/src/main/res/mipmap-xhdpi/ic_launcher.png",
+      "bytes": 16174,
+      "sha256": "e477754428accbd0e71f8c635d860f5614be68c5e745e58fd8ec067b6c3743e5"
+    },
+    {
+      "path": "build/android/app/src/main/res/mipmap-xhdpi/ic_launcher_round.png",
+      "bytes": 16145,
+      "sha256": "23eb596107fd56491d2ab7ecff6d09771ade7956781958ce0786fde3fff92e4c"
+    },
+    {
+      "path": "build/ios/AppIcon.appiconset/icon-29.png",
+      "bytes": 1837,
+      "sha256": "be85bfd26e2bbccfe490a1cf51c664d749d3a099ec13db46b76e1cfdc5bbb4be"
+    },
+    {
+      "path": "build/ios/AppIcon.appiconset/icon-76@2x.png",
+      "bytes": 29051,
+      "sha256": "c4fb415b2664c70347f5e166b56c2958ec13504216ea3937231047e2a2c6cf48"
+    },
+    {
+      "path": "build/ios/AppIcon.appiconset/icon-40@2x.png",
+      "bytes": 9846,
+      "sha256": "995721ccf966eeaeedf8df13d44960ba07960dba250ab38058bddf5c6f7f74af"
+    },
+    {
+      "path": "build/ios/AppIcon.appiconset/icon-40@3x.png",
+      "bytes": 19540,
+      "sha256": "751db0123b7a0e62a27aec8854c629bc6c44b3b3d66e2f94a2898013cdbe4a6d"
+    },
+    {
+      "path": "build/ios/AppIcon.appiconset/icon-83.5@2x.png",
+      "bytes": 34104,
+      "sha256": "6ad4dd1273374b6c0bcd878d3069b443a54d8b4a8cd761c588c428bcc22d06b6"
+    },
+    {
+      "path": "build/ios/AppIcon.appiconset/icon-60@3x.png",
+      "bytes": 38772,
+      "sha256": "d22aa5eb7ab16652ca74dd3be2f1489a99e304ad45e47f8e5d36898cc9b7e77a"
+    },
+    {
+      "path": "build/ios/AppIcon.appiconset/icon-29@2x.png",
+      "bytes": 5746,
+      "sha256": "e3fe03755561df9f247f468659a21c1bd463705c5db5e0f47f698054434127c2"
+    },
+    {
+      "path": "build/ios/AppIcon.appiconset/icon-76.png",
+      "bytes": 8986,
+      "sha256": "d1c792a3583ee1e2da3fa5d034b1e7b3db2a7ddd87a1d03bff0d2a380f9bf39b"
+    },
+    {
+      "path": "build/ios/AppIcon.appiconset/icon-1024.png",
+      "bytes": 878366,
+      "sha256": "4e3ea033a14b1fc9e4b96b5d25ed2490acd0d5772f31e75b7dac2e59acf8dbe0"
+    },
+    {
+      "path": "build/ios/AppIcon.appiconset/icon-29@3x.png",
+      "bytes": 11416,
+      "sha256": "c6fa90c07cf4c16c8a09586ed91cf8b4abf98bce368595e37e2dda154764206a"
+    },
+    {
+      "path": "build/ios/AppIcon.appiconset/icon-60@2x.png",
+      "bytes": 19540,
+      "sha256": "751db0123b7a0e62a27aec8854c629bc6c44b3b3d66e2f94a2898013cdbe4a6d"
+    },
+    {
+      "path": "build/ios/AppIcon.appiconset/icon-20@3x.png",
+      "bytes": 6044,
+      "sha256": "a672d3e8d1b02cd91188588400e7c3a42f79c14a3867d64b6d55ecceb1ba285a"
+    },
+    {
+      "path": "build/ios/AppIcon.appiconset/icon-40.png",
+      "bytes": 3122,
+      "sha256": "b6f5df4688eb6d2e8fc287a7092f84405cbef4b229ed06c212e7320afa8e1ac8"
+    },
+    {
+      "path": "build/ios/AppIcon.appiconset/icon-20@2x.png",
+      "bytes": 3122,
+      "sha256": "b6f5df4688eb6d2e8fc287a7092f84405cbef4b229ed06c212e7320afa8e1ac8"
+    },
+    {
+      "path": "build/ios/AppIcon.appiconset/icon-20.png",
+      "bytes": 945,
+      "sha256": "ee3250b748e382e9aa10c39184c2f2cc5d98c3442ce51f6c8422ff7fdc2f386e"
+    },
+    {
+      "path": "build/ios/icon.png",
+      "bytes": 878366,
+      "sha256": "4e3ea033a14b1fc9e4b96b5d25ed2490acd0d5772f31e75b7dac2e59acf8dbe0"
+    },
+    {
+      "path": "frontend/public/zhusuan.png",
+      "bytes": 82497,
+      "sha256": "1ed93fd205aa709ee01cfcd3693b8e64ab8d5367b74802adc8a11e6adf897ceb"
+    },
+    {
+      "path": "frontend/public/orange.png",
+      "bytes": 82497,
+      "sha256": "1ed93fd205aa709ee01cfcd3693b8e64ab8d5367b74802adc8a11e6adf897ceb"
+    },
+    {
+      "path": "frontend/public/orange-new.png",
+      "bytes": 82497,
+      "sha256": "1ed93fd205aa709ee01cfcd3693b8e64ab8d5367b74802adc8a11e6adf897ceb"
+    },
+    {
+      "path": "frontend/public/favicon.ico",
+      "bytes": 131174,
+      "sha256": "60978e296c2320e97b34b00f1a57995627f34b50a0f88e774d85f51b8699c0b8"
+    },
+    {
+      "path": "build/windows/icon.ico",
+      "bytes": 123967,
+      "sha256": "912804cac1b761c71b594f1647901fa12449ac82d2913f18c966110e3c45bf3e"
+    },
+    {
+      "path": "build/darwin/icons.icns",
+      "bytes": 2084109,
+      "sha256": "3a0f13a499e9acebb9c2bbcafd0cc84623839a203e7f3ae57d30ce15bea11965"
+    },
+    {
+      "path": "build/darwin/Assets.car",
+      "bytes": 4246136,
+      "sha256": "465cd5bdc50384859049c08f1c712f0ec3ce7119fa6954c643e1c9b0350ea2cd"
+    },
+    {
+      "path": "build/appicon.png",
+      "bytes": 1646305,
+      "sha256": "b6c938ba2cb8af426660a3d331e7884e4a33fcaaccc1018cda9a19ca46957c23"
+    },
+    {
+      "path": "build/darwin/AppIcon.icon/Assets/Artwork.png",
+      "bytes": 1212352,
+      "sha256": "f18a2661e7d32e396f08339e3a68c104393f52c32e04e7e05ccc32a1e3fc0149"
+    }
+  ]
+}

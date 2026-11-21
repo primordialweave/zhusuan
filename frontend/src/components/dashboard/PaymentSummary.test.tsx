@@ -4,6 +4,16 @@ import { render, screen } from '@/test/render'
 import PaymentSummary from './PaymentSummary'
 
 describe('PaymentSummary', () => {
+  it('shows skeletons instead of a false empty chart or amount while loading', () => {
+    const { container } = render(<PaymentSummary paid={0} pending={0} status="loading" />)
+
+    expect(screen.getByRole('region', { name: '收款摘要' })).toHaveAttribute('aria-busy', 'true')
+    expect(screen.getByRole('status')).toHaveTextContent('正在加载收款摘要')
+    expect(container.querySelector('[data-slot="skeleton"]')).toBeInTheDocument()
+    expect(screen.queryByRole('img', { name: '暂无收款数据' })).not.toBeInTheDocument()
+    expect(screen.queryByText('—')).not.toBeInTheDocument()
+  })
+
   it('draws the paid share as a slice and names both amounts', () => {
     const { container } = render(<PaymentSummary paid={3600} pending={2400} status="data" />)
 

@@ -192,6 +192,21 @@ func (r *PaymentRepository) GetIncomeStats(userID int64, startDate, endDate, int
 	return expected, actual, nil
 }
 
+// SumConfirmedByPlanPeriod totals the confirmed payments planned in a calendar range.
+// Actual receipt dates may be before/after the range or absent on historical confirmations.
+func (r *PaymentRepository) SumConfirmedByPlanPeriod(userID int64, startDate, endDate string) (float64, error) {
+	startDate, endExclusive, err := paymentRangeBounds(startDate, endDate)
+	if err != nil {
+		return 0, err
+	}
+	var total float64
+	err = r.db.Model(&models.Payment{}).
+		Scopes(UserScope(userID)).
+		Where("status = ? AND plan_date >= ? AND plan_date < ?", constants.PaymentStatusConfirmed, startDate, endExclusive).
+		Select("COALESCE(SUM(amount), 0)").Scan(&total).Error
+	return total, err
+}
+
 // GetStatsByPeriod 获取指定时间周期内的综合指标
 // 返回值:
 //   - totalExpected: 计划在此期间应收总额

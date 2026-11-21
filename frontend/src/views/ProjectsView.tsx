@@ -23,6 +23,7 @@ import { useToastStore } from '@/composables/useToast'
 import { formatAmount, formatDate } from '@/utils/format'
 import { useProjectExport } from '@/components/project/useProjectExport'
 import '@/styles/project-domain.css'
+import '@/styles/main-page-loading.css'
 
 const statusOptions = [
   { label: '全部状态', value: 'all' },
@@ -58,7 +59,8 @@ export default function ProjectsView() {
   const [projects, setProjects] = useState<Project[]>([])
   const [loading, setLoading] = useState(true)
   const [hasLoaded, setHasLoaded] = useState(false)
-  const [loadError, setLoadError] = useState(false)
+  const [loadedQueryScope, setLoadedQueryScope] = useState<string | null>(null)
+  const [failedQueryScope, setFailedQueryScope] = useState<string | null>(null)
   const [totalItems, setTotalItems] = useState(0)
   const [currentPage, setCurrentPage] = useState(1)
   const [pageSize, setPageSize] = useState(10)
@@ -72,22 +74,27 @@ export default function ProjectsView() {
   const mountedRef = useRef(false)
   const requestIdRef = useRef(0)
 
+  const queryScope = JSON.stringify([currentPage, pageSize, activeFilter, searchKeyword])
+  const dataIsCurrent = hasLoaded && loadedQueryScope === queryScope
+  const loadError = failedQueryScope === queryScope
+  const showingSkeleton = !dataIsCurrent && !loadError
+  const busy = loading || showingSkeleton
   const totalPages = Math.ceil(totalItems / pageSize)
   const colSpan = 8
 
   const paginationInfo = useMemo(() => {
-    if (!hasLoaded) return loadError ? '数据暂不可用' : '正在加载'
+    if (!dataIsCurrent) return loadError ? '数据暂不可用' : '正在加载'
     if (totalItems === 0) return '暂无数据'
     const start = (currentPage - 1) * pageSize + 1
     const end = Math.min(currentPage * pageSize, totalItems)
     return `显示 ${start}-${end} 条，共 ${totalItems} 条`
-  }, [currentPage, hasLoaded, loadError, pageSize, totalItems])
+  }, [currentPage, dataIsCurrent, loadError, pageSize, totalItems])
 
   const fetchProjects = useCallback(async () => {
     if (!mountedRef.current) return
     const requestId = ++requestIdRef.current
     setLoading(true)
-    setLoadError(false)
+    setFailedQueryScope(null)
     try {
       const response = await projectApi.list({
         keyword: searchKeyword || undefined,
@@ -99,14 +106,15 @@ export default function ProjectsView() {
       setProjects(response.data.data.list)
       setTotalItems(response.data.data.total)
       setHasLoaded(true)
+      setLoadedQueryScope(queryScope)
     } catch {
       if (!mountedRef.current || requestId !== requestIdRef.current) return
-      setLoadError(true)
+      setFailedQueryScope(queryScope)
       toastError('获取项目列表失败')
     } finally {
       if (mountedRef.current && requestId === requestIdRef.current) setLoading(false)
     }
-  }, [activeFilter, currentPage, pageSize, searchKeyword, toastError])
+  }, [activeFilter, currentPage, pageSize, queryScope, searchKeyword, toastError])
 
   useEffect(() => {
     mountedRef.current = true
@@ -124,7 +132,7 @@ export default function ProjectsView() {
   }
 
   const handleFilterChange = (filter: string) => {
-    setActiveFilter(filter)
+    setActiveFilter(filter || 'all')
     setCurrentPage(1)
   }
 
@@ -182,13 +190,14 @@ export default function ProjectsView() {
                 if (event.key === 'Enter') handleSearch()
               }}
               onValueChange={setKeyword}
-              pending={loading}
+              pending={busy}
               placeholder="搜索项目"
               value={keyword}
             />
             <Select
               aria-label="项目状态筛选"
               className="project-status-filter"
+              clearable={activeFilter !== 'all'}
               onValueChange={handleFilterChange}
               options={statusOptions}
               value={activeFilter}
@@ -203,8 +212,14 @@ export default function ProjectsView() {
       />
 
       <section aria-label="项目台账" className="projects-workspace" data-motion="entrance">
+        {busy ? (
+          <span aria-label="正在加载项目列表" className="ods-sr-only" role="status">
+            正在加载项目列表
+          </span>
+        ) : null}
+        {busy && dataIsCurrent ? <Skeleton className="projects-load-indicator" height={2} /> : null}
         <Table.Root
-          aria-busy={loading}
+          aria-busy={busy}
           aria-label="项目列表"
           className="project-table"
           stickyHeader
@@ -245,7 +260,7 @@ export default function ProjectsView() {
                     title="项目列表加载失败"
                     tone="danger"
                   >
-                    {hasLoaded
+                    {dataIsCurrent
                       ? '当前展示最近一次成功加载的数据。'
                       : '暂时无法获取项目数据，请稍后重试。'}
                   </Alert>
@@ -253,7 +268,7 @@ export default function ProjectsView() {
               </Table.Row>
             ) : null}
 
-            {projects.map((project) => {
+            {(dataIsCurrent ? projects : []).map((project) => {
               const progress = getProgress(project)
               const progressLabel = progress === null ? '—' : `${progress}%`
               return (
@@ -374,17 +389,41 @@ export default function ProjectsView() {
               )
             })}
 
-            {loading && !hasLoaded
+            {showingSkeleton
               ? Array.from({ length: 4 }, (_, index) => (
                   <Table.Row aria-hidden="true" key={`project-loading-${index}`}>
-                    <Table.Cell colSpan={colSpan}>
-                      <Skeleton height="1.25rem" width="42%" />
+                    <Table.Cell>
+                      <Skeleton height="1.25rem" width={index % 2 ? '68%' : '82%'} />
+                    </Table.Cell>
+                    <Table.Cell>
+                      <Skeleton height="1rem" width="80%" />
+                    </Table.Cell>
+                    <Table.Cell>
+                      <Skeleton height="1rem" width="85%" />
+                    </Table.Cell>
+                    <Table.Cell align="end">
+                      <Skeleton height="1rem" width="88%" />
+                    </Table.Cell>
+                    <Table.Cell align="end">
+                      <Skeleton height="1rem" width="78%" />
+                    </Table.Cell>
+                    <Table.Cell>
+                      <div className="main-loading-stack">
+                        <Skeleton height="0.5rem" />
+                        <Skeleton height="0.75rem" width="72%" />
+                      </div>
+                    </Table.Cell>
+                    <Table.Cell>
+                      <Skeleton height="1.5rem" width="80%" />
+                    </Table.Cell>
+                    <Table.Cell align="end" sticky="end">
+                      <Skeleton height="1.5rem" width="1.5rem" shape="circle" />
                     </Table.Cell>
                   </Table.Row>
                 ))
               : null}
 
-            {hasLoaded && projects.length === 0 && !loadError ? (
+            {dataIsCurrent && projects.length === 0 && !loadError ? (
               <Table.Row>
                 <Table.Cell colSpan={colSpan}>
                   <EmptyState
@@ -409,7 +448,15 @@ export default function ProjectsView() {
           </Table.Body>
         </Table.Root>
 
-        {totalItems > 0 && totalPages > 0 ? (
+        {showingSkeleton ? (
+          <div
+            aria-hidden="true"
+            className="projects-pagination projects-loading-pagination main-loading-row"
+          >
+            <Skeleton height="1rem" width="12rem" />
+            <Skeleton height="2rem" width="9rem" />
+          </div>
+        ) : dataIsCurrent && totalItems > 0 && totalPages > 0 ? (
           <PaginationBar
             className="projects-pagination"
             info={paginationInfo}
@@ -420,6 +467,7 @@ export default function ProjectsView() {
             trailing={
               <Select
                 aria-label="每页条数"
+                clearable={false}
                 onValueChange={(value) => {
                   setPageSize(Number(value))
                   setCurrentPage(1)

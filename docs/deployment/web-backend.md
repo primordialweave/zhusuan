@@ -41,8 +41,10 @@ The server configuration rejects `ENV=production`, `RUNTIME_MODE=server`, and `D
 ```bash
 API_SERVER_HOST=127.0.0.1 \
 API_SERVER_PORT=3457 \
-DB_PATH=/tmp/orange-smoke.db \
-JWT_SECRET=orange-dev-secret-32-characters-long \
+ENV=development \
+DB_TYPE=sqlite \
+DB_PATH=/tmp/zhusuan-smoke.db \
+JWT_SECRET=replace-with-a-strong-local-secret-32-characters \
 task server:dev
 ```
 
@@ -55,12 +57,12 @@ curl http://127.0.0.1:3457/api/health
 ## Backend Host Decision
 
 - Selected host: container/server platform for the Go API, such as Fly.io, Railway, Render, Cloud Run, or any Docker-capable VPS/PaaS.
-- Reason: Orange's backend is a Gin service with shared startup, migrations, seed data, JWT setup, and database pooling. That model is simpler and safer as a long-running Go API than as many serverless function invocations. The Vercel Go POC remains useful for a narrow health endpoint but has not yet passed full local/preview validation.
-- Deployment artifact: `Dockerfile` builds `./cmd/server` into the `orange-api` container using Go 1.26.
+- Reason: Zhusuan's backend is a Gin service with shared startup, migrations, seed data, JWT setup, and database pooling. That model is simpler and safer as a long-running Go API than as many serverless function invocations. The Vercel Go POC remains useful for a narrow health endpoint but has not yet passed full local/preview validation.
+- Deployment artifact: `Dockerfile` builds `./cmd/server` into the `zhusuan-api` binary using the Go toolchain declared in go.mod.
 - Deployment command:
 
 ```bash
-docker build -t orange-api:local .
+docker build -t zhusuan-api:local .
 ```
 
 - Required runtime environment:
@@ -82,11 +84,11 @@ docker build -t orange-api:local .
 
 ## Container Smoke Test
 
-Current local verification status:
+The current image uses `ghcr.io/primordialweave/zhusuan`. Main CI publishes `main` and commit-based tags; choose an existing immutable commit tag for production. `ZHUSUAN_VERSION` in `docker-compose.yml` selects that tag. A desktop Release tag does not imply that a matching container tag exists.
 
-- `docker build -t orange-api:local .`: Passed after Docker Desktop was started.
-- Container health check passed with `docker run ... orange-api:local` and `curl http://127.0.0.1:3459/api/health`.
-- Source-level API verification passed with `go run ./cmd/server` and `curl http://127.0.0.1:3457/api/health`.
+Keep an existing container's explicit `DB_PATH`, `DB_NAME` and database credentials when updating configuration. The new example defaults use `zhusuan` names; changing a path does not move an existing database. Container `DB_PATH` values must refer to paths inside the container, such as `/app/data/zhusuan.db`.
+
+Earlier local smoke tests used an image called `orange-api:local` and a temporary port 3459. Those historical results are not a fresh validation of the current image; run the current checks below before deployment.
 
 For local container smoke testing only, SQLite can be enabled explicitly:
 
@@ -97,7 +99,7 @@ docker run --rm -p 3456:3456 \
   -e JWT_SECRET=replace-with-a-strong-dev-secret-32-characters \
   -e DB_TYPE=sqlite \
   -e ALLOW_PRODUCTION_SQLITE=true \
-  orange-api:local
+  zhusuan-api:local
 ```
 
 Then verify:

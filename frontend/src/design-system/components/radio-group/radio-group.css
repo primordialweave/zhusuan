@@ -49,9 +49,10 @@
 
 .ods-radio__control {
   align-items: center;
-  background: var(--ods-color-bg-surface);
+  background: var(--ods-material-jade-sheen), var(--ods-color-bg-surface);
   border: 1px solid var(--ods-color-border-control);
   border-radius: var(--ods-radius-pill);
+  box-shadow: var(--ods-material-jade-inset-shadow);
   display: inline-flex;
   flex: 0 0 auto;
   height: var(--ods-space-5);
@@ -76,20 +77,25 @@
   width: var(--ods-space-2);
 }
 
-.ods-radio:hover .ods-radio__control {
-  background: var(--ods-color-bg-surface-hover);
-  border-color: var(--ods-color-accent);
+@media (hover: hover) and (pointer: fine) {
+  .ods-radio:hover:not([data-disabled='true']) .ods-radio__control {
+    background: var(--ods-material-jade-sheen), var(--ods-color-bg-surface-hover);
+    border-color: var(--ods-color-accent);
+  }
 }
 
 .ods-radio__input:focus-visible + .ods-radio__control {
-  box-shadow: 0 0 0 var(--ods-focus-ring-width) var(--ods-color-selection);
+  box-shadow:
+    var(--ods-material-jade-inset-shadow),
+    0 0 0 var(--ods-focus-ring-width) var(--ods-color-selection);
   outline: var(--ods-focus-ring-width) solid var(--ods-color-border-focus);
   outline-offset: var(--ods-focus-ring-offset);
 }
 
 .ods-radio__input:checked + .ods-radio__control {
-  background: var(--ods-color-accent);
+  background: var(--ods-material-jade-sheen), var(--ods-gradient-glow);
   border-color: transparent;
+  box-shadow: var(--ods-material-jade-control-shadow);
 }
 
 .ods-radio__input:checked + .ods-radio__control .ods-radio__indicator {
@@ -97,8 +103,8 @@
   transform: scale(1);
 }
 
-.ods-radio:active .ods-radio__control {
-  transform: scale(0.94);
+.ods-radio:active:not([data-disabled='true']) .ods-radio__control {
+  transform: scale(0.97);
 }
 
 .ods-radio[data-disabled='true'] {
@@ -109,6 +115,7 @@
 .ods-radio[data-disabled='true'] .ods-radio__control {
   background: var(--ods-color-bg-canvas-subtle);
   border-color: var(--ods-color-border-default);
+  box-shadow: none;
 }
 
 .ods-radio[data-variant='card'] {
@@ -118,7 +125,8 @@
   padding: var(--ods-space-3);
   border: 1px solid var(--ods-color-border-default);
   border-radius: var(--ods-radius-control);
-  background: var(--ods-color-bg-surface);
+  background: var(--ods-material-jade-sheen), var(--ods-color-bg-surface);
+  box-shadow: var(--ods-material-jade-inset-shadow);
   transition:
     background-color var(--ods-duration-fast) var(--ods-ease-standard),
     border-color var(--ods-duration-fast) var(--ods-ease-standard),
@@ -136,16 +144,20 @@
   width: 100%;
 }
 
-.ods-radio[data-variant='card']:hover:not([data-disabled='true']) {
-  border-color: color-mix(in srgb, var(--ods-color-accent) 48%, transparent);
-  background: var(--ods-color-accent-soft);
+@media (hover: hover) and (pointer: fine) {
+  .ods-radio[data-variant='card']:hover:not([data-disabled='true']) {
+    border-color: color-mix(in srgb, var(--ods-color-accent) 48%, transparent);
+    background: var(--ods-material-jade-sheen), var(--ods-color-accent-soft);
+  }
 }
 
 .ods-radio[data-variant='card'][data-selected='true'] {
   border-color: var(--ods-color-accent);
-  background: var(--ods-color-accent-soft);
+  background: var(--ods-material-jade-sheen), var(--ods-color-accent-soft);
   /* A second pixel of the same colour: the choice has to read on the night panel too. */
-  box-shadow: 0 0 0 1px var(--ods-color-accent);
+  box-shadow:
+    var(--ods-material-jade-control-shadow),
+    0 0 0 1px var(--ods-color-accent);
 }
 
 .ods-radio[data-variant='card']:has(.ods-radio__input:focus-visible) {
@@ -160,6 +172,7 @@
 .ods-radio[data-variant='card'][data-disabled='true'] {
   border-color: var(--ods-color-border-default);
   background: var(--ods-color-bg-canvas-subtle);
+  box-shadow: none;
 }
 
 @media (max-width: 42rem) {
@@ -170,6 +183,15 @@
 }
 
 @media (prefers-reduced-motion: reduce) {
+  .ods-radio__control,
+  .ods-radio__indicator {
+    transition: none;
+  }
+
+  .ods-radio:active:not([data-disabled='true']) .ods-radio__control {
+    transform: none;
+  }
+
   .ods-radio[data-variant='card'] {
     transition-duration: var(--ods-duration-instant);
   }

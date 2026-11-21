@@ -13,7 +13,7 @@ func Handler(w http.ResponseWriter, r *http.Request) {
 		"code":    0,
 		"message": "ok",
 		"data": map[string]any{
-			"service": "Orange API POC",
+			"service": "Zhusuan API POC",
 			"version": constants.AppVersion,
 		},
 	})

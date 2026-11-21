@@ -3,7 +3,8 @@ package dto
 // Stats 统计数据
 type Stats struct {
 	TotalAmount            float64 `json:"total_amount"`
-	PaidAmount             float64 `json:"paid_amount"`
+	PaidAmount             float64 `json:"paid_amount"`             // Actual-date cash receipts, or all-time project receipts.
+	PlannedReceivedAmount  float64 `json:"planned_received_amount"` // Confirmed receipts for the selected plan-date cohort.
 	PendingAmount          float64 `json:"pending_amount"`
 	OverdueAmount          float64 `json:"overdue_amount"`
 	TotalTrend             float64 `json:"total_trend"`

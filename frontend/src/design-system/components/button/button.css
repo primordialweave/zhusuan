@@ -60,12 +60,10 @@
   width: 100%;
 }
 
-/* Primary carries the hero-CTA ember glow. */
+/* The lit edge and shallow underside make the control feel like polished jade. */
 .ods-button[data-variant='primary'] {
-  background: var(--ods-gradient-glow);
-  box-shadow:
-    inset 0 1px 0 rgba(255, 255, 255, 0.28),
-    0 2px 6px rgba(var(--ods-color-accent-rgb), 0.14);
+  background: var(--ods-material-jade-sheen), var(--ods-gradient-glow);
+  box-shadow: var(--ods-material-jade-control-shadow);
   color: var(--ods-color-accent-fg);
 }
 
@@ -76,16 +74,14 @@
 }
 
 .ods-button[data-variant='primary']:active:not(:disabled) {
-  box-shadow:
-    inset 0 1px 0 rgba(255, 255, 255, 0.2),
-    0 6px 16px rgba(var(--ods-color-accent-rgb), 0.28);
+  box-shadow: var(--ods-material-jade-inset-shadow);
 }
 
 .ods-button[data-variant='secondary'] {
   border-color: var(--ods-color-border-default);
-  background: var(--ods-color-bg-surface-raised);
+  background: var(--ods-material-jade-sheen), var(--ods-color-bg-surface-raised);
   color: var(--ods-color-fg-default);
-  box-shadow: var(--ods-shadow-soft);
+  box-shadow: var(--ods-material-jade-control-shadow);
 }
 
 @media (hover: hover) and (pointer: fine) {
@@ -96,7 +92,8 @@
 }
 
 .ods-button[data-variant='secondary']:active:not(:disabled) {
-  background: var(--ods-color-bg-surface-pressed);
+  background: var(--ods-material-jade-sheen), var(--ods-color-bg-surface-pressed);
+  box-shadow: var(--ods-material-jade-inset-shadow);
 }
 
 .ods-button[aria-expanded] {
@@ -119,37 +116,42 @@
   }
 }
 
-/* Soft ember tint, like the dashboard metric icons. */
+/* A lighter jade face for supporting actions. */
 .ods-button[data-variant='tertiary'] {
-  background: var(--ods-color-accent-soft);
+  background: var(--ods-material-jade-sheen), var(--ods-color-accent-soft);
+  box-shadow: var(--ods-material-jade-control-shadow);
   color: var(--ods-color-accent-text);
 }
 
 @media (hover: hover) and (pointer: fine) {
   .ods-button[data-variant='tertiary']:hover:not(:disabled) {
-    background: rgba(var(--ods-color-accent-rgb), 0.2);
+    background: var(--ods-material-jade-sheen), rgba(var(--ods-color-accent-rgb), 0.2);
   }
 }
 
 .ods-button[data-variant='tertiary']:active:not(:disabled) {
-  background: rgba(var(--ods-color-accent-rgb), 0.26);
+  background: var(--ods-material-jade-sheen), rgba(var(--ods-color-accent-rgb), 0.26);
+  box-shadow: var(--ods-material-jade-inset-shadow);
 }
 
 .ods-button[data-variant='outline'] {
   border-color: var(--ods-color-border-strong);
+  background: var(--ods-material-jade-sheen);
+  box-shadow: var(--ods-material-jade-control-shadow);
   color: var(--ods-color-fg-default);
 }
 
 @media (hover: hover) and (pointer: fine) {
   .ods-button[data-variant='outline']:hover:not(:disabled) {
     border-color: rgba(var(--ods-color-accent-rgb), 0.55);
-    background: var(--ods-color-accent-soft);
+    background: var(--ods-material-jade-sheen), var(--ods-color-accent-soft);
     color: var(--ods-color-accent-text);
   }
 }
 
 .ods-button[data-variant='outline']:active:not(:disabled) {
-  background: rgba(var(--ods-color-accent-rgb), 0.2);
+  background: var(--ods-material-jade-sheen), rgba(var(--ods-color-accent-rgb), 0.2);
+  box-shadow: var(--ods-material-jade-inset-shadow);
 }
 
 .ods-button[data-variant='outline'][data-tone='danger'] {
@@ -159,13 +161,15 @@
 @media (hover: hover) and (pointer: fine) {
   .ods-button[data-variant='outline'][data-tone='danger']:hover:not(:disabled) {
     border-color: color-mix(in srgb, var(--ods-color-status-danger) 55%, transparent);
-    background: var(--ods-color-status-danger-soft);
+    background: var(--ods-material-jade-sheen), var(--ods-color-status-danger-soft);
     color: var(--ods-color-status-danger);
   }
 }
 
 .ods-button[data-variant='outline'][data-tone='danger']:active:not(:disabled) {
-  background: color-mix(in srgb, var(--ods-color-status-danger) 18%, transparent);
+  background:
+    var(--ods-material-jade-sheen),
+    color-mix(in srgb, var(--ods-color-status-danger) 18%, transparent);
 }
 
 .ods-button[data-variant='ghost'] {

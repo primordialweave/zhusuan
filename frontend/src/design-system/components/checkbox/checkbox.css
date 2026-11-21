@@ -21,9 +21,10 @@
   --ods-checkbox-transform-duration: var(--ods-duration-release);
 
   align-items: center;
-  background: var(--ods-color-bg-surface);
+  background: var(--ods-material-jade-sheen), var(--ods-color-bg-surface);
   border: 1px solid var(--ods-color-border-control);
   border-radius: var(--ods-radius-xs);
+  box-shadow: var(--ods-material-jade-inset-shadow);
   display: inline-flex;
   flex: 0 0 auto;
   height: var(--ods-space-5);
@@ -41,21 +42,26 @@
   width: var(--ods-space-2);
 }
 
-.ods-checkbox:hover .ods-checkbox__control {
-  background: var(--ods-color-bg-surface-hover);
-  border-color: var(--ods-color-accent);
+@media (hover: hover) and (pointer: fine) {
+  .ods-checkbox:hover:not([data-disabled='true']) .ods-checkbox__control {
+    background: var(--ods-material-jade-sheen), var(--ods-color-bg-surface-hover);
+    border-color: var(--ods-color-accent);
+  }
 }
 
 .ods-checkbox__input:focus-visible + .ods-checkbox__control {
-  box-shadow: 0 0 0 var(--ods-focus-ring-width) var(--ods-color-selection);
+  box-shadow:
+    var(--ods-material-jade-inset-shadow),
+    0 0 0 var(--ods-focus-ring-width) var(--ods-color-selection);
   outline: var(--ods-focus-ring-width) solid var(--ods-color-border-focus);
   outline-offset: var(--ods-focus-ring-offset);
 }
 
 .ods-checkbox__input:checked + .ods-checkbox__control,
 .ods-checkbox__input:indeterminate + .ods-checkbox__control {
-  background: var(--ods-color-accent);
+  background: var(--ods-material-jade-sheen), var(--ods-gradient-glow);
   border-color: transparent;
+  box-shadow: var(--ods-material-jade-control-shadow);
 }
 
 .ods-checkbox__input:checked + .ods-checkbox__control .ods-checkbox__indicator {
@@ -71,7 +77,7 @@
   width: var(--ods-space-3);
 }
 
-.ods-checkbox:active .ods-checkbox__control {
+.ods-checkbox:active:not([data-disabled='true']) .ods-checkbox__control {
   --ods-checkbox-transform-duration: var(--ods-duration-press);
   transform: scale(0.97);
 }
@@ -84,10 +90,11 @@
 .ods-checkbox[data-disabled='true'] .ods-checkbox__control {
   background: var(--ods-color-bg-canvas-subtle);
   border-color: var(--ods-color-border-default);
+  box-shadow: none;
 }
 
 @media (prefers-reduced-motion: reduce) {
-  .ods-checkbox:active .ods-checkbox__control {
+  .ods-checkbox:active:not([data-disabled='true']) .ods-checkbox__control {
     transform: none;
   }
 }

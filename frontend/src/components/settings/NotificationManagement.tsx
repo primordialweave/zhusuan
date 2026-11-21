@@ -4,6 +4,7 @@ import NotificationDetailModal from '@/components/notification/NotificationDetai
 import { useConfirm } from '@/composables/useConfirm'
 import { useToastStore } from '@/composables/useToast'
 import {
+  Alert,
   Button,
   Chip,
   EmptyState,
@@ -14,9 +15,10 @@ import {
   Modal,
   PaginationBar,
   Select,
-  Spinner,
+  Skeleton,
   TextArea,
 } from '@/design-system'
+import { SettingsListSkeleton } from './SettingsSkeleton'
 import { formatRelativeTime } from '@/utils/format'
 import SettingsGroup from './SettingsGroup'
 
@@ -56,9 +58,17 @@ export default function NotificationManagement({ isAdmin = false }: Notification
   const [notifications, setNotifications] = useState<Notification[]>([])
   const [notificationTotal, setNotificationTotal] = useState(0)
   const [targetUsers, setTargetUsers] = useState<UserBrief[]>([])
-  const [notificationLoading, setNotificationLoading] = useState(false)
+  const [notificationLoading, setNotificationLoading] = useState(true)
+  const [targetUsersLoading, setTargetUsersLoading] = useState(isAdmin)
   const [notificationCurrentPage, setNotificationCurrentPage] = useState(1)
   const [notificationPageSize, setNotificationPageSize] = useState(5)
+  const [loadedScope, setLoadedScope] = useState<string | null>(null)
+  const [failedScope, setFailedScope] = useState<string | null>(null)
+  const requestScope = JSON.stringify([notificationCurrentPage, notificationPageSize])
+  const dataIsCurrent = loadedScope === requestScope
+  const loadError = failedScope === requestScope
+  const showingSkeleton = !dataIsCurrent && !loadError
+  const busy = notificationLoading || showingSkeleton
   const [showCreateNotificationModal, setShowCreateNotificationModal] = useState(false)
   const [creatingNotification, setCreatingNotification] = useState(false)
   const [newNotification, setNewNotification] = useState<NotificationForm>(emptyNotification)
@@ -84,26 +94,34 @@ export default function NotificationManagement({ isAdmin = false }: Notification
   const loadNotifications = useCallback(async () => {
     const requestId = ++notificationsRequestRef.current
     setNotificationLoading(true)
+    setFailedScope(null)
     try {
       const response = await notificationApi.list(notificationCurrentPage, notificationPageSize)
       if (requestId === notificationsRequestRef.current) {
         setNotifications(response.data.data.list)
         setNotificationTotal(response.data.data.total)
+        setLoadedScope(requestScope)
       }
     } catch {
-      if (requestId === notificationsRequestRef.current) toastError('获取通知失败')
+      if (requestId === notificationsRequestRef.current) {
+        setFailedScope(requestScope)
+        toastError('获取通知失败')
+      }
     } finally {
       if (requestId === notificationsRequestRef.current) setNotificationLoading(false)
     }
-  }, [notificationCurrentPage, notificationPageSize, toastError])
+  }, [notificationCurrentPage, notificationPageSize, requestScope, toastError])
 
   const loadTargetUsers = useCallback(async () => {
     const requestId = ++targetUsersRequestRef.current
+    setTargetUsersLoading(true)
     try {
       const response = await notificationApi.getUsers()
       if (requestId === targetUsersRequestRef.current) setTargetUsers(response.data.data)
     } catch {
       if (requestId === targetUsersRequestRef.current) toastError('获取用户列表失败')
+    } finally {
+      if (requestId === targetUsersRequestRef.current) setTargetUsersLoading(false)
     }
   }, [toastError])
 
@@ -228,7 +246,15 @@ export default function NotificationManagement({ isAdmin = false }: Notification
     <div className="notification-management settings-page">
       <div className="settings-toolbar">
         <h2 className="settings-toolbar__title">
-          {unreadNotifications > 0 ? `${unreadNotifications} 条未读` : '全部已读'}
+          {showingSkeleton ? (
+            <Skeleton height="1.25rem" width="5rem" />
+          ) : !dataIsCurrent ? (
+            '通知'
+          ) : unreadNotifications > 0 ? (
+            `${unreadNotifications} 条未读`
+          ) : (
+            '全部已读'
+          )}
         </h2>
         {isAdmin ? (
           <Button onClick={openCreateModal}>
@@ -238,18 +264,37 @@ export default function NotificationManagement({ isAdmin = false }: Notification
         ) : null}
       </div>
 
-      {notificationLoading && notifications.length === 0 ? (
-        <Spinner className="settings-empty" label="正在加载通知列表" size="lg" />
-      ) : notifications.length === 0 ? (
+      {loadError ? (
+        <Alert
+          action={
+            <Button
+              aria-label="重试通知列表"
+              onClick={() => void loadNotifications()}
+              size="sm"
+              variant="secondary"
+            >
+              重试
+            </Button>
+          }
+          title="通知列表加载失败"
+          tone="danger"
+        >
+          {dataIsCurrent ? '当前展示最近一次成功加载的数据。' : '暂时无法获取通知数据，请重试。'}
+        </Alert>
+      ) : null}
+
+      {showingSkeleton ? (
+        <SettingsListSkeleton label="正在加载通知列表" />
+      ) : dataIsCurrent && notifications.length === 0 ? (
         <EmptyState
           className="settings-empty"
           icon={<i className="ri-notification-off-line" />}
           size="lg"
           title="暂无通知"
         />
-      ) : (
+      ) : dataIsCurrent ? (
         <SettingsGroup flush>
-          <ul className="settings-list">
+          <ul aria-busy={busy} className="settings-list">
             {notifications.map((notification) => (
               <li
                 className="settings-row notification-row"
@@ -320,9 +365,10 @@ export default function NotificationManagement({ isAdmin = false }: Notification
             ))}
           </ul>
         </SettingsGroup>
-      )}
+      ) : null}
 
-      {notificationTotal > notificationPageSize || notificationCurrentPage > 1 ? (
+      {dataIsCurrent &&
+      (notificationTotal > notificationPageSize || notificationCurrentPage > 1) ? (
         <PaginationBar
           info={notificationPaginationInfo}
           onPageChange={setNotificationCurrentPage}
@@ -331,6 +377,7 @@ export default function NotificationManagement({ isAdmin = false }: Notification
           trailing={
             <Select
               aria-label="每页通知数"
+              clearable={false}
               onValueChange={(value) => {
                 setNotificationPageSize(Number(value))
                 setNotificationCurrentPage(1)
@@ -379,6 +426,7 @@ export default function NotificationManagement({ isAdmin = false }: Notification
             <Field.Label>通知类型</Field.Label>
             <Select
               aria-label="通知类型"
+              clearable={false}
               onValueChange={(value) =>
                 setNewNotification((current) => ({ ...current, type: value }))
               }
@@ -392,23 +440,30 @@ export default function NotificationManagement({ isAdmin = false }: Notification
           {isAdmin ? (
             <Field.Root>
               <Field.Label>发送对象</Field.Label>
-              <Select
-                aria-label="发送对象"
-                onValueChange={(value) =>
-                  setNewNotification((current) => ({
-                    ...current,
-                    target_user_id: Number(value),
-                  }))
-                }
-                options={[
-                  { label: '全员通知', value: '0' },
-                  ...targetUsers.map((targetUser) => ({
-                    label: `${targetUser.name} (${targetUser.username})`,
-                    value: String(targetUser.id),
-                  })),
-                ]}
-                value={String(newNotification.target_user_id)}
-              />
+              {targetUsersLoading && targetUsers.length === 0 ? (
+                <div aria-label="正在加载发送对象" role="status">
+                  <Skeleton height="var(--ods-control-height-md)" />
+                </div>
+              ) : (
+                <Select
+                  aria-label="发送对象"
+                  clearable={false}
+                  onValueChange={(value) =>
+                    setNewNotification((current) => ({
+                      ...current,
+                      target_user_id: Number(value),
+                    }))
+                  }
+                  options={[
+                    { label: '全员通知', value: '0' },
+                    ...targetUsers.map((targetUser) => ({
+                      label: `${targetUser.name} (${targetUser.username})`,
+                      value: String(targetUser.id),
+                    })),
+                  ]}
+                  value={String(newNotification.target_user_id)}
+                />
+              )}
             </Field.Root>
           ) : null}
         </Modal.Body>

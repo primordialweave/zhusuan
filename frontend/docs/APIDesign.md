@@ -1,4 +1,6 @@
-# Orange 财务收款管理系统 - API 接口设计文档
+# 珠算项目收款管理系统 - API 接口设计文档
+
+> 本文件保留早期设计记录；当前运行配置、路由与视觉实现以[前端说明](../README.md)、[根 README](../../README.md)、`frontend/src` 和 `internal/router` 为准。
 
 **版本**: v0.0.1  
 **日期**: 2026-01-03  
@@ -9,7 +11,7 @@
 ## 1. 概述
 
 ### 1.1 基础信息
-- **Base URL**: `https://api.orange.example.com/v1`
+- **Base URL**: `https://api.zhusuan.example.com/api/v1`
 - **数据格式**: JSON
 - **认证方式**: JWT Bearer Token
 

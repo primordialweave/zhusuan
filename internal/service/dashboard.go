@@ -58,7 +58,7 @@ func normalizeDashboardPeriod(period string) string {
 // 供 Payment/Project 服务在数据变更后调用。
 func invalidateDashboardCache(userID int64) {
 	for _, period := range dashboardPeriods {
-		if err := cache.Delete(fmt.Sprintf("dashboard:stats:v1:%d:%s", userID, period)); err != nil {
+		if err := cache.Delete(fmt.Sprintf("dashboard:stats:v2:%d:%s", userID, period)); err != nil {
 			slog.Debug("Unable to invalidate dashboard statistics", "error", err)
 		}
 	}
@@ -82,8 +82,8 @@ func (s *DashboardService) GetStats(userID int64, period string) (*dto.Stats, er
 	// 归一化周期，未知/空值 → "all"，防止任意字符串撑爆缓存键空间
 	period = normalizeDashboardPeriod(period)
 
-	// 尝试从缓存获取 (v1 表示缓存数据结构版本)
-	cacheKey := fmt.Sprintf("dashboard:stats:v1:%d:%s", userID, period)
+	// v2 adds plan-date cohort receipts; do not reuse older responses without this field.
+	cacheKey := fmt.Sprintf("dashboard:stats:v2:%d:%s", userID, period)
 	var stats dto.Stats
 
 	// 尝试从缓存读取
@@ -150,6 +150,7 @@ func (s *DashboardService) GetStats(userID int64, period string) (*dto.Stats, er
 		result := &dto.Stats{
 			TotalAmount:            totalAmount,   // 全量
 			PaidAmount:             paidAmount,    // 全量
+			PlannedReceivedAmount:  paidAmount,    // 全量合同统计没有跨期差异
 			PendingAmount:          pendingAmount, // 全量
 			OverdueAmount:          overdueAmount, // 全量
 			AvgCollectionDays:      currAvgDays,   // 本月均值
@@ -183,10 +184,16 @@ func (s *DashboardService) GetStats(userID int64, period string) (*dto.Stats, er
 		return nil, err
 	}
 
+	plannedReceived, err := s.paymentRepo.SumConfirmedByPlanPeriod(userID, current.StartDate, current.EndDate)
+	if err != nil {
+		return nil, err
+	}
+
 	// 步骤 3: 组装返回结构
 	result := &dto.Stats{
 		TotalAmount:            currTotal,
 		PaidAmount:             currPaid,
+		PlannedReceivedAmount:  plannedReceived,
 		PendingAmount:          currPending,
 		OverdueAmount:          currOverdue,
 		AvgCollectionDays:      currAvgDays,
@@ -227,9 +234,14 @@ func (s *DashboardService) GetStatsForCalendar(userID int64, year, month int) (*
 	if err != nil {
 		return nil, err
 	}
+	plannedReceived, err := s.paymentRepo.SumConfirmedByPlanPeriod(userID, current.StartDate, current.EndDate)
+	if err != nil {
+		return nil, err
+	}
 	return &dto.Stats{
 		TotalAmount:            currTotal,
 		PaidAmount:             currPaid,
+		PlannedReceivedAmount:  plannedReceived,
 		PendingAmount:          currPending,
 		OverdueAmount:          currOverdue,
 		AvgCollectionDays:      currAvgDays,

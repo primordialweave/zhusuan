@@ -1,9 +1,9 @@
 apiVersion: 1
 
 providers:
-  - name: Orange
+  - name: 珠算
     orgId: 1
-    folder: Orange
+    folder: 珠算
     type: file
     disableDeletion: false
     editable: true

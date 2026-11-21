@@ -10,6 +10,7 @@ import {
   EmptyState,
   IconButton,
   Popover,
+  Skeleton,
   type ChipTone,
 } from '@/design-system'
 import { useAuthStore } from '@/stores/auth'
@@ -31,11 +32,14 @@ export default function NotificationEntry() {
   const location = useLocation()
   const navigate = useNavigate()
   const isAuthenticated = useAuthStore((state) => state.isAuthenticated)
+  const userId = useAuthStore((state) => state.user?.id)
   const [open, setOpen] = useState(false)
   const [unreadCount, setUnreadCount] = useState(0)
   const [recentNotifications, setRecentNotifications] = useState<Notification[]>([])
   const [selectedNotification, setSelectedNotification] = useState<Notification | null>(null)
   const [lingering, setLingering] = useState(false)
+  const [loading, setLoading] = useState(false)
+  const [loadedUserId, setLoadedUserId] = useState<number | null | undefined>(null)
   const triggerRef = useRef<HTMLButtonElement>(null)
   const isAuthenticatedRef = useRef(isAuthenticated)
   const isMountedRef = useRef(false)
@@ -67,6 +71,7 @@ export default function NotificationEntry() {
 
     const refreshGeneration = ++refreshGenerationRef.current
     const sessionGeneration = sessionGenerationRef.current
+    setLoading(true)
 
     try {
       const [countRes, listRes] = await Promise.all([
@@ -86,8 +91,18 @@ export default function NotificationEntry() {
       setRecentNotifications(listRes.data.data.list)
     } catch {
       // Notification polling should never break primary navigation.
+    } finally {
+      if (
+        isMountedRef.current &&
+        isAuthenticatedRef.current &&
+        refreshGeneration === refreshGenerationRef.current &&
+        sessionGeneration === sessionGenerationRef.current
+      ) {
+        setLoading(false)
+        setLoadedUserId(userId)
+      }
     }
-  }, [])
+  }, [userId])
 
   useEffect(() => {
     refreshGenerationRef.current += 1
@@ -115,6 +130,7 @@ export default function NotificationEntry() {
     const sessionGeneration = sessionGenerationRef.current
     pendingReadMutationsRef.current += 1
     refreshGenerationRef.current += 1
+    setLoading(false)
 
     try {
       await notificationApi.markAsRead(item.id)
@@ -144,10 +160,28 @@ export default function NotificationEntry() {
 
   // The trigger outlives its popover and detail so focus has somewhere to return, then leaves
   // once focus moves on.
-  const showTrigger = unreadCount > 0 || open || selectedNotification !== null || lingering
+  const initialLoading = isAuthenticated && loadedUserId !== userId
+  const showTrigger =
+    isAuthenticated &&
+    !initialLoading &&
+    (unreadCount > 0 || open || selectedNotification !== null || lingering)
 
   return (
     <>
+      {initialLoading ? (
+        <div
+          aria-busy="true"
+          aria-label="正在加载最近通知"
+          className="app-notification-entry"
+          role="status"
+        >
+          <Skeleton
+            height="var(--ods-control-height-lg)"
+            shape="circle"
+            width="var(--ods-control-height-lg)"
+          />
+        </div>
+      ) : null}
       {showTrigger ? (
         <Popover.Root
           className="app-notification-entry"
@@ -193,8 +227,18 @@ export default function NotificationEntry() {
               </Button>
             </div>
             <Divider />
-            <div className="app-notification-entry__list">
-              {recentNotifications.length === 0 ? (
+            <div aria-busy={loading} className="app-notification-entry__list">
+              {loading && recentNotifications.length === 0 ? (
+                <div
+                  aria-label="正在加载最近通知"
+                  className="app-notification-entry__loading"
+                  role="status"
+                >
+                  <Skeleton height="1rem" width="70%" />
+                  <Skeleton height="0.875rem" width="40%" />
+                  <Skeleton height="1rem" width="60%" />
+                </div>
+              ) : recentNotifications.length === 0 ? (
                 <EmptyState
                   className="app-notification-entry__empty"
                   headingLevel={4}
