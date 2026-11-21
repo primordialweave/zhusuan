@@ -22,6 +22,7 @@
 .ods-cloud-panel__pane {
   overflow: hidden;
   background:
+    var(--ods-material-jade-sheen),
     linear-gradient(var(--ods-material-frost-veil), var(--ods-material-frost-veil)),
     var(--cloud-panel-backdrop, linear-gradient(transparent, transparent));
   background-color: var(--ods-color-bg-surface);

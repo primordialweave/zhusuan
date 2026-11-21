@@ -15,9 +15,9 @@ import {
   Radio,
   RadioGroup,
   Snippet,
-  Spinner,
   Table,
 } from '@/design-system'
+import { SettingsTableSkeleton } from './SettingsSkeleton'
 import { formatDate, formatRelativeTime } from '@/utils/format'
 
 const expiryOptions = [
@@ -68,7 +68,7 @@ export default function TokenManagement({ actions }: TokenManagementProps) {
   const toastSuccess = useToastStore((state) => state.success)
   const toastWarning = useToastStore((state) => state.warning)
   const [tokens, setTokens] = useState<PersonalAccessToken[]>([])
-  const [loading, setLoading] = useState(false)
+  const [loading, setLoading] = useState(true)
   const [showCreateModal, setShowCreateModal] = useState(false)
   const [showSuccessModal, setShowSuccessModal] = useState(false)
   const [creating, setCreating] = useState(false)
@@ -175,7 +175,7 @@ export default function TokenManagement({ actions }: TokenManagementProps) {
       </div>
 
       {loading && tokens.length === 0 ? (
-        <Spinner className="settings-empty" label="正在加载令牌列表" size="lg" />
+        <SettingsTableSkeleton columns={6} label="正在加载令牌列表" />
       ) : tokens.length === 0 ? (
         <EmptyState
           className="settings-empty"
@@ -185,7 +185,7 @@ export default function TokenManagement({ actions }: TokenManagementProps) {
           title="暂无访问令牌"
         />
       ) : (
-        <Table.Root aria-label="访问令牌" className="settings-table">
+        <Table.Root aria-busy={loading} aria-label="访问令牌" className="settings-table">
           <Table.Header>
             <Table.Row>
               <Table.Column>名称</Table.Column>

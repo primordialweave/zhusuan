@@ -21,7 +21,7 @@ vi.mock('@/api/project', async (importOriginal) => {
   }
 })
 
-const project = {
+const project: Project = {
   company: '橙子科技',
   contract_date: '2026-07-01',
   contract_number: 'ORANGE-001',
@@ -36,7 +36,7 @@ const project = {
   status: 'active',
   total_amount: 100_000,
   type: 'software',
-} satisfies Project
+}
 
 const listResponse = {
   data: {
@@ -67,6 +67,93 @@ function LocationProbe() {
 }
 
 describe('ProjectsView design system migration', () => {
+  it('hides old rows and pagination counts while a new filter is waiting', async () => {
+    const user = userEvent.setup()
+    const next = createDeferred<typeof listResponse>()
+    vi.mocked(projectApi.list).mockImplementation((params) =>
+      params?.status ? (next.promise as never) : (Promise.resolve(listResponse) as never),
+    )
+    const { container } = render(<ProjectsView />, { initialEntries: ['/projects'] })
+    await screen.findByText('星轨项目')
+    expect(screen.getByText('显示 1-1 条，共 1 条')).toBeInTheDocument()
+
+    await user.click(screen.getByRole('button', { name: '项目状态筛选' }))
+    await user.click(screen.getByRole('option', { name: '已完成' }))
+    await screen.findByRole('status', { name: '正在加载项目列表' })
+    expect(screen.queryByText('星轨项目')).not.toBeInTheDocument()
+    expect(screen.queryByText('显示 1-1 条，共 1 条')).not.toBeInTheDocument()
+    expect(container.querySelector('.projects-loading-pagination')).toBeInTheDocument()
+
+    await act(async () => {
+      next.resolve({
+        data: {
+          data: {
+            ...listResponse.data.data,
+            list: [{ ...project, name: '完成项目', status: 'completed' }],
+          },
+        },
+      })
+      await next.promise
+    })
+    expect(await screen.findByText('完成项目')).toBeInTheDocument()
+    expect(screen.queryByText('星轨项目')).not.toBeInTheDocument()
+
+    await user.click(screen.getByRole('searchbox', { name: '搜索项目' }))
+    await user.keyboard('{Enter}')
+    expect(projectApi.list).toHaveBeenCalledTimes(2)
+    expect(screen.getByText('完成项目')).toBeInTheDocument()
+    expect(screen.queryByRole('status', { name: '正在加载项目列表' })).not.toBeInTheDocument()
+  })
+
+  it('ends skeleton waiting with an error instead of exposing old-query rows after a failed filter', async () => {
+    const user = userEvent.setup()
+    const next = createDeferred<typeof listResponse>()
+    vi.mocked(projectApi.list).mockImplementation((params) =>
+      params?.status ? (next.promise as never) : (Promise.resolve(listResponse) as never),
+    )
+    const { container } = render(<ProjectsView />, { initialEntries: ['/projects'] })
+    await screen.findByText('星轨项目')
+    await user.click(screen.getByRole('button', { name: '项目状态筛选' }))
+    await user.click(screen.getByRole('option', { name: '已完成' }))
+    await screen.findByRole('status', { name: '正在加载项目列表' })
+
+    await act(async () => {
+      next.reject(new Error('offline'))
+      await next.promise.catch(() => undefined)
+    })
+    expect(await screen.findByText('项目列表加载失败')).toBeInTheDocument()
+    expect(screen.getByRole('button', { name: '重试项目列表' })).toBeInTheDocument()
+    expect(screen.queryByText('星轨项目')).not.toBeInTheDocument()
+    expect(screen.queryByRole('status', { name: '正在加载项目列表' })).not.toBeInTheDocument()
+    expect(container.querySelector('.projects-loading-pagination')).not.toBeInTheDocument()
+  })
+
+  it('replaces a loaded empty list with skeletons while a new filter is waiting', async () => {
+    const user = userEvent.setup()
+    const next = createDeferred<typeof listResponse>()
+    vi.mocked(projectApi.list).mockImplementation((params) =>
+      params?.status
+        ? (next.promise as never)
+        : (Promise.resolve({
+            data: { data: { ...listResponse.data.data, list: [], total: 0 } },
+          }) as never),
+    )
+    const { container } = render(<ProjectsView />, { initialEntries: ['/projects'] })
+    await screen.findByText('还没有项目')
+
+    await user.click(screen.getByRole('button', { name: '项目状态筛选' }))
+    await user.click(screen.getByRole('option', { name: '进行中' }))
+    await screen.findByRole('status', { name: '正在加载项目列表' })
+    expect(screen.queryByText('没有符合条件的项目')).not.toBeInTheDocument()
+    expect(container.querySelector('[data-slot="skeleton"]')).toBeInTheDocument()
+
+    await act(async () => {
+      next.resolve(listResponse)
+      await next.promise
+    })
+    expect(await screen.findByText('星轨项目')).toBeInTheDocument()
+  })
+
   beforeEach(() => {
     vi.clearAllMocks()
     useAuthStore.setState({ user: null })

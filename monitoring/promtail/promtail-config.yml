@@ -9,10 +9,10 @@ clients:
   - url: http://loki:3100/loki/api/v1/push
 
 scrape_configs:
-  - job_name: orange-api
+  - job_name: zhusuan-api
     static_configs:
       - targets:
           - localhost
         labels:
-          job: orange-api
-          __path__: /var/log/orange/*.log
+          job: zhusuan-api
+          __path__: /var/log/zhusuan/*.log

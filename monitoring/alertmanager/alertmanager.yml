@@ -19,28 +19,15 @@ route:
       receiver: 'warning'
 
 # 接收器配置
+# 珠算 API 不提供告警接收 webhook；默认只保留路由，不发送到不存在的接口。
+# 接入实际通知服务后，再在对应 receiver 下启用 webhook_configs / email_configs。
 receivers:
   - name: 'default'
-    webhook_configs:
-      - url: 'http://host.docker.internal:8080/api/v1/alerts/webhook'
-        send_resolved: true
-
   - name: 'critical'
-    webhook_configs:
-      - url: 'http://host.docker.internal:8080/api/v1/alerts/webhook'
-        send_resolved: true
-    # 可以添加其他通知方式
-    # email_configs:
-    #   - to: 'admin@example.com'
-    #     from: 'alertmanager@example.com'
-    #     smarthost: 'smtp.example.com:587'
-    #     auth_username: 'alertmanager@example.com'
-    #     auth_password: 'password'
-
+    # webhook_configs:
+    #   - url: 'https://alerts.example.com/receiver'
+    #     send_resolved: true
   - name: 'warning'
-    webhook_configs:
-      - url: 'http://host.docker.internal:8080/api/v1/alerts/webhook'
-        send_resolved: true
 
 # 抑制规则
 inhibit_rules:

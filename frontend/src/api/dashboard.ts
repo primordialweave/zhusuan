@@ -8,9 +8,10 @@ import type { Project, Payment } from './project'
 
 // 仪表盘核心统计数据
 export interface DashboardStats {
-  total_amount: number // 总合同金额
-  paid_amount: number // 已回款金额
-  pending_amount: number // 待回款金额
+  total_amount: number // 周期内计划款项总额；全部范围为合同总额
+  paid_amount: number // 按实际到账日期统计的本期现金收入；全部范围为累计已收
+  planned_received_amount: number // 本期计划款项中当前已确认收款的金额（含跨期到账）
+  pending_amount: number // 本期计划款项中当前待收金额；全部范围为合同未收余额
   overdue_amount: number // 逾期金额
   total_trend: number // 总金额环比增长率
   paid_trend: number // 回款环比增长率

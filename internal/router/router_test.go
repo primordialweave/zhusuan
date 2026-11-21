@@ -6,8 +6,8 @@ import (
 	"strings"
 	"testing"
 
-	"github.com/primordialweave/zhusuan/internal/config"
 	"github.com/gin-gonic/gin"
+	"github.com/primordialweave/zhusuan/internal/config"
 	"github.com/stretchr/testify/require"
 )
 
@@ -44,6 +44,18 @@ func TestRegisterRouteIsNotMounted(t *testing.T) {
 	router.ServeHTTP(rec, req)
 
 	require.Equal(t, http.StatusNotFound, rec.Code)
+}
+
+func TestSystemInfoRequiresAuthentication(t *testing.T) {
+	gin.SetMode(gin.TestMode)
+	previous := config.AppConfig
+	config.AppConfig = &config.Config{JWTSecret: "system-info-test-secret-with-more-than-32-characters"}
+	t.Cleanup(func() { config.AppConfig = previous })
+	recorder := httptest.NewRecorder()
+
+	NewRouter().ServeHTTP(recorder, httptest.NewRequest(http.MethodGet, "/api/v1/system/info", nil))
+
+	require.Equal(t, http.StatusUnauthorized, recorder.Code)
 }
 
 func TestCorsAllowsConfiguredOriginPreflight(t *testing.T) {

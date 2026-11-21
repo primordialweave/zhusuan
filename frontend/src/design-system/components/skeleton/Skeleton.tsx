@@ -1,7 +1,7 @@
 import { forwardRef, type CSSProperties, type HTMLAttributes } from 'react'
 
 export type SkeletonAnimation = 'shimmer' | 'pulse' | 'none'
-export type SkeletonShape = 'rect' | 'text' | 'circle'
+export type SkeletonShape = 'rect' | 'text' | 'circle' | 'ring'
 
 export interface SkeletonProps extends Omit<HTMLAttributes<HTMLDivElement>, 'aria-hidden'> {
   animation?: SkeletonAnimation

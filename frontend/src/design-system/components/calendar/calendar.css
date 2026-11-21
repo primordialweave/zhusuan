@@ -10,8 +10,8 @@
 }
 
 .ods-calendar[data-variant='secondary'] {
-  background: var(--ods-color-bg-surface-raised);
-  box-shadow: var(--ods-shadow-soft);
+  background: var(--ods-material-jade-sheen), var(--ods-color-bg-surface-raised);
+  box-shadow: var(--ods-material-jade-control-shadow);
 }
 
 .ods-calendar[data-variant='tertiary'] {
@@ -103,41 +103,36 @@
 }
 
 .ods-calendar__marker {
+  --ods-calendar-mark-color: currentColor;
   position: absolute;
   right: var(--ods-space-2);
   bottom: var(--ods-space-2);
-  width: 5px;
-  height: 5px;
+  width: 6px;
+  height: 6px;
   border-radius: var(--ods-radius-pill);
-  background: currentColor;
+  background: var(--ods-material-jade-bead-background), var(--ods-calendar-mark-color);
+  box-shadow: var(--ods-material-jade-bead-shadow);
 }
 
 .ods-calendar__marker[data-tone='accent'] {
   --ods-calendar-mark-color: var(--ods-color-accent);
-  background: var(--ods-color-accent);
-  box-shadow: 0 0 6px rgba(var(--ods-color-accent-rgb), 0.55);
 }
 
 .ods-calendar__marker[data-tone='success'] {
   --ods-calendar-mark-color: var(--ods-color-status-success);
-  background: var(--ods-color-status-success);
 }
 
 .ods-calendar__marker[data-tone='warning'] {
   --ods-calendar-mark-color: var(--ods-color-status-warning);
-  background: var(--ods-color-status-warning);
 }
 
 .ods-calendar__marker[data-tone='danger'] {
   --ods-calendar-mark-color: var(--ods-color-status-danger);
-  background: var(--ods-color-status-danger);
-  box-shadow: 0 0 6px color-mix(in srgb, var(--ods-color-status-danger) 55%, transparent);
 }
 
 /* Selected day inverts to accent-fg; keep tone marks legible on the glow fill. */
 .ods-calendar__day[data-selected='true'] .ods-calendar__marker {
-  background: currentColor;
-  box-shadow: none;
+  --ods-calendar-mark-color: currentColor;
 }
 
 .ods-calendar__day:hover:not(:disabled) {
@@ -154,10 +149,8 @@
 }
 
 .ods-calendar__day[data-selected='true'] {
-  background: var(--ods-gradient-glow);
-  box-shadow:
-    inset 0 1px 0 rgba(255, 255, 255, 0.28),
-    0 4px 10px rgba(var(--ods-color-accent-rgb), 0.3);
+  background: var(--ods-material-jade-sheen), var(--ods-gradient-glow);
+  box-shadow: var(--ods-material-jade-control-shadow);
   color: var(--ods-color-accent-fg);
   font-weight: var(--ods-font-weight-semibold);
 }
@@ -223,10 +216,8 @@
 }
 
 .ods-calendar__picker-cell[data-selected='true'] {
-  background: var(--ods-gradient-glow);
-  box-shadow:
-    inset 0 1px 0 rgba(255, 255, 255, 0.28),
-    0 4px 10px rgba(var(--ods-color-accent-rgb), 0.3);
+  background: var(--ods-material-jade-sheen), var(--ods-gradient-glow);
+  box-shadow: var(--ods-material-jade-control-shadow);
   color: var(--ods-color-accent-fg);
   font-weight: var(--ods-font-weight-semibold);
 }
@@ -284,7 +275,26 @@
   height: var(--ods-control-height-md);
   border: 1px solid var(--ods-color-border-default);
   border-radius: var(--ods-radius-md);
+  background: var(--ods-material-jade-sheen);
+  box-shadow: var(--ods-material-jade-control-shadow);
   color: var(--ods-color-fg-default);
+}
+
+@media (hover: hover) and (pointer: fine) {
+  .ods-calendar[data-layout='board'] .ods-calendar__nav:hover:not(:disabled) {
+    border-color: var(--ods-color-border-strong);
+    background: var(--ods-material-jade-sheen), var(--ods-color-bg-surface-hover);
+  }
+}
+
+.ods-calendar[data-layout='board'] .ods-calendar__nav:active:not(:disabled) {
+  box-shadow: var(--ods-material-jade-inset-shadow);
+}
+
+.ods-calendar[data-layout='board'] .ods-calendar__nav:disabled {
+  box-shadow: none;
+  color: var(--ods-color-fg-disabled);
+  cursor: not-allowed;
 }
 
 /* The three controls read as one group: same corner, same line. */
@@ -355,13 +365,13 @@
 }
 
 .ods-calendar[data-layout='board'] .ods-calendar__day[data-selected='true'] {
-  background: var(--ods-color-accent-soft);
+  background: var(--ods-material-jade-sheen), var(--ods-color-accent-soft);
   color: var(--ods-color-fg-default);
   font-weight: var(--ods-font-weight-medium);
 }
 
 .ods-calendar[data-layout='board'] .ods-calendar__day[data-selected='true']:not([data-today]) {
-  box-shadow: none;
+  box-shadow: var(--ods-material-jade-inset-shadow);
 }
 
 .ods-calendar[data-layout='board'] .ods-calendar__day-number {

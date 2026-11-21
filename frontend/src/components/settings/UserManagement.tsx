@@ -4,6 +4,7 @@ import { DEFAULT_PAGE_SIZE } from '@/constants/pagination'
 import { useConfirm } from '@/composables/useConfirm'
 import { useToastStore } from '@/composables/useToast'
 import {
+  Alert,
   Button,
   Chip,
   EmptyState,
@@ -16,10 +17,10 @@ import {
   PaginationBar,
   SearchField,
   Select,
-  Spinner,
   Table,
   User as UserBadge,
 } from '@/design-system'
+import { SettingsTableSkeleton } from './SettingsSkeleton'
 
 interface UserForm {
   department: string
@@ -51,11 +52,18 @@ export default function UserManagement() {
   const toastSuccess = useToastStore((state) => state.success)
   const [users, setUsers] = useState<User[]>([])
   const [total, setTotal] = useState(0)
-  const [loading, setLoading] = useState(false)
+  const [loading, setLoading] = useState(true)
+  const [loadedScope, setLoadedScope] = useState<string | null>(null)
+  const [failedScope, setFailedScope] = useState<string | null>(null)
   const [keyword, setKeyword] = useState('')
   const [searchKeyword, setSearchKeyword] = useState('')
   const [currentPage, setCurrentPage] = useState(1)
   const [pageSize, setPageSize] = useState(DEFAULT_PAGE_SIZE)
+  const requestScope = JSON.stringify([currentPage, pageSize, searchKeyword])
+  const dataIsCurrent = loadedScope === requestScope
+  const loadError = failedScope === requestScope
+  const showingSkeleton = !dataIsCurrent && !loadError
+  const busy = loading || showingSkeleton
   const [showModal, setShowModal] = useState(false)
   const [editingUser, setEditingUser] = useState<User | null>(null)
   const [form, setForm] = useState<UserForm>(emptyForm)
@@ -78,6 +86,7 @@ export default function UserManagement() {
   const loadUsers = useCallback(async () => {
     const requestId = ++loadRequestRef.current
     setLoading(true)
+    setFailedScope(null)
     try {
       const response = await authApi.getUsers({
         keyword: searchKeyword || undefined,
@@ -87,13 +96,17 @@ export default function UserManagement() {
       if (requestId === loadRequestRef.current) {
         setUsers(response.data.data.list)
         setTotal(response.data.data.total)
+        setLoadedScope(requestScope)
       }
     } catch {
-      if (requestId === loadRequestRef.current) toastError('获取用户失败')
+      if (requestId === loadRequestRef.current) {
+        setFailedScope(requestScope)
+        toastError('获取用户失败')
+      }
     } finally {
       if (requestId === loadRequestRef.current) setLoading(false)
     }
-  }, [currentPage, pageSize, searchKeyword, toastError])
+  }, [currentPage, pageSize, requestScope, searchKeyword, toastError])
 
   useEffect(() => {
     const timer = window.setTimeout(loadUsers, 0)
@@ -235,17 +248,36 @@ export default function UserManagement() {
         </Button>
       </div>
 
-      {loading && users.length === 0 ? (
-        <Spinner className="settings-empty" label="正在加载用户列表" size="lg" />
-      ) : users.length === 0 ? (
+      {loadError ? (
+        <Alert
+          action={
+            <Button
+              aria-label="重试用户列表"
+              onClick={() => void loadUsers()}
+              size="sm"
+              variant="secondary"
+            >
+              重试
+            </Button>
+          }
+          title="用户列表加载失败"
+          tone="danger"
+        >
+          {dataIsCurrent ? '当前展示最近一次成功加载的数据。' : '暂时无法获取用户数据，请重试。'}
+        </Alert>
+      ) : null}
+
+      {showingSkeleton ? (
+        <SettingsTableSkeleton columns={6} label="正在加载用户列表" />
+      ) : dataIsCurrent && users.length === 0 ? (
         <EmptyState
           className="settings-empty"
           icon={<i className="ri-user-unfollow-line" />}
           size="lg"
           title={searchKeyword ? '没有符合条件的用户' : '暂无用户'}
         />
-      ) : (
-        <Table.Root aria-busy={loading} aria-label="用户列表" className="settings-table">
+      ) : dataIsCurrent ? (
+        <Table.Root aria-busy={busy} aria-label="用户列表" className="settings-table">
           <Table.Header>
             <Table.Row>
               <Table.Column>用户</Table.Column>
@@ -329,9 +361,9 @@ export default function UserManagement() {
             ))}
           </Table.Body>
         </Table.Root>
-      )}
+      ) : null}
 
-      {total > pageSize || currentPage > 1 ? (
+      {dataIsCurrent && (total > pageSize || currentPage > 1) ? (
         <PaginationBar
           info={paginationInfo}
           onPageChange={setCurrentPage}
@@ -340,6 +372,7 @@ export default function UserManagement() {
           trailing={
             <Select
               aria-label="每页条数"
+              clearable={false}
               onValueChange={(value) => {
                 setPageSize(Number(value))
                 setCurrentPage(1)
@@ -405,6 +438,7 @@ export default function UserManagement() {
                 <Field.Label>角色</Field.Label>
                 <Select
                   aria-label="角色"
+                  clearable={false}
                   onValueChange={(value) =>
                     setForm((current) => ({ ...current, role: value as 'admin' | 'user' }))
                   }
@@ -419,6 +453,7 @@ export default function UserManagement() {
                 <Field.Label>状态</Field.Label>
                 <Select
                   aria-label="状态"
+                  clearable={false}
                   onValueChange={(value) =>
                     setForm((current) => ({ ...current, status: Number(value) }))
                   }

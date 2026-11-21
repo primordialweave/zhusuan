@@ -4,6 +4,7 @@ import { projectApi, type Project } from '@/api/project'
 import { PaymentPlanEditor } from '@/components/project/PaymentPlanEditor'
 import { validatePaymentPlan } from '@/components/project/formValidation'
 import { ProjectPicker } from '@/components/project/ProjectPicker'
+import { ProjectFormSkeleton } from '@/components/project/ProjectFormSkeleton'
 import { createPaymentPlanItem, type PaymentPlanItem } from '@/components/project/paymentPlan'
 import {
   createPaymentPlanSaveState,
@@ -19,6 +20,7 @@ import {
   FormActions,
   IconButton,
   PageHeader,
+  Skeleton,
 } from '@/design-system'
 import { useToastStore } from '@/composables/useToast'
 import '@/styles/project-domain.css'
@@ -197,11 +199,15 @@ export default function PaymentCreateView() {
           routeProjectId ? null : (
             <Field.Root className="payment-project-selector" required>
               <Field.Label>所属项目</Field.Label>
-              <ProjectPicker
-                disabled={saving || loadingProject || lockedProjectId !== null}
-                onValueChange={selectProject}
-                value={currentProject}
-              />
+              {loadingProject ? (
+                <Skeleton height="var(--ods-control-height-md)" width="16rem" />
+              ) : (
+                <ProjectPicker
+                  disabled={saving || loadingProject || lockedProjectId !== null}
+                  onValueChange={selectProject}
+                  value={currentProject}
+                />
+              )}
             </Field.Root>
           )
         }
@@ -228,25 +234,29 @@ export default function PaymentCreateView() {
         </Alert>
       ) : null}
 
-      <Card.Root className="project-form-card" padding="none" variant="transparent">
-        <form className="payment-form" noValidate onSubmit={handleSubmit}>
-          <PaymentPlanEditor
-            installment={isInstallment}
-            errors={paymentErrors}
-            items={paymentItems}
-            onItemsChange={setPaymentItems}
-          />
+      {loadingProject ? (
+        <ProjectFormSkeleton payment />
+      ) : (
+        <Card.Root className="project-form-card" padding="none" variant="transparent">
+          <form className="payment-form" noValidate onSubmit={handleSubmit}>
+            <PaymentPlanEditor
+              installment={isInstallment}
+              errors={paymentErrors}
+              items={paymentItems}
+              onItemsChange={setPaymentItems}
+            />
 
-          <FormActions>
-            <Button onClick={() => navigate(-1)} type="button" variant="ghost">
-              取消
-            </Button>
-            <Button disabled={loadingProject || !currentProject} pending={saving} type="submit">
-              {saving ? '保存中...' : '确认保存'}
-            </Button>
-          </FormActions>
-        </form>
-      </Card.Root>
+            <FormActions>
+              <Button onClick={() => navigate(-1)} type="button" variant="ghost">
+                取消
+              </Button>
+              <Button disabled={loadingProject || !currentProject} pending={saving} type="submit">
+                {saving ? '保存中...' : '确认保存'}
+              </Button>
+            </FormActions>
+          </form>
+        </Card.Root>
+      )}
     </div>
   )
 }

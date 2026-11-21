@@ -54,16 +54,49 @@
   --ods-shadow-panel: 0 12px 32px rgba(0, 0, 0, 0.34);
   --ods-shadow-modal: 0 30px 90px rgba(0, 0, 0, 0.58), 0 4px 18px rgba(0, 0, 0, 0.34);
   --ods-shadow-brand-surface: var(--ods-shadow-panel);
-  --ods-shadow-nav-selected: 0 3px 10px rgba(0, 0, 0, 0.3);
-  --ods-gradient-glow: linear-gradient(180deg, #97c99c 0%, #7ab383 100%);
+  --ods-shadow-nav-selected:
+    inset 0 1px 1px rgba(238, 255, 225, 0.46), inset 0 -2px 3px rgba(16, 50, 26, 0.3),
+    0 3px 10px rgba(0, 0, 0, 0.3);
+  --ods-gradient-glow:
+    radial-gradient(ellipse at 28% 0%, rgba(244, 255, 230, 0.28), transparent 65%),
+    linear-gradient(165deg, #aed6aa 0%, #8cbd8d 52%, #73a97c 100%);
   --ods-gradient-nav-selected: radial-gradient(
     75% 90% at 38% 25%,
-    #a3d0a6 0%,
+    #c3e2ba 0%,
     #93c597 40%,
     #7ab383 90%
   );
   --ods-gradient-text: linear-gradient(135deg, #c8e5c8 0%, #a0d7af 58%, #85bc8b 100%);
   --ods-gradient-brand-surface: linear-gradient(135deg, #24443a 0%, #1f3a31 54%, #1b2c26 100%);
+  /* Night jade keeps a quiet green reflection so text and status colors stay legible. */
+  --ods-material-jade-sheen:
+    radial-gradient(ellipse at 16% 0%, rgba(202, 237, 211, 0.055), transparent 64%),
+    linear-gradient(175deg, rgba(224, 247, 223, 0.025), transparent 48%, rgba(2, 18, 10, 0.1));
+  --ods-material-jade-control-shadow:
+    inset 0 1px 1px rgba(217, 244, 222, 0.14), inset 0 -1px 2px rgba(0, 12, 6, 0.3),
+    0 2px 5px rgba(0, 0, 0, 0.14);
+  --ods-material-jade-inset-shadow:
+    inset 0 1px 3px rgba(0, 12, 6, 0.3), inset 0 -1px 0 rgba(217, 244, 222, 0.1);
+  --ods-material-jade-thumb: radial-gradient(
+    circle at 32% 25%,
+    #f5faed 0%,
+    #e7f1dc 30%,
+    #c7dec2 68%,
+    #a6c3a5 100%
+  );
+  --ods-material-jade-bead-background:
+    radial-gradient(
+      ellipse 24% 20% at 32% 24%,
+      rgba(255, 255, 235, 0.72),
+      rgba(255, 255, 235, 0.1) 70%,
+      transparent 100%
+    ),
+    radial-gradient(ellipse 65% 58% at 36% 28%, rgba(237, 255, 211, 0.28), transparent 78%),
+    radial-gradient(ellipse 66% 38% at 64% 86%, rgba(226, 247, 182, 0.24), transparent 85%),
+    radial-gradient(circle at 38% 32%, transparent 38%, rgba(7, 32, 16, 0.36) 100%);
+  --ods-material-jade-bead-shadow:
+    inset 0 0.5px 1px rgba(240, 255, 222, 0.4), inset 0 -1px 1.5px rgba(8, 31, 15, 0.32),
+    0 1px 3px rgba(0, 0, 0, 0.32);
   --ods-material-glass-blur: 24px;
   --ods-material-glass-saturation: 130%;
   --ods-material-glass-brightness: 1.05;
@@ -76,7 +109,7 @@
   );
   --ods-material-glass-sheen: linear-gradient(
     168deg,
-    rgba(229, 242, 233, 0.05) 0%,
+    rgba(229, 242, 233, 0.09) 0%,
     rgba(229, 242, 233, 0) 46%
   );
   --ods-material-glass-shadow-outer: var(--ods-shadow-panel);

@@ -39,6 +39,7 @@
 - `--ods-ease-in-out`：屏幕内持续移动与形变使用的对称缓动曲线。
 - `--ods-material-frost-veil`、`--ods-material-frost-rim`、`--ods-material-frost-control`：磨砂材质。磨砂不做实时模糊，而是在一张预模糊的静帧上盖 `veil`，边缘画 2px 的 `rim`；`control` 是磨砂面上输入框等控件的底色（更亮的一层玻璃，不是实色）。用于 `CloudPanel`。
 - `--ods-shadow-*`、`--ods-material-glass-*`：表面与材质。`--ods-material-glass-specular` 是玻璃边缘 2px 的高光环，`--ods-material-glass-sheen` 是面上的光泽；`--ods-material-glass-shadow-dense` 是导航玻璃的整组阴影。
+- `--ods-material-jade-*`：玉质光泽与厚度。`sheen` 为面板、按钮和输入框叠加左上柔光；`control-shadow` 为凸起的边缘光和浅投影；`inset-shadow` 为输入框和按下态的凹面；`thumb` 是开关的浅玉滑块。`bead-background` 与 `bead-shadow` 为首页、收款结构、日历和通知圆点提供同一方向的高光、边缘透光和下部厚度。玉珠背景叠在原语义状态色上，保持已收、待收和逾期的含义；全部使用静态 CSS 渐变与阴影，不增加实时模糊或循环动画。
 - `--ods-data-*`：Canvas/Chart.js 等数据可视化角色。`--ods-data-part-paid`、`--ods-data-part-pending` 是已收与待收两段构成的颜色。
 - `--ods-shell-*`：Wails/macOS 标题栏和应用壳层尺寸，包括 `--ods-shell-dock-width`、`--ods-shell-dock-height`、`--ods-shell-dock-offset`，以及 Dock 项的 `--ods-shell-dock-icon-size`、`--ods-shell-dock-label-size`、`--ods-shell-dock-label-weight`、`--ods-shell-dock-item-gap`。
 

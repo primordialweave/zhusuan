@@ -148,19 +148,21 @@
 }
 
 .calendar-day-entry__dot {
-  width: var(--ods-space-2);
-  height: var(--ods-space-2);
+  --jade-bead-color: var(--ods-data-part-paid);
+  width: 0.625rem;
+  height: 0.625rem;
   flex: none;
   border-radius: var(--ods-radius-pill);
-  background: var(--ods-data-part-paid);
+  background: var(--ods-material-jade-bead-background), var(--jade-bead-color);
+  box-shadow: var(--ods-material-jade-bead-shadow);
 }
 
 .calendar-day-entry[data-status='pending'] .calendar-day-entry__dot {
-  background: var(--ods-data-part-pending);
+  --jade-bead-color: var(--ods-data-part-pending);
 }
 
 .calendar-day-entry[data-status='overdue'] .calendar-day-entry__dot {
-  background: var(--ods-color-status-danger);
+  --jade-bead-color: var(--ods-color-status-danger);
 }
 
 .calendar-day-entry__text {
@@ -179,6 +181,35 @@
   flex-direction: column;
   gap: var(--ods-space-2);
   padding-block-start: var(--ods-space-4);
+}
+
+.calendar-day-loading {
+  margin-block: var(--ods-space-1);
+}
+
+.calendar-loading-entry {
+  display: grid;
+  min-height: 4.5rem;
+  grid-template-columns: minmax(0, 1fr) auto auto;
+  align-items: center;
+  gap: var(--ods-space-3);
+  padding-block: var(--ods-space-3);
+  border-block-end: 1px solid var(--ods-color-border-default);
+}
+
+.calendar-loading-identity {
+  display: flex;
+  min-width: 0;
+  flex-direction: column;
+  gap: var(--ods-space-2);
+}
+
+.calendar-loading-upcoming {
+  display: flex;
+  min-height: 3.25rem;
+  align-items: center;
+  gap: var(--ods-space-3);
+  border-block-end: 1px solid var(--ods-color-border-default);
 }
 
 @media (prefers-reduced-motion: no-preference) {

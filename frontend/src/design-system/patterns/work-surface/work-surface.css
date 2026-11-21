@@ -11,9 +11,9 @@
   overflow: hidden;
 }
 
-/* The panel separates from the scene by lightness and its rim, not by a drop shadow. */
+/* A shallow polished rim gives the work pane thickness without a heavy floating shadow. */
 .ods-work-surface[data-variant='raised'] {
-  box-shadow: var(--ods-shadow-soft);
+  box-shadow: var(--ods-material-jade-control-shadow), var(--ods-shadow-soft);
 }
 
 .ods-work-surface__scroll {

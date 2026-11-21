@@ -13,6 +13,7 @@
 }
 
 .payment-summary {
+  position: relative;
   --payment-summary-pie: clamp(54px, 5.064vw, 75.3px);
   /* Slightly squarer than a capsule: the ends keep a short straight side. */
   --surface-radius: clamp(36px, 3.29vw, 48.9px);
@@ -92,17 +93,19 @@
 }
 
 .payment-summary__dot {
-  width: 0.728em;
-  height: 0.728em;
+  width: 0.96em;
+  height: 0.96em;
   border-radius: var(--ods-radius-pill);
+  background: var(--ods-material-jade-bead-background), var(--jade-bead-color);
+  box-shadow: var(--ods-material-jade-bead-shadow);
 }
 
 .payment-summary__dot[data-part='paid'] {
-  background: var(--ods-data-part-paid);
+  --jade-bead-color: var(--ods-data-part-paid);
 }
 
 .payment-summary__dot[data-part='pending'] {
-  background: var(--ods-data-part-pending);
+  --jade-bead-color: var(--ods-data-part-pending);
 }
 
 .payment-summary__label {
@@ -118,6 +121,17 @@
   font-weight: var(--ods-font-weight-regular);
   text-align: end;
   white-space: nowrap;
+}
+
+.payment-summary__amount-placeholder {
+  margin-inline-start: auto;
+}
+
+.payment-summary__refresh-skeleton {
+  position: absolute;
+  inset-inline: var(--ods-space-8);
+  bottom: var(--ods-space-2);
+  height: 2px;
 }
 
 .payment-summary__message {

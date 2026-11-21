@@ -16,7 +16,7 @@ const readScope = (): PaymentSummaryScope => {
 /** The workbench is the scene itself; the payment summary is the only thing placed on it. */
 export default function DashboardView() {
   const [scope, setScope] = useState(readScope)
-  const { paid, pending, retry, status } = usePaymentSummary(scope)
+  const { paid, pending, refreshing, retry, status } = usePaymentSummary(scope)
 
   const changeScope = (next: PaymentSummaryScope) => {
     setScope(next)
@@ -31,6 +31,7 @@ export default function DashboardView() {
         onScopeChange={changeScope}
         paid={paid}
         pending={pending}
+        refreshing={refreshing}
         scope={scope}
         status={status}
       />

@@ -1,9 +1,10 @@
 .ods-input,
 .ods-textarea,
 .ods-native-select {
-  background: var(--ods-color-bg-surface);
+  background: var(--ods-material-jade-sheen), var(--ods-color-bg-surface);
   border: 1px solid var(--ods-color-border-default);
   border-radius: var(--ods-radius-control);
+  box-shadow: var(--ods-material-jade-inset-shadow);
   color: var(--ods-color-fg-default);
   font-family: var(--ods-font-family-body);
   font-size: var(--ods-font-size-md);
@@ -65,7 +66,7 @@
   .ods-input:hover:not(:disabled),
   .ods-textarea:hover:not(:disabled),
   .ods-native-select:hover:not(:disabled) {
-    background: var(--ods-color-bg-surface-hover);
+    background: var(--ods-material-jade-sheen), var(--ods-color-bg-surface-hover);
     border-color: var(--ods-color-border-strong);
   }
 
@@ -79,8 +80,10 @@
 .ods-native-select:focus-visible,
 .ods-input-group:focus-within {
   border-color: var(--ods-color-border-focus);
-  background: var(--ods-color-bg-surface);
-  box-shadow: 0 0 0 4px var(--ods-color-accent-soft);
+  background: var(--ods-material-jade-sheen), var(--ods-color-bg-surface);
+  box-shadow:
+    var(--ods-material-jade-inset-shadow),
+    0 0 0 4px var(--ods-color-accent-soft);
   transition: none;
 }
 
@@ -93,23 +96,28 @@
 
 .ods-input[aria-invalid='true']:focus-visible,
 .ods-textarea[aria-invalid='true']:focus-visible,
-.ods-native-select[aria-invalid='true']:focus-visible {
-  box-shadow: 0 0 0 4px var(--ods-color-status-danger-soft);
+.ods-native-select[aria-invalid='true']:focus-visible,
+.ods-input-group:has([aria-invalid='true']):focus-within {
+  box-shadow:
+    var(--ods-material-jade-inset-shadow),
+    0 0 0 4px var(--ods-color-status-danger-soft);
 }
 
 .ods-input:disabled,
 .ods-textarea:disabled,
 .ods-native-select:disabled {
   background: var(--ods-color-bg-canvas-subtle);
+  box-shadow: none;
   color: var(--ods-color-fg-disabled);
   cursor: not-allowed;
 }
 
 .ods-input-group {
   align-items: center;
-  background: var(--ods-color-bg-surface);
+  background: var(--ods-material-jade-sheen), var(--ods-color-bg-surface);
   border: 1px solid var(--ods-color-border-default);
   border-radius: var(--ods-radius-control);
+  box-shadow: var(--ods-material-jade-inset-shadow);
   display: flex;
   gap: var(--ods-control-gap);
   min-width: 0;
@@ -123,6 +131,11 @@
   box-shadow: none;
   min-width: 0;
   padding-inline: var(--ods-space-0);
+}
+
+.ods-input-group:has(> .ods-input:disabled) {
+  background: var(--ods-color-bg-canvas-subtle);
+  box-shadow: none;
 }
 
 .ods-input-group > .ods-input:focus,

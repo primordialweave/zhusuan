@@ -1,6 +1,8 @@
 # 打包、发布与桌面更新
 
-## 1.0.2 与发布入口
+## 1.1.0 与发布入口
+
+**1.1.0** 本次发布包含玉质界面、全界面Skeleton、可配置品牌信息与收款计划批次口径，检查记录见 [release-readiness-1.1.0.md](release-readiness-1.1.0.md)。公开状态以 [v1.1.0 Release](https://github.com/primordialweave/zhusuan/releases/tag/v1.1.0) 为准。
 
 **1.0.2** 已公开并设latest，包含Windows普通启动时按需UAC、透明胶囊标题栏与全屏、窗口操作串行队列修复。[v1.0.2 Release](https://github.com/primordialweave/zhusuan/releases/tag/v1.0.2) 三平台完整通过，检查证据见 [release-readiness-1.0.2.md](release-readiness-1.0.2.md)。依赖升级另行合入主分支，已发布源码/标签/附件不变。
 
@@ -13,9 +15,9 @@ macOS 下载入口改为 Apple Silicon（arm64）和 Intel（amd64）两个 DMG�
 先统一源代码版本：
 
 ```sh
-python3 scripts/release.py metadata v1.0.2
+python3 scripts/release.py metadata v1.1.0
 # 等价入口
-task bump-version VERSION=1.0.2
+task bump-version VERSION=1.1.0
 ```
 
 命令同步前端 package/lockfile、后端 `AppVersion`、Wails build/config、macOS/iOS plist、Windows 文件资源及 MSIX、Linux 包与 Android versionName/versionCode。MSIX 使用 `1.0.2.0`，Android versionCode 使用 `1000002`；系统最低版本要求独立保留。NSIS 从 build/config.yml 读取版本，避免生成 include 中的默认版本漂移。CI 在自己的工作副本执行相同同步。

@@ -31,6 +31,25 @@ const dayButton = (date: string) =>
 const detail = () => within(screen.getByRole('complementary', { name: '收款明细' }))
 
 describe('CalendarView', () => {
+  it('shows calendar and detail skeletons until an empty response has actually arrived', async () => {
+    let resolve!: (value: never) => void
+    const pending = new Promise<never>((done) => {
+      resolve = done
+    })
+    vi.mocked(paymentApi.list).mockReturnValue(pending)
+    const { container } = render(<CalendarView />)
+
+    expect(screen.getByRole('status', { name: '正在加载收款计划' })).toBeInTheDocument()
+    expect(screen.getByRole('status', { name: '正在加载近期收款' })).toBeInTheDocument()
+    expect(container.querySelector('.calendar-day-loading')).toBeInTheDocument()
+    expect(screen.queryByText('该日无收款计划')).not.toBeInTheDocument()
+    await waitFor(() => expect(paymentApi.list).toHaveBeenCalledTimes(1))
+
+    resolve({ data: { data: [] } } as never)
+    expect(await screen.findByText('该日无收款计划')).toBeInTheDocument()
+    expect(screen.queryByRole('status', { name: '正在加载收款计划' })).not.toBeInTheDocument()
+  })
+
   beforeEach(() => {
     vi.useFakeTimers({ toFake: ['Date'] })
     vi.setSystemTime(new Date(2026, 9, 17, 12))

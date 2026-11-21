@@ -15,8 +15,8 @@
   overflow-wrap: anywhere;
   border: var(--ods-material-glass-border-subtle);
   border-radius: var(--ods-radius-panel);
-  background: var(--ods-color-bg-surface-raised);
-  box-shadow: var(--ods-shadow-panel);
+  background: var(--ods-material-jade-sheen), var(--ods-color-bg-surface-raised);
+  box-shadow: var(--ods-material-jade-control-shadow), var(--ods-shadow-panel);
   backdrop-filter: blur(var(--ods-material-glass-blur))
     saturate(var(--ods-material-glass-saturation));
   color: var(--ods-color-fg-default);
@@ -25,6 +25,14 @@
 
 .ods-popover[data-padding='none'] {
   padding: var(--ods-space-0);
+}
+
+/* Keep large background text from ghosting through the night menu's jade face. */
+:root[data-theme='dark'] .ods-popover {
+  background:
+    var(--ods-material-jade-sheen),
+    linear-gradient(var(--ods-color-bg-surface-raised), var(--ods-color-bg-surface-raised)),
+    var(--ods-color-bg-surface-raised);
 }
 
 .ods-popover[data-padding='sm'] {

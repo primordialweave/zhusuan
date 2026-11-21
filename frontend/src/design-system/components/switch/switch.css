@@ -50,7 +50,8 @@
   padding: var(--ods-switch-pad);
   border-radius: var(--ods-radius-pill);
   /* A tint alone loses the off state on a pale panel and on the night one. */
-  background: var(--ods-color-border-control);
+  background: var(--ods-material-jade-sheen), var(--ods-color-border-control);
+  box-shadow: var(--ods-material-jade-inset-shadow);
   transition: background-color var(--ods-duration-fast) var(--ods-ease-standard);
 }
 
@@ -59,15 +60,14 @@
   height: calc(var(--ods-switch-h) - var(--ods-switch-pad) * 2);
   border-radius: var(--ods-radius-pill);
   /* A light thumb in both themes; a surface-coloured one vanishes on the 夜雨 panel. */
-  background: var(--ods-color-fg-brand-surface);
-  box-shadow: 0 1px 3px rgba(var(--ods-color-fg-default-rgb), 0.28);
+  background: var(--ods-material-jade-thumb);
+  box-shadow: var(--ods-material-jade-bead-shadow);
   /* Spring settle so the thumb feels physical, not linear (apple-design §4). */
   transition: transform var(--ods-duration-fast) var(--ods-ease-spring);
 }
 
 .ods-switch__input:checked + .ods-switch__track {
-  background: var(--ods-color-accent);
-  box-shadow: none;
+  background: var(--ods-material-jade-sheen), var(--ods-color-accent);
 }
 
 .ods-switch__input:checked + .ods-switch__track .ods-switch__thumb {
@@ -77,6 +77,11 @@
 .ods-switch__input:focus-visible + .ods-switch__track {
   outline: var(--ods-focus-ring-width) solid var(--ods-color-border-focus);
   outline-offset: var(--ods-focus-ring-offset);
+}
+
+.ods-switch[data-disabled='true'] .ods-switch__track {
+  box-shadow: none;
+  opacity: 0.58;
 }
 
 @media (prefers-reduced-motion: reduce) {

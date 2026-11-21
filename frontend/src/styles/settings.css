@@ -220,6 +220,51 @@
   min-height: 14rem;
 }
 
+.settings-loading {
+  min-width: 0;
+}
+
+.settings-loading__row {
+  display: grid;
+  gap: var(--ods-space-3);
+  padding: var(--ods-space-5) var(--ods-space-4);
+  border-block-end: 1px solid var(--ods-color-border-default);
+}
+
+.settings-loading__field {
+  display: grid;
+  min-width: 0;
+  gap: var(--ods-space-2);
+}
+
+.settings-loading__label {
+  display: flex;
+  align-items: center;
+  min-height: calc(var(--ods-font-size-sm) * var(--ods-line-height-body));
+}
+
+.settings-loading__avatar,
+.settings-loading__account-action {
+  flex: 0 0 auto;
+}
+
+.settings-loading__account-name {
+  display: flex;
+  align-items: center;
+  min-height: calc(var(--ods-font-size-lg) * var(--ods-line-height-heading));
+}
+
+.settings-loading__account-meta {
+  min-height: calc(var(--ods-font-size-sm) * var(--ods-line-height-body));
+}
+
+.settings-loading__tabs {
+  display: flex;
+  min-width: 0;
+  flex-wrap: wrap;
+  gap: var(--ods-space-2);
+}
+
 /* Tables on settings pages: secondary columns step back, actions hug the end. */
 .settings-table__muted {
   color: var(--ods-color-fg-muted);
@@ -362,7 +407,8 @@
 }
 
 .notification-row[data-unread] .notification-row__dot {
-  background: var(--ods-color-accent-warm);
+  background: var(--ods-material-jade-bead-background), var(--ods-color-accent-warm);
+  box-shadow: var(--ods-material-jade-bead-shadow);
 }
 
 .notification-row__copy {
@@ -558,6 +604,11 @@
   animation: settings-sync-pulse 1.5s var(--ods-ease-standard) infinite;
 }
 
+.settings-view .sync-dot {
+  background: var(--ods-material-jade-bead-background), var(--ods-color-status-success);
+  box-shadow: var(--ods-material-jade-bead-shadow);
+}
+
 .settings-view .sync-table-name {
   color: var(--ods-color-fg-default);
 }
@@ -590,11 +641,18 @@
   gap: var(--ods-space-4);
 }
 
-.about-logo {
-  width: 3.5rem;
-  height: 3.5rem;
+.about-brandmark {
+  display: flex;
   flex: 0 0 auto;
-  object-fit: contain;
+  align-items: center;
+  padding: var(--ods-space-2) var(--ods-space-3);
+  border-radius: var(--ods-radius-md);
+  background: var(--ods-ref-color-mist-100);
+}
+
+.about-logo {
+  width: 6.5rem;
+  height: 3.25rem;
 }
 
 .about-hero__copy {
@@ -617,6 +675,7 @@
 .about-tagline {
   color: var(--ods-color-fg-muted);
   font-size: var(--ods-font-size-sm);
+  overflow-wrap: anywhere;
 }
 
 .about-hero__name {

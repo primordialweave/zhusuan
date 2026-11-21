@@ -169,6 +169,7 @@ func NewRouter() *gin.Engine {
 			system := authorized.Group("/system")
 			{
 				systemHandler := handler.NewSystemHandler()
+				system.GET("/info", systemHandler.Info)
 				system.GET("/updates/check", systemHandler.CheckUpdate)
 			}
 

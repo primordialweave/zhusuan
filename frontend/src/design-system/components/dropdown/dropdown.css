@@ -28,10 +28,15 @@
     color var(--ods-duration-fast) var(--ods-ease-standard);
 }
 
-.ods-dropdown__item:hover:not(:disabled),
 .ods-dropdown__item:focus-visible {
-  background: var(--ods-color-bg-surface-hover);
+  background: var(--ods-material-jade-sheen), var(--ods-color-bg-surface-hover);
   outline: none;
+}
+
+@media (hover: hover) and (pointer: fine) {
+  .ods-dropdown__item:hover:not(:disabled) {
+    background: var(--ods-material-jade-sheen), var(--ods-color-bg-surface-hover);
+  }
 }
 
 .ods-dropdown__item:focus-visible {
@@ -42,8 +47,10 @@
   color: var(--ods-color-status-danger);
 }
 
-.ods-dropdown__item[data-tone='danger']:hover:not(:disabled) {
-  background: var(--ods-color-status-danger-soft);
+@media (hover: hover) and (pointer: fine) {
+  .ods-dropdown__item[data-tone='danger']:hover:not(:disabled) {
+    background: var(--ods-material-jade-sheen), var(--ods-color-status-danger-soft);
+  }
 }
 
 .ods-dropdown__item:disabled {

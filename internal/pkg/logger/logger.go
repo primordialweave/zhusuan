@@ -25,7 +25,7 @@ func Setup() {
 		// 1. 获取日志文件路径配置
 		logPath := config.AppConfig.LogPath
 		if logPath == "" {
-			logPath = "orange.log" // 默认文件名
+			logPath = "zhusuan.log" // 默认文件名
 		}
 
 		// 2. 配置 Lumberjack 进行日志轮转 (Log Rotation)

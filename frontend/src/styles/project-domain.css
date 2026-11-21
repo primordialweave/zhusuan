@@ -28,6 +28,25 @@
   gap: 0;
 }
 
+.project-field-skeleton {
+  display: flex;
+  min-width: 0;
+  flex-direction: column;
+  gap: var(--ods-space-2);
+}
+
+.project-skeleton-section {
+  display: flex;
+  flex-direction: column;
+  gap: var(--ods-space-5);
+}
+
+.payment-project-loading {
+  display: grid;
+  gap: var(--ods-space-2);
+  padding-block: var(--ods-space-3);
+}
+
 /* The form sits straight on the work panel: sections are split by hairlines, not framed. */
 .project-form .project-form-section {
   padding: var(--ods-space-8) var(--ods-space-4);

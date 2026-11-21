@@ -9,7 +9,7 @@ import {
   Listbox,
   Popover,
   SearchField,
-  Spinner,
+  Skeleton,
   useFieldControlProps,
 } from '@/design-system'
 
@@ -68,7 +68,9 @@ export function ProjectPicker({ disabled, onValueChange, value }: ProjectPickerP
   }, [load, open])
 
   const search = (text: string) => {
-    setKeyword(text.trim())
+    const nextKeyword = text.trim()
+    if (nextKeyword !== keyword || page !== 1) setLoading(true)
+    setKeyword(nextKeyword)
     setPage(1)
   }
   const choose = (id: string) => {
@@ -80,7 +82,17 @@ export function ProjectPicker({ disabled, onValueChange, value }: ProjectPickerP
   }
 
   return (
-    <Popover.Root open={open} onOpenChange={setOpen} placement="bottom-start">
+    <Popover.Root
+      open={open}
+      onOpenChange={(next) => {
+        if (next) {
+          setLoading(true)
+          setFailed(false)
+        }
+        setOpen(next)
+      }}
+      placement="bottom-start"
+    >
       <Popover.Trigger>
         <Button
           id={control.id}
@@ -116,7 +128,16 @@ export function ProjectPicker({ disabled, onValueChange, value }: ProjectPickerP
           />
         </Field.Root>
         {loading ? (
-          <Spinner label="正在加载项目" />
+          <div
+            aria-busy="true"
+            aria-label="正在加载项目"
+            className="payment-project-loading"
+            role="status"
+          >
+            {Array.from({ length: 5 }, (_, index) => (
+              <Skeleton height="2rem" key={index} width={index % 2 ? '80%' : '92%'} />
+            ))}
+          </div>
         ) : failed ? (
           <EmptyState
             title="项目暂时不可用"
@@ -146,7 +167,10 @@ export function ProjectPicker({ disabled, onValueChange, value }: ProjectPickerP
           <IconButton
             label="上一页项目"
             disabled={loading || page <= 1}
-            onClick={() => setPage((current) => current - 1)}
+            onClick={() => {
+              setLoading(true)
+              setPage((current) => current - 1)
+            }}
             variant="ghost"
           >
             <i aria-hidden="true" className="ri-arrow-left-s-line" />
@@ -157,7 +181,10 @@ export function ProjectPicker({ disabled, onValueChange, value }: ProjectPickerP
           <IconButton
             label="下一页项目"
             disabled={loading || page * PAGE_SIZE >= total}
-            onClick={() => setPage((current) => current + 1)}
+            onClick={() => {
+              setLoading(true)
+              setPage((current) => current + 1)
+            }}
             variant="ghost"
           >
             <i aria-hidden="true" className="ri-arrow-right-s-line" />

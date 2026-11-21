@@ -167,6 +167,12 @@
   padding: var(--ods-space-8);
 }
 
+.app-notification-entry__loading {
+  display: grid;
+  gap: var(--ods-space-3);
+  padding: var(--ods-space-4);
+}
+
 .app-notification-entry__item {
   min-width: 0;
   flex-direction: column;

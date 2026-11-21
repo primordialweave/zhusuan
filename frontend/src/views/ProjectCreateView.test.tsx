@@ -136,7 +136,7 @@ async function fillNewProject(user: ReturnType<typeof userEvent.setup>) {
   fireEvent.change(screen.getByLabelText(/客户名称/), {
     target: { value: '新客户' },
   })
-  await user.click(screen.getByLabelText('项目类型'))
+  await user.click(await screen.findByLabelText('项目类型'))
   await user.click(screen.getByRole('option', { name: '软件开发' }))
   await chooseDate(user, '开始日期')
   await chooseDate(user, '截止日期')
@@ -169,6 +169,27 @@ describe('ProjectCreateView design system migration', () => {
     vi.mocked(paymentApi.create).mockResolvedValue(apiResponse(payments[0]) as never)
     vi.mocked(paymentApi.delete).mockResolvedValue(apiResponse(null) as never)
     vi.mocked(paymentApi.update).mockResolvedValue(apiResponse(payments[0]) as never)
+  })
+
+  it('clears the payment mode without changing or relabelling installment drafts', async () => {
+    const user = userEvent.setup()
+    renderEditor()
+    await screen.findByRole('group', { name: '第 2 期收款' })
+
+    await user.click(screen.getByRole('button', { name: '清除付款模式' }))
+    expect(screen.getByRole('button', { name: '付款模式' })).toHaveTextContent('请选择')
+    expect(screen.getByRole('button', { name: '添加分期' })).toBeInTheDocument()
+
+    const first = within(screen.getByRole('group', { name: '第 1 期收款' }))
+    const second = within(screen.getByRole('group', { name: '第 2 期收款' }))
+    expect(first.getByLabelText(/收款金额/)).toHaveValue('30000')
+    expect(second.getByLabelText(/收款金额/)).toHaveValue('70000')
+    expect(first.getByRole('button', { name: '款项阶段' })).toHaveTextContent('预付款')
+    expect(second.getByRole('button', { name: '款项阶段' })).toHaveTextContent('尾款')
+    expect(first.getByRole('button', { name: '收款日期' })).toHaveTextContent('2026')
+    expect(projectApi.update).not.toHaveBeenCalled()
+    expect(paymentApi.update).not.toHaveBeenCalled()
+    expect(paymentApi.delete).not.toHaveBeenCalled()
   })
 
   it('marks missing required fields, describes errors in Chinese and focuses the first field', async () => {
@@ -332,9 +353,8 @@ describe('ProjectCreateView design system migration', () => {
       renderEditor()
 
       expect(await screen.findByRole('alert')).toHaveTextContent('项目详情加载失败')
-      expect(screen.getByRole('button', { name: '确认保存' })).toBeDisabled()
-      await user.click(screen.getByRole('button', { name: '确认保存' }))
-      fireEvent.submit(screen.getByRole('form', { name: '项目编辑表单' }))
+      expect(screen.queryByRole('button', { name: '确认保存' })).not.toBeInTheDocument()
+      expect(screen.queryByRole('form', { name: '项目编辑表单' })).not.toBeInTheDocument()
       expect(projectApi.update).not.toHaveBeenCalled()
       expect(paymentApi.update).not.toHaveBeenCalled()
 
@@ -373,8 +393,8 @@ describe('ProjectCreateView design system migration', () => {
 
     await user.click(screen.getByRole('button', { name: '打开其他项目' }))
     await screen.findByRole('alert')
-    expect(screen.getByRole('button', { name: '确认保存' })).toBeDisabled()
-    fireEvent.submit(screen.getByRole('form', { name: '项目编辑表单' }))
+    expect(screen.queryByRole('button', { name: '确认保存' })).not.toBeInTheDocument()
+    expect(screen.queryByRole('form', { name: '项目编辑表单' })).not.toBeInTheDocument()
 
     expect(projectApi.update).not.toHaveBeenCalled()
     expect(paymentApi.update).not.toHaveBeenCalled()
@@ -501,7 +521,11 @@ describe('ProjectCreateView design system migration', () => {
       oldPayments.resolve(apiResponse(payments) as never)
       await Promise.all([oldProject.promise, oldPayments.promise])
     })
-    expect(screen.getByRole('button', { name: '保存中...' })).toBeDisabled()
+    expect(screen.getByRole('status', { name: '正在加载项目表单' })).toHaveAttribute(
+      'aria-busy',
+      'true',
+    )
+    expect(screen.queryByRole('form', { name: '项目编辑表单' })).not.toBeInTheDocument()
 
     await act(async () => {
       nextProjectRequest.resolve(apiResponse(nextProject) as never)

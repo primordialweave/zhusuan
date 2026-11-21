@@ -188,6 +188,27 @@
   gap: var(--ods-space-5);
 }
 
+.analytics-loading-donut {
+  width: min(100%, 9rem);
+  height: 9rem;
+  max-height: 14rem;
+  flex: 0 0 auto;
+}
+
+.analytics-loading-legend {
+  display: flex;
+  width: 100%;
+  flex-direction: column;
+  gap: var(--ods-space-3);
+}
+
+.analytics-loading-legend-row {
+  display: grid;
+  grid-template-columns: auto minmax(0, 1fr) auto;
+  align-items: center;
+  gap: var(--ods-space-3);
+}
+
 /* The ring takes whatever height the legend leaves; the viewBox keeps it round and centred. */
 .analytics-donut {
   width: 100%;
@@ -224,15 +245,17 @@
 }
 
 .analytics-structure__row::before {
-  width: var(--ods-space-3);
-  height: var(--ods-space-3);
+  --jade-bead-color: var(--ods-data-part-paid);
+  width: 0.875rem;
+  height: 0.875rem;
   border-radius: var(--ods-radius-pill);
-  background: var(--ods-data-part-paid);
+  background: var(--ods-material-jade-bead-background), var(--jade-bead-color);
+  box-shadow: var(--ods-material-jade-bead-shadow);
   content: '';
 }
 
 .analytics-structure__row[data-part='pending']::before {
-  background: var(--ods-data-part-pending);
+  --jade-bead-color: var(--ods-data-part-pending);
 }
 
 .analytics-structure__row dd {

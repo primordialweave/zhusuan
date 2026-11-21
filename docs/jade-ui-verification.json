@@ -1,0 +1,241 @@
+{
+  "date": "2026-11-20",
+  "data": "isolated synthetic demonstration ledger; real database untouched",
+  "tests": {
+    "files": 116,
+    "passed": 619,
+    "failed": 0,
+    "initialFailure": "checkbox CSS contract still matched previous active selector; updated to require disabled exclusion without weakening motion assertions"
+  },
+  "lint": {
+    "exitCode": 0,
+    "warnings": 0
+  },
+  "productionBuild": {
+    "exitCode": 0,
+    "chunkWarning": "main JS 868.45 kB exceeds 500 kB warning threshold"
+  },
+  "egoMain": [
+    {
+      "theme": "light",
+      "path": "/dashboard",
+      "overflow": false
+    },
+    {
+      "theme": "light",
+      "path": "/analytics",
+      "overflow": false
+    },
+    {
+      "theme": "light",
+      "path": "/calendar",
+      "overflow": false
+    },
+    {
+      "theme": "dark",
+      "path": "/dashboard",
+      "overflow": false
+    },
+    {
+      "theme": "dark",
+      "path": "/analytics",
+      "overflow": false
+    },
+    {
+      "theme": "dark",
+      "path": "/calendar",
+      "overflow": false
+    }
+  ],
+  "egoNarrow": [
+    {
+      "path": "/dashboard",
+      "theme": "light",
+      "viewport": 760,
+      "docWidth": 760,
+      "overflow": []
+    },
+    {
+      "path": "/analytics",
+      "theme": "light",
+      "viewport": 760,
+      "docWidth": 760,
+      "overflow": []
+    },
+    {
+      "path": "/calendar",
+      "theme": "light",
+      "viewport": 760,
+      "docWidth": 760,
+      "overflow": []
+    },
+    {
+      "path": "/projects/create",
+      "theme": "light",
+      "viewport": 760,
+      "docWidth": 760,
+      "overflow": []
+    },
+    {
+      "path": "/dashboard",
+      "theme": "dark",
+      "viewport": 760,
+      "docWidth": 760,
+      "overflow": []
+    },
+    {
+      "path": "/analytics",
+      "theme": "dark",
+      "viewport": 760,
+      "docWidth": 760,
+      "overflow": []
+    },
+    {
+      "path": "/calendar",
+      "theme": "dark",
+      "viewport": 760,
+      "docWidth": 760,
+      "overflow": []
+    },
+    {
+      "path": "/projects/create",
+      "theme": "dark",
+      "viewport": 760,
+      "docWidth": 760,
+      "overflow": []
+    }
+  ],
+  "webkit": [
+    {
+      "path": "/dashboard",
+      "theme": "light",
+      "overflow": false,
+      "beads": 2
+    },
+    {
+      "path": "/analytics",
+      "theme": "light",
+      "overflow": false,
+      "beads": 2
+    },
+    {
+      "path": "/calendar",
+      "theme": "light",
+      "overflow": false,
+      "beads": 7
+    },
+    {
+      "path": "/projects/create",
+      "theme": "light",
+      "overflow": false,
+      "beads": 0
+    },
+    {
+      "path": "/projects/1",
+      "theme": "light",
+      "overflow": false,
+      "beads": 0
+    },
+    {
+      "path": "/payment/create",
+      "theme": "light",
+      "overflow": false,
+      "beads": 0
+    },
+    {
+      "path": "/design-system",
+      "theme": "light",
+      "overflow": false,
+      "beads": 0
+    },
+    {
+      "theme": "light",
+      "pageErrors": []
+    },
+    {
+      "path": "/dashboard",
+      "theme": "dark",
+      "overflow": false,
+      "beads": 2
+    },
+    {
+      "path": "/analytics",
+      "theme": "dark",
+      "overflow": false,
+      "beads": 2
+    },
+    {
+      "path": "/calendar",
+      "theme": "dark",
+      "overflow": false,
+      "beads": 7
+    },
+    {
+      "path": "/projects/create",
+      "theme": "dark",
+      "overflow": false,
+      "beads": 0
+    },
+    {
+      "path": "/projects/1",
+      "theme": "dark",
+      "overflow": false,
+      "beads": 0
+    },
+    {
+      "path": "/payment/create",
+      "theme": "dark",
+      "overflow": false,
+      "beads": 0
+    },
+    {
+      "path": "/design-system",
+      "theme": "dark",
+      "overflow": false,
+      "beads": 0
+    },
+    {
+      "theme": "dark",
+      "pageErrors": []
+    },
+    {
+      "path": "/login",
+      "theme": "light",
+      "overflow": false
+    },
+    {
+      "path": "/login",
+      "theme": "dark",
+      "overflow": false
+    }
+  ],
+  "interactions": {
+    "before": {
+      "checkbox": false,
+      "switch": true
+    },
+    "after": {
+      "checkbox": true,
+      "radio": "quarterly",
+      "switch": false
+    },
+    "disabled": {
+      "checkbox": "none",
+      "switchShadow": "none"
+    },
+    "reduced": {
+      "checkboxTransform": "none",
+      "radioTransition": "1e-05s"
+    },
+    "calendarSelectedDay": "11月24日，待收 ¥5,400",
+    "calendarArrowFocus": "2026年11月25日，星期三",
+    "homeScopeSwitched": true
+  },
+  "visualReview": "reference, three primary routes in both themes, shared controls, narrow visible regions; WebKit primary routes plus login in both themes",
+  "limitations": [
+    "Ego screenshot output was 1280x800 despite emulated deviceScaleFactor 2; do not claim native Retina acceptance",
+    "WebKit browser rendering, not launched desktop WKWebView acceptance",
+    "No target hardware performance benchmark"
+  ],
+  "implementation": "static CSS gradients and shadows; no new dependency, live blur or looping animation"
+}

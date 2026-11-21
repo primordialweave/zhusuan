@@ -25,6 +25,24 @@ describe('TokenManagement modal', () => {
     vi.mocked(tokenApi.list).mockResolvedValue(emptyTokenResponse as never)
   })
 
+  it('keeps an initial token request as a skeleton until it resolves empty', async () => {
+    let resolveRequest!: (value: typeof emptyTokenResponse) => void
+    vi.mocked(tokenApi.list).mockReturnValueOnce(
+      new Promise((resolve) => {
+        resolveRequest = resolve
+      }) as never,
+    )
+    render(<TokenManagement />)
+
+    expect(screen.getByRole('status', { name: '正在加载令牌列表' })).toBeInTheDocument()
+    expect(screen.queryByText('暂无访问令牌')).not.toBeInTheDocument()
+    await waitFor(() => expect(tokenApi.list).toHaveBeenCalledOnce())
+    await act(async () => resolveRequest(emptyTokenResponse))
+
+    expect(await screen.findByText('暂无访问令牌')).toBeInTheDocument()
+    expect(screen.queryByRole('status', { name: '正在加载令牌列表' })).not.toBeInTheDocument()
+  })
+
   it('uses shared modal layout and card-style ODS radios in the portalled dialog', async () => {
     const user = userEvent.setup()
     render(<TokenManagement />)

@@ -16,6 +16,18 @@
   margin-block: var(--ods-space-1) var(--ods-space-2);
 }
 
+.login-field {
+  position: relative;
+}
+
+.login-field__loading {
+  position: absolute;
+  inset-inline: var(--ods-space-12) var(--ods-space-12);
+  top: 50%;
+  pointer-events: none;
+  transform: translateY(-50%);
+}
+
 /* The fields arrive one after another once the card is in. Only the card's children move:
    a transform on the card itself would detach its fixed backdrop. */
 @keyframes login-rise {

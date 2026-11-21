@@ -77,6 +77,18 @@ const docTemplate = `{
                         "description": "时间维度: week, month, quarter, year (默认month)",
                         "name": "period",
                         "in": "query"
+                    },
+                    {
+                        "type": "integer",
+                        "description": "自选年份；传入后忽略 period",
+                        "name": "year",
+                        "in": "query"
+                    },
+                    {
+                        "type": "integer",
+                        "description": "自选月份 1-12；不传或 0 表示整年",
+                        "name": "month",
+                        "in": "query"
                     }
                 ],
                 "responses": {
@@ -131,6 +143,18 @@ const docTemplate = `{
                         "type": "string",
                         "description": "统计周期: week, month, quarter, year, all (默认为all)",
                         "name": "period",
+                        "in": "query"
+                    },
+                    {
+                        "type": "integer",
+                        "description": "自选年份；传入后忽略 period",
+                        "name": "year",
+                        "in": "query"
+                    },
+                    {
+                        "type": "integer",
+                        "description": "自选月份 1-12；不传或 0 表示整年",
+                        "name": "month",
                         "in": "query"
                     }
                 ],
@@ -1163,9 +1187,60 @@ const docTemplate = `{
                 "responses": {}
             }
         },
-        "/api/v1/system/check-update": {
+        "/api/v1/system/info": {
             "get": {
+                "security": [
+                    {
+                        "Bearer": []
+                    }
+                ],
+                "description": "返回关于页面使用的版本、介绍和微信公众号名称；不返回数据库、密钥或其他运行配置。",
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "System"
+                ],
+                "summary": "获取应用公开信息",
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "schema": {
+                            "allOf": [
+                                {
+                                    "$ref": "#/definitions/response.Response"
+                                },
+                                {
+                                    "type": "object",
+                                    "properties": {
+                                        "data": {
+                                            "$ref": "#/definitions/handler.SystemInfoResponse"
+                                        }
+                                    }
+                                }
+                            ]
+                        }
+                    },
+                    "401": {
+                        "description": "Unauthorized",
+                        "schema": {
+                            "$ref": "#/definitions/response.Response"
+                        }
+                    }
+                }
+            }
+        },
+        "/api/v1/system/updates/check": {
+            "get": {
+                "security": [
+                    {
+                        "Bearer": []
+                    }
+                ],
                 "description": "从 GitHub 获取最新 Release 信息",
+                "produces": [
+                    "application/json"
+                ],
                 "tags": [
                     "System"
                 ],
@@ -1174,7 +1249,31 @@ const docTemplate = `{
                     "200": {
                         "description": "OK",
                         "schema": {
-                            "$ref": "#/definitions/handler.CheckUpdateResponse"
+                            "allOf": [
+                                {
+                                    "$ref": "#/definitions/response.Response"
+                                },
+                                {
+                                    "type": "object",
+                                    "properties": {
+                                        "data": {
+                                            "$ref": "#/definitions/updater.Release"
+                                        }
+                                    }
+                                }
+                            ]
+                        }
+                    },
+                    "401": {
+                        "description": "Unauthorized",
+                        "schema": {
+                            "$ref": "#/definitions/response.Response"
+                        }
+                    },
+                    "500": {
+                        "description": "Internal Server Error",
+                        "schema": {
+                            "$ref": "#/definitions/response.Response"
                         }
                     }
                 }
@@ -1371,6 +1470,9 @@ const docTemplate = `{
                         "type": "number"
                     }
                 },
+                "end_date": {
+                    "type": "string"
+                },
                 "expected_values": {
                     "type": "array",
                     "items": {
@@ -1382,6 +1484,9 @@ const docTemplate = `{
                     "items": {
                         "type": "string"
                     }
+                },
+                "start_date": {
+                    "type": "string"
                 }
             }
         },
@@ -1442,7 +1547,14 @@ const docTemplate = `{
                     "type": "string"
                 },
                 "status": {
-                    "type": "string"
+                    "description": "Status 收款状态；\"paid\" 为历史兼容值，服务层会归一为 \"confirmed\"",
+                    "type": "string",
+                    "enum": [
+                        "pending",
+                        "confirmed",
+                        "overdue",
+                        "paid"
+                    ]
                 }
             }
         },
@@ -1462,6 +1574,7 @@ const docTemplate = `{
                     "type": "number"
                 },
                 "paid_amount": {
+                    "description": "Actual-date cash receipts, or all-time project receipts.",
                     "type": "number"
                 },
                 "paid_trend": {
@@ -1471,6 +1584,10 @@ const docTemplate = `{
                     "type": "number"
                 },
                 "pending_trend": {
+                    "type": "number"
+                },
+                "planned_received_amount": {
+                    "description": "Confirmed receipts for the selected plan-date cohort.",
                     "type": "number"
                 },
                 "total_amount": {
@@ -1501,23 +1618,6 @@ const docTemplate = `{
                 }
             }
         },
-        "handler.CheckUpdateResponse": {
-            "type": "object",
-            "properties": {
-                "body": {
-                    "description": "更新日志内容",
-                    "type": "string"
-                },
-                "html_url": {
-                    "description": "发布页面链接",
-                    "type": "string"
-                },
-                "tag_name": {
-                    "description": "版本标签 (如 v1.0.1)",
-                    "type": "string"
-                }
-            }
-        },
         "handler.CreateNotificationRequest": {
             "type": "object",
             "required": [
@@ -1539,6 +1639,20 @@ const docTemplate = `{
                 },
                 "type": {
                     "description": "类型: system, activity, private",
+                    "type": "string"
+                }
+            }
+        },
+        "handler.SystemInfoResponse": {
+            "type": "object",
+            "properties": {
+                "slogan": {
+                    "type": "string"
+                },
+                "version": {
+                    "type": "string"
+                },
+                "wechat_public_account": {
                     "type": "string"
                 }
             }
@@ -1911,6 +2025,72 @@ const docTemplate = `{
                     "type": "string"
                 }
             }
+        },
+        "response.Response": {
+            "type": "object",
+            "properties": {
+                "code": {
+                    "description": "业务状态码 (0: 成功, 非0: 错误)",
+                    "type": "integer"
+                },
+                "data": {
+                    "description": "业务数据"
+                },
+                "message": {
+                    "description": "提示消息",
+                    "type": "string"
+                }
+            }
+        },
+        "updater.Asset": {
+            "type": "object",
+            "properties": {
+                "browser_download_url": {
+                    "type": "string"
+                },
+                "digest": {
+                    "type": "string"
+                },
+                "name": {
+                    "type": "string"
+                },
+                "size": {
+                    "type": "integer"
+                }
+            }
+        },
+        "updater.Release": {
+            "type": "object",
+            "properties": {
+                "assets": {
+                    "type": "array",
+                    "items": {
+                        "$ref": "#/definitions/updater.Asset"
+                    }
+                },
+                "body": {
+                    "type": "string"
+                },
+                "draft": {
+                    "type": "boolean"
+                },
+                "html_url": {
+                    "type": "string"
+                },
+                "prerelease": {
+                    "type": "boolean"
+                },
+                "tag_name": {
+                    "type": "string"
+                }
+            }
+        }
+    },
+    "securityDefinitions": {
+        "Bearer": {
+            "type": "apiKey",
+            "name": "Authorization",
+            "in": "header"
         }
     }
 }`
@@ -1925,6 +2105,8 @@ var SwaggerInfo = &swag.Spec{
 	Description:      "",
 	InfoInstanceName: "swagger",
 	SwaggerTemplate:  docTemplate,
+	LeftDelim:        "{{",
+	RightDelim:       "}}",
 }
 
 func init() {

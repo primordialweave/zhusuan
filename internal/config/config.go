@@ -15,7 +15,9 @@ import (
 // Config 应用全局配置结构体
 // 包含数据库、安全、日志及第三方服务的所有配置项。
 type Config struct {
-	DataDir string // 珠算配置与用户辅助数据目录
+	DataDir             string // 珠算配置与用户辅助数据目录
+	AppSlogan           string // 关于页面的应用介绍
+	WeChatPublicAccount string // 关于页面的微信公众号名称
 	// 数据库配置
 	DBType       string // 数据库类型: sqlite (默认), mysql, postgres
 	DBPath       string // SQLite 文件路径 (仅 sqlite 有效)
@@ -53,6 +55,12 @@ type Config struct {
 
 // AppConfig 全局配置实例
 var AppConfig *Config
+
+// DefaultAppSlogan is shown when APP_SLOGAN is not configured.
+const DefaultAppSlogan = "心中有数，账目有序"
+
+// DefaultWeChatPublicAccount is shown when APP_WECHAT_PUBLIC_ACCOUNT is not configured.
+const DefaultWeChatPublicAccount = "原初织界"
 
 // Load 初始化并加载应用配置
 // 加载优先级: 环境变量 > .env 文件 > 系统默认值
@@ -112,8 +120,14 @@ func Load() {
 	if explicitDatabase {
 		selectedDBPath = configuredDBPath
 	}
+	selectedLogPath := defaultLogPath
+	if configuredLogPath := os.Getenv("LOG_PATH"); strings.TrimSpace(configuredLogPath) != "" {
+		selectedLogPath = configuredLogPath
+	}
 	AppConfig = &Config{
-		DataDir: appDir,
+		DataDir:             appDir,
+		AppSlogan:           loadAppSlogan(),
+		WeChatPublicAccount: loadWeChatPublicAccount(),
 		// 数据库配置
 		DBType:       getEnv("DB_TYPE", "sqlite"),
 		DBPath:       selectedDBPath,
@@ -137,7 +151,7 @@ func Load() {
 		LogEnable:      getEnvBool("LOG_ENABLE", true),
 		LogLevel:       getEnv("LOG_LEVEL", "info"),
 		GitHubRepo:     getEnv("GITHUB_REPO", "primordialweave/zhusuan"),
-		LogPath:        getEnv("LOG_PATH", defaultLogPath),
+		LogPath:        selectedLogPath,
 		LogMaxSize:     int(getEnvInt("LOG_MAX_SIZE", 10)),   // 10MB
 		LogMaxBackups:  int(getEnvInt("LOG_MAX_BACKUPS", 5)), // 5 files
 		LogMaxAge:      int(getEnvInt("LOG_MAX_AGE", 30)),    // 30 days
@@ -163,6 +177,20 @@ func Load() {
 	if len(AppConfig.JWTSecret) < 32 {
 		log.Printf("⚠️  WARNING: JWT secret is short (<%d chars). Consider using a longer key for better security.", 32)
 	}
+}
+
+func loadAppSlogan() string {
+	if slogan := strings.TrimSpace(os.Getenv("APP_SLOGAN")); slogan != "" {
+		return slogan
+	}
+	return DefaultAppSlogan
+}
+
+func loadWeChatPublicAccount() string {
+	if account := strings.TrimSpace(os.Getenv("APP_WECHAT_PUBLIC_ACCOUNT")); account != "" {
+		return account
+	}
+	return DefaultWeChatPublicAccount
 }
 
 func validateProductionDatabasePolicy(cfg *Config, env string, allowProductionSQLite bool) error {

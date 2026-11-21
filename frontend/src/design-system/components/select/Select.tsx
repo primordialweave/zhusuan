@@ -1,4 +1,4 @@
-import { forwardRef, useMemo, useState, type ReactNode } from 'react'
+import { forwardRef, useMemo, useRef, useState, type ReactNode } from 'react'
 import { useFieldControlProps } from '../field/fieldContext'
 import { Popover, usePopoverClose } from '../popover'
 import { Listbox } from '../listbox'
@@ -56,6 +56,7 @@ export interface SelectProps {
   'aria-label'?: string
   'aria-describedby'?: string
   className?: string
+  clearable?: boolean
   disabled?: boolean
   invalid?: boolean
   id?: string
@@ -73,6 +74,7 @@ export const Select = forwardRef<HTMLButtonElement, SelectProps>(function Select
     'aria-label': ariaLabel,
     'aria-describedby': ariaDescribedBy,
     className,
+    clearable = true,
     disabled = false,
     invalid = false,
     id,
@@ -87,6 +89,7 @@ export const Select = forwardRef<HTMLButtonElement, SelectProps>(function Select
   ref,
 ) {
   const [open, setOpen] = useState(false)
+  const triggerRef = useRef<HTMLButtonElement | null>(null)
   const selected = useMemo(() => options.find((option) => option.value === value), [options, value])
   const controlProps = useFieldControlProps({
     'aria-describedby': ariaDescribedBy,
@@ -95,9 +98,21 @@ export const Select = forwardRef<HTMLButtonElement, SelectProps>(function Select
     id,
     required,
   })
+  const canClear = clearable && Boolean(selected?.value) && !controlProps.disabled && !open
+
+  const clearSelection = () => {
+    onValueChange('')
+    setOpen(false)
+    triggerRef.current?.focus()
+  }
 
   return (
-    <Popover.Root className={className} onOpenChange={setOpen} open={open} placement="bottom-start">
+    <Popover.Root
+      className={['ods-select-root', className].filter(Boolean).join(' ')}
+      onOpenChange={setOpen}
+      open={open}
+      placement="bottom-start"
+    >
       <Popover.Trigger>
         <button
           aria-label={ariaLabel}
@@ -106,13 +121,18 @@ export const Select = forwardRef<HTMLButtonElement, SelectProps>(function Select
           aria-invalid={controlProps['aria-invalid']}
           aria-required={controlProps.required || undefined}
           className="ods-select"
+          data-clearable={canClear || undefined}
           data-invalid={controlProps['aria-invalid'] || undefined}
           data-size={size}
           data-slot="select"
           data-width={width}
           disabled={controlProps.disabled}
           id={controlProps.id}
-          ref={ref}
+          ref={(node) => {
+            triggerRef.current = node
+            if (typeof ref === 'function') return ref(node)
+            if (ref) ref.current = node
+          }}
           type="button"
         >
           <span className="ods-select__value" data-placeholder={selected ? undefined : ''}>
@@ -123,6 +143,16 @@ export const Select = forwardRef<HTMLButtonElement, SelectProps>(function Select
           </span>
         </button>
       </Popover.Trigger>
+      {canClear ? (
+        <button
+          aria-label={`清除${ariaLabel || '选中项'}`}
+          className="ods-select__clear"
+          onClick={clearSelection}
+          type="button"
+        >
+          <i aria-hidden="true" className="ri-close-line" />
+        </button>
+      ) : null}
       <Popover.Content
         className="ods-select__popover"
         data-width={width}

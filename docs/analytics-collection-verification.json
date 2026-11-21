@@ -1,0 +1,13 @@
+{
+  "planned": 134200,
+  "planned_received": 134200,
+  "cash_received": 131200,
+  "pending": 0,
+  "collection_rate": 100.0,
+  "cash_trend_sum": 131200,
+  "planned_trend_sum": 134200,
+  "query_plan": [
+    "SEARCH payments USING INDEX idx_user_status (user_id=? AND status=?)"
+  ],
+  "source": "isolated SQLite backup with identifying fields anonymized; financial values unchanged"
+}

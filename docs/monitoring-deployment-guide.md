@@ -1,47 +1,51 @@
-# Orange 项目监控与告警部署指南
+# 珠算监控与告警配置指南
 
-**版本**: 1.0  
-**日期**: 2026-07-01  
-**状态**: 已完成部署配置
+**版本**: 1.0
+**日期**: 2026-11-20
+**状态**: 配置模板，按实际环境配置后验收
 
 ---
 
 ## 概览
 
-本项目已完成监控与告警系统的完整部署配置，包括：
+本目录提供以下监控服务的配置模板：
 - ✅ Prometheus（指标采集）
 - ✅ Grafana（可视化）
 - ✅ Redis（缓存）
 - ✅ Loki（日志聚合）
 - ✅ AlertManager（告警管理）
 
-所有服务通过 Docker Compose 一键部署。
+通过 Docker Compose 启动前需设置监控专用凭据，并确认抓取目标、指标认证和通知接收器。配置文件存在不代表已经完成生产部署验收。默认 API 端口为3456。
+
+Prometheus 中的 Redis、node 目标默认注释，需要自行提供 exporter 后启用；Redis 的6379端口不是HTTP metrics端点。AlertManager 默认接收器不发送通知；接入实际通知服务后再启用 webhook 或邮件配置，珠算后端目前不提供 `/api/v1/alerts/webhook`。
 
 ---
 
 ## 快速开始
 
-### 1. 启动监控基础设施
+### 1. 设置凭据并启动监控基础设施
+
+在本地 `.env` 中设置 `GRAFANA_ADMIN_PASSWORD` 和 `REDIS_PASSWORD`，使用各自的独立随机密码。Compose 不再内置演示密码；不要覆盖既有部署的已选密码。
 
 ```bash
 # 启动所有监控服务
-docker-compose -f docker-compose.monitoring.yml up -d
+docker compose -f docker-compose.monitoring.yml up -d
 
 # 查看服务状态
-docker-compose -f docker-compose.monitoring.yml ps
+docker compose -f docker-compose.monitoring.yml ps
 
 # 查看日志
-docker-compose -f docker-compose.monitoring.yml logs -f
+docker compose -f docker-compose.monitoring.yml logs -f
 ```
 
 ### 2. 配置应用
 
-在 `.env` 或 `config.yml` 中添加：
+在应用的 `.env` 中添加：
 
 ```yaml
 # Redis 缓存配置
 REDIS_ADDR=localhost:6379
-REDIS_PASSWORD=orange123
+REDIS_PASSWORD=replace-with-your-configured-redis-password
 
 # 或者不配置Redis，自动使用内存缓存
 ```
@@ -50,15 +54,15 @@ REDIS_PASSWORD=orange123
 
 ```bash
 # 应用会自动暴露 /metrics 端点
-go run main.go
+task server:dev
 ```
 
 ### 4. 访问监控界面
 
 - **Grafana**: http://localhost:3000
   - 用户名: `admin`
-  - 密码: `admin123`
-  
+  - 密码: `.env` 中的 `GRAFANA_ADMIN_PASSWORD`
+
 - **Prometheus**: http://localhost:9090
 
 - **AlertManager**: http://localhost:9093
@@ -72,8 +76,8 @@ go run main.go
 **功能**: 指标采集和存储
 
 **采集目标**:
-- Orange API: `http://host.docker.internal:8080/metrics`
-- Redis: `redis:6379`
+- 珠算 API: `http://host.docker.internal:3456/metrics`
+- Redis（可选）：配置 Redis exporter 后使用其 HTTP metrics 地址；不是 `redis:6379`
 - Prometheus 自身: `localhost:9090`
 
 **配置文件**: `monitoring/prometheus/prometheus.yml`
@@ -86,7 +90,7 @@ go run main.go
 
 **默认凭证**:
 - 用户名: `admin`
-- 密码: `admin123`
+- 密码: `.env` 中的 `GRAFANA_ADMIN_PASSWORD`
 
 **数据源**: 自动配置 Prometheus 和 Loki
 
@@ -96,15 +100,15 @@ go run main.go
 
 **功能**: 应用缓存
 
-**密码**: `orange123`
+**密码**: `.env` 中的 `REDIS_PASSWORD`
 
 **数据持久化**: 开启 AOF
 
-**配置**: 
+**配置**:
 ```yaml
 # 在应用中配置
 REDIS_ADDR=localhost:6379
-REDIS_PASSWORD=orange123
+REDIS_PASSWORD=replace-with-your-configured-redis-password
 ```
 
 ### Loki (端口 3100)
@@ -129,7 +133,7 @@ REDIS_PASSWORD=orange123
 
 **配置文件**: `monitoring/alertmanager/alertmanager.yml`
 
-**通知方式**: Webhook (可扩展邮件、钉钉等)
+**通知方式**: 默认不发送；配置实际接收端后可启用 Webhook、邮件或钉钉。
 
 ---
 
@@ -213,44 +217,44 @@ cache.GetCache().GetJSON("user:1", &user)
 ### 查看服务状态
 
 ```bash
-docker-compose -f docker-compose.monitoring.yml ps
+docker compose -f docker-compose.monitoring.yml ps
 ```
 
 ### 查看日志
 
 ```bash
 # 所有服务
-docker-compose -f docker-compose.monitoring.yml logs -f
+docker compose -f docker-compose.monitoring.yml logs -f
 
 # 特定服务
-docker-compose -f docker-compose.monitoring.yml logs -f prometheus
-docker-compose -f docker-compose.monitoring.yml logs -f grafana
+docker compose -f docker-compose.monitoring.yml logs -f prometheus
+docker compose -f docker-compose.monitoring.yml logs -f grafana
 ```
 
 ### 重启服务
 
 ```bash
 # 重启所有服务
-docker-compose -f docker-compose.monitoring.yml restart
+docker compose -f docker-compose.monitoring.yml restart
 
 # 重启特定服务
-docker-compose -f docker-compose.monitoring.yml restart redis
+docker compose -f docker-compose.monitoring.yml restart redis
 ```
 
 ### 停止服务
 
 ```bash
-docker-compose -f docker-compose.monitoring.yml down
+docker compose -f docker-compose.monitoring.yml down
 
 # 删除数据卷
-docker-compose -f docker-compose.monitoring.yml down -v
+docker compose -f docker-compose.monitoring.yml down -v
 ```
 
 ### 更新配置
 
 ```bash
 # 修改配置文件后重新加载
-docker-compose -f docker-compose.monitoring.yml up -d
+docker compose -f docker-compose.monitoring.yml up -d
 ```
 
 ---
@@ -321,13 +325,13 @@ receivers:
 ### 应用无法连接 Redis
 
 1. 检查 Redis 是否启动: `docker ps | grep redis`
-2. 检查密码配置: `REDIS_PASSWORD=orange123`
-3. 测试连接: `redis-cli -h localhost -p 6379 -a orange123 ping`
+2. 检查密码配置: `REDIS_PASSWORD=replace-with-your-configured-redis-password`
+3. 测试连接: `REDISCLI_AUTH="$REDIS_PASSWORD" redis-cli -h localhost -p 6379 ping`
 
 ### Prometheus 无法采集指标
 
-1. 检查应用是否暴露 `/metrics`: `curl http://localhost:8080/metrics`
-2. 检查 Prometheus 配置: `monitoring/prometheus/prometheus.yml`
+1. 检查应用是否暴露 `/metrics`: `curl http://localhost:3456/metrics`
+2. 检查 Prometheus 配置: `monitoring/prometheus/prometheus.yml`；若应用设置了 `PROMETHEUS_USER` / `PROMETHEUS_PASSWORD`，需在该抓取任务添加匹配的 `basic_auth`
 3. 查看 Prometheus 目标状态: http://localhost:9090/targets
 
 ### Grafana 无数据
@@ -354,9 +358,9 @@ receivers:
 
 ## 安全建议
 
-1. **修改默认密码**
-   - Grafana: `admin/admin123` → 强密码
-   - Redis: `orange123` → 强密码
+1. **配置监控凭据**
+   - Grafana 使用 `GRAFANA_ADMIN_PASSWORD`
+   - Redis 使用 `REDIS_PASSWORD`，应用与容器保持一致
 
 2. **限制访问**
    - 生产环境不要暴露所有端口
@@ -368,9 +372,9 @@ receivers:
 
 ---
 
-## 总结
+## 配置文件
 
-监控与告警系统已完整配置并可立即部署：
+模板包含以下资源，启动后仍需验证各自的健康状态、Prometheus targets 与告警接收结果：
 - ✅ 所有配置文件已创建
 - ✅ Docker Compose 已配置
 - ✅ 缓存机制已实现
@@ -379,8 +383,8 @@ receivers:
 
 **启动命令**:
 ```bash
-docker-compose -f docker-compose.monitoring.yml up -d
+docker compose -f docker-compose.monitoring.yml up -d
 ```
 
-**文档维护**: 开发团队  
-**最后更新**: 2026-07-01
+**文档维护**: 开发团队
+**最后更新**: 2026-11-20

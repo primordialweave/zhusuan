@@ -111,6 +111,10 @@ import {
 
 已交付（消费 ODS tokens，纯 CSS + 轻量 React 状态）：Tooltip、Avatar/AvatarGroup、User、Breadcrumbs、Divider（Separator）、ButtonGroup、Switch、Accordion、NumberInput（NumberField）、Kbd、Code、Snippet、Link、Badge、CircularProgress、ScrollShadow、Spacer、Modal、Drawer、Popover、Listbox、Select、Dropdown（Menu）、Slider、CheckboxGroup、InputOtp、Table、Image、Calendar、DatePicker。
 
+Select 默认允许清除选中值：悬停或键盘聚焦时，右侧箭头以140ms过渡为清除按钮；触摸指针直接显示清除入口，展开列表、禁用或无选中项时不显示。清除调用 `onValueChange('')`，关闭列表并将焦点保留在主触发器。必填表单仍允许清空，由表单验证缺失值；年份、分页、权限和安全模式等必须保持有效值的控件传入 `clearable={false}`。清除按钮与主触发器为兄弟节点，避免嵌套交互。
+
+数据首次加载及查询范围切换用 Skeleton 对应最终布局占位，支持 `text`、`rect`、`circle`、`ring` 四种形状；图表环形、表格列和表单字段保留各自结构。骨架元素本身为装饰，由加载区域提供 `aria-busy` 和命名的 `status`。同查询刷新保留已有内容，未完成的新查询不复用旧范围数字；成功或失败后结束骨架。系统或应用的减少动态偏好均停止 Skeleton 动画。
+
 浮层组件（Modal/Drawer/Popover/Select/Dropdown/DatePicker）复用 `useDialogFocus` 焦点栈与 `createPortal`；Calendar/DatePicker 复用已有依赖 `dayjs`；Slider 用 Pointer Events 实现 1:1 跟手。
 
 仍在 backlog（需产品用例或更重依赖，暂不硬写）：

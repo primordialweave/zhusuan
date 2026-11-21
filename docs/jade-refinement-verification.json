@@ -1,0 +1,202 @@
+{
+  "date": "2026-11-21",
+  "scope": "Select hover clearing; two project action backgrounds; small Popover, Dropdown and Listbox jade refinements",
+  "tests": {
+    "files": 116,
+    "passed": 624,
+    "failed": 0
+  },
+  "lint": {
+    "exitCode": 0,
+    "warnings": 0
+  },
+  "build": {
+    "exitCode": 0,
+    "existingChunkWarning": "main bundle over 500 kB threshold"
+  },
+  "ego": [
+    {
+      "path": "/design-system",
+      "theme": "light",
+      "clearOpacity": "1",
+      "arrowOpacity": "0",
+      "duration": "0.14s, 0.14s",
+      "overflow": false,
+      "rect": {
+        "x": 86.15625,
+        "y": 204.1640625,
+        "width": 192,
+        "height": 40
+      }
+    },
+    {
+      "path": "/projects/1",
+      "theme": "light",
+      "actions": [
+        {
+          "label": "编辑项目",
+          "bg": "radial-gradient(at 16% 0%, rgba(255, 255, 255, 0.32), rgba(0, 0, 0, 0) 64%), linear-gradient(175deg, rgba(255, 255, 255, 0.12), rgba(0, 0, 0, 0) 48%, rgba(45, 101, 74, 0.035)), none",
+          "variant": "tertiary"
+        },
+        {
+          "label": "导出项目：青禾品牌设计",
+          "bg": "radial-gradient(at 16% 0%, rgba(255, 255, 255, 0.32), rgba(0, 0, 0, 0) 64%), linear-gradient(175deg, rgba(255, 255, 255, 0.12), rgba(0, 0, 0, 0) 48%, rgba(45, 101, 74, 0.035)), none",
+          "variant": "tertiary"
+        }
+      ],
+      "overflow": false
+    },
+    {
+      "path": "/design-system",
+      "theme": "dark",
+      "clearOpacity": "1",
+      "arrowOpacity": "0",
+      "duration": "0.14s, 0.14s",
+      "overflow": false,
+      "rect": {
+        "x": 86.15625,
+        "y": 199.6640625,
+        "width": 192,
+        "height": 40
+      }
+    },
+    {
+      "path": "/projects/1",
+      "theme": "dark",
+      "actions": [
+        {
+          "label": "编辑项目",
+          "bg": "radial-gradient(at 16% 0%, rgba(202, 237, 211, 0.055), rgba(0, 0, 0, 0) 64%), linear-gradient(175deg, rgba(224, 247, 223, 0.024), rgba(0, 0, 0, 0) 48%, rgba(2, 18, 10, 0.1)), none",
+          "variant": "tertiary"
+        },
+        {
+          "label": "导出项目：青禾品牌设计",
+          "bg": "radial-gradient(at 16% 0%, rgba(202, 237, 211, 0.055), rgba(0, 0, 0, 0) 64%), linear-gradient(175deg, rgba(224, 247, 223, 0.024), rgba(0, 0, 0, 0) 48%, rgba(2, 18, 10, 0.1)), none",
+          "variant": "tertiary"
+        }
+      ],
+      "overflow": false
+    }
+  ],
+  "interactions": {
+    "narrow": {
+      "width": 760,
+      "scrollWidth": 760,
+      "actions": [
+        {
+          "x": 640.28125,
+          "y": 69.64363098144531,
+          "width": 40,
+          "height": 40
+        },
+        {
+          "x": 683.28125,
+          "y": 69.64363098144531,
+          "width": 40,
+          "height": 40
+        }
+      ]
+    },
+    "samples": [
+      {
+        "caret": "0.0314789",
+        "clear": "0.968521",
+        "transform": "matrix(0.993401, -0.0245653, 0.0245653, 0.993401, 0, -14)"
+      },
+      {
+        "caret": "0",
+        "clear": "1",
+        "transform": "matrix(1, 0, 0, 1, 0, -14)"
+      },
+      {
+        "caret": "0",
+        "clear": "1",
+        "transform": "matrix(1, 0, 0, 1, 0, -14)"
+      },
+      {
+        "caret": "0",
+        "clear": "1",
+        "transform": "matrix(1, 0, 0, 1, 0, -14)"
+      },
+      {
+        "caret": "0",
+        "clear": "1",
+        "transform": "matrix(1, 0, 0, 1, 0, -14)"
+      },
+      {
+        "caret": "0",
+        "clear": "1",
+        "transform": "matrix(1, 0, 0, 1, 0, -14)"
+      },
+      {
+        "caret": "0",
+        "clear": "1",
+        "transform": "matrix(1, 0, 0, 1, 0, -14)"
+      },
+      {
+        "caret": "0",
+        "clear": "1",
+        "transform": "matrix(1, 0, 0, 1, 0, -14)"
+      }
+    ],
+    "keyboardFocus": "清除结算周期",
+    "afterKeyboard": {
+      "selected": "请选择",
+      "focus": "结算周期",
+      "expanded": "false"
+    },
+    "reduced": {
+      "duration": "1e-05s"
+    },
+    "reducedClear": "请选择"
+  },
+  "webkit": [
+    {
+      "theme": "light",
+      "clear": "1",
+      "arrow": "0",
+      "transition": "0.14s, 0.14s"
+    },
+    {
+      "theme": "light",
+      "mouseClear": true,
+      "keyboardClear": true,
+      "keyboardNavigation": "macOS WebKit Option+Tab (plain Tab skips native buttons)",
+      "pageErrors": [],
+      "overflow": false
+    },
+    {
+      "theme": "dark",
+      "clear": "1",
+      "arrow": "0",
+      "transition": "0.14s, 0.14s"
+    },
+    {
+      "theme": "dark",
+      "mouseClear": true,
+      "keyboardClear": true,
+      "keyboardNavigation": "macOS WebKit Option+Tab (plain Tab skips native buttons)",
+      "pageErrors": [],
+      "overflow": false
+    },
+    {
+      "touchClear": true,
+      "reducedMotion": true
+    }
+  ],
+  "verificationNotes": [
+    "Required payment-mode clearing retains installment amounts, dates and stages without saving",
+    "Desktop caret-to-X transitions are 140ms; empty/disabled/open/fixed selectors omit clearing",
+    "Touch pointers show the clear target continuously so loss of focus does not hide it before click",
+    "macOS WebKit plain Tab skips native buttons; Option+Tab and Enter clearing passed; Ego plain Tab passed",
+    "Open-menu visual evidence waits for animation completion; earlier transient or cropped shots are superseded",
+    "Final night menu uses two identical raised color layers, preserving hue with less background text ghosting",
+    "Final visual sheet did not repeat the same large-title overlap position; only final visible state is claimed"
+  ],
+  "data": "Synthetic isolated demonstration database; real ledger and user desktop services untouched",
+  "limits": [
+    "Browser WebKit validation, not a launched native desktop or Retina acceptance test",
+    "No target hardware performance benchmark"
+  ],
+  "implementation": "Existing tokens and CSS gradients/shadows; no layout redesign, new dependency, live blur or looping animation"
+}

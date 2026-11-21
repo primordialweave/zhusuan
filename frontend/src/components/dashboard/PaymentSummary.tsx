@@ -1,4 +1,4 @@
-import { Button, Surface } from '@/design-system'
+import { Button, Skeleton, Surface } from '@/design-system'
 import { formatAmount } from '@/utils/format'
 import { PAYMENT_SUMMARY_SCOPES, type PaymentSummaryScope } from './paymentSummaryScope'
 
@@ -18,6 +18,7 @@ export interface PaymentSummaryProps {
   paid: number
   /** 待收款金额，已包含逾期；超收时为负数。 */
   pending: number
+  refreshing?: boolean
   scope?: PaymentSummaryScope
   status: PaymentSummaryStatus
 }
@@ -65,6 +66,7 @@ export default function PaymentSummary({
   onScopeChange,
   paid,
   pending,
+  refreshing = false,
   scope = 'all',
   status,
 }: PaymentSummaryProps) {
@@ -76,14 +78,16 @@ export default function PaymentSummary({
     PAYMENT_SUMMARY_SCOPES[
       (PAYMENT_SUMMARY_SCOPES.indexOf(scope) + 1) % PAYMENT_SUMMARY_SCOPES.length
     ]
-  const pie = (
+  const pie = loading ? (
+    <Skeleton className="payment-summary__pie" shape="circle" />
+  ) : (
     <SummaryPie paid={status === 'data' ? paid : 0} pending={status === 'data' ? pending : 0} />
   )
 
   return (
     <Surface
       as="section"
-      aria-busy={loading || undefined}
+      aria-busy={loading || refreshing || undefined}
       aria-label="收款摘要"
       className="payment-summary"
       data-scope={scope}
@@ -91,6 +95,11 @@ export default function PaymentSummary({
       radius="pill"
       variant="glass"
     >
+      {loading || refreshing ? (
+        <span className="ods-sr-only" role="status">
+          正在加载收款摘要
+        </span>
+      ) : null}
       {onScopeChange ? (
         <Button
           aria-label={`统计范围：${copy.name}，点击切换到${scopeCopy[next].name}`}
@@ -122,7 +131,17 @@ export default function PaymentSummary({
           <div className="payment-summary__row">
             <span aria-hidden="true" className="payment-summary__dot" data-part="paid" />
             <dt className="payment-summary__label">{copy.paid}</dt>
-            <dd className="payment-summary__amount">{loading ? '—' : formatAmount(paid)}</dd>
+            <dd className="payment-summary__amount">
+              {loading ? (
+                <Skeleton
+                  className="payment-summary__amount-placeholder"
+                  height="1.2em"
+                  width="5.5rem"
+                />
+              ) : (
+                formatAmount(paid)
+              )}
+            </dd>
           </div>
           <div className="payment-summary__row">
             <span aria-hidden="true" className="payment-summary__dot" data-part="pending" />
@@ -130,11 +149,20 @@ export default function PaymentSummary({
               {overpaid ? `${scope === 'all' ? '' : copy.name}已超收` : copy.pending}
             </dt>
             <dd className="payment-summary__amount">
-              {loading ? '—' : formatAmount(Math.abs(pending))}
+              {loading ? (
+                <Skeleton
+                  className="payment-summary__amount-placeholder"
+                  height="1.2em"
+                  width="5.5rem"
+                />
+              ) : (
+                formatAmount(Math.abs(pending))
+              )}
             </dd>
           </div>
         </dl>
       )}
+      {refreshing && !loading ? <Skeleton className="payment-summary__refresh-skeleton" /> : null}
     </Surface>
   )
 }

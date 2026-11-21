@@ -9,9 +9,9 @@ Desktop project ledger and payment tracking
 
 </div>
 
-Zhusuan is a Wails, Go and React desktop app for project contracts, installment plans, receipts and overdue payments. The original Orange repository now belongs to [Primordial Weave](https://github.com/primordialweave/zhusuan). Current version: **1.0.2**. [Download packages](https://github.com/primordialweave/zhusuan/releases/tag/v1.0.2).
+Zhusuan is a Wails, Go and React desktop app for project contracts, installment plans, receipts and overdue payments. The original Orange repository now belongs to [Primordial Weave](https://github.com/primordialweave/zhusuan). Current version: **1.1.0**. [Download packages](https://github.com/primordialweave/zhusuan/releases/tag/v1.1.0).
 
-macOS downloads: [Apple Silicon DMG](https://github.com/primordialweave/zhusuan/releases/download/v1.0.2/zhusuan-v1.0.2-macOS-arm64.dmg) · [Intel DMG](https://github.com/primordialweave/zhusuan/releases/download/v1.0.2/zhusuan-v1.0.2-macOS-amd64.dmg). Drag Zhusuan into Applications and launch it from that folder.
+macOS downloads: [Apple Silicon DMG](https://github.com/primordialweave/zhusuan/releases/download/v1.1.0/zhusuan-v1.1.0-macOS-arm64.dmg) · [Intel DMG](https://github.com/primordialweave/zhusuan/releases/download/v1.1.0/zhusuan-v1.1.0-macOS-amd64.dmg). Drag Zhusuan into Applications and launch it from that folder.
 
 ## Features
 
@@ -82,3 +82,7 @@ python3 scripts/test_release.py
 The release workflow builds and verifies all three targets before publishing a complete draft. Updates use update.json and SHA-256 verification. Native installation/UAC, older OS compatibility and restart/rollback acceptance limits are recorded in [release documentation](docs/release.md).
 
 Contributions are welcome with relevant validation and redacted UI captures. Licensed under [MIT](LICENSE).
+
+Set `APP_SLOGAN="心中有数，账目有序"` in `.env` to customize the About tagline. Restart the app or API server after a change; no frontend rebuild is required. Missing or blank values use this default.
+
+The About page WeChat public account name is configured with `APP_WECHAT_PUBLIC_ACCOUNT="原初织界"`. Missing or blank values use “原初织界”; restart the app or API server after changing it.

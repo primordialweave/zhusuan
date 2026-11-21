@@ -1,4 +1,7 @@
-// Package main starts the Orange desktop application or its private update helper.
+// Package main starts the Zhusuan desktop application or its private update helper.
+// @securityDefinitions.apikey Bearer
+// @in header
+// @name Authorization
 package main
 
 import (

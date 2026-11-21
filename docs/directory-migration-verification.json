@@ -1,0 +1,36 @@
+{
+  "source": "/Users/willxue/will/FruitsAI/Orange",
+  "target": "/Users/willxue/will/primordialweave/zhusuan",
+  "method": "macOS atomic rename exchange",
+  "compatibilityLink": "/Users/willxue/will/primordialweave/zhusuan",
+  "directoryInodePreserved": true,
+  "head": "0c35eb32d5e4daf7d14ca91590925e03b03d3225",
+  "gitStatusPreserved": true,
+  "statusEntryCount": 219,
+  "selectedFilesPreserved": [
+    ".env",
+    "frontend/package.json",
+    "go.mod",
+    "frontend/public/玉雕风珠算字标.png",
+    "frontend/public/帝王绿翡翠算盘图标.png"
+  ],
+  "linkedWorktreeRepaired": true,
+  "linkedWorktreeStatusPreserved": true,
+  "services": {
+    "frontend": {
+      "status": 200,
+      "bytes": 616
+    },
+    "api": {
+      "status": 200,
+      "bytes": 76
+    }
+  },
+  "devRestoredFrom": "/Users/willxue/will/primordialweave/zhusuan",
+  "oldRegisteredCodexProject": {
+    "label": "Orange",
+    "path": "/Users/willxue/will/FruitsAI/Orange",
+    "compatibilityLinkWorks": true
+  },
+  "serviceVerification": "Loopback read-only requests, isolated from proxy environment"
+}
