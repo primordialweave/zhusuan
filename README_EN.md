@@ -8,8 +8,8 @@
   <p><strong>A clean, cross-platform desktop application for project ledgers and payment tracking</strong></p>
 
   <p>
-    <a href="https://github.com/primordialweave/zhusuan/releases/tag/v1.3.0">
-      <img src="https://img.shields.io/badge/release-v1.3.0-2f6d4f?style=flat-square" alt="Release v1.3.0" />
+    <a href="https://github.com/primordialweave/zhusuan/releases/tag/v1.3.1">
+      <img src="https://img.shields.io/badge/release-v1.3.1-2f6d4f?style=flat-square" alt="Release v1.3.1" />
     </a>
     <img src="https://img.shields.io/badge/platform-macOS%20%7C%20Windows%20%7C%20Linux-4a7c59?style=flat-square" alt="Platforms" />
     <img src="https://img.shields.io/badge/Wails-v3-528c68?style=flat-square" alt="Wails v3" />
@@ -21,7 +21,7 @@
 
   <p>
     <a href="README.md">简体中文</a> ·
-    <a href="https://github.com/primordialweave/zhusuan/releases/tag/v1.3.0">Downloads</a> ·
+    <a href="https://github.com/primordialweave/zhusuan/releases/tag/v1.3.1">Downloads</a> ·
     <a href="CHANGELOG.md">Changelog</a> ·
     <a href="docs/migration.md">Migration</a> ·
     <a href="docs/release.md">Release Notes</a>
@@ -53,14 +53,14 @@ More views: [Project detail](docs/screenshots/project-detail.png) · [Create pro
 
 ## Downloads
 
-Download the latest **v1.3.0** packages from [GitHub Releases](https://github.com/primordialweave/zhusuan/releases/tag/v1.3.0):
+Download the latest **v1.3.1** packages from [GitHub Releases](https://github.com/primordialweave/zhusuan/releases/tag/v1.3.1):
 
 | Platform | Package | Notes |
 | --- | --- | --- |
-| macOS (Apple Silicon) | [zhusuan-v1.3.0-macOS-arm64.dmg](https://github.com/primordialweave/zhusuan/releases/download/v1.3.0/zhusuan-v1.3.0-macOS-arm64.dmg) | Apple Silicon, macOS 12+ |
-| macOS (Intel) | [zhusuan-v1.3.0-macOS-amd64.dmg](https://github.com/primordialweave/zhusuan/releases/download/v1.3.0/zhusuan-v1.3.0-macOS-amd64.dmg) | Intel, macOS 12+ |
-| Windows (x64) | [zhusuan-v1.3.0-windows-amd64-installer.exe](https://github.com/primordialweave/zhusuan/releases/download/v1.3.0/zhusuan-v1.3.0-windows-amd64-installer.exe) | Per-user installer & upgrade |
-| Linux (x64) | [AppImage](https://github.com/primordialweave/zhusuan/releases/download/v1.3.0/zhusuan-v1.3.0-linux-x86_64.AppImage) · [.deb](https://github.com/primordialweave/zhusuan/releases/download/v1.3.0/zhusuan-v1.3.0-linux-amd64.deb) · [.rpm](https://github.com/primordialweave/zhusuan/releases/download/v1.3.0/zhusuan-v1.3.0-linux-amd64.rpm) | Portable & native packages |
+| macOS (Apple Silicon) | [zhusuan-v1.3.1-macOS-arm64.dmg](https://github.com/primordialweave/zhusuan/releases/download/v1.3.1/zhusuan-v1.3.1-macOS-arm64.dmg) | Apple Silicon, macOS 12+ |
+| macOS (Intel) | [zhusuan-v1.3.1-macOS-amd64.dmg](https://github.com/primordialweave/zhusuan/releases/download/v1.3.1/zhusuan-v1.3.1-macOS-amd64.dmg) | Intel, macOS 12+ |
+| Windows (x64) | [zhusuan-v1.3.1-windows-amd64-installer.exe](https://github.com/primordialweave/zhusuan/releases/download/v1.3.1/zhusuan-v1.3.1-windows-amd64-installer.exe) | Per-user installer & upgrade |
+| Linux (x64) | [AppImage](https://github.com/primordialweave/zhusuan/releases/download/v1.3.1/zhusuan-v1.3.1-linux-x86_64.AppImage) · [.deb](https://github.com/primordialweave/zhusuan/releases/download/v1.3.1/zhusuan-v1.3.1-linux-amd64.deb) · [.rpm](https://github.com/primordialweave/zhusuan/releases/download/v1.3.1/zhusuan-v1.3.1-linux-amd64.rpm) | Portable & native packages |
 
 > On macOS, open the DMG, drag Zhusuan into `Applications`, and launch it from there.
 
