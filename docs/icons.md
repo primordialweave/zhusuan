@@ -25,6 +25,8 @@ python3 scripts/generate_icons.py --input build/appicon.png
 
 Windows 主体原先仅占源图约85.5%，现有32px帧的可见范围仅28px；规范化后原生32px范围为30px，48px为46px。小帧边缘的低alpha像素属于抗锯齿，不能再次强制留整像素空白而缩小主体。尺寸与原生验证见 [windows-icon-size-verification.json](windows-icon-size-verification.json)。
 
+![Windows 原生尺寸对照](screenshots/windows-icon-size/native-size-comparison.png)
+
 `task icons` 会重新生成 Windows PNG、MSIX 和13帧 ICO。普通构建先用纯标准库校验 `appicon-windows.source.json` 中的原图、派生图、生成器及规则摘要，再分别生成 Mac/Windows 格式，避免 Wails 把 ICO 覆盖回带原始留白的版本。无需在普通构建机额外安装 Pillow；源图或规则更新后须先执行 `task icons` 再提交派生 PNG 和校验记录。单独更新 Windows 输入也可执行：
 
 ```sh
