@@ -624,7 +624,7 @@ export default function SettingsView() {
                   fit="contain"
                   radius="none"
                   showSkeleton
-                  src="/玉雕风珠算字标.png"
+                  src="/zhusuan-wordmark.png"
                 />
               </div>
               <div className="about-hero__copy">

@@ -361,7 +361,7 @@ describe('SettingsView', () => {
     expect(screen.getByRole('heading', { level: 2, name: '珠算' })).toBeInTheDocument()
     expect(container.querySelector('.about-brandmark img')).toHaveAttribute(
       'src',
-      '/玉雕风珠算字标.png',
+      '/zhusuan-wordmark.png',
     )
     expect(await screen.findByText(DEFAULT_APP_SLOGAN)).toBeInTheDocument()
     expect(screen.getByText(DEFAULT_WECHAT_PUBLIC_ACCOUNT)).toBeInTheDocument()

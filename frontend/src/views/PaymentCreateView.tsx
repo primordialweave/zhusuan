@@ -26,14 +26,6 @@ import {
 import { useToastStore } from '@/composables/useToast'
 import '@/styles/project-domain.css'
 
-const normalizePaymentItems = (items: PaymentPlanItem[], installment: boolean) => {
-  if (installment) {
-    return items.map((item) => (item.stage === 'all' ? { ...item, stage: 'deposit' } : item))
-  }
-  const first = items[0] || createPaymentPlanItem()
-  return [{ ...first, stage: 'all' }]
-}
-
 export default function PaymentCreateView() {
   const params = useParams()
   const navigate = useNavigate()
@@ -75,7 +67,6 @@ export default function PaymentCreateView() {
 
   const currentProject =
     routeProjectId && routeProjectId !== selectedProject?.id ? undefined : selectedProject
-  const isInstallment = currentProject?.payment_method === '分期付款'
 
   const loadProjects = useCallback(async () => {
     const generation = ++loadGenerationRef.current
@@ -97,9 +88,6 @@ export default function PaymentCreateView() {
       const nextProjectId = routeProjectId || list[0]?.id || 0
       const nextProject = list.find((project) => project.id === nextProjectId)
       setSelectedProject(nextProject)
-      setPaymentItems((current) =>
-        normalizePaymentItems(current, nextProject?.payment_method === '分期付款'),
-      )
     } catch {
       if (
         !mountedRef.current ||
@@ -132,9 +120,6 @@ export default function PaymentCreateView() {
     paymentSaveStateRef.current = createPaymentPlanSaveState()
     setSaveIssue(null)
     setSelectedProject(nextProject)
-    setPaymentItems((current) =>
-      normalizePaymentItems(current, nextProject?.payment_method === '分期付款'),
-    )
   }
 
   const handleSubmit = async (event: FormEvent<HTMLFormElement>) => {
@@ -173,14 +158,14 @@ export default function PaymentCreateView() {
       if (state.knownIds.size > 0) setLockedProjectId(selectedProjectId)
       if (result.issue) {
         setSaveIssue(result.issue)
-        toastError('部分收款操作未完成')
+        toastError(result.summary)
         return
       }
       if (hasUnsavedPaymentPlan(selectedProjectId, currentPaymentItemsRef.current, state)) {
         setSaveIssue('已保存提交的内容，期间的新修改尚未保存，请再次保存。')
         return
       }
-      toastSuccess('收款计划已创建')
+      toastSuccess('收款已录入')
       navigate(`/projects/${selectedProjectId}`)
     } catch (error) {
       if (!isCurrentSave()) return
@@ -219,7 +204,7 @@ export default function PaymentCreateView() {
             <JadeIcon motionPreset="interactive" name="arrow-left" size="1em" />
           </IconButton>
         }
-        title="创建收款计划"
+        title="录入收款"
       />
 
       {projectLoadFailed ? (
@@ -242,7 +227,6 @@ export default function PaymentCreateView() {
         <Card.Root className="project-form-card" padding="none" variant="transparent">
           <form className="payment-form" noValidate onSubmit={handleSubmit}>
             <PaymentPlanEditor
-              installment={isInstallment}
               errors={paymentErrors}
               items={paymentItems}
               onItemsChange={setPaymentItems}

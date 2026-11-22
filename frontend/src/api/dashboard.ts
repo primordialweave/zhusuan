@@ -35,13 +35,44 @@ export type DashboardPeriod = 'week' | 'month' | 'quarter' | 'year'
 /** 统计范围：固定的滚动周期，或自选的自然年 / 自然月（month 为 0 表示整年）。 */
 export type DashboardScope = DashboardPeriod | { month: number; year: number }
 
-const scopeParams = (scope?: DashboardScope) =>
+export type ReceiptScope = DashboardScope | 'all'
+
+export interface ReceiptOverview {
+  contract_total: number
+  received_total: number
+  contract_received: number
+  outstanding_total: number
+  overpaid_total: number
+  period_received: number
+  period_count: number
+  start_date: string
+  end_date: string
+}
+
+const scopeParams = (scope?: ReceiptScope) =>
   typeof scope === 'object'
     ? { month: scope.month || undefined, year: scope.year }
     : { period: scope }
 
 // 仪表盘 API 集合
 export const dashboardApi = {
+  getReceiptOverview: (scope?: ReceiptScope, signal?: AbortSignal) =>
+    api.get<ApiResponse<ReceiptOverview>>('/dashboard/receipt-overview', {
+      params: { ...scopeParams(scope), _t: Date.now() },
+      signal,
+    }),
+
+  getReceiptTrend: (scope?: ReceiptScope, signal?: AbortSignal) =>
+    api.get<ApiResponse<IncomeTrend>>('/dashboard/receipt-trend', {
+      params: { ...scopeParams(scope), _t: Date.now() },
+      signal,
+    }),
+
+  getReceipts: (startDate: string, endDate: string) =>
+    api.get<ApiResponse<Payment[]>>('/payments', {
+      params: { date_field: 'actual', start_date: startDate, end_date: endDate, _t: Date.now() },
+    }),
+
   // 获取统计数据
   getStats: (scope?: DashboardScope, signal?: AbortSignal) =>
     api.get<ApiResponse<DashboardStats>>('/dashboard/stats', {

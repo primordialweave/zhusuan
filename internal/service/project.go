@@ -1,17 +1,19 @@
 package service
 
 import (
+	"errors"
 	"fmt"
+	"math/big"
 	"strings"
 	"time"
+
+	"gorm.io/gorm"
 
 	"github.com/primordialweave/zhusuan/internal/database"
 	"github.com/primordialweave/zhusuan/internal/dto"
 	"github.com/primordialweave/zhusuan/internal/models"
 	pkgerrors "github.com/primordialweave/zhusuan/internal/pkg/errors"
 	"github.com/primordialweave/zhusuan/internal/repository"
-	"gorm.io/gorm"
-	"gorm.io/gorm/clause"
 )
 
 // ProjectService 项目服务
@@ -102,7 +104,7 @@ func (s *ProjectService) Create(input dto.CreateProjectRequest) (*models.Project
 		return nil, err
 	}
 	// 1. 检查合同编号是否已存在
-	if input.ContractNumber != "" {
+	if strings.TrimSpace(input.ContractNumber) != "" {
 		exists, err := s.projectRepo.ExistsByContractNumber(input.UserID, input.ContractNumber, 0)
 		if err != nil {
 			return nil, pkgerrors.Wrap(err, "检查合同编号失败")
@@ -156,8 +158,11 @@ func (s *ProjectService) Create(input dto.CreateProjectRequest) (*models.Project
 	}
 
 	// 5. 持久化到数据库
-	if err := s.projectRepo.Create(project); err != nil {
-		return nil, pkgerrors.Wrap(err, "创建项目失败")
+	if err := s.saveWithContractNumber(&input, input.UserID, 0, "创建项目失败", func() error {
+		project.ContractNumber = input.ContractNumber
+		return s.projectRepo.Create(project)
+	}); err != nil {
+		return nil, err
 	}
 
 	// 项目合同总额影响 Dashboard 全局统计，创建后清除缓存
@@ -179,7 +184,7 @@ func (s *ProjectService) UpdateForUser(userID, id int64, input dto.CreateProject
 	}
 
 	// 检查合同编号唯一性
-	if input.ContractNumber != "" && input.ContractNumber != project.ContractNumber {
+	if strings.TrimSpace(input.ContractNumber) != "" && input.ContractNumber != project.ContractNumber {
 		exists, err := s.projectRepo.ExistsByContractNumber(userID, input.ContractNumber, id)
 		if err != nil {
 			return nil, pkgerrors.Wrap(err, "检查合同编号失败")
@@ -207,13 +212,67 @@ func (s *ProjectService) UpdateForUser(userID, id int64, input dto.CreateProject
 		contractDate = &t
 	}
 
-	if err := updateProjectAndPercentages(project, input, startDate, endDate, contractDate); err != nil {
-		return nil, pkgerrors.Wrap(err, "更新项目失败")
+	if err := s.saveWithContractNumber(&input, userID, id, "更新项目失败", func() error {
+		return updateProjectAndPercentages(project, input, startDate, endDate, contractDate)
+	}); err != nil {
+		return nil, err
 	}
 
 	// 合同总额/状态变更影响 Dashboard 统计，更新后清除缓存
 	invalidateDashboardCache(userID)
 	return project, nil
+}
+
+// saveWithContractNumber generates omitted numbers at save time. Suggestions are
+// not reservations, so a competing writer may require generating another number.
+func (s *ProjectService) saveWithContractNumber(input *dto.CreateProjectRequest, userID, excludeID int64, message string, save func() error) error {
+	automatic := strings.TrimSpace(input.ContractNumber) == ""
+	attempts := 1
+	if automatic {
+		attempts = 3
+	}
+	for attempt := 0; attempt < attempts; attempt++ {
+		if automatic {
+			date := input.ContractDate
+			if date == "" {
+				date = input.StartDate
+			}
+			number, err := s.GenerateNextContractNumber(userID, date)
+			if err != nil {
+				return pkgerrors.Wrap(err, "生成合同编号失败")
+			}
+			input.ContractNumber = number
+		}
+		err := save()
+		if err == nil {
+			return nil
+		}
+		if !isDuplicateDatabaseError(database.GetDB().Dialector, err) {
+			return pkgerrors.Wrap(err, message)
+		}
+		// Other unique keys (for example a primary key) must keep their original
+		// error. This check runs after the failed transaction has rolled back.
+		exists, checkErr := s.projectRepo.ExistsByContractNumber(userID, input.ContractNumber, excludeID)
+		if checkErr != nil || !exists {
+			return pkgerrors.Wrap(err, message)
+		}
+	}
+	return pkgerrors.ErrContractDuplicate
+}
+
+// isDuplicateDatabaseError uses the configured driver's translation locally,
+// without changing error handling for the application's other services.
+func isDuplicateDatabaseError(dialector gorm.Dialector, err error) bool {
+	translator, ok := dialector.(gorm.ErrorTranslator)
+	for current := err; current != nil; current = errors.Unwrap(current) {
+		if errors.Is(current, gorm.ErrDuplicatedKey) {
+			return true
+		}
+		if ok && errors.Is(translator.Translate(current), gorm.ErrDuplicatedKey) {
+			return true
+		}
+	}
+	return false
 }
 
 // updateProjectAndPercentages preserves aggregates from the locked row and commits the new ratios with the contract.
@@ -308,51 +367,41 @@ func (s *ProjectService) GenerateNextContractNumber(userID int64, date string) (
 	// 构造前缀: HT + YYYYMMDD
 	prefix := "HT" + t.Format("20060102")
 
-	var result string
-
-	// 使用事务缩小读写窗口；SQLite 不支持 FOR UPDATE，其他数据库使用行锁降低并发竞态。
-	// SQLite 使用乐观锁重试机制
-	maxRetries := 3
-	for attempt := 0; attempt < maxRetries; attempt++ {
-		err = database.GetDB().Transaction(func(tx *gorm.DB) error {
-			var maxNumber string
-			query := tx.Model(&models.Project{}).
-				Where("user_id = ? AND contract_number LIKE ?", userID, prefix+"%").
-				Order("contract_number DESC").
-				Limit(1)
-			if database.GetDBType() != "sqlite" {
-				query = query.Clauses(clause.Locking{Strength: "UPDATE"})
-			}
-			if err := query.Pluck("contract_number", &maxNumber).Error; err != nil {
-				return err
-			}
-
-			// 计算下一个序号
-			nextSeq := 1
-			if maxNumber != "" && len(maxNumber) >= len(prefix)+4 {
-				// 提取现有最大编号的末尾4位作为序号
-				seqStr := maxNumber[len(prefix):]
-				var seq int
-				if _, err := fmt.Sscanf(seqStr, "%d", &seq); err == nil {
-					nextSeq = seq + 1
-				}
-			}
-
-			// 格式化输出: 前缀 + 4位序号(补零)
-			result = fmt.Sprintf("%s%04d", prefix, nextSeq)
-			return nil
-		})
-
-		// 如果成功或非唯一约束错误，直接返回
-		if err == nil || !strings.Contains(err.Error(), "UNIQUE constraint failed") {
-			break
-		}
-
-		// SQLite 唯一约束冲突，重试
-		if attempt < maxRetries-1 {
-			time.Sleep(time.Millisecond * time.Duration(10*(attempt+1)))
-		}
+	// Only numeric suffixes belong to the automatic sequence. Sorting their
+	// normalized length also handles 9999 -> 10000 and custom leading zeroes.
+	suffix := fmt.Sprintf("SUBSTR(contract_number, %d)", len(prefix)+1)
+	numericSuffix := suffix + " NOT GLOB '*[^0-9]*'"
+	normalizedSuffix := "LTRIM(" + suffix + ", '0')"
+	const (
+		postgresDialect = "postgres"
+		mysqlDialect    = "mysql"
+	)
+	switch database.GetDBType() {
+	case postgresDialect:
+		numericSuffix = suffix + " ~ '^[0-9]+$'"
+	case mysqlDialect:
+		numericSuffix = suffix + " REGEXP '^[0-9]+$'"
+		normalizedSuffix = "TRIM(LEADING '0' FROM " + suffix + ")"
 	}
-
-	return result, err
+	var maxNumber string
+	query := database.GetDB().Model(&models.Project{}).
+		Where("user_id = ? AND contract_number LIKE ?", userID, prefix+"%").
+		Where("LENGTH(contract_number) >= ?", len(prefix)+4).
+		Where(numericSuffix).
+		Order("LENGTH(" + normalizedSuffix + ") DESC").
+		Order(normalizedSuffix + " DESC").
+		Limit(1)
+	if err := query.Pluck("contract_number", &maxNumber).Error; err != nil {
+		return "", err
+	}
+	sequence := big.NewInt(1)
+	if maxNumber != "" {
+		sequence.SetString(maxNumber[len(prefix):], 10)
+		sequence.Add(sequence, big.NewInt(1))
+	}
+	digits := sequence.String()
+	if len(digits) < 4 {
+		digits = strings.Repeat("0", 4-len(digits)) + digits
+	}
+	return prefix + digits, nil
 }

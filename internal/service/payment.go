@@ -3,6 +3,7 @@ package service
 import (
 	"errors"
 	"math"
+	"strings"
 	"time"
 
 	"github.com/primordialweave/zhusuan/internal/constants"
@@ -73,6 +74,25 @@ func (s *PaymentService) ListByDateRange(userID int64, startDate, endDate string
 	return s.paymentRepo.ListByDateRange(userID, startDate, endDate)
 }
 
+// ListReceiptsByDateRange lists confirmed receipts by actual date rather than planned date.
+func (s *PaymentService) ListReceiptsByDateRange(userID int64, startDate, endDate string) ([]models.Payment, error) {
+	start, err := receiptActualDate(startDate)
+	if err != nil {
+		return nil, err
+	}
+	end, err := receiptActualDate(endDate)
+	if err != nil {
+		return nil, err
+	}
+	if start == nil || end == nil {
+		return nil, pkgerrors.ErrInvalidParam
+	}
+	if start.After(*end) {
+		return nil, pkgerrors.New(400, "开始日期不能晚于结束日期")
+	}
+	return repository.NewReceiptRepository().ListByActualDate(userID, startDate, endDate)
+}
+
 // Create 创建新的收款/回款计划
 //
 // 参数:
@@ -94,20 +114,32 @@ func (s *PaymentService) Create(input dto.PaymentRequest) (*models.Payment, erro
 	}
 
 	loc := time.Local
-	planDate, err := time.ParseInLocation("2006-01-02", input.PlanDate, loc)
+	actualDate, err := receiptActualDate(input.ActualDate)
+	if err != nil {
+		return nil, err
+	}
+	planDateText := input.PlanDate
+	if planDateText == "" && actualDate != nil {
+		planDateText = input.ActualDate
+	}
+	planDate, err := time.ParseInLocation("2006-01-02", planDateText, loc)
 	if err != nil {
 		return nil, pkgerrors.WrapWithCode(err, 400, "计划日期格式错误")
 	}
 
 	payment := &models.Payment{
-		ProjectID: input.ProjectID,
-		Stage:     input.Stage,
-		Amount:    input.Amount,
-		PlanDate:  planDate,
-		Status:    input.Status,
-		Method:    input.Method,
-		Remark:    input.Remark,
-		UserID:    input.UserID,
+		ProjectID:  input.ProjectID,
+		Stage:      input.Stage,
+		Amount:     input.Amount,
+		PlanDate:   planDate,
+		ActualDate: actualDate,
+		Status:     input.Status,
+		Method:     input.Method,
+		Remark:     input.Remark,
+		UserID:     input.UserID,
+	}
+	if strings.TrimSpace(payment.Stage) == "" {
+		payment.Stage = "all"
 	}
 
 	// 默认状态为"待收款"
@@ -169,10 +201,17 @@ func (s *PaymentService) applyUpdate(payment *models.Payment, input dto.PaymentR
 	if input.ProjectID != 0 && input.ProjectID != payment.ProjectID {
 		return nil, pkgerrors.WrapWithCode(errors.New("不允许修改款项所属项目"), 400, "不允许修改款项所属项目")
 	}
-	loc := time.Local
-	planDate, err := time.ParseInLocation("2006-01-02", input.PlanDate, loc)
+	actualDate, err := receiptActualDate(input.ActualDate)
 	if err != nil {
-		return nil, pkgerrors.WrapWithCode(err, 400, "计划日期格式错误")
+		return nil, err
+	}
+	var planDate *time.Time
+	if input.PlanDate != "" {
+		parsed, err := time.ParseInLocation("2006-01-02", input.PlanDate, time.Local)
+		if err != nil {
+			return nil, pkgerrors.WrapWithCode(err, 400, "计划日期格式错误")
+		}
+		planDate = &parsed
 	}
 
 	// 在事务中完成规则处理 + 保存 + 项目金额同步
@@ -185,8 +224,22 @@ func (s *PaymentService) applyUpdate(payment *models.Payment, input dto.PaymentR
 		if err := tx.Clauses(clause.Locking{Strength: "UPDATE"}).Where("id = ? AND user_id = ?", payment.ID, payment.UserID).First(&current).Error; err != nil {
 			return err
 		}
-		current.Stage, current.Amount, current.PlanDate = input.Stage, input.Amount, planDate
-		current.Status, current.Method, current.Remark = input.Status, input.Method, input.Remark
+		current.Amount = input.Amount
+		if planDate != nil {
+			current.PlanDate = *planDate
+		}
+		if actualDate != nil {
+			current.ActualDate = actualDate
+		}
+		if strings.TrimSpace(input.Stage) != "" {
+			current.Stage = input.Stage
+		} else if strings.TrimSpace(current.Stage) == "" {
+			current.Stage = "all"
+		}
+		if input.Status != "" {
+			current.Status = input.Status
+		}
+		current.Method, current.Remark = input.Method, input.Remark
 		*payment = current
 		// 重新应用业务规则（如重新计算百分比，因为金额可能变了）
 		if err := s.processPaymentRulesInTx(tx, payment); err != nil {
@@ -205,6 +258,17 @@ func (s *PaymentService) applyUpdate(payment *models.Payment, input dto.PaymentR
 	// 事务提交后清除该用户的 Dashboard 统计缓存
 	invalidateDashboardCache(payment.UserID)
 	return payment, nil
+}
+
+func receiptActualDate(value string) (*time.Time, error) {
+	if value == "" {
+		return nil, nil
+	}
+	date, err := time.ParseInLocation("2006-01-02", value, time.Local)
+	if err != nil {
+		return nil, pkgerrors.WrapWithCode(err, 400, "实际日期格式错误")
+	}
+	return &date, nil
 }
 
 // processPaymentRulesInTx 执行通用款项业务规则处理（事务内版本）

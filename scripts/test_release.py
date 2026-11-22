@@ -52,6 +52,15 @@ class ReleaseTests(unittest.TestCase):
         lock = json.loads((self.directory/'frontend/package-lock.json').read_text())
         self.assertEqual(lock['version'], '1.2.3')
         self.assertEqual(lock['packages']['']['version'], '1.2.3')
+        windows = json.loads((self.directory/'build/windows/info.json').read_text())
+        self.assertEqual(windows['fixed']['file_version'], '1.2.3')
+        self.assertEqual(windows['fixed']['product_version'], '1.2.3')
+        for translations in windows['info'].values():
+            # Windows consumers require a nonempty FileVersion string before accepting
+            # a translation's ProductName and FileDescription; numeric fields alone fail.
+            self.assertEqual(translations['FileVersion'], '1.2.3')
+            self.assertEqual(translations['ProductVersion'], '1.2.3')
+            self.assertEqual(translations['ProductName'], '珠算')
         for filename in files:
             self.assertIn('1.2.3', (self.directory/filename).read_text())
         self.assertIn('org.primordialweave.zhusuan', (self.directory/'build/darwin/Info.plist').read_text())

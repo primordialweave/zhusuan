@@ -1,4 +1,3 @@
-import dayjs from 'dayjs'
 import {
   useCallback,
   useEffect,
@@ -9,7 +8,7 @@ import {
 } from 'react'
 import { useNavigate, useParams, useSearchParams } from 'react-router-dom'
 import { dictionaryApi, type DictionaryItem } from '@/api/dictionary'
-import { paymentApi, projectApi, type Payment, type Project } from '@/api/project'
+import { projectApi, type Payment, type Project } from '@/api/project'
 import { PaymentStatusChip, ProjectStatusChip } from '@/components/project/ProjectStatusChip'
 import {
   Button,
@@ -30,6 +29,7 @@ import {
 import { useProjectExport } from '@/components/project/useProjectExport'
 import { useToastStore } from '@/composables/useToast'
 import { formatCurrency, formatDate } from '@/utils/format'
+import { toDateOnly } from '@/utils/dateOnly'
 import '@/styles/project-domain.css'
 import '@/styles/main-page-loading.css'
 
@@ -39,6 +39,7 @@ const paymentStageLabels: Record<string, string> = {
   final: '尾款',
   milestone: '阶段款',
   progress: '进度款',
+  receipt: '收款',
 }
 
 const paymentMethodLabels: Record<string, string> = {
@@ -73,7 +74,6 @@ export default function ProjectDetailView() {
   const requestedTab = searchParams.get('tab')
   const requestedPayment = searchParams.get('payment')
   const toastError = useToastStore((state) => state.error)
-  const toastSuccess = useToastStore((state) => state.success)
   const { exportProject, lastSavedExport } = useProjectExport()
   const [project, setProject] = useState<Project | null>(null)
   const [projectTypes, setProjectTypes] = useState<DictionaryItem[]>([])
@@ -201,21 +201,6 @@ export default function ProjectDetailView() {
     target.focus?.({ preventScroll: true })
   }, [activeTab, id, payments, requestedPayment])
 
-  const confirmPayment = async (paymentId: number) => {
-    if (projectId === null) return
-    const requestedProjectId = projectId
-
-    try {
-      await paymentApi.confirm(paymentId, { actual_date: dayjs().format('YYYY-MM-DD') })
-      if (!isMountedRef.current || activeProjectIdRef.current !== requestedProjectId) return
-      toastSuccess('收款已确认')
-      await loadProject(requestedProjectId)
-    } catch {
-      if (!isMountedRef.current || activeProjectIdRef.current !== requestedProjectId) return
-      toastError('确认收款失败')
-    }
-  }
-
   if (projectId !== null && loadErrorProjectId === projectId) {
     return (
       <Card.Root>
@@ -319,10 +304,11 @@ export default function ProjectDetailView() {
   const progress = project.total_amount
     ? Math.min(100, Math.max(0, Math.round((paidAmount / project.total_amount) * 100)))
     : 0
-  const settledPaymentCount = payments.filter(isPaymentSettled).length
-  const nextPayment = [...payments]
-    .filter((payment) => !isPaymentSettled(payment))
-    .sort((left, right) => left.plan_date.localeCompare(right.plan_date))[0]
+  const latestReceipt = payments
+    .filter(isPaymentSettled)
+    .sort((left, right) =>
+      toDateOnly(right.actual_date).localeCompare(toDateOnly(left.actual_date)),
+    )[0]
   const runwayStage =
     project.status === 'completed' || project.status === 'archived'
       ? 3
@@ -411,7 +397,7 @@ export default function ProjectDetailView() {
             value="payments"
           >
             <JadeIcon name="payment" size="1em" />
-            收款计划
+            收款记录
           </Tabs.Tab>
         </Tabs.List>
 
@@ -428,20 +414,15 @@ export default function ProjectDetailView() {
               >
                 <div className="project-settlement-board__main">
                   <div className="project-settlement-board__headline">
-                    <span className="project-settlement-board__label">待回款</span>
+                    <span className="project-settlement-board__label">合同未收</span>
                     <strong className="project-settlement-board__amount">
                       {formatCurrency(remainingAmount)}
                     </strong>
-                    <p>
-                      {progress >= 100
-                        ? '合同款项已全部回收，项目财务闭环已完成。'
-                        : `已回收合同金额的 ${progress}%，剩余款项按计划持续跟进。`}
-                    </p>
                   </div>
 
                   <div className="project-settlement-progress">
                     <CircularProgress
-                      aria-label="项目总进度"
+                      aria-label="回款完成度"
                       className="project-overview-progress"
                       showValueLabel
                       size="lg"
@@ -466,11 +447,8 @@ export default function ProjectDetailView() {
                       </dd>
                     </div>
                     <div>
-                      <dt>收款节点</dt>
-                      <dd>
-                        {settledPaymentCount}
-                        <span> / {payments.length}</span>
-                      </dd>
+                      <dt>收款记录</dt>
+                      <dd>{payments.length} 笔</dd>
                     </div>
                   </dl>
                 </div>
@@ -487,7 +465,11 @@ export default function ProjectDetailView() {
                     {runwayItems.map((item, index) => (
                       <li data-reached={index + 1 <= runwayStage} key={item.label}>
                         <span aria-hidden="true" className="project-runway__node">
-                          {index + 1 <= runwayStage ? <JadeIcon name="check" size="1em" /> : index + 1}
+                          {index + 1 <= runwayStage ? (
+                            <JadeIcon name="check" size="1em" />
+                          ) : (
+                            index + 1
+                          )}
                         </span>
                         <strong>{item.label}</strong>
                         <time dateTime={item.date}>{formatDate(item.date)}</time>
@@ -552,8 +534,7 @@ export default function ProjectDetailView() {
                     <Card.Header>
                       <div className="project-card-heading-row">
                         <div>
-                          <Card.Title>下一笔计划</Card.Title>
-                          <Card.Description>当前最需要跟进的收款节点</Card.Description>
+                          <Card.Title>最近收款</Card.Title>
                         </div>
                         <Surface
                           className="project-card-heading-icon"
@@ -562,26 +543,28 @@ export default function ProjectDetailView() {
                           tone="accent"
                           variant="inset"
                         >
-                          <JadeIcon name="calendar-check" size="1em" />
+                          <JadeIcon name="payment" size="1em" />
                         </Surface>
                       </div>
                     </Card.Header>
                     <Card.Content>
-                      {nextPayment ? (
+                      {latestReceipt ? (
                         <div className="project-next-payment">
                           <div>
-                            <span>{getPaymentStageLabel(nextPayment.stage)}</span>
-                            <strong>{formatCurrency(nextPayment.amount)}</strong>
+                            <span>{getPaymentStageLabel(latestReceipt.stage)}</span>
+                            <strong>{formatCurrency(latestReceipt.amount)}</strong>
                           </div>
-                          <time dateTime={nextPayment.plan_date}>
-                            {formatDate(nextPayment.plan_date)}
+                          <time dateTime={toDateOnly(latestReceipt.actual_date) || undefined}>
+                            {latestReceipt.actual_date
+                              ? formatDate(toDateOnly(latestReceipt.actual_date))
+                              : '日期未记录'}
                           </time>
                           <RouterButton
                             size="sm"
-                            to={`/projects/${project.id}?tab=payments&payment=${nextPayment.id}`}
+                            to={`/projects/${project.id}?tab=payments&payment=${latestReceipt.id}`}
                             variant="secondary"
                           >
-                            查看收款节点
+                            查看收款记录
                             <JadeIcon name="arrow-right" size="1em" />
                           </RouterButton>
                         </div>
@@ -592,22 +575,19 @@ export default function ProjectDetailView() {
                             className="project-next-payment__badge"
                             padding="none"
                             radius="pill"
-                            tone={payments.length ? 'success' : 'accent'}
+                            tone="accent"
                             variant="inset"
                           >
-                            <JadeIcon
-                              detail="carved"
-                              name={payments.length ? 'check-circle' : 'calendar-check'}
-                              size={28}
-                              tone={payments.length ? 'success' : 'jade'}
-                            />
+                            <JadeIcon detail="carved" name="payment" size={28} tone="jade" />
                           </Surface>
-                          <strong>
-                            {payments.length ? '所有款项均已完成' : '尚未安排收款节点'}
-                          </strong>
-                          <span>
-                            {payments.length ? '无需继续跟进收款。' : '添加计划后可在此追踪。'}
-                          </span>
+                          <strong>暂无实际收款</strong>
+                          <RouterButton
+                            size="sm"
+                            to={`/projects/${project.id}/payment/create`}
+                            variant="secondary"
+                          >
+                            录入收款
+                          </RouterButton>
                         </div>
                       )}
                     </Card.Content>
@@ -634,11 +614,11 @@ export default function ProjectDetailView() {
                 actions={
                   <RouterButton size="sm" to={`/projects/${project.id}/payment/create`}>
                     <JadeIcon name="add" size="1em" />
-                    添加收款
+                    录入收款
                   </RouterButton>
                 }
                 className="payments-header-card"
-                description={`共 ${payments.length} 笔收款计划`}
+                description={`共 ${payments.length} 笔记录`}
                 headingLevel={3}
                 title="收款记录"
               />
@@ -648,13 +628,12 @@ export default function ProjectDetailView() {
                   <EmptyState
                     action={
                       <RouterButton size="sm" to={`/projects/${project.id}/payment/create`}>
-                        添加首笔收款
+                        录入收款
                       </RouterButton>
                     }
-                    description="创建收款节点后，可在这里跟踪到账进度。"
                     scene={<EmptyScene name="plans-empty" size="hero" />}
                     size="lg"
-                    title="暂无收款计划"
+                    title="暂无收款记录"
                   />
                 </Card.Root>
               ) : (
@@ -691,8 +670,12 @@ export default function ProjectDetailView() {
                           </div>
                           <div className="payment-meta-row">
                             <span className="payment-date">
-                              {isPaymentSettled(payment) ? '实际收款' : '预计收款'}：
-                              {formatDate(payment.actual_date || payment.plan_date)}
+                              {isPaymentSettled(payment) ? '实际到账' : '历史计划日期'}：
+                              {isPaymentSettled(payment)
+                                ? payment.actual_date
+                                  ? formatDate(toDateOnly(payment.actual_date))
+                                  : '日期未记录'
+                                : formatDate(toDateOnly(payment.plan_date))}
                             </span>
                             <span aria-hidden="true">·</span>
                             <span>{getPaymentMethodLabel(payment.method)}</span>
@@ -702,15 +685,15 @@ export default function ProjectDetailView() {
                       <div className="payment-right">
                         <div className="amount-text">{formatCurrency(payment.amount)}</div>
                         {!isPaymentSettled(payment) ? (
-                          <Button
-                            aria-label={`${getPaymentStageLabel(payment.stage)}：确认收款`}
-                            onClick={() => void confirmPayment(payment.id)}
+                          <RouterButton
+                            aria-label={`${getPaymentStageLabel(payment.stage)}：登记到账`}
+                            to={`/projects/edit/${project.id}`}
                             size="sm"
                             variant="tertiary"
                           >
-                            <JadeIcon name="check-double" size="1em" />
-                            确认收款
-                          </Button>
+                            <JadeIcon name="edit" size="1em" />
+                            登记到账
+                          </RouterButton>
                         ) : null}
                       </div>
                     </Card.Root>

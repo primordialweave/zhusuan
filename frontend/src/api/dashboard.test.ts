@@ -13,6 +13,18 @@ describe('dashboardApi cancellation', () => {
     vi.clearAllMocks()
   })
 
+  it('keeps receipt requests distinct from legacy plan-based statistics', () => {
+    const signal = new AbortController().signal
+    dashboardApi.getReceiptOverview('year', signal)
+    dashboardApi.getReceiptTrend({ year: 2024, month: 2 }, signal)
+    dashboardApi.getReceipts('2026-11-01', '2026-11-30')
+    expect(vi.mocked(api.get).mock.calls).toEqual([
+      ['/dashboard/receipt-overview', expect.objectContaining({ params: expect.objectContaining({ period: 'year' }), signal })],
+      ['/dashboard/receipt-trend', expect.objectContaining({ params: expect.objectContaining({ year: 2024, month: 2 }), signal })],
+      ['/payments', expect.objectContaining({ params: expect.objectContaining({ date_field: 'actual', start_date: '2026-11-01', end_date: '2026-11-30' }) })],
+    ])
+  })
+
   it('passes AbortSignal through every dashboard request config', () => {
     const signal = new AbortController().signal
 

@@ -14,7 +14,7 @@ describe('Image', () => {
         background="transparent"
         fit="contain"
         showSkeleton={false}
-        src="/orange.png"
+        src="/zhusuan.png"
       />,
     )
 
@@ -26,7 +26,7 @@ describe('Image', () => {
   })
 
   it('keeps the shared load fade by default and can disable it through the root contract', () => {
-    const { rerender } = render(<Image alt="品牌标志" src="/orange.png" />)
+    const { rerender } = render(<Image alt="品牌标志" src="/zhusuan.png" />)
     const defaultImage = screen.getByAltText('品牌标志')
     const sharedImageRule = imageCss.match(/\.ods-image__img\s*\{([^}]+)\}/)?.[1]
     const disabledImageRule = imageCss.match(
@@ -39,7 +39,7 @@ describe('Image', () => {
       'transition: opacity var(--ods-duration-page) var(--ods-ease-standard)',
     )
 
-    rerender(<Image alt="品牌标志" disableAnimation src="/orange.png" />)
+    rerender(<Image alt="品牌标志" disableAnimation src="/zhusuan.png" />)
     expect(screen.getByAltText('品牌标志').parentElement).toHaveAttribute(
       'data-disable-animation',
       'true',

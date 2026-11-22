@@ -41,8 +41,7 @@ def generate(source_path, native=True):
         shutil.copy2(source_path, master)
 
     web = fit(source, 256, 256)
-    for name in ('zhusuan.png', 'orange.png', 'orange-new.png'):
-        save(web, ROOT / 'frontend/public' / name)
+    save(web, ROOT / 'frontend/public/zhusuan.png')
     web.save(ROOT / 'frontend/public/favicon.ico', format='ICO',
              sizes=[(size, size) for size in (16, 32, 48, 64, 128, 256)])
 

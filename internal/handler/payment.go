@@ -55,6 +55,7 @@ func (h *PaymentHandler) GetByProject(c *gin.Context) {
 // @Security Bearer
 // @Param start_date query string false "开始日期 (YYYY-MM-DD)"
 // @Param end_date query string false "结束日期 (YYYY-MM-DD)"
+// @Param date_field query string false "日期字段: plan(默认)或actual；actual只查询已确认到账"
 // @Param project_id query int false "项目ID (可选，若提供则忽略日期范围)"
 // @Success 200 {array} models.Payment
 // @Router /api/v1/payments [get]
@@ -62,6 +63,24 @@ func (h *PaymentHandler) List(c *gin.Context) {
 	userID := c.GetInt64("user_id")
 	startDate := c.Query("start_date")
 	endDate := c.Query("end_date")
+	dateField := c.Query("date_field")
+	if dateField != "" && dateField != "plan" && dateField != "actual" {
+		response.ParamError(c, "日期字段无效")
+		return
+	}
+	if dateField == "actual" {
+		if startDate == "" || endDate == "" {
+			response.ParamError(c, "请提供收款开始和结束日期")
+			return
+		}
+		payments, err := h.paymentService.ListReceiptsByDateRange(userID, startDate, endDate)
+		if err != nil {
+			response.HandleServiceError(c, err, "获取实际收款列表失败")
+			return
+		}
+		response.Success(c, payments)
+		return
+	}
 
 	// 1. 按日期范围查询
 	if startDate != "" && endDate != "" {

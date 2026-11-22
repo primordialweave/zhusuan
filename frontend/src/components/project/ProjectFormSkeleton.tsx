@@ -23,7 +23,7 @@ export function ProjectFormSkeleton({ payment = false }: { payment?: boolean }) 
       role="status"
     >
       <div className="project-form">
-        {(payment ? [6] : [6, 4, 6]).map((count, index) => (
+        {(payment ? [5] : [6, 4, 5]).map((count, index) => (
           <div className="project-form-section project-skeleton-section" key={index}>
             <Skeleton height="1.5rem" shape="text" width="8rem" />
             <Fields count={count} />
