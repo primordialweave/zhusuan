@@ -55,6 +55,7 @@
   stop-color: var(--ods-material-jade-icon-depth);
 }
 
+.payment-summary__scope-tooltip,
 .payment-summary__switch {
   flex: 0 0 auto;
 }

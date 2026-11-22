@@ -8,8 +8,8 @@
   <p><strong>轻量、雅致的跨平台项目台账与收款管理桌面应用</strong></p>
 
   <p>
-    <a href="https://github.com/primordialweave/zhusuan/releases/tag/v1.3.0">
-      <img src="https://img.shields.io/badge/release-v1.3.0-2f6d4f?style=flat-square" alt="Release v1.3.0" />
+    <a href="https://github.com/primordialweave/zhusuan/releases/tag/v1.3.1">
+      <img src="https://img.shields.io/badge/release-v1.3.1-2f6d4f?style=flat-square" alt="Release v1.3.1" />
     </a>
     <img src="https://img.shields.io/badge/platform-macOS%20%7C%20Windows%20%7C%20Linux-4a7c59?style=flat-square" alt="Platforms" />
     <img src="https://img.shields.io/badge/Wails-v3-528c68?style=flat-square" alt="Wails v3" />
@@ -21,7 +21,7 @@
 
   <p>
     <a href="README_EN.md">English</a> ·
-    <a href="https://github.com/primordialweave/zhusuan/releases/tag/v1.3.0">下载安装包</a> ·
+    <a href="https://github.com/primordialweave/zhusuan/releases/tag/v1.3.1">下载安装包</a> ·
     <a href="CHANGELOG.md">更新日志</a> ·
     <a href="docs/migration.md">迁移指南</a> ·
     <a href="docs/release.md">发布说明</a>
@@ -53,14 +53,14 @@
 
 ## 下载安装
 
-前往 [GitHub Releases](https://github.com/primordialweave/zhusuan/releases/tag/v1.3.0) 获取最新版 **v1.3.0** 安装包：
+前往 [GitHub Releases](https://github.com/primordialweave/zhusuan/releases/tag/v1.3.1) 获取最新版 **v1.3.1** 安装包：
 
 | 平台 | 安装包 | 说明 |
 | --- | --- | --- |
-| macOS (Apple Silicon) | [zhusuan-v1.3.0-macOS-arm64.dmg](https://github.com/primordialweave/zhusuan/releases/download/v1.3.0/zhusuan-v1.3.0-macOS-arm64.dmg) | 适用于 M 系列芯片，macOS 12+ |
-| macOS (Intel) | [zhusuan-v1.3.0-macOS-amd64.dmg](https://github.com/primordialweave/zhusuan/releases/download/v1.3.0/zhusuan-v1.3.0-macOS-amd64.dmg) | 适用于 Intel 芯片，macOS 12+ |
-| Windows (x64) | [zhusuan-v1.3.0-windows-amd64-installer.exe](https://github.com/primordialweave/zhusuan/releases/download/v1.3.0/zhusuan-v1.3.0-windows-amd64-installer.exe) | 安装向导（支持用户目录安装与升级） |
-| Linux (x64) | [AppImage](https://github.com/primordialweave/zhusuan/releases/download/v1.3.0/zhusuan-v1.3.0-linux-x86_64.AppImage) · [.deb](https://github.com/primordialweave/zhusuan/releases/download/v1.3.0/zhusuan-v1.3.0-linux-amd64.deb) · [.rpm](https://github.com/primordialweave/zhusuan/releases/download/v1.3.0/zhusuan-v1.3.0-linux-amd64.rpm) | 桌面便携包与发行版安装包 |
+| macOS (Apple Silicon) | [zhusuan-v1.3.1-macOS-arm64.dmg](https://github.com/primordialweave/zhusuan/releases/download/v1.3.1/zhusuan-v1.3.1-macOS-arm64.dmg) | 适用于 M 系列芯片，macOS 12+ |
+| macOS (Intel) | [zhusuan-v1.3.1-macOS-amd64.dmg](https://github.com/primordialweave/zhusuan/releases/download/v1.3.1/zhusuan-v1.3.1-macOS-amd64.dmg) | 适用于 Intel 芯片，macOS 12+ |
+| Windows (x64) | [zhusuan-v1.3.1-windows-amd64-installer.exe](https://github.com/primordialweave/zhusuan/releases/download/v1.3.1/zhusuan-v1.3.1-windows-amd64-installer.exe) | 安装向导（支持用户目录安装与升级） |
+| Linux (x64) | [AppImage](https://github.com/primordialweave/zhusuan/releases/download/v1.3.1/zhusuan-v1.3.1-linux-x86_64.AppImage) · [.deb](https://github.com/primordialweave/zhusuan/releases/download/v1.3.1/zhusuan-v1.3.1-linux-amd64.deb) · [.rpm](https://github.com/primordialweave/zhusuan/releases/download/v1.3.1/zhusuan-v1.3.1-linux-amd64.rpm) | 桌面便携包与发行版安装包 |
 
 > macOS 用户打开 DMG 后将「珠算」拖入 `Applications`，从应用程序文件夹启动即可。
 

@@ -10,7 +10,7 @@ describe('DashboardView contract scope interaction', () => {
   let previousScope: string | null
   beforeEach(() => {
     previousScope = window.localStorage.getItem('workbenchSummaryScope')
-    window.localStorage.setItem('workbenchSummaryScope', 'all')
+    window.localStorage.removeItem('workbenchSummaryScope')
     vi.resetAllMocks()
     vi.mocked(dashboardApi.getReceiptOverview).mockImplementation((scope) =>
       Promise.resolve({
@@ -30,6 +30,24 @@ describe('DashboardView contract scope interaction', () => {
     else window.localStorage.setItem('workbenchSummaryScope', previousScope)
   })
 
+  it.each([null, 'month', 'year', 'invalid'])(
+    'starts with all contracts regardless of the legacy saved scope %s',
+    async (savedScope) => {
+      if (savedScope !== null) window.localStorage.setItem('workbenchSummaryScope', savedScope)
+      render(<DashboardView />)
+
+      await screen.findByRole('img', { name: '合同已收 60%，合同未收 40%' })
+      expect(screen.getByText('全部合同已收').closest('.payment-summary__row')).toHaveTextContent(
+        '¥3,600',
+      )
+      expect(screen.getByText('全部合同未收').closest('.payment-summary__row')).toHaveTextContent(
+        '¥2,400',
+      )
+      expect(dashboardApi.getReceiptOverview).toHaveBeenCalledWith('all', expect.any(AbortSignal))
+      expect(window.localStorage.getItem('workbenchSummaryScope')).toBe(savedScope)
+    },
+  )
+
   it('changes contract amounts and the jade pie with mouse, space and enter scope switching', async () => {
     const user = userEvent.setup()
     const { container } = render(<DashboardView />)
@@ -45,10 +63,16 @@ describe('DashboardView contract scope interaction', () => {
     expect(container.querySelector('[data-slot="select"]')).not.toBeInTheDocument()
     await user.click(screen.getByRole('button', { name: '合同范围：全部合同，点击切换到本年签约' }))
     await screen.findByRole('img', { name: '合同已收 30%，合同未收 70%' })
-    expect(screen.getByText('合同已收').closest('.payment-summary__row')).toHaveTextContent('¥900')
-    expect(screen.getByText('合同未收').closest('.payment-summary__row')).toHaveTextContent(
+    expect(screen.getByText('本年合同已收').closest('.payment-summary__row')).toHaveTextContent(
+      '¥900',
+    )
+    expect(screen.getByText('本年合同未收').closest('.payment-summary__row')).toHaveTextContent(
       '¥2,100',
     )
+    expect(
+      screen.getByRole('button', { name: '合同范围：本年签约，点击切换到本月签约' }),
+    ).toHaveFocus()
+    expect(screen.getByRole('tooltip')).toHaveTextContent('本年签约，点击切换到本月签约')
     expect(paidSlice()).toHaveAttribute('stroke-dasharray', '15.080 50.265')
     expect(screen.queryByText('¥1,200')).not.toBeInTheDocument()
     expect(dashboardApi.getReceiptOverview).toHaveBeenLastCalledWith(
@@ -57,9 +81,13 @@ describe('DashboardView contract scope interaction', () => {
     )
     await user.keyboard(' ')
     await screen.findByRole('img', { name: '合同已收 20%，合同未收 80%' })
-    expect(screen.getByText('合同已收').closest('.payment-summary__row')).toHaveTextContent('¥200')
-    expect(screen.getByText('合同未收').closest('.payment-summary__row')).toHaveTextContent('¥800')
-    expect(window.localStorage.getItem('workbenchSummaryScope')).toBe('month')
+    expect(screen.getByText('本月合同已收').closest('.payment-summary__row')).toHaveTextContent(
+      '¥200',
+    )
+    expect(screen.getByText('本月合同未收').closest('.payment-summary__row')).toHaveTextContent(
+      '¥800',
+    )
+    expect(screen.getByRole('tooltip')).toHaveTextContent('本月签约，点击切换到全部合同')
     expect(paidSlice()).toHaveAttribute('stroke-dasharray', '10.053 50.265')
     expect(container.querySelector('button button')).not.toBeInTheDocument()
     await user.keyboard('{Enter}')
@@ -72,13 +100,28 @@ describe('DashboardView contract scope interaction', () => {
     await waitFor(() =>
       expect(screen.getByRole('img', { name: '合同已收 60%，合同未收 40%' })).toBeInTheDocument(),
     )
-    expect(screen.getByText('合同已收').closest('.payment-summary__row')).toHaveTextContent(
+    expect(screen.getByText('全部合同已收').closest('.payment-summary__row')).toHaveTextContent(
       '¥3,600',
     )
-    expect(screen.getByText('合同未收').closest('.payment-summary__row')).toHaveTextContent(
+    expect(screen.getByText('全部合同未收').closest('.payment-summary__row')).toHaveTextContent(
       '¥2,400',
     )
-    expect(window.localStorage.getItem('workbenchSummaryScope')).toBe('all')
+    expect(screen.getByRole('tooltip')).toHaveTextContent('全部合同，点击切换到本年签约')
+    expect(window.localStorage.getItem('workbenchSummaryScope')).toBeNull()
+  })
+
+  it('returns to all contracts on a fresh workbench visit after switching scope', async () => {
+    const user = userEvent.setup()
+    const { unmount } = render(<DashboardView />)
+    await screen.findByText('全部合同已收')
+    await user.click(screen.getByRole('button', { name: '合同范围：全部合同，点击切换到本年签约' }))
+    await screen.findByRole('img', { name: '合同已收 30%，合同未收 70%' })
+    unmount()
+
+    render(<DashboardView />)
+    await screen.findByRole('img', { name: '合同已收 60%，合同未收 40%' })
+    expect(screen.getByText('全部合同已收')).toBeInTheDocument()
+    expect(dashboardApi.getReceiptOverview).toHaveBeenLastCalledWith('all', expect.any(AbortSignal))
   })
 
   it('shows a contract empty state when only receipts from other signing periods arrived', async () => {
@@ -92,17 +135,21 @@ describe('DashboardView contract scope interaction', () => {
         },
       },
     } as never)
-    window.localStorage.setItem('workbenchSummaryScope', 'month')
+    const user = userEvent.setup()
     const { container } = render(<DashboardView />)
     await screen.findByText('暂无合同数据')
+    await user.click(screen.getByRole('button', { name: '合同范围：全部合同，点击切换到本年签约' }))
+    await user.click(screen.getByRole('button', { name: '合同范围：本年签约，点击切换到本月签约' }))
     expect(screen.queryByText('¥9,000')).not.toBeInTheDocument()
     expect(container.querySelector('.payment-summary__cash')).not.toBeInTheDocument()
     expect(
       screen.getByRole('button', { name: '合同范围：本月签约，点击切换到全部合同' }),
     ).toBeEnabled()
-    expect(dashboardApi.getReceiptOverview).toHaveBeenLastCalledWith(
-      'month',
-      expect.any(AbortSignal),
+    await waitFor(() =>
+      expect(dashboardApi.getReceiptOverview).toHaveBeenLastCalledWith(
+        'month',
+        expect.any(AbortSignal),
+      ),
     )
   })
 })
