@@ -169,9 +169,9 @@ function StructureDonut({ paid, pending }: { paid: number; pending: number }) {
   const pendingGradId = `donut-pending-${uid}`
   const torusGradId = `donut-torus-${uid}`
   const crestGradId = `donut-crest-${uid}`
-  const outerRimGradId = `donut-outer-rim-${uid}`
   const bounceGradId = `donut-bounce-${uid}`
-  const innerRimGradId = `donut-inner-rim-${uid}`
+  const specularGradId = `donut-specular-${uid}`
+  const ringClipId = `donut-ring-${uid}`
 
   return (
     <svg
@@ -182,6 +182,7 @@ function StructureDonut({ paid, pending }: { paid: number; pending: number }) {
     >
       <defs>
         <linearGradient
+          gradientTransform="rotate(90 50 50)"
           gradientUnits="userSpaceOnUse"
           id={paidGradId}
           x1="14"
@@ -190,7 +191,8 @@ function StructureDonut({ paid, pending }: { paid: number; pending: number }) {
           y2="88"
         >
           <stop className="analytics-donut__stop--paid-light" offset="0%" />
-          <stop className="analytics-donut__stop--paid-base" offset="52%" />
+          <stop className="analytics-donut__stop--paid-light" offset="38%" />
+          <stop className="analytics-donut__stop--paid-base" offset="72%" />
           <stop className="analytics-donut__stop--paid-depth" offset="100%" />
         </linearGradient>
         <linearGradient
@@ -202,69 +204,42 @@ function StructureDonut({ paid, pending }: { paid: number; pending: number }) {
           y2="88"
         >
           <stop className="analytics-donut__stop--pending-light" offset="0%" />
+          <stop className="analytics-donut__stop--pending-light" offset="50%" />
           <stop className="analytics-donut__stop--pending-base" offset="100%" />
         </linearGradient>
-        {/* Off-center radial 3D torus profile: hydrated translucent jade without uniform milky banding. */}
-        <radialGradient cx="47.5" cy="46.5" gradientUnits="userSpaceOnUse" id={torusGradId} r="50">
-          <stop className="analytics-donut__stop--shadow" offset="53%" stopOpacity="0.24" />
-          <stop className="analytics-donut__stop--shadow" offset="63%" stopOpacity="0.03" />
-          <stop className="analytics-donut__stop--crest" offset="74.5%" stopOpacity="0.28" />
-          <stop className="analytics-donut__stop--crest" offset="84%" stopOpacity="0.02" />
-          <stop className="analytics-donut__stop--shadow" offset="94%" stopOpacity="0.14" />
-          <stop className="analytics-donut__stop--shadow" offset="100%" stopOpacity="0.28" />
+        {/* A centered, softly lit tube keeps both contours circular without narrow white bands. */}
+        <radialGradient cx="50" cy="50" gradientUnits="userSpaceOnUse" id={torusGradId} r="50">
+          <stop className="analytics-donut__stop--shadow" offset="54.4%" stopOpacity="0.12" />
+          <stop className="analytics-donut__stop--shadow" offset="62%" stopOpacity="0.02" />
+          <stop className="analytics-donut__stop--crest" offset="72%" stopOpacity="0.2" />
+          <stop className="analytics-donut__stop--crest" offset="80%" stopOpacity="0.15" />
+          <stop className="analytics-donut__stop--shadow" offset="90%" stopOpacity="0.035" />
+          <stop className="analytics-donut__stop--shadow" offset="100%" stopOpacity="0.17" />
         </radialGradient>
-        {/* Primary directional specular highlight curving along the upper-left raised jade ridge. */}
-        <linearGradient
-          gradientUnits="userSpaceOnUse"
-          id={crestGradId}
-          x1="16"
-          x2="68"
-          y1="34"
-          y2="17"
-        >
-          <stop className="analytics-donut__stop--crest" offset="0%" stopOpacity="0" />
-          <stop className="analytics-donut__stop--crest" offset="44%" stopOpacity="0.64" />
+        {/* Wide, local reflections fade inside the jade instead of drawing concentric rims. */}
+        <radialGradient cx="28" cy="22" gradientUnits="userSpaceOnUse" id={crestGradId} r="43">
+          <stop className="analytics-donut__stop--crest" offset="0%" stopOpacity="0.48" />
+          <stop className="analytics-donut__stop--crest" offset="54%" stopOpacity="0.16" />
           <stop className="analytics-donut__stop--crest" offset="100%" stopOpacity="0" />
-        </linearGradient>
-        {/* Delicate upper-left crystalline glass rim along the outer bangle contour. */}
-        <linearGradient
-          gradientUnits="userSpaceOnUse"
-          id={outerRimGradId}
-          x1="3.4"
-          x2="68.4"
-          y1="34.9"
-          y2="4.6"
-        >
-          <stop className="analytics-donut__stop--crest" offset="0%" stopOpacity="0" />
-          <stop className="analytics-donut__stop--crest" offset="48%" stopOpacity="0.54" />
-          <stop className="analytics-donut__stop--crest" offset="100%" stopOpacity="0" />
-        </linearGradient>
-        {/* Broad, soft subsurface warmth glowing from within the lower-right belly (no double white band). */}
-        <linearGradient
-          gradientUnits="userSpaceOnUse"
-          id={bounceGradId}
-          x1="87"
-          x2="40"
-          y1="63"
-          y2="88"
-        >
-          <stop className="analytics-donut__stop--bounce" offset="0%" stopOpacity="0" />
-          <stop className="analytics-donut__stop--bounce" offset="50%" stopOpacity="0.22" />
+        </radialGradient>
+        <radialGradient cx="74" cy="82" gradientUnits="userSpaceOnUse" id={bounceGradId} r="39">
+          <stop className="analytics-donut__stop--crest" offset="0%" stopOpacity="0.32" />
+          <stop className="analytics-donut__stop--bounce" offset="58%" stopOpacity="0.15" />
           <stop className="analytics-donut__stop--bounce" offset="100%" stopOpacity="0" />
-        </linearGradient>
-        {/* Fine catchlight on the lower-right inner hole wall facing the upper-left light. */}
-        <linearGradient
-          gradientUnits="userSpaceOnUse"
-          id={innerRimGradId}
-          x1="77"
-          x2="43"
-          y1="57"
-          y2="77"
-        >
-          <stop className="analytics-donut__stop--crest" offset="0%" stopOpacity="0" />
-          <stop className="analytics-donut__stop--crest" offset="50%" stopOpacity="0.34" />
+        </radialGradient>
+        {/* One softened window reflection gives the polished jade a wet surface, not a white rim. */}
+        <radialGradient cx="50%" cy="50%" id={specularGradId} r="50%">
+          <stop className="analytics-donut__stop--crest" offset="0%" stopOpacity="0.78" />
+          <stop className="analytics-donut__stop--crest" offset="32%" stopOpacity="0.42" />
+          <stop className="analytics-donut__stop--crest" offset="68%" stopOpacity="0.1" />
           <stop className="analytics-donut__stop--crest" offset="100%" stopOpacity="0" />
-        </linearGradient>
+        </radialGradient>
+        <clipPath clipPathUnits="userSpaceOnUse" id={ringClipId}>
+          <path
+            clipRule="evenodd"
+            d="M50 0 A50 50 0 1 1 50 100 A50 50 0 1 1 50 0 Z M50 22.8 A27.2 27.2 0 1 1 50 77.2 A27.2 27.2 0 1 1 50 22.8 Z"
+          />
+        </clipPath>
       </defs>
       <circle
         cx="50"
@@ -292,34 +267,18 @@ function StructureDonut({ paid, pending }: { paid: number; pending: number }) {
         fill="none"
         stroke={`url(#${torusGradId})`}
       />
-      <path
-        aria-hidden="true"
-        className="analytics-donut__bounce"
-        d="M86.84 63.41 A39.2 39.2 0 0 1 39.85 87.86"
-        fill="none"
-        stroke={`url(#${bounceGradId})`}
-      />
-      <path
-        aria-hidden="true"
-        className="analytics-donut__crest"
-        d="M16.1 34.2 A37.4 37.4 0 0 1 67.6 17.0"
-        fill="none"
-        stroke={`url(#${crestGradId})`}
-      />
-      <path
-        aria-hidden="true"
-        className="analytics-donut__outer-rim"
-        d="M3.4 34.86 A49 49 0 0 1 68.36 4.57"
-        fill="none"
-        stroke={`url(#${outerRimGradId})`}
-      />
-      <path
-        aria-hidden="true"
-        className="analytics-donut__inner-rim"
-        d="M77.43 57.35 A28.4 28.4 0 0 1 42.65 77.43"
-        fill="none"
-        stroke={`url(#${innerRimGradId})`}
-      />
+      <g aria-hidden="true" className="analytics-donut__glaze" clipPath={`url(#${ringClipId})`}>
+        <rect fill={`url(#${crestGradId})`} height="100" width="100" />
+        <rect fill={`url(#${bounceGradId})`} height="100" width="100" />
+        <ellipse
+          cx="25"
+          cy="21"
+          fill={`url(#${specularGradId})`}
+          rx="9.3"
+          ry="2.6"
+          transform="rotate(-40 25 21)"
+        />
+      </g>
     </svg>
   )
 }

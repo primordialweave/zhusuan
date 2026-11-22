@@ -1,5 +1,5 @@
 import { useId } from 'react'
-import { Button, Skeleton, Surface } from '@/design-system'
+import { Button, Skeleton, Surface, Tooltip } from '@/design-system'
 import { formatAmount } from '@/utils/format'
 import { PAYMENT_SUMMARY_SCOPES, type PaymentSummaryScope } from './paymentSummaryScope'
 
@@ -9,6 +9,12 @@ const contractScopes: Record<PaymentSummaryScope, string> = {
   all: '全部合同',
   year: '本年签约',
   month: '本月签约',
+}
+
+const scopePrefixes: Record<PaymentSummaryScope, string> = {
+  all: '全部',
+  year: '本年',
+  month: '本月',
 }
 
 export interface PaymentSummaryProps {
@@ -150,6 +156,7 @@ export default function PaymentSummary({
     PAYMENT_SUMMARY_SCOPES[
       (PAYMENT_SUMMARY_SCOPES.indexOf(scope) + 1) % PAYMENT_SUMMARY_SCOPES.length
     ]
+  const scopeHint = `${contractScopes[scope]}，点击切换到${contractScopes[nextScope]}`
   const pie = loading ? (
     <Skeleton className="payment-summary__pie" shape="circle" />
   ) : (
@@ -173,15 +180,16 @@ export default function PaymentSummary({
         </span>
       ) : null}
       {onScopeChange ? (
-        <Button
-          aria-label={`合同范围：${contractScopes[scope]}，点击切换到${contractScopes[nextScope]}`}
-          className="payment-summary__switch"
-          onClick={() => onScopeChange(nextScope)}
-          title={`${contractScopes[scope]}，点击切换到${contractScopes[nextScope]}`}
-          variant="bare"
-        >
-          {pie}
-        </Button>
+        <Tooltip className="payment-summary__scope-tooltip" content={scopeHint}>
+          <Button
+            aria-label={`合同范围：${scopeHint}`}
+            className="payment-summary__switch"
+            onClick={() => onScopeChange(nextScope)}
+            variant="bare"
+          >
+            {pie}
+          </Button>
+        </Tooltip>
       ) : (
         pie
       )}
@@ -201,7 +209,7 @@ export default function PaymentSummary({
           <dl aria-live="polite" className="payment-summary__legend">
             <div className="payment-summary__row">
               <span aria-hidden="true" className="payment-summary__dot" data-part="paid" />
-              <dt className="payment-summary__label">合同已收</dt>
+              <dt className="payment-summary__label">{scopePrefixes[scope]}合同已收</dt>
               <dd className="payment-summary__amount">
                 {loading ? (
                   <Skeleton
@@ -216,7 +224,7 @@ export default function PaymentSummary({
             </div>
             <div className="payment-summary__row">
               <span aria-hidden="true" className="payment-summary__dot" data-part="pending" />
-              <dt className="payment-summary__label">合同未收</dt>
+              <dt className="payment-summary__label">{scopePrefixes[scope]}合同未收</dt>
               <dd className="payment-summary__amount">
                 {loading ? (
                   <Skeleton

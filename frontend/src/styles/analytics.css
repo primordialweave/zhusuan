@@ -56,11 +56,7 @@
   padding-inline-start: 0;
 }
 
-.analytics-metric:nth-child(odd)::before {
-  content: none;
-}
-
-.analytics-metric + .analytics-metric::before {
+.analytics-metric:nth-child(even)::before {
   position: absolute;
   width: 1px;
   background: var(--ods-color-border-default);
@@ -246,13 +242,8 @@
 
 .analytics-donut circle {
   fill: none;
-  stroke: var(--ods-data-part-pending);
   stroke-width: 22.8;
   transition: stroke-dasharray var(--ods-duration-hero) var(--ods-ease-emphasized);
-}
-
-.analytics-donut circle[data-part='paid'] {
-  stroke: var(--ods-data-part-paid);
 }
 
 .analytics-donut__stop--paid-light {
@@ -264,7 +255,7 @@
 }
 
 .analytics-donut__stop--paid-depth {
-  stop-color: var(--ods-color-accent-text);
+  stop-color: var(--ods-data-part-paid);
 }
 
 .analytics-donut__stop--pending-light {
@@ -272,8 +263,7 @@
 }
 
 .analytics-donut__stop--pending-base {
-  stop-color: var(--ods-color-status-warning);
-  stop-opacity: 0.78;
+  stop-color: var(--ods-data-part-pending);
 }
 
 .analytics-donut__stop--crest {
@@ -294,27 +284,7 @@
   pointer-events: none;
 }
 
-.analytics-donut__crest {
-  stroke-width: 4.2;
-  stroke-linecap: round;
-  pointer-events: none;
-}
-
-.analytics-donut__outer-rim {
-  stroke-width: 1.2;
-  stroke-linecap: round;
-  pointer-events: none;
-}
-
-.analytics-donut__bounce {
-  stroke-width: 12;
-  stroke-linecap: round;
-  pointer-events: none;
-}
-
-.analytics-donut__inner-rim {
-  stroke-width: 1.2;
-  stroke-linecap: round;
+.analytics-donut__glaze {
   pointer-events: none;
 }
 
@@ -382,10 +352,6 @@
 
   .analytics-metric:nth-child(odd) {
     padding-inline-start: var(--ods-space-3);
-  }
-
-  .analytics-metric:nth-child(odd)::before {
-    content: none;
   }
 
   .analytics-chart-layout {

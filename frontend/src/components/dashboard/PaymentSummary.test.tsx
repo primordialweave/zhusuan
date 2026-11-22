@@ -39,8 +39,8 @@ describe('PaymentSummary', () => {
       />,
     )
     expect(screen.getByRole('img', { name: '合同已收 60%，合同未收 40%' })).toBeInTheDocument()
-    expect(screen.getByText('合同已收')).toBeInTheDocument()
-    expect(screen.getByText('合同未收')).toBeInTheDocument()
+    expect(screen.getByText('本月合同已收')).toBeInTheDocument()
+    expect(screen.getByText('本月合同未收')).toBeInTheDocument()
     expect(container.querySelectorAll('.payment-summary__row')).toHaveLength(2)
     expect(container.querySelector('.payment-summary__cash')).not.toBeInTheDocument()
     expect(screen.queryByText(/累计收款|本年收款|本月收款/)).not.toBeInTheDocument()
@@ -48,6 +48,31 @@ describe('PaymentSummary', () => {
     expect(onScopeChange).toHaveBeenCalledWith('all')
     expect(screen.getByRole('img', { name: '合同已收 60%，合同未收 40%' })).toBeInTheDocument()
     expect(screen.queryByText('本月待收款')).not.toBeInTheDocument()
+  })
+
+  it('uses the custom tooltip for hover and keyboard focus without a native title', async () => {
+    const user = userEvent.setup()
+    render(<PaymentSummary paid={3600} pending={2400} status="data" onScopeChange={vi.fn()} />)
+    const trigger = screen.getByRole('button', {
+      name: '合同范围：全部合同，点击切换到本年签约',
+    })
+    expect(trigger).not.toHaveAttribute('title')
+    expect(trigger).not.toHaveAttribute('aria-describedby')
+
+    await user.hover(trigger)
+    const tooltip = screen.getByRole('tooltip')
+    expect(tooltip).toHaveTextContent('全部合同，点击切换到本年签约')
+    expect(tooltip).toHaveAttribute('data-open', 'true')
+    expect(trigger).toHaveAttribute('aria-describedby', tooltip.id)
+
+    await user.unhover(trigger)
+    expect(tooltip).not.toHaveAttribute('data-open')
+    await user.tab()
+    expect(trigger).toHaveFocus()
+    expect(tooltip).toHaveAttribute('data-open', 'true')
+    await user.tab()
+    expect(tooltip).not.toHaveAttribute('data-open')
+    expect(trigger).not.toHaveAttribute('aria-describedby')
   })
   it('shows skeletons instead of a false empty chart or amount while loading', () => {
     const { container } = render(<PaymentSummary paid={0} pending={0} status="loading" />)
@@ -63,8 +88,8 @@ describe('PaymentSummary', () => {
     const { container } = render(<PaymentSummary paid={3600} pending={2400} status="data" />)
 
     expect(screen.getByRole('img', { name: '合同已收 60%，合同未收 40%' })).toBeInTheDocument()
-    expect(screen.getByText('合同已收')).toBeInTheDocument()
-    expect(screen.getByText('合同未收')).toBeInTheDocument()
+    expect(screen.getByText('全部合同已收')).toBeInTheDocument()
+    expect(screen.getByText('全部合同未收')).toBeInTheDocument()
     // 60% of the circumference of the r=8 circle the slice is stroked on.
     expect(container.querySelector('[data-part="paid"]')).toHaveAttribute(
       'stroke-dasharray',
