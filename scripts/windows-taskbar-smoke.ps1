@@ -37,6 +37,9 @@ public static class ZhusuanTaskbarProbe {
     private static extern int GetWindowTextW(IntPtr window, StringBuilder text, int count);
     [DllImport("user32.dll", CharSet = CharSet.Unicode, ExactSpelling = true)]
     public static extern IntPtr FindWindowW(string className, string name);
+    [DllImport("user32.dll", CharSet = CharSet.Unicode, ExactSpelling = true)]
+    private static extern int GetClassNameW(IntPtr window, StringBuilder name, int count);
+    [DllImport("user32.dll")] private static extern bool GetWindowRect(IntPtr window, out NativeRect bounds);
     [DllImport("user32.dll")] private static extern bool SetCursorPos(int x, int y);
     [DllImport("user32.dll")] private static extern void mouse_event(uint flags, uint x, uint y, uint data, UIntPtr extra);
     [DllImport("user32.dll")] private static extern void keybd_event(byte key, byte scan, uint flags, UIntPtr extra);
@@ -100,6 +103,14 @@ public static class ZhusuanTaskbarProbe {
         public string[] UTF16CodeUnits;
     }
     public class ShortcutValue { public string Target, Arguments, Description, IconPath; public int IconIndex; }
+    [StructLayout(LayoutKind.Sequential)]
+    public struct NativeRect { public int Left, Top, Right, Bottom; }
+    public class NativeWindowValue {
+        public long Handle, OwnerHandle;
+        public uint ProcessId;
+        public string Class, Title;
+        public NativeRect Bounds;
+    }
 
     public static string[] CodeUnits(string value) {
         if (value == null) return new string[0];
@@ -113,6 +124,20 @@ public static class ZhusuanTaskbarProbe {
         return result.ToString();
     }
     public static uint Owner(IntPtr window) { uint owner; GetWindowThreadProcessId(window, out owner); return owner; }
+    public static NativeWindowValue[] VisibleShellWindows(uint processId) {
+        var result = new List<NativeWindowValue>();
+        EnumWindows(delegate(IntPtr window, IntPtr parameter) {
+            if (Owner(window) == processId && IsWindowVisible(window)) {
+                var name = new StringBuilder(256); NativeRect bounds;
+                GetClassNameW(window, name, name.Capacity);
+                GetWindowRect(window, out bounds);
+                result.Add(new NativeWindowValue { Handle = window.ToInt64(), OwnerHandle = GetWindow(window, 4).ToInt64(),
+                    ProcessId = processId, Class = name.ToString(), Title = Title(window), Bounds = bounds });
+            }
+            return true;
+        }, IntPtr.Zero);
+        return result.ToArray();
+    }
     public static IntPtr FindOwnedWindow(int processId) {
         IntPtr found = IntPtr.Zero;
         EnumWindows(delegate(IntPtr window, IntPtr parameter) {
@@ -195,10 +220,15 @@ function Get-ElementSnapshot($element) {
         nameUTF16 = [ZhusuanTaskbarProbe]::CodeUnits($current.Name)
         class = $current.ClassName
         automationId = $current.AutomationId
+        framework = $current.FrameworkId
+        nativeWindowHandle = $current.NativeWindowHandle
         processId = $current.ProcessId
         type = $current.ControlType.ProgrammaticName
         enabled = $current.IsEnabled
         offscreen = $current.IsOffscreen
+        controlElement = $current.IsControlElement
+        contentElement = $current.IsContentElement
+        hasInvokePattern = @($element.GetSupportedPatterns() | Where-Object { $_.Id -eq [System.Windows.Automation.InvokePattern]::Pattern.Id }).Count -gt 0
         bounds = [ordered]@{ left = $bounds.Left; top = $bounds.Top; width = $bounds.Width; height = $bounds.Height }
     }
 }
@@ -232,15 +262,116 @@ function Get-VisibleDesktopRoots {
     return $result.ToArray()
 }
 
-function Get-PopupNodes($root) {
-    $nodes = [System.Collections.Generic.List[object]]::new()
-    $nodes.Add((Get-ElementSnapshot $root))
-    $children = $root.FindAll([System.Windows.Automation.TreeScope]::Descendants, [System.Windows.Automation.Condition]::TrueCondition)
-    for ($index = 0; $index -lt [Math]::Min($children.Count, 1000); $index++) {
-        try { $nodes.Add((Get-ElementSnapshot $children[$index])) }
-        catch [System.Windows.Automation.ElementNotAvailableException] { }
+function Get-RawShellNodes {
+    # A Jump List can be a RawView descendant of an existing Explorer root.
+    # Run3 proved that a real visible popup need not add a desktop ControlView root.
+    $walker = [System.Windows.Automation.TreeWalker]::RawViewWalker
+    $stack = [System.Collections.Generic.Stack[object]]::new()
+    $root = $walker.GetFirstChild([System.Windows.Automation.AutomationElement]::RootElement)
+    while ($root) {
+        $snapshot = Get-ElementSnapshot $root
+        if ($snapshot.processId -eq $script:report.checks.taskbarRoot.processId) {
+            $stack.Push([pscustomobject]@{ element = $root; parentRuntimeId = $null })
+        }
+        $root = $walker.GetNextSibling($root)
     }
-    return $nodes.ToArray()
+    $seen = [System.Collections.Generic.HashSet[string]]::new()
+    $result = [System.Collections.Generic.List[object]]::new()
+    while ($stack.Count -gt 0 -and $result.Count -lt 4000) {
+        $node = $stack.Pop()
+        $snapshot = Get-ElementSnapshot $node.element
+        if (-not $seen.Add($snapshot.runtimeId)) { continue }
+        $snapshot.parentRuntimeId = $node.parentRuntimeId
+        $result.Add([pscustomobject]@{ element = $node.element; snapshot = $snapshot })
+        $child = $walker.GetFirstChild($node.element)
+        while ($child) {
+            $stack.Push([pscustomobject]@{ element = $child; parentRuntimeId = $snapshot.runtimeId })
+            $child = $walker.GetNextSibling($child)
+        }
+    }
+    if ($stack.Count -gt 0) { throw 'RawView Explorer tree exceeded the diagnostic node limit.' }
+    return $result.ToArray()
+}
+
+function Test-VisiblePopupNode($snapshot) {
+    return ($snapshot.processId -eq $script:report.checks.taskbarRoot.processId -and
+        $snapshot.enabled -and -not $snapshot.offscreen -and
+        $snapshot.bounds.width -gt 0 -and $snapshot.bounds.height -gt 0)
+}
+
+function Test-OutsideTaskbar($bounds) {
+    $bar = $script:report.checks.taskbarRoot.bounds
+    return ($bounds.left + $bounds.width -le $bar.left -or $bounds.left -ge $bar.left + $bar.width -or
+        $bounds.top + $bounds.height -le $bar.top -or $bounds.top -ge $bar.top + $bar.height)
+}
+
+function Get-RawAncestorIds($snapshot, $map) {
+    $ids = [System.Collections.Generic.List[string]]::new()
+    $id = $snapshot.parentRuntimeId
+    while ($id -and $map.ContainsKey($id) -and $ids.Count -lt 64) {
+        $ids.Add($id)
+        $id = $map[$id].snapshot.parentRuntimeId
+    }
+    return $ids.ToArray()
+}
+
+function Get-RawPopupRows($nodes, $map) {
+    $rows = [System.Collections.Generic.List[object]]::new()
+    foreach ($node in $nodes) {
+        $item = $node.snapshot
+        if (-not (Test-VisiblePopupNode $item) -or -not (Test-OutsideTaskbar $item.bounds)) { continue }
+        if ($item.type -notmatch 'MenuItem|Button|ListItem' -and -not ($item.type -eq 'ControlType.Custom' -and $item.hasInvokePattern)) { continue }
+        $label = $item.name
+        $source = 'actionable peer'
+        if ([string]::IsNullOrWhiteSpace($label)) {
+            # Some XAML ListItem peers expose the label through their Text child.
+            # Bind that label to the real actionable row, rather than accepting any Text.
+            $text = @($nodes | Where-Object { $_.snapshot.parentRuntimeId -eq $item.runtimeId -and
+                $_.snapshot.type -eq 'ControlType.Text' -and (Test-VisiblePopupNode $_.snapshot) -and $_.snapshot.name })
+            if ($text.Count -eq 1) { $label = $text[0].snapshot.name; $source = 'Text child of actionable peer' }
+        }
+        if ([string]::IsNullOrWhiteSpace($label)) { continue }
+        $copy = [ordered]@{}
+        foreach ($entry in $item.GetEnumerator()) { $copy[$entry.Key] = $entry.Value }
+        $copy.label = $label.Trim()
+        $copy.labelUTF16 = [ZhusuanTaskbarProbe]::CodeUnits($copy.label)
+        $copy.labelSource = $source
+        $copy.ancestors = @(Get-RawAncestorIds $item $map)
+        $rows.Add($copy)
+    }
+    return $rows.ToArray()
+}
+
+function Find-RawTaskbarPopup($nodes, $visibleIdsBeforeClick) {
+    $map = @{}
+    foreach ($node in $nodes) { $map[$node.snapshot.runtimeId] = $node }
+    $rows = @(Get-RawPopupRows $nodes $map | Where-Object { $_.runtimeId -notin $visibleIdsBeforeClick })
+    $pins = @($rows | Where-Object { $_.label -match '^(Unpin from|Pin to) taskbar$' })
+    $closes = @($rows | Where-Object { $_.label -match '^Close (window|all windows)$' })
+    if ($pins.Count -eq 0 -or $closes.Count -eq 0) { return $null }
+    $common = @($pins[0].ancestors | Where-Object { $_ -in $closes[0].ancestors })
+    $container = $null
+    foreach ($id in $common) {
+        $candidate = $map[$id].snapshot
+        if (-not (Test-VisiblePopupNode $candidate) -or -not (Test-OutsideTaskbar $candidate.bounds)) { continue }
+        $bounds = $candidate.bounds
+        $bar = $script:report.checks.taskbarRoot.bounds
+        $button = $script:report.checks.chosenButton.bounds
+        if ($bar.width -ge $bar.height) {
+            $axis = $button.left + $button.width / 2
+            if ($axis -lt $bounds.left -or $axis -gt $bounds.left + $bounds.width) { continue }
+        } else {
+            $axis = $button.top + $button.height / 2
+            if ($axis -lt $bounds.top -or $axis -gt $bounds.top + $bounds.height) { continue }
+        }
+        # Keep the outermost popup ancestor whose observed geometry remains outside
+        # the taskbar. The full desktop/root cannot become the accepted container.
+        $container = $candidate
+    }
+    if (-not $container) { return $null }
+    $popupRows = @($rows | Where-Object { $container.runtimeId -in $_.ancestors })
+    if (@($popupRows | ForEach-Object { $_.label } | Select-Object -Unique).Count -lt 3) { return $null }
+    return [pscustomobject]@{ container = $container; rows = $popupRows }
 }
 
 function Save-TaskbarScreenshot([string]$name) {
@@ -399,8 +530,11 @@ try {
     }
     $report.checks.chosenButton = $button.snapshot
     $rootsBeforeClick = @(Get-VisibleDesktopRoots)
-    $rootIdsBeforeClick = @($rootsBeforeClick | ForEach-Object { $_.snapshot.runtimeId })
     $report.checks.rootsBeforeClick = @($rootsBeforeClick | ForEach-Object { $_.snapshot })
+    $rawBeforeClick = @(Get-RawShellNodes)
+    $report.checks.rawShellBeforeClick = @($rawBeforeClick | ForEach-Object { $_.snapshot })
+    $rawVisibleIdsBeforeClick = @($rawBeforeClick | Where-Object { Test-VisiblePopupNode $_.snapshot } | ForEach-Object { $_.snapshot.runtimeId })
+    $report.checks.nativeShellWindowsBeforeClick = [ZhusuanTaskbarProbe]::VisibleShellWindows($report.checks.taskbarRoot.processId)
     $bounds = $button.element.Current.BoundingRectangle
     [ZhusuanTaskbarProbe]::RightClick([int]($bounds.Left + $bounds.Width / 2), [int]($bounds.Top + $bounds.Height / 2))
     $popupOpened = $true
@@ -408,21 +542,19 @@ try {
     Wait-TaskbarCondition 'visible taskbar right-click popup' {
         $roots = @(Get-VisibleDesktopRoots)
         $script:report.checks.rootsAfterClick = @($roots | ForEach-Object { $_.snapshot })
-        $popups = @($roots | Where-Object {
-            $_.snapshot.runtimeId -notin $rootIdsBeforeClick -and
-            ($_.snapshot.processId -eq $report.checks.taskbarRoot.processId -or $_.snapshot.class -match 'JumpList|DV2ControlHost|Xaml.*Window|#32768')
-        })
-        if ($popups.Count -ne 1) { return $false }
-        $script:popup = $popups[0]
-        $nodes = @(Get-PopupNodes $script:popup.element)
-        if (@($nodes | Where-Object { -not $_.offscreen -and $_.type -match 'MenuItem|Button' -and $_.name }).Count -eq 0) { return $false }
-        $script:report.checks.popupNodes = $nodes
+        $script:report.checks.nativeShellWindowsAfterClick = [ZhusuanTaskbarProbe]::VisibleShellWindows($report.checks.taskbarRoot.processId)
+        $nodes = @(Get-RawShellNodes)
+        $script:report.checks.rawShellAfterClick = @($nodes | ForEach-Object { $_.snapshot })
+        $script:popup = Find-RawTaskbarPopup $nodes $rawVisibleIdsBeforeClick
+        if (-not $script:popup) { return $false }
+        $script:report.checks.popupContainer = $script:popup.container
+        $script:report.checks.popupNodes = $script:popup.rows
         return $true
     }
     Save-TaskbarScreenshot 'taskbar-popup.png'
     $labelMatches = @($report.checks.popupNodes | Where-Object {
-        $_.enabled -and -not $_.offscreen -and $_.type -match 'MenuItem|Button' -and
-        $_.bounds.width -gt 0 -and $_.bounds.height -gt 0 -and $_.name.Trim() -in $expectedNames
+        $_.enabled -and -not $_.offscreen -and
+        $_.bounds.width -gt 0 -and $_.bounds.height -gt 0 -and $_.label -in $expectedNames
     })
     $report.labelCorrect = $labelMatches.Count -gt 0
     $report.checks.relaunchLabelMatches = $labelMatches

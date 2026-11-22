@@ -184,6 +184,8 @@ try {
             executableSHA256 = (Get-FileHash -LiteralPath $executable -Algorithm SHA256).Hash.ToLowerInvariant()
             productVersion = $version.ProductVersion; fileVersion = $version.FileVersion
             productName = $version.ProductName; fileDescription = $version.FileDescription
+            language = $version.Language
+            frameworkDescription = [System.Runtime.InteropServices.RuntimeInformation]::FrameworkDescription
             productVersionParts = @($version.ProductMajorPart, $version.ProductMinorPart, $version.ProductBuildPart, $version.ProductPrivatePart)
             fileVersionParts = @($version.FileMajorPart, $version.FileMinorPart, $version.FileBuildPart, $version.FilePrivatePart)
             peConsumerError = $metadataError; displayVersion = $displayVersion
