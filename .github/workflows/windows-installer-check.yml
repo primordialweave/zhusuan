@@ -30,6 +30,11 @@ on:
         description: Prior Windows check run whose installer can be reused for test-only corrections
         required: false
         type: string
+      icon_size_only:
+        description: Verify Windows icon assets and native DPI rendering without installing an app
+        required: false
+        default: false
+        type: boolean
 
 permissions:
   contents: read
@@ -37,6 +42,7 @@ permissions:
 
 jobs:
   windows:
+    if: inputs.icon_size_only != true
     runs-on: windows-2025
     env:
       RELEASE_TAG: ${{ inputs.tag }}
@@ -202,4 +208,36 @@ jobs:
             ${{ runner.temp }}/zhusuan-shell-upgrade/shell-upgrade-verification.json
             ${{ runner.temp }}/zhusuan-shell-upgrade/**/*.log
           if-no-files-found: warn
+          retention-days: 7
+  windows-icon-size:
+    if: inputs.icon_size_only == true
+    runs-on: windows-2025
+    steps:
+      - uses: actions/checkout@v7.0.1
+        env:
+          GIT_CONFIG_COUNT: '1'
+          GIT_CONFIG_KEY_0: core.autocrlf
+          GIT_CONFIG_VALUE_0: 'false'
+      - uses: actions/setup-python@v7.1.0
+        with:
+          python-version: '3.12'
+      - name: Verify normalized source without image dependencies
+        shell: pwsh
+        run: |
+          python -S scripts/build_windows_icon.py --verify
+          if ($LASTEXITCODE -ne 0) { throw 'Windows artwork source is stale.' }
+          python -m unittest discover -s scripts -p 'test_windows_icon.py'
+          if ($LASTEXITCODE -ne 0) { throw 'Windows source guard tests failed.' }
+          "APPLICATION_SOURCE_SHA=$env:GITHUB_SHA" | Out-File -FilePath $env:GITHUB_ENV -Encoding utf8 -Append
+      - name: Verify native DPI frames and Shell optical extent
+        shell: pwsh
+        run: ./scripts/windows-icon-size-smoke.ps1 -IconPath build/windows/icon.ico
+      - uses: actions/upload-artifact@v7.0.2
+        if: always()
+        with:
+          name: windows-icon-size-check
+          path: |
+            ${{ runner.temp }}/zhusuan-icon-size-check/*.json
+            ${{ runner.temp }}/zhusuan-icon-size-check/*.png
+          if-no-files-found: error
           retention-days: 7

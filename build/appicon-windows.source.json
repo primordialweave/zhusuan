@@ -1,0 +1,15 @@
+{
+  "recipe_version": 1,
+  "optical_ratio": 0.93,
+  "input_sha256": "1210f2e22f476af5ba2b69a510beb3e7ce6f96dc7ed6131e2a09f69a64e61884",
+  "output_sha256": "a62105cbefb708aa0b31797837c55d0a3d98e5aaa38e68ab7b035a308b26953a",
+  "generator_sha256": "a7d93b49b732b65d97f76dc09e234caff77c78a0b32144a8b4234ab117a5c66d",
+  "input_size": [
+    1024,
+    1024
+  ],
+  "output_size": [
+    1024,
+    1024
+  ]
+}
