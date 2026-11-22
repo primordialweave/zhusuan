@@ -45,7 +45,7 @@ def sync_metadata(root, tag):
     for filename in ['build/darwin/Info.plist', 'build/darwin/Info.dev.plist']:
         for key in ['CFBundleShortVersionString', 'CFBundleVersion']:
             replace_required(root/filename, rf'(<key>{key}</key>\s*<string>)[^<]*(</string>)', rf'\g<1>{version}\g<2>')
-    for key in ['file_version', 'ProductVersion']:
+    for key in ['file_version', 'product_version', 'FileVersion', 'ProductVersion']:
         replace_required(root/'build/windows/info.json', rf'("{key}":\s*")[^"]+("\s*)', rf'\g<1>{version}\g<2>')
     for filename in ['build/ios/Info.plist', 'build/ios/Info.dev.plist']:
         if (root/filename).exists():

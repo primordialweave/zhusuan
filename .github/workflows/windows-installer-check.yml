@@ -199,6 +199,7 @@ jobs:
             ${{ runner.temp }}/zhusuan-shell-upgrade/**/taskbar-*.png
             ${{ runner.temp }}/zhusuan-shell-upgrade/**/taskbar-*.json
             ${{ runner.temp }}/zhusuan-shell-upgrade/**/taskbar-*.log
-            ${{ runner.temp }}/zhusuan-shell-upgrade/shell-upgrade.json
+            ${{ runner.temp }}/zhusuan-shell-upgrade/shell-upgrade-verification.json
+            ${{ runner.temp }}/zhusuan-shell-upgrade/**/*.log
           if-no-files-found: warn
           retention-days: 7

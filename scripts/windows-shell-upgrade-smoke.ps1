@@ -28,10 +28,13 @@ if ((Test-Path -LiteralPath $registryPath) -or (Test-Path -LiteralPath $machineR
 $probePath = Join-Path $PSScriptRoot 'windows-taskbar-smoke.ps1'
 if (-not (Test-Path -LiteralPath $probePath -PathType Leaf)) { throw 'Taskbar probe script is missing.' }
 $phaseInputs = @(
-    @{ Name = '01-previous-1.1.0'; Installer = (Resolve-Path -LiteralPath $PreviousInstaller).Path; ExpectedVersion = '1.1.0'; RecordOnly = $true },
-    @{ Name = '02-published-1.2.0'; Installer = (Resolve-Path -LiteralPath $PublishedInstaller).Path; ExpectedVersion = '1.2.0'; RecordOnly = $true },
+    @{ Name = '01-previous-1.1.0'; Installer = (Resolve-Path -LiteralPath $PreviousInstaller).Path; ExpectedVersion = '1.1.0'; PublishedSHA256 = '08a58fb008a0439e4d7ecd215cf1f202248167662e11284fe842a41bb35ddb78'; RecordOnly = $true },
+    @{ Name = '02-published-1.2.0'; Installer = (Resolve-Path -LiteralPath $PublishedInstaller).Path; ExpectedVersion = '1.2.0'; PublishedSHA256 = '6278ec32af20db37a6b8bff87d829a9d9df2c7aa87cb6b496ed6d9d196aa154f'; RecordOnly = $true },
     @{ Name = '03-fixed-candidate'; Installer = (Resolve-Path -LiteralPath $Installer).Path; ExpectedVersion = $null; RecordOnly = $false }
 )
+foreach ($phase in $phaseInputs) {
+    $phase.OriginalInstallerSHA256 = (Get-FileHash -LiteralPath $phase.Installer -Algorithm SHA256).Hash.ToLowerInvariant()
+}
 $artifacts = [System.IO.Path]::GetFullPath($OutputDirectory)
 if ((Test-Path -LiteralPath $artifacts) -and @(Get-ChildItem -LiteralPath $artifacts -Force).Count -gt 0) {
     throw 'The requested diagnostics directory is not empty; existing artifacts were preserved.'
@@ -82,6 +85,12 @@ function Paths-Equal([string]$first, [string]$second) {
     $left = [System.IO.Path]::GetFullPath([Environment]::ExpandEnvironmentVariables($first)).TrimEnd('\')
     $right = [System.IO.Path]::GetFullPath([Environment]::ExpandEnvironmentVariables($second)).TrimEnd('\')
     return [string]::Equals($left, $right, [StringComparison]::OrdinalIgnoreCase)
+}
+function Normalize-ReleaseVersion([string]$value) {
+    if ([string]::IsNullOrWhiteSpace($value) -or $value -notmatch '^[0-9]+\.[0-9]+\.[0-9]+(?:\.0)?$') { return $null }
+    $parsed = $null
+    if (-not [Version]::TryParse($value, [ref]$parsed) -or $parsed.Revision -gt 0) { return $null }
+    return '{0}.{1}.{2}' -f $parsed.Major, $parsed.Minor, $parsed.Build
 }
 function Fixture-Owned {
     return (Test-Path -LiteralPath $ownerMarker -PathType Leaf) -and
@@ -163,11 +172,43 @@ try {
         if (-not (Test-Path -LiteralPath $executable -PathType Leaf) -or -not (Registration-Owned)) {
             throw "Installer phase '$($phase.Name)' did not create the owned registered executable."
         }
-        $version = [System.Diagnostics.FileVersionInfo]::GetVersionInfo($executable)
-        if ($phase.ExpectedVersion -and $version.ProductVersion -ne $phase.ExpectedVersion) {
-            throw "Installer phase '$($phase.Name)' contains an unexpected ProductVersion."
+        $version = $null
+        $metadataError = $null
+        try { $version = [System.Diagnostics.FileVersionInfo]::GetVersionInfo($executable) } catch { $metadataError = $_.Exception.Message }
+        $displayVersion = (Get-ItemProperty -LiteralPath $registryPath).DisplayVersion
+        $phaseRecord = [ordered]@{
+            name = $phase.Name; recordOnly = $phase.RecordOnly; installerExitCode = $exitCode
+            originalInstallerSHA256 = $phase.OriginalInstallerSHA256
+            installerSHA256 = (Get-FileHash -LiteralPath $phase.Installer -Algorithm SHA256).Hash.ToLowerInvariant()
+            expectedPublishedInstallerSHA256 = $phase.PublishedSHA256
+            executableSHA256 = (Get-FileHash -LiteralPath $executable -Algorithm SHA256).Hash.ToLowerInvariant()
+            productVersion = $version.ProductVersion; fileVersion = $version.FileVersion
+            productName = $version.ProductName; fileDescription = $version.FileDescription
+            productVersionParts = @($version.ProductMajorPart, $version.ProductMinorPart, $version.ProductBuildPart, $version.ProductPrivatePart)
+            fileVersionParts = @($version.FileMajorPart, $version.FileMinorPart, $version.FileBuildPart, $version.FilePrivatePart)
+            peConsumerError = $metadataError; displayVersion = $displayVersion
+            normalizedProductVersion = (Normalize-ReleaseVersion $version.ProductVersion)
+            normalizedDisplayVersion = (Normalize-ReleaseVersion $displayVersion)
+            metadataConsumerAnomalies = @(); baselineProvenancePassed = $false
+            strictMetadataRequiredByTaskbarProbe = (-not $phase.RecordOnly)
+            sameInstallDirectory = $target; probe = $null
         }
-        if ($version.ProductName -ne $productName) { throw 'Installed PE ProductName is not Unicode zhusuan.' }
+        if ($metadataError) { $phaseRecord.metadataConsumerAnomalies += 'FileVersionInfo threw an exception.' }
+        if ($version.ProductName -ne $productName) { $phaseRecord.metadataConsumerAnomalies += 'PE consumer ProductName differs from Unicode product name.' }
+        if (-not $phaseRecord.normalizedProductVersion -or $phaseRecord.normalizedProductVersion -ne $phaseRecord.normalizedDisplayVersion) {
+            $phaseRecord.metadataConsumerAnomalies += 'PE consumer ProductVersion does not match the registered release version.'
+        }
+        $report.phases += $phaseRecord
+        # Save untouched PE consumer fields before any identity/provenance assertion can fail.
+        $report | ConvertTo-Json -Depth 12 | Set-Content -LiteralPath (Join-Path $artifacts 'shell-upgrade-verification.json') -Encoding utf8
+        if ($phaseRecord.installerSHA256 -ne $phase.OriginalInstallerSHA256) { throw 'The installer input changed during its phase.' }
+        if ($phase.RecordOnly) {
+            if ($phase.OriginalInstallerSHA256 -ne $phase.PublishedSHA256 -or
+                $phaseRecord.normalizedDisplayVersion -ne $phase.ExpectedVersion) {
+                throw "Baseline phase '$($phase.Name)' does not match the immutable published installer/version."
+            }
+            $phaseRecord.baselineProvenancePassed = $true
+        }
         foreach ($link in $links) {
             if (-not (Test-Path -LiteralPath $link -PathType Leaf)) { throw 'The installed shortcut is missing.' }
             $identity = [ZhusuanUpgradePaths]::Read($link)
@@ -176,14 +217,6 @@ try {
             }
         }
         Write-PrivateEnvironment $phaseDirectory
-        $phaseRecord = [ordered]@{
-            name = $phase.Name; recordOnly = $phase.RecordOnly; installerExitCode = $exitCode
-            installerSHA256 = (Get-FileHash -LiteralPath $phase.Installer -Algorithm SHA256).Hash
-            executableSHA256 = (Get-FileHash -LiteralPath $executable -Algorithm SHA256).Hash
-            productVersion = $version.ProductVersion; displayVersion = (Get-ItemProperty -LiteralPath $registryPath).DisplayVersion
-            sameInstallDirectory = $target; probe = $null
-        }
-        $report.phases += $phaseRecord
         $report | ConvertTo-Json -Depth 12 | Set-Content -LiteralPath (Join-Path $artifacts 'shell-upgrade-verification.json') -Encoding utf8
         $probeArguments = @{ Executable = $executable; LaunchShortcut = $desktopLink; OutputDirectory = $phaseDirectory }
         if ($phase.RecordOnly) { $probeArguments.RecordOnly = $true }
@@ -202,8 +235,16 @@ try {
         }
         if (@(Get-OwnedProcesses).Count -ne 0) { throw 'The taskbar probe left its owned application running.' }
     }
-    if ($report.phases[1].executableSHA256 -eq $report.phases[2].executableSHA256) {
-        throw 'The fixed candidate has the same application payload as published v1.2.0.'
+    if ($report.phases[1].installerSHA256 -eq $report.phases[2].installerSHA256) {
+        throw 'The fixed installer candidate is byte-identical to published v1.2.0.'
+    }
+    $report.applicationPayloadChanged = $report.phases[1].executableSHA256 -ne $report.phases[2].executableSHA256
+    if (-not $report.applicationPayloadChanged) {
+        foreach ($field in @('productVersion', 'fileVersion', 'productName', 'fileDescription')) {
+            if ($report.phases[1][$field] -cne $report.phases[2][$field]) {
+                throw 'Byte-identical application payloads produced inconsistent PE consumer observations.'
+            }
+        }
     }
     $report.passed = $true
     Write-Host 'Passed three same-path installed taskbar phases without restarting Explorer or clearing icon caches.'
