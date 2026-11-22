@@ -99,12 +99,26 @@ public static class ZhusuanSmokePaths {
 
     public static IntPtr ReadShellIcon(string path) {
         ShellFileInfo info;
-        // SHGFI_ICON, large icon; no shortcut overlay or USEFILEATTRIBUTES simulation.
+        // Query the real large Shell icon; a .lnk may include Shell's shortcut overlay.
         UIntPtr result = SHGetFileInfoW(path, 0, out info, (uint)Marshal.SizeOf(typeof(ShellFileInfo)), 0x100);
         if (result == UIntPtr.Zero || info.Icon == IntPtr.Zero) {
             throw new InvalidOperationException("Shell could not resolve the icon for " + path);
         }
         return info.Icon;
+    }
+
+    public static void CreateReferenceShortcut(string path, string executable, string icon, string description) {
+        object instance = new ZhusuanShellLink();
+        try {
+            var link = (IZhusuanShellLinkW)instance;
+            Marshal.ThrowExceptionForHR(link.SetPath(executable));
+            Marshal.ThrowExceptionForHR(link.SetIconLocation(icon, 0));
+            Marshal.ThrowExceptionForHR(link.SetDescription(description));
+            Marshal.ThrowExceptionForHR(link.SetWorkingDirectory(System.IO.Path.GetDirectoryName(executable)));
+            ((IPersistFile)instance).Save(path, true);
+        } finally {
+            if (Marshal.IsComObject(instance)) Marshal.FinalReleaseComObject(instance);
+        }
     }
 
     public static ShortcutDetails ReadShortcutDetails(string shortcut) {
@@ -216,6 +230,16 @@ function Assert-ShortcutIdentity([string]$directory, [string]$registrationKey, [
         throw 'Installed shortcut icon does not match the current packaging input.'
     }
     $sourceImage = Get-ShellIconSnapshot $expectedIcon ('installed-icon-' + $version)
+    # Compare like-for-like Shell shortcut renders. A fresh private reference uses the verified
+    # current ICO and the same .lnk overlay, while the actual link was warmed before the upgrade.
+    # A genuinely stale actual link still fails this exact comparison; no pixels are excluded.
+    $referenceLink = Join-Path $diagnostics ('expected-shortcut-' + [Guid]::NewGuid().ToString('N') + '.lnk')
+    try {
+        [ZhusuanSmokePaths]::CreateReferenceShortcut($referenceLink, $expectedExe, $expectedIcon, $productName)
+        $expectedShortcutImage = Get-ShellIconSnapshot $referenceLink ('expected-shortcut-icon-' + $version)
+    } finally {
+        if (Test-Path -LiteralPath $referenceLink) { Remove-Item -LiteralPath $referenceLink -Force }
+    }
     foreach ($link in $links) {
         $details = [ZhusuanSmokePaths]::ReadShortcutDetails($link)
         if ($details.Description -ne $productName) { throw "Shortcut Unicode description is incorrect: '$($details.Description)'." }
@@ -228,7 +252,16 @@ function Assert-ShortcutIdentity([string]$directory, [string]$registrationKey, [
         }
         $name = if ($link -eq $shortcut -or $link -eq $commonShortcut) { 'desktop' } else { 'start-menu' }
         $shellImage = Get-ShellIconSnapshot $link ($name + '-current')
-        if ($shellImage.PixelSHA256 -ne $sourceImage.PixelSHA256 -or $shellImage.Width -ne $sourceImage.Width -or $shellImage.Height -ne $sourceImage.Height) {
+        [pscustomobject]@{
+            Version = $version; Shortcut = $link; IconLocation = $details.IconPath
+            IconIndex = $details.IconIndex; Description = $details.Description
+            SourceIcon = $expectedIcon; SourceIconSHA256 = (Get-FileHash -LiteralPath $expectedIcon -Algorithm SHA256).Hash
+            ShellFlags = 'SHGFI_ICON (0x100)'; BaseICO = $sourceImage
+            ExpectedFreshShortcut = $expectedShortcutImage; ActualWarmedShortcut = $shellImage
+        } | ConvertTo-Json -Depth 5 | Set-Content -LiteralPath (Join-Path $diagnostics ('icon-comparison-' + $name + '.json')) -Encoding utf8
+        Write-Host "Shell ${name}: actual=$($shellImage.Width)x$($shellImage.Height)/$($shellImage.PixelSHA256); expected fresh shortcut=$($expectedShortcutImage.Width)x$($expectedShortcutImage.Height)/$($expectedShortcutImage.PixelSHA256); base ICO=$($sourceImage.PixelSHA256)."
+        if ($shellImage.PixelSHA256 -ne $expectedShortcutImage.PixelSHA256 -or $shellImage.Width -ne $expectedShortcutImage.Width -or $shellImage.Height -ne $expectedShortcutImage.Height) {
+            Write-ShortcutDiagnostics $link
             throw "Shell still renders a stale $name shortcut icon."
         }
         Write-Host "Verified ${name}: Unicode='$($details.Description)'; icon='$($details.IconPath)',0; shell pixels=$($shellImage.PixelSHA256)."
