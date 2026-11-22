@@ -6,7 +6,7 @@ on:
       tag:
         description: Existing application candidate tag
         required: true
-        default: v1.0.1
+        default: v1.2.0
         type: string
       application_ref:
         description: Optional full commit SHA to verify before moving an unpublished candidate tag
@@ -15,6 +15,16 @@ on:
       test_recipe_ref:
         description: Reviewed main commit SHA for the installation smoke fixture
         required: false
+        type: string
+      previous_installer_tag:
+        description: Published version with the previous icon for same-directory upgrade checks
+        required: true
+        default: v1.1.0
+        type: string
+      published_installer_tag:
+        description: Published current version for the taskbar baseline before the fix
+        required: true
+        default: v1.2.0
         type: string
 
 permissions:
@@ -27,6 +37,8 @@ jobs:
       RELEASE_TAG: ${{ inputs.tag }}
       TEST_RECIPE_REF: ${{ inputs.test_recipe_ref }}
       APPLICATION_REF: ${{ inputs.application_ref }}
+      PREVIOUS_INSTALLER_TAG: ${{ inputs.previous_installer_tag }}
+      PUBLISHED_INSTALLER_TAG: ${{ inputs.published_installer_tag }}
     steps:
       - uses: actions/checkout@v7.0.1
         with:
@@ -46,6 +58,14 @@ jobs:
           SOURCE_SHA=$(git rev-parse HEAD)
           printf 'Application source: %s\n' "$SOURCE_SHA"
           printf 'APPLICATION_SOURCE_SHA=%s\n' "$SOURCE_SHA" >> "$GITHUB_ENV"
+      - uses: actions/checkout@v7.0.1
+        with:
+          ref: ${{ github.sha }}
+          path: .windows-check-fixtures
+          sparse-checkout: |
+            scripts/windows-taskbar-smoke.ps1
+            scripts/windows-shell-upgrade-smoke.ps1
+          sparse-checkout-cone-mode: false
       - name: Apply reviewed installation fixture
         if: env.TEST_RECIPE_REF != ''
         shell: bash
@@ -76,6 +96,22 @@ jobs:
           choco install nsis --yes --no-progress
           'C:\Program Files (x86)\NSIS' | Out-File -FilePath $env:GITHUB_PATH -Encoding utf8 -Append
           'C:\Program Files (x86)\NSIS\Bin' | Out-File -FilePath $env:GITHUB_PATH -Encoding utf8 -Append
+      - name: Download published upgrade fixtures
+        shell: pwsh
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          $directory = Join-Path $env:RUNNER_TEMP 'zhusuan-published-installers'
+          New-Item -ItemType Directory -Path $directory -Force | Out-Null
+          foreach ($tag in @($env:PREVIOUS_INSTALLER_TAG, $env:PUBLISHED_INSTALLER_TAG) | Select-Object -Unique) {
+            if ($tag -notmatch '^v(0|[1-9]\d*)\.(0|[1-9]\d*)\.(0|[1-9]\d*)$') { throw 'Fixture tag must be a stable published version.' }
+            $release = gh release view $tag --repo $env:GITHUB_REPOSITORY --json isDraft,isPrerelease | ConvertFrom-Json
+            if ($LASTEXITCODE -ne 0 -or $release.isDraft -or $release.isPrerelease) { throw 'Fixture must be a published stable release.' }
+            gh release download $tag --repo $env:GITHUB_REPOSITORY --pattern "zhusuan-$tag-windows-amd64-installer.exe" --dir $directory
+            if ($LASTEXITCODE -ne 0) { throw 'Published installer download failed.' }
+          }
+          "PREVIOUS_INSTALLER=$directory\zhusuan-$env:PREVIOUS_INSTALLER_TAG-windows-amd64-installer.exe" | Out-File -FilePath $env:GITHUB_ENV -Encoding utf8 -Append
+          "PUBLISHED_INSTALLER=$directory\zhusuan-$env:PUBLISHED_INSTALLER_TAG-windows-amd64-installer.exe" | Out-File -FilePath $env:GITHUB_ENV -Encoding utf8 -Append
       - name: Build tagged Windows installer
         id: build
         shell: bash
@@ -87,7 +123,10 @@ jobs:
         run: ./scripts/windows-standard-user-installer-smoke.ps1 -Installer bin/zhusuan-amd64-installer.exe
       - name: Verify installation and upgrade
         shell: pwsh
-        run: ./scripts/windows-installer-smoke.ps1 -Installer bin/zhusuan-amd64-installer.exe
+        run: ./scripts/windows-installer-smoke.ps1 -Installer bin/zhusuan-amd64-installer.exe -PreviousInstaller $env:PREVIOUS_INSTALLER
+      - name: Verify same-path taskbar identity across published and fixed versions
+        shell: pwsh
+        run: ./.windows-check-fixtures/scripts/windows-shell-upgrade-smoke.ps1 -PreviousInstaller $env:PREVIOUS_INSTALLER -PublishedInstaller $env:PUBLISHED_INSTALLER -Installer bin/zhusuan-amd64-installer.exe
       - name: Verify native window controls and fullscreen
         if: always() && !cancelled() && steps.build.outcome == 'success'
         shell: pwsh
@@ -110,5 +149,9 @@ jobs:
             ${{ runner.temp }}/zhusuan-window-check/*.png
             ${{ runner.temp }}/zhusuan-window-check/*.json
             ${{ runner.temp }}/zhusuan-window-check/*.log
+            ${{ runner.temp }}/zhusuan-shell-upgrade/**/taskbar-*.png
+            ${{ runner.temp }}/zhusuan-shell-upgrade/**/taskbar-*.json
+            ${{ runner.temp }}/zhusuan-shell-upgrade/**/taskbar-*.log
+            ${{ runner.temp }}/zhusuan-shell-upgrade/shell-upgrade.json
           if-no-files-found: warn
           retention-days: 7

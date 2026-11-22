@@ -12,6 +12,7 @@
 !ifndef INFO_PRODUCTVERSION
     !searchparse /file "..\..\config.yml" '  version: "' INFO_PRODUCTVERSION '"'
 !endif
+!define SHORTCUT_ICON "${INFO_PROJECTNAME}-shortcut-${INFO_PRODUCTVERSION}.ico"
 !include "wails_tools.nsh"
 !include "MUI.nsh"
 !include "LogicLib.nsh"
@@ -35,6 +36,21 @@ Var ZhusuanInstallScope
 Var ZhusuanUninstallerBackup
 Var ZhusuanNewWritten
 Var ZhusuanUninstallerWritten
+Var ZhusuanPreviousDisplayIcon
+Var ZhusuanShortcutIconBackup
+Var ZhusuanShortcutIconWritten
+Var ZhusuanDesktopShortcutBackup
+Var ZhusuanDesktopShortcutWritten
+Var ZhusuanStartShortcutBackup
+Var ZhusuanStartShortcutWritten
+Var ZhusuanRegistryWritten
+
+; Refresh only this app and its shortcuts; never delete or rebuild the user's icon cache.
+Function ZhusuanNotifyShell
+    System::Call 'shell32::SHChangeNotify(i 0x2000, i 0x1005, w "$INSTDIR\${PRODUCT_EXECUTABLE}", p 0)'
+    System::Call 'shell32::SHChangeNotify(i 0x2000, i 0x1005, w "$SMPROGRAMS\${INFO_PRODUCTNAME}.lnk", p 0)'
+    System::Call 'shell32::SHChangeNotify(i 0x2000, i 0x1005, w "$DESKTOP\${INFO_PRODUCTNAME}.lnk", p 0)'
+FunctionEnd
 
 ; Require a usable runtime before replacing any installed application files.
 !macro ZhusuanReadWebView2 ROOT VIEW
@@ -258,6 +274,13 @@ Function .onInit
     StrCpy $ZhusuanUninstallerBackup "0"
     StrCpy $ZhusuanNewWritten "0"
     StrCpy $ZhusuanUninstallerWritten "0"
+    StrCpy $ZhusuanShortcutIconBackup "0"
+    StrCpy $ZhusuanShortcutIconWritten "0"
+    StrCpy $ZhusuanDesktopShortcutBackup "0"
+    StrCpy $ZhusuanDesktopShortcutWritten "0"
+    StrCpy $ZhusuanStartShortcutBackup "0"
+    StrCpy $ZhusuanStartShortcutWritten "0"
+    StrCpy $ZhusuanRegistryWritten "0"
     ${GetParameters} $0
     ClearErrors
     ${GetOptions} $0 "/UPDATE" $1
@@ -282,6 +305,7 @@ Function .onInit
     Call ZhusuanSelectScope
     ReadRegStr $ZhusuanExistingKey SHCTX "${UNINST_KEY}" "DisplayName"
     ReadRegStr $ZhusuanPreviousVersion SHCTX "${UNINST_KEY}" "DisplayVersion"
+    ReadRegStr $ZhusuanPreviousDisplayIcon SHCTX "${UNINST_KEY}" "DisplayIcon"
     ${If} $ZhusuanUpdate == "1"
         ${IfNot} ${FileExists} "$INSTDIR\${PRODUCT_EXECUTABLE}"
             SetErrorLevel 3
@@ -291,6 +315,30 @@ Function .onInit
 FunctionEnd
 
 Function ZhusuanRollback
+    ${If} $ZhusuanDesktopShortcutWritten == "1"
+        Delete "$DESKTOP\${INFO_PRODUCTNAME}.lnk"
+        StrCpy $ZhusuanDesktopShortcutWritten "0"
+    ${EndIf}
+    ${If} $ZhusuanDesktopShortcutBackup == "1"
+        Rename "$DESKTOP\${INFO_PRODUCTNAME}.lnk.update-backup" "$DESKTOP\${INFO_PRODUCTNAME}.lnk"
+        StrCpy $ZhusuanDesktopShortcutBackup "0"
+    ${EndIf}
+    ${If} $ZhusuanStartShortcutWritten == "1"
+        Delete "$SMPROGRAMS\${INFO_PRODUCTNAME}.lnk"
+        StrCpy $ZhusuanStartShortcutWritten "0"
+    ${EndIf}
+    ${If} $ZhusuanStartShortcutBackup == "1"
+        Rename "$SMPROGRAMS\${INFO_PRODUCTNAME}.lnk.update-backup" "$SMPROGRAMS\${INFO_PRODUCTNAME}.lnk"
+        StrCpy $ZhusuanStartShortcutBackup "0"
+    ${EndIf}
+    ${If} $ZhusuanShortcutIconWritten == "1"
+        Delete "$INSTDIR\${SHORTCUT_ICON}"
+        StrCpy $ZhusuanShortcutIconWritten "0"
+    ${EndIf}
+    ${If} $ZhusuanShortcutIconBackup == "1"
+        Rename "$INSTDIR\${SHORTCUT_ICON}.update-backup" "$INSTDIR\${SHORTCUT_ICON}"
+        StrCpy $ZhusuanShortcutIconBackup "0"
+    ${EndIf}
     ${If} $ZhusuanNewWritten == "1"
         Delete "$INSTDIR\${PRODUCT_EXECUTABLE}"
         StrCpy $ZhusuanNewWritten "0"
@@ -307,12 +355,17 @@ Function ZhusuanRollback
         Rename "$INSTDIR\uninstall.exe.update-backup" "$INSTDIR\uninstall.exe"
         StrCpy $ZhusuanUninstallerBackup "0"
     ${EndIf}
-    SetRegView 64
-    ${If} $ZhusuanExistingKey == ""
-        DeleteRegKey SHCTX "${UNINST_KEY}"
-    ${Else}
-        WriteRegStr SHCTX "${UNINST_KEY}" "DisplayVersion" "$ZhusuanPreviousVersion"
+    ${If} $ZhusuanRegistryWritten == "1"
+        SetRegView 64
+        ${If} $ZhusuanExistingKey == ""
+            DeleteRegKey SHCTX "${UNINST_KEY}"
+        ${Else}
+            WriteRegStr SHCTX "${UNINST_KEY}" "DisplayVersion" "$ZhusuanPreviousVersion"
+            WriteRegStr SHCTX "${UNINST_KEY}" "DisplayIcon" "$ZhusuanPreviousDisplayIcon"
+        ${EndIf}
+        StrCpy $ZhusuanRegistryWritten "0"
     ${EndIf}
+    Call ZhusuanNotifyShell
 FunctionEnd
 
 Function .onInstFailed
@@ -329,6 +382,7 @@ Section
     ${EndIf}
     ReadRegStr $ZhusuanExistingKey SHCTX "${UNINST_KEY}" "DisplayName"
     ReadRegStr $ZhusuanPreviousVersion SHCTX "${UNINST_KEY}" "DisplayVersion"
+    ReadRegStr $ZhusuanPreviousDisplayIcon SHCTX "${UNINST_KEY}" "DisplayIcon"
     Call ZhusuanEnsureWebView2
     SetOutPath $INSTDIR
 
@@ -357,15 +411,54 @@ Section
     !insertmacro wails.files
     IfErrors zhusuan_install_failed
 
+    ; A release-specific icon path gives Shell a new cache key after an in-place EXE update.
+    ${If} ${FileExists} "$INSTDIR\${SHORTCUT_ICON}"
+        IfFileExists "$INSTDIR\${SHORTCUT_ICON}.update-backup" zhusuan_install_failed
+        ClearErrors
+        Rename "$INSTDIR\${SHORTCUT_ICON}" "$INSTDIR\${SHORTCUT_ICON}.update-backup"
+        IfErrors zhusuan_install_failed
+        StrCpy $ZhusuanShortcutIconBackup "1"
+    ${EndIf}
+    ClearErrors
+    StrCpy $ZhusuanShortcutIconWritten "1"
+    File "/oname=${SHORTCUT_ICON}" "..\icon.ico"
+    IfErrors zhusuan_install_failed
+
     ClearErrors
     StrCpy $ZhusuanUninstallerWritten "1"
     WriteUninstaller "$INSTDIR\uninstall.exe"
     IfErrors zhusuan_install_failed
+    ; Validate both shortcut writes before touching registration, including an explicit path change.
+    ${If} ${FileExists} "$SMPROGRAMS\${INFO_PRODUCTNAME}.lnk"
+        IfFileExists "$SMPROGRAMS\${INFO_PRODUCTNAME}.lnk.update-backup" zhusuan_install_failed
+        ClearErrors
+        Rename "$SMPROGRAMS\${INFO_PRODUCTNAME}.lnk" "$SMPROGRAMS\${INFO_PRODUCTNAME}.lnk.update-backup"
+        IfErrors zhusuan_install_failed
+        StrCpy $ZhusuanStartShortcutBackup "1"
+    ${EndIf}
+    ${If} ${FileExists} "$DESKTOP\${INFO_PRODUCTNAME}.lnk"
+        IfFileExists "$DESKTOP\${INFO_PRODUCTNAME}.lnk.update-backup" zhusuan_install_failed
+        ClearErrors
+        Rename "$DESKTOP\${INFO_PRODUCTNAME}.lnk" "$DESKTOP\${INFO_PRODUCTNAME}.lnk.update-backup"
+        IfErrors zhusuan_install_failed
+        StrCpy $ZhusuanDesktopShortcutBackup "1"
+    ${EndIf}
+    ClearErrors
+    StrCpy $ZhusuanStartShortcutWritten "1"
+    CreateShortcut "$SMPROGRAMS\${INFO_PRODUCTNAME}.lnk" "$INSTDIR\${PRODUCT_EXECUTABLE}" "" "$INSTDIR\${SHORTCUT_ICON}" 0 SW_SHOWNORMAL "" "${INFO_PRODUCTNAME}"
+    IfErrors zhusuan_install_failed
+    ClearErrors
+    StrCpy $ZhusuanDesktopShortcutWritten "1"
+    CreateShortcut "$DESKTOP\${INFO_PRODUCTNAME}.lnk" "$INSTDIR\${PRODUCT_EXECUTABLE}" "" "$INSTDIR\${SHORTCUT_ICON}" 0 SW_SHOWNORMAL "" "${INFO_PRODUCTNAME}"
+    IfErrors zhusuan_install_failed
+
+    ClearErrors
     SetRegView 64
+    StrCpy $ZhusuanRegistryWritten "1"
     WriteRegStr SHCTX "${UNINST_KEY}" "Publisher" "${INFO_COMPANYNAME}"
     WriteRegStr SHCTX "${UNINST_KEY}" "DisplayName" "${INFO_PRODUCTNAME}"
     WriteRegStr SHCTX "${UNINST_KEY}" "DisplayVersion" "${INFO_PRODUCTVERSION}"
-    WriteRegStr SHCTX "${UNINST_KEY}" "DisplayIcon" "$INSTDIR\${PRODUCT_EXECUTABLE}"
+    WriteRegStr SHCTX "${UNINST_KEY}" "DisplayIcon" '$\"$INSTDIR\${SHORTCUT_ICON}$\",0'
     WriteRegStr SHCTX "${UNINST_KEY}" "UninstallString" "$\"$INSTDIR\uninstall.exe$\""
     WriteRegStr SHCTX "${UNINST_KEY}" "QuietUninstallString" "$\"$INSTDIR\uninstall.exe$\" /S"
     WriteRegStr SHCTX "${UNINST_KEY}" "InstallLocation" "$INSTDIR"
@@ -375,15 +468,24 @@ Section
     IntFmt $0 "0x%08X" $0
     WriteRegDWORD SHCTX "${UNINST_KEY}" "EstimatedSize" "$0"
     IfErrors zhusuan_install_failed
-
-    ; Commit the new identity only after executable/uninstaller/registry writes succeeded.
-    CreateShortcut "$SMPROGRAMS\${INFO_PRODUCTNAME}.lnk" "$INSTDIR\${PRODUCT_EXECUTABLE}"
-    CreateShortCut "$DESKTOP\${INFO_PRODUCTNAME}.lnk" "$INSTDIR\${PRODUCT_EXECUTABLE}"
     !insertmacro wails.associateFiles
     !insertmacro wails.associateCustomProtocols
     SetRegView 64
     Delete "$INSTDIR\${PRODUCT_EXECUTABLE}.update-backup"
     Delete "$INSTDIR\uninstall.exe.update-backup"
+    Delete "$INSTDIR\${SHORTCUT_ICON}.update-backup"
+    Delete "$SMPROGRAMS\${INFO_PRODUCTNAME}.lnk.update-backup"
+    Delete "$DESKTOP\${INFO_PRODUCTNAME}.lnk.update-backup"
+    ; Retire only the recorded prior version's owned icon, never a wildcard or arbitrary path.
+    ${If} $ZhusuanPreviousVersion != ""
+    ${AndIf} $ZhusuanPreviousVersion != "${INFO_PRODUCTVERSION}"
+        ${StrFilter} "$ZhusuanPreviousVersion" "1" "." "" $0
+        ${If} $0 == $ZhusuanPreviousVersion
+        ${AndIf} $ZhusuanPreviousDisplayIcon == '$\"$INSTDIR\${INFO_PROJECTNAME}-shortcut-$ZhusuanPreviousVersion.ico$\",0'
+            Delete "$INSTDIR\${INFO_PROJECTNAME}-shortcut-$ZhusuanPreviousVersion.ico"
+        ${EndIf}
+    ${EndIf}
+    Call ZhusuanNotifyShell
     SetErrorLevel 0
     Goto zhusuan_install_done
 
@@ -401,6 +503,7 @@ FunctionEnd
 Section "uninstall"
     ; Retain databases, credentials, profiles and unrelated files in custom directories.
     Delete "$INSTDIR\${PRODUCT_EXECUTABLE}"
+    Delete "$INSTDIR\${SHORTCUT_ICON}"
     Delete "$SMPROGRAMS\${INFO_PRODUCTNAME}.lnk"
     Delete "$DESKTOP\${INFO_PRODUCTNAME}.lnk"
     !insertmacro wails.unassociateFiles
