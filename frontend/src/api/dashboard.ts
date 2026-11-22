@@ -37,6 +37,7 @@ export type DashboardScope = DashboardPeriod | { month: number; year: number }
 
 export type ReceiptScope = DashboardScope | 'all'
 
+/** 合同字段按自然周期内签约的合同统计当前余额；现金字段独立按实际到账日统计。 */
 export interface ReceiptOverview {
   contract_total: number
   received_total: number

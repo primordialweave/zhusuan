@@ -3,8 +3,8 @@ import type { ChartConfiguration, Plugin, ScriptableContext } from 'chart.js'
 import { useCallback, useEffect, useId, useMemo, useRef, useState } from 'react'
 import {
   dashboardApi,
-  type DashboardScope,
-  type DashboardStats,
+  type ReceiptScope,
+  type ReceiptOverview,
   type IncomeTrend,
 } from '@/api/dashboard'
 import Chart from '@/config/chart'
@@ -23,14 +23,12 @@ import {
 import { useToastStore } from '@/composables/useToast'
 import { useThemeStore } from '@/stores/theme'
 import { exportCsv } from '@/utils/csv'
-import { getCollectionTimingLabel, getPeriodLabel } from '@/views/dashboard/dashboardModel'
 import { formatAmount, formatCurrency } from '@/utils/format'
 import '@/styles/analytics.css'
 
-// Four rolling windows, then a calendar year or month of the user's choosing.
-type Period = 'week' | 'month' | 'quarter' | 'year' | 'custom'
+type Period = 'week' | 'month' | 'quarter' | 'year' | 'all' | 'custom'
 
-const periods: Period[] = ['week', 'month', 'quarter', 'year', 'custom']
+const periods: Period[] = ['week', 'month', 'quarter', 'year', 'all', 'custom']
 
 interface CalendarChoice {
   /** 1–12, or 0 for the whole year. */
@@ -39,7 +37,7 @@ interface CalendarChoice {
 }
 
 const thisYear = new Date().getFullYear()
-// Plans reach into next year; history goes back as far as anyone is likely to look.
+// Receipts can be reviewed by calendar year or month.
 const yearOptions = Array.from({ length: 12 }, (_, index) => {
   const year = thisYear + 1 - index
   return { label: `${year}年`, value: String(year) }
@@ -60,18 +58,16 @@ const calendarRange = ({ month, year }: CalendarChoice) => {
   return [start, start.endOf(month ? 'month' : 'year')].map((date) => date.format('YYYY-MM-DD'))
 }
 
-const emptyStats: DashboardStats = {
-  avg_collection_days: 0,
-  avg_collection_days_trend: 0,
-  overdue_amount: 0,
-  overdue_trend: 0,
-  paid_amount: 0,
-  planned_received_amount: 0,
-  paid_trend: 0,
-  pending_amount: 0,
-  pending_trend: 0,
-  total_amount: 0,
-  total_trend: 0,
+const emptyStats: ReceiptOverview = {
+  contract_total: 0,
+  received_total: 0,
+  contract_received: 0,
+  outstanding_total: 0,
+  overpaid_total: 0,
+  period_received: 0,
+  period_count: 0,
+  start_date: '',
+  end_date: '',
 }
 
 const emptyTrend: IncomeTrend = {
@@ -81,11 +77,57 @@ const emptyTrend: IncomeTrend = {
 }
 
 const periodLabel = (period: Period) => {
-  if (period === 'week') return '周'
-  if (period === 'month') return '月'
-  if (period === 'quarter') return '季'
-  if (period === 'year') return '年'
+  if (period === 'week') return '本周'
+  if (period === 'month') return '本月'
+  if (period === 'quarter') return '本季'
+  if (period === 'year') return '本年'
+  if (period === 'all') return '全部'
   return '自选'
+}
+
+const naturalRange = (period: Exclude<Period, 'custom'>) => {
+  const now = dayjs()
+  if (period === 'all') return ['', '']
+  if (period === 'week') {
+    const start = now.subtract((now.day() + 6) % 7, 'day')
+    return [start.format('YYYY-MM-DD'), start.add(6, 'day').format('YYYY-MM-DD')]
+  }
+  if (period === 'quarter') {
+    const start = now.month(Math.floor(now.month() / 3) * 3).startOf('month')
+    return [start.format('YYYY-MM-DD'), start.add(2, 'month').endOf('month').format('YYYY-MM-DD')]
+  }
+  return [now.startOf(period), now.endOf(period)].map((date) => date.format('YYYY-MM-DD'))
+}
+
+function ReceiptMetrics({
+  metrics,
+  loading,
+  failed,
+  label,
+}: {
+  metrics: Array<{ label: string; value: string }>
+  loading: boolean
+  failed: boolean
+  label: string
+}) {
+  return (
+    <dl aria-busy={loading} aria-label={label} className="analytics-metrics">
+      {metrics.map((metric) => (
+        <div className="analytics-metric" key={metric.label}>
+          <dt className="analytics-metric__label">{metric.label}</dt>
+          <dd className="analytics-metric__value">
+            {loading ? (
+              <Skeleton height="1.75rem" width="6rem" />
+            ) : failed ? (
+              '暂不可用'
+            ) : (
+              metric.value
+            )}
+          </dd>
+        </div>
+      ))}
+    </dl>
+  )
 }
 
 const formatAxisAmount = (amount: number) => {
@@ -133,7 +175,7 @@ function StructureDonut({ paid, pending }: { paid: number; pending: number }) {
 
   return (
     <svg
-      aria-label={`已收款 ${paidPercent}%，待收款 ${100 - paidPercent}%`}
+      aria-label={`合同已收 ${paidPercent}%，合同未收 ${100 - paidPercent}%`}
       className="analytics-donut"
       role="img"
       viewBox="0 0 100 100"
@@ -287,15 +329,15 @@ export default function AnalyticsView() {
   const toastSuccess = useToastStore((state) => state.success)
   const effectiveTheme = useThemeStore((state) => state.effectiveTheme)
   const reducedMotion = useReducedMotion()
-  const [activePeriod, setActivePeriod] = useState<Period>('month')
+  const [activePeriod, setActivePeriod] = useState<Period>('year')
   const [calendar, setCalendar] = useState<CalendarChoice>({ month: 0, year: thisYear })
   const [exporting, setExporting] = useState(false)
   const [savedExportKey, setSavedExportKey] = useState(0)
-  const scope = useMemo<DashboardScope>(
+  const scope = useMemo<ReceiptScope>(
     () => (activePeriod === 'custom' ? calendar : activePeriod),
     [activePeriod, calendar],
   )
-  const [stats, setStats] = useState<DashboardStats>(emptyStats)
+  const [stats, setStats] = useState<ReceiptOverview>(emptyStats)
   const [trend, setTrend] = useState<IncomeTrend>(emptyTrend)
   const [isLoading, setIsLoading] = useState(true)
   const [loadError, setLoadError] = useState(false)
@@ -312,35 +354,24 @@ export default function AnalyticsView() {
     }
   }, [])
 
-  // The rate and structure follow the same planned cohort, including receipts outside this period.
-  // Actual cash receipts remain in paid_amount and in the trend's actual_values.
-  const pendingAmount = Math.max(0, stats.pending_amount)
-  const overdueAmount = Math.max(0, stats.overdue_amount)
-  const plannedReceivedAmount = Math.max(0, stats.planned_received_amount)
+  const pendingAmount = Math.max(0, stats.outstanding_total)
+  const contractReceivedAmount = Math.max(0, stats.contract_received)
 
   const hasTrendData = useMemo(
-    () =>
-      trend.actual_values.some((value) => value !== 0) ||
-      trend.expected_values.some((value) => value !== 0),
-    [trend.actual_values, trend.expected_values],
+    () => trend.actual_values.some((value) => value !== 0),
+    [trend.actual_values],
   )
 
-  const hasStructureData = plannedReceivedAmount + pendingAmount > 0
+  const hasStructureData = contractReceivedAmount + pendingAmount > 0
 
-  const periodName =
-    activePeriod === 'custom' ? calendarName(calendar) : getPeriodLabel(activePeriod)
+  const periodName = activePeriod === 'custom' ? calendarName(calendar) : periodLabel(activePeriod)
+  const contractScope = activePeriod === 'all' ? '全部合同' : `${periodName}签约合同`
   const [fallbackStart, fallbackEnd] =
-    activePeriod === 'custom'
-      ? calendarRange(calendar)
-      : [
-          dayjs()
-            .subtract({ week: 7, month: 30, quarter: 90, year: 365 }[activePeriod] - 1, 'day')
-            .format('YYYY-MM-DD'),
-          dayjs().format('YYYY-MM-DD'),
-        ]
-  const rangeLabel = `${(!isLoading && !loadError && trend.start_date) || fallbackStart} — ${
-    (!isLoading && !loadError && trend.end_date) || fallbackEnd
-  }`
+    activePeriod === 'custom' ? calendarRange(calendar) : naturalRange(activePeriod)
+  const rangeLabel =
+    activePeriod === 'all'
+      ? '全部记录'
+      : `${(!isLoading && !loadError && stats.start_date) || fallbackStart} — ${(!isLoading && !loadError && stats.end_date) || fallbackEnd}`
 
   const colors = useMemo(() => {
     const isDark = effectiveTheme === 'dark'
@@ -359,7 +390,6 @@ export default function AnalyticsView() {
         '--ods-data-grid',
         isDark ? 'rgba(229, 242, 233, 0.1)' : 'rgba(24, 57, 44, 0.1)',
       ),
-      planned: readToken('--ods-data-series-planned', isDark ? '#e3c574' : '#8d6c29'),
       pointBg: readToken('--ods-data-point-bg', isDark ? '#22362f' : '#f6fbf6'),
       text: readToken('--ods-color-fg-muted', isDark ? '#adc2b6' : '#4f655a'),
       tooltipBackground: readToken('--ods-data-tooltip-bg', isDark ? '#22362f' : '#f6fbf6'),
@@ -443,19 +473,6 @@ export default function AnalyticsView() {
             pointStyle: 'circle',
             tension: 0.34,
           },
-          {
-            borderColor: colors.planned,
-            borderDash: [8, 5],
-            borderWidth: 2.5,
-            data: [],
-            fill: false,
-            label: '计划收款',
-            pointHoverBackgroundColor: colors.pointBg,
-            pointHoverBorderColor: colors.planned,
-            pointHoverBorderWidth: 2.5,
-            pointStyle: 'circle',
-            tension: 0.34,
-          },
         ],
         labels: [],
       },
@@ -518,15 +535,15 @@ export default function AnalyticsView() {
   }, [colors, reducedMotion])
 
   const fetchAnalytics = useCallback(
-    async (target: DashboardScope, signal?: AbortSignal) => {
+    async (target: ReceiptScope, signal?: AbortSignal) => {
       const requestGeneration = ++requestGenerationRef.current
       setIsLoading(true)
       setLoadError(false)
 
       try {
         const [statsResponse, trendResponse] = await Promise.all([
-          dashboardApi.getStats(target, signal),
-          dashboardApi.getIncomeTrend(target, signal),
+          dashboardApi.getReceiptOverview(target, signal),
+          dashboardApi.getReceiptTrend(target, signal),
         ])
         if (
           signal?.aborted ||
@@ -591,16 +608,19 @@ export default function AnalyticsView() {
     if (!chart) return
     chart.data.labels = trend.labels.map(formatTrendLabel)
     if (chart.data.datasets[0]) chart.data.datasets[0].data = trend.actual_values
-    if (chart.data.datasets[1]) chart.data.datasets[1].data = trend.expected_values
     if (reducedMotion) chart.update('none')
     else chart.update()
   }, [colors, reducedMotion, trend])
 
-  const metrics = [
-    { label: '平均到账偏差', value: getCollectionTimingLabel(stats.avg_collection_days) },
-    { label: '预期收款', value: formatAmount(stats.total_amount) },
-    { label: '收款率', value: formatShare(stats.planned_received_amount, stats.total_amount) },
-    { label: '逾期比例', value: formatShare(stats.overdue_amount, stats.total_amount) },
+  const cashMetrics = [
+    { label: '收款金额', value: formatAmount(stats.period_received) },
+    { label: '收款笔数', value: String(stats.period_count) },
+  ]
+  const contractMetrics = [
+    { label: '合同总额', value: formatAmount(stats.contract_total) },
+    { label: '合同已收', value: formatAmount(stats.contract_received) },
+    { label: '合同未收', value: formatAmount(stats.outstanding_total) },
+    { label: '收款率', value: formatShare(stats.contract_received, stats.contract_total) },
   ]
 
   const handlePeriodChange = (value: string) => {
@@ -628,21 +648,17 @@ export default function AnalyticsView() {
       ['珠算 数据分析'],
       ['统计周期', periodName],
       ['日期范围', rangeLabel],
-      ['平均到账偏差（天，提前为负）', stats.avg_collection_days],
-      ['应收金额', stats.total_amount],
-      ['本期计划已收金额', stats.planned_received_amount],
-      ['本期实际到账金额', stats.paid_amount],
-      ['待收未逾期金额', Math.max(0, stats.pending_amount - stats.overdue_amount)],
-      ['逾期金额', stats.overdue_amount],
-      ['收款率', formatShare(stats.planned_received_amount, stats.total_amount)],
-      ['逾期比例', formatShare(stats.overdue_amount, stats.total_amount)],
+      ['本期收款金额', stats.period_received],
+      ['本期收款笔数', stats.period_count],
+      ['合同总额', stats.contract_total],
+      ['合同归属日期', '签约日期'],
+      ['合同已收', stats.contract_received],
+      ['合同未收', stats.outstanding_total],
+      ['超收金额', stats.overpaid_total],
+      ['收款率', formatShare(stats.contract_received, stats.contract_total)],
       [],
-      ['趋势周期', '实际收款', '预期收款'],
-      ...trend.labels.map((label, index) => [
-        label,
-        trend.actual_values[index] ?? '',
-        trend.expected_values[index] ?? '',
-      ]),
+      ['趋势周期', '实际收款'],
+      ...trend.labels.map((label, index) => [label, trend.actual_values[index] ?? '']),
     ]
     setExporting(true)
     try {
@@ -722,43 +738,20 @@ export default function AnalyticsView() {
         <Tabs.Panel className="analytics-period-panel" key={period} value={period}>
           {activePeriod === period ? (
             <>
-              <dl
-                aria-busy={isLoading}
-                aria-label="关键指标"
-                className="analytics-metrics"
-                data-motion="entrance"
-              >
-                {metrics.map((metric) => (
-                  <div className="analytics-metric" key={metric.label}>
-                    <dt className="analytics-metric__label">{metric.label}</dt>
-                    <dd className="analytics-metric__value">
-                      {isLoading ? (
-                        <Skeleton height="1.75rem" width="6rem" />
-                      ) : loadError ? (
-                        '暂不可用'
-                      ) : (
-                        metric.value
-                      )}
-                    </dd>
-                  </div>
-                ))}
-              </dl>
-
               <div className="analytics-chart-layout" data-motion="entrance">
                 <section aria-labelledby="analytics-trend-title" className="analytics-chart">
                   <header className="analytics-chart__header">
                     <h2 className="analytics-chart__title" id="analytics-trend-title">
-                      收款趋势
+                      本期收款
                     </h2>
-                    <ul aria-label="图例" className="analytics-legend">
-                      <li className="analytics-legend__item" data-series="actual">
-                        实际收款
-                      </li>
-                      <li className="analytics-legend__item" data-series="planned">
-                        计划收款
-                      </li>
-                    </ul>
+                    <span className="analytics-period-range">{rangeLabel}</span>
                   </header>
+                  <ReceiptMetrics
+                    metrics={cashMetrics}
+                    loading={isLoading}
+                    failed={loadError}
+                    label="本期收款指标"
+                  />
                   <div className="analytics-chart__body">
                     {isLoading ? (
                       <div
@@ -782,7 +775,7 @@ export default function AnalyticsView() {
                         className="analytics-chart-empty"
                         scene={<EmptyScene name="trend-empty" size="compact" />}
                         size="sm"
-                        title="本期暂无回款趋势"
+                        title={stats.period_received > 0 ? '暂无有日期的收款' : '本期暂无收款'}
                       />
                     ) : (
                       <>
@@ -795,7 +788,6 @@ export default function AnalyticsView() {
                             <Table.Row>
                               <Table.Column>周期</Table.Column>
                               <Table.Column>实际收款</Table.Column>
-                              <Table.Column>计划收款</Table.Column>
                             </Table.Row>
                           </Table.Header>
                           <Table.Body>
@@ -806,11 +798,6 @@ export default function AnalyticsView() {
                                   {trend.actual_values[index] == null
                                     ? '暂无数据'
                                     : formatCurrency(trend.actual_values[index] ?? 0)}
-                                </Table.Cell>
-                                <Table.Cell>
-                                  {trend.expected_values[index] == null
-                                    ? '暂无数据'
-                                    : formatCurrency(trend.expected_values[index] ?? 0)}
                                 </Table.Cell>
                               </Table.Row>
                             ))}
@@ -826,10 +813,20 @@ export default function AnalyticsView() {
                   className="analytics-chart analytics-chart--structure"
                 >
                   <header className="analytics-chart__header">
-                    <h2 className="analytics-chart__title" id="analytics-structure-title">
-                      收款结构
+                    <h2
+                      className="analytics-chart__title"
+                      id="analytics-structure-title"
+                      title={`${contractScope}，截至现在的已收与未收`}
+                    >
+                      合同回款
                     </h2>
                   </header>
+                  <ReceiptMetrics
+                    metrics={contractMetrics}
+                    loading={isLoading}
+                    failed={loadError}
+                    label={`${contractScope}回款指标`}
+                  />
                   <div className="analytics-chart__body">
                     {isLoading ? (
                       <div
@@ -855,36 +852,34 @@ export default function AnalyticsView() {
                         description="请检查连接后重新加载"
                         icon={<JadeIcon name="warning" size="1em" />}
                         size="sm"
-                        title="收款结构暂不可用"
+                        title="合同回款暂不可用"
                       />
                     ) : !hasStructureData ? (
                       <EmptyState
                         className="analytics-chart-empty"
                         scene={<EmptyScene name="structure-empty" size="compact" />}
                         size="sm"
-                        title="本期暂无收款结构"
+                        title="暂无合同"
                       />
                     ) : (
                       <div className="analytics-structure">
-                        <StructureDonut paid={plannedReceivedAmount} pending={pendingAmount} />
+                        <StructureDonut paid={contractReceivedAmount} pending={pendingAmount} />
                         <dl className="analytics-structure__legend">
                           <div className="analytics-structure__row" data-part="paid">
-                            <dt>已收款</dt>
-                            <dd>{formatAmount(stats.planned_received_amount)}</dd>
+                            <dt>合同已收</dt>
+                            <dd>{formatAmount(stats.contract_received)}</dd>
                           </div>
                           <div className="analytics-structure__row" data-part="pending">
-                            <dt>待收款</dt>
-                            <dd>{formatAmount(stats.pending_amount)}</dd>
-                            {overdueAmount > 0 ? (
-                              <dd className="analytics-structure__note">
-                                其中逾期 {formatAmount(overdueAmount)}
-                              </dd>
-                            ) : null}
+                            <dt>合同未收</dt>
+                            <dd>{formatAmount(stats.outstanding_total)}</dd>
                           </div>
                         </dl>
                       </div>
                     )}
                   </div>
+                  {!isLoading && !loadError && stats.overpaid_total > 0 ? (
+                    <p className="analytics-overpaid">超收 {formatAmount(stats.overpaid_total)}</p>
+                  ) : null}
                 </section>
               </div>
             </>

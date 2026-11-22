@@ -282,6 +282,7 @@ func updateProjectAndPercentages(project *models.Project, input dto.CreateProjec
 		if err != nil {
 			return err
 		}
+		amountChanged := current.TotalAmount != input.TotalAmount
 		current.Name, current.Company, current.TotalAmount = input.Name, input.Company, input.TotalAmount
 		current.Status, current.Type, current.ContractNumber = input.Status, input.Type, input.ContractNumber
 		current.ContractDate, current.PaymentMethod = contractDate, input.PaymentMethod
@@ -289,8 +290,10 @@ func updateProjectAndPercentages(project *models.Project, input dto.CreateProjec
 		if err := tx.Save(current).Error; err != nil {
 			return err
 		}
-		if err := tx.Model(&models.Payment{}).Where("project_id = ? AND user_id = ?", project.ID, project.UserID).Update("percentage", gorm.Expr("amount * 100.0 / ?", input.TotalAmount)).Error; err != nil {
-			return err
+		if amountChanged {
+			if err := tx.Model(&models.Payment{}).Where("project_id = ? AND user_id = ?", project.ID, project.UserID).Update("percentage", gorm.Expr("amount * 100.0 / ?", input.TotalAmount)).Error; err != nil {
+				return err
+			}
 		}
 		*project = *current
 		return nil

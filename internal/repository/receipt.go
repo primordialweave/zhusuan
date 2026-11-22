@@ -12,6 +12,11 @@ import (
 	"github.com/primordialweave/zhusuan/internal/models"
 )
 
+const (
+	receiptIntervalDay   = "day"
+	receiptIntervalMonth = "month"
+)
+
 // ReceiptRepository reads actual receipts and contract balances using aggregates.
 type ReceiptRepository struct {
 	db *gorm.DB
@@ -29,36 +34,43 @@ func (r *ReceiptRepository) OverviewTotals(userID int64) (*dto.ReceiptOverview, 
 	return r.Overview(userID, "", "")
 }
 
-// Overview returns lifetime balances and period receipts in one SQL statement,
-// so a concurrent receipt cannot make the two parts describe different snapshots.
+// Overview returns current balances of contracts signed in the range and cash
+// received in the range, including cash for contracts signed outside it.
+// Empty dates include all contracts. One statement keeps both aggregates consistent.
 func (r *ReceiptRepository) Overview(userID int64, startDate, endDate string) (*dto.ReceiptOverview, error) {
+	projects := r.db.Model(&models.Project{}).Where("user_id = ?", userID)
 	confirmed := r.db.Model(&models.Payment{}).
 		Where("user_id = ? AND status = ?", userID, constants.PaymentStatusConfirmed).
 		Group("project_id")
 	if startDate == "" && endDate == "" {
+		projects = projects.Select("id, total_amount, 1 AS contract_in_scope")
 		confirmed = confirmed.Select("project_id, COALESCE(SUM(amount), 0) AS received, COALESCE(SUM(amount), 0) AS period_received, COUNT(*) AS period_count")
 	} else {
 		start, endExclusive, err := paymentRangeBounds(startDate, endDate)
 		if err != nil {
 			return nil, err
 		}
+		// Keep all owned projects in the outer aggregate: filtering them here
+		// would incorrectly remove cash from contracts signed in other periods.
+		projects = projects.Select(`id, total_amount,
+CASE WHEN contract_date >= ? AND contract_date < ? THEN 1 ELSE 0 END AS contract_in_scope`, start, endExclusive)
 		confirmed = confirmed.Select(`project_id, COALESCE(SUM(amount), 0) AS received,
 SUM(CASE WHEN actual_date >= ? AND actual_date < ? THEN amount ELSE 0 END) AS period_received,
 SUM(CASE WHEN actual_date >= ? AND actual_date < ? THEN 1 ELSE 0 END) AS period_count`, start, endExclusive, start, endExclusive)
 	}
 	var totals dto.ReceiptOverview
-	err := r.db.Model(&models.Project{}).
+	err := r.db.Table("(?) AS projects", projects).
 		Joins("LEFT JOIN (?) AS receipts ON receipts.project_id = projects.id", confirmed).
-		Where("projects.user_id = ?", userID).
-		Select(`COALESCE(SUM(projects.total_amount), 0) AS contract_total,
-COALESCE(SUM(COALESCE(receipts.received, 0)), 0) AS received_total,
+		Select(`COALESCE(SUM(CASE WHEN projects.contract_in_scope = 1 THEN projects.total_amount ELSE 0 END), 0) AS contract_total,
+COALESCE(SUM(CASE WHEN projects.contract_in_scope = 1 THEN COALESCE(receipts.received, 0) ELSE 0 END), 0) AS received_total,
 COALESCE(SUM(CASE
+  WHEN projects.contract_in_scope = 0 THEN 0
   WHEN COALESCE(receipts.received, 0) <= 0 OR projects.total_amount <= 0 THEN 0
   WHEN COALESCE(receipts.received, 0) < projects.total_amount THEN COALESCE(receipts.received, 0)
   ELSE projects.total_amount END), 0) AS contract_received,
-COALESCE(SUM(CASE WHEN projects.total_amount - COALESCE(receipts.received, 0) > 0
+COALESCE(SUM(CASE WHEN projects.contract_in_scope = 1 AND projects.total_amount - COALESCE(receipts.received, 0) > 0
   THEN projects.total_amount - COALESCE(receipts.received, 0) ELSE 0 END), 0) AS outstanding_total,
-COALESCE(SUM(CASE WHEN COALESCE(receipts.received, 0) - projects.total_amount > 0
+COALESCE(SUM(CASE WHEN projects.contract_in_scope = 1 AND COALESCE(receipts.received, 0) - projects.total_amount > 0
   THEN COALESCE(receipts.received, 0) - projects.total_amount ELSE 0 END), 0) AS overpaid_total,
 COALESCE(SUM(COALESCE(receipts.period_received, 0)), 0) AS period_received,
 COALESCE(SUM(COALESCE(receipts.period_count, 0)), 0) AS period_count`).
@@ -95,7 +107,7 @@ func (r *ReceiptRepository) PeriodReceipts(userID int64, startDate, endDate stri
 
 // ReceiptTrend groups confirmed, dated cash receipts by day or month.
 func (r *ReceiptRepository) ReceiptTrend(userID int64, startDate, endDate, interval string) (map[string]float64, error) {
-	if interval != "day" && interval != "month" {
+	if interval != receiptIntervalDay && interval != receiptIntervalMonth {
 		return nil, fmt.Errorf("invalid receipt trend interval")
 	}
 	start, endExclusive, err := paymentRangeBounds(startDate, endDate)
@@ -122,7 +134,7 @@ func (r *ReceiptRepository) ReceiptTrend(userID int64, startDate, endDate, inter
 
 // ReceiptDateBounds finds the first and last known receipt calendar dates.
 func (r *ReceiptRepository) ReceiptDateBounds(userID int64) (string, string, error) {
-	dateExpr := getDateFormatExpr("payments.actual_date", "day", database.GetDBType())
+	dateExpr := getDateFormatExpr("payments.actual_date", receiptIntervalDay, database.GetDBType())
 	var result struct {
 		StartDate sql.NullString
 		EndDate   sql.NullString

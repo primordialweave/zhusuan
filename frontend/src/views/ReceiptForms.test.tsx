@@ -1,4 +1,4 @@
-import { fireEvent, screen, waitFor, within } from '@testing-library/react'
+import { fireEvent, screen, within } from '@testing-library/react'
 import dayjs from 'dayjs'
 import { Route, Routes } from 'react-router-dom'
 import { beforeEach, describe, expect, it, vi } from 'vitest'
@@ -124,6 +124,41 @@ describe('actual receipt forms', () => {
     })
   })
 
+  it('edits receipts in the same earliest-actual-date order regardless of API plan order', async () => {
+    vi.mocked(projectApi.getPayments).mockResolvedValue(
+      response([
+        {
+          ...legacy,
+          id: 8,
+          amount: 200,
+          status: 'confirmed',
+          actual_date: '2026-11-21T00:00:00Z',
+          plan_date: '2026-01-01',
+        },
+        {
+          ...legacy,
+          id: 7,
+          amount: 100,
+          status: 'confirmed',
+          actual_date: '2026-10-16T23:00:00-12:00',
+          plan_date: '2026-12-31',
+        },
+      ]) as never,
+    )
+    renderForm()
+    await screen.findByDisplayValue('合同项目')
+    const first = within(screen.getByRole('group', { name: '第 1 笔收款' }))
+    const second = within(screen.getByRole('group', { name: '第 2 笔收款' }))
+    expect(first.getByLabelText('实际到账日期')).toHaveValue('2026-10-16')
+    expect(first.getByLabelText(/收款金额/)).toHaveValue('100')
+    expect(second.getByLabelText('实际到账日期')).toHaveValue('2026-11-21')
+    expect(second.getByLabelText(/收款金额/)).toHaveValue('200')
+    fireEvent.change(second.getByLabelText('实际到账日期'), { target: { value: '2026-09-01' } })
+    const reordered = within(screen.getByRole('group', { name: '第 1 笔收款' }))
+    expect(reordered.getByLabelText('实际到账日期')).toHaveValue('2026-09-01')
+    expect(reordered.getByLabelText(/收款金额/)).toHaveValue('200')
+  })
+
   it('creates a contract without requiring any receipt or payment plan', async () => {
     renderForm('/projects/create')
     await fillMetadata()
@@ -227,16 +262,22 @@ describe('actual receipt forms', () => {
     fireEvent.click(screen.getByRole('button', { name: '清除收款分类' }))
     fireEvent.click(screen.getByRole('button', { name: '确认保存' }))
     await screen.findByRole('heading', { name: '项目详情' })
-    expect(paymentApi.create).toHaveBeenCalledWith(expect.objectContaining({ actual_date: '2026-11-19', stage: 'receipt', status: 'confirmed' }))
+    expect(paymentApi.create).toHaveBeenCalledWith(
+      expect.objectContaining({ actual_date: '2026-11-19', stage: 'receipt', status: 'confirmed' }),
+    )
     expect(vi.mocked(paymentApi.create).mock.calls[0]?.[0]).not.toHaveProperty('plan_date')
   })
 
   it('keeps all receipt records when the contract payment mode changes', async () => {
-    vi.mocked(projectApi.get).mockResolvedValue(response({ ...project, payment_method: '分期付款' }) as never)
-    vi.mocked(projectApi.getPayments).mockResolvedValue(response([
-      { ...legacy, status: 'confirmed', actual_date: '2026-11-15T00:00:00Z' },
-      { ...legacy, id: 8, status: 'confirmed', actual_date: '2026-11-16T00:00:00Z', amount: 200 },
-    ]) as never)
+    vi.mocked(projectApi.get).mockResolvedValue(
+      response({ ...project, payment_method: '分期付款' }) as never,
+    )
+    vi.mocked(projectApi.getPayments).mockResolvedValue(
+      response([
+        { ...legacy, status: 'confirmed', actual_date: '2026-11-15T00:00:00Z' },
+        { ...legacy, id: 8, status: 'confirmed', actual_date: '2026-11-16T00:00:00Z', amount: 200 },
+      ]) as never,
+    )
     renderForm()
     await screen.findByDisplayValue('合同项目')
     fireEvent.click(screen.getByRole('button', { name: '付款模式' }))

@@ -5,7 +5,11 @@ import { projectApi, type Payment, type ProjectRequest } from '@/api/project'
 import { PaymentPlanEditor } from '@/components/project/PaymentPlanEditor'
 import { ProjectFormSkeleton } from '@/components/project/ProjectFormSkeleton'
 import { MoneyInput } from '@/components/project/MoneyInput'
-import { validateProject, validatePaymentPlan } from '@/components/project/formValidation'
+import {
+  validateProject,
+  validatePaymentPlan,
+  type PaymentPlanErrors,
+} from '@/components/project/formValidation'
 import {
   createPaymentPlanItem,
   isReceivedPayment,
@@ -42,6 +46,7 @@ import {
 import { useToastStore } from '@/composables/useToast'
 import { formatCurrency } from '@/utils/format'
 import { toDateOnly } from '@/utils/dateOnly'
+import { sortPaymentsByReceiptDate, sortReceiptItems } from '@/utils/receiptOrder'
 import '@/styles/project-domain.css'
 
 const emptyForm: ProjectRequest = {
@@ -82,7 +87,7 @@ const getOptionLabel = (options: SelectOption[], value: string | undefined) =>
   options.find((option) => option.value === value)?.label || value || '待填写'
 
 const toPaymentPlanItem = (payment: Payment): PaymentPlanItem => ({
-  ...createPaymentPlanItem(payment.stage !== 'all'),
+  ...createPaymentPlanItem(),
   amount: String(payment.amount),
   id: payment.id,
   method: payment.method || 'bank_transfer',
@@ -106,6 +111,7 @@ export default function ProjectCreateView() {
   const [projectTypes, setProjectTypes] = useState<SelectOption[]>(defaultProjectTypeOptions)
   const [loadingProjectTypes, setLoadingProjectTypes] = useState(true)
   const [paymentItems, setPaymentItems] = useState<PaymentPlanItem[]>([])
+  const [paymentErrors, setPaymentErrors] = useState<PaymentPlanErrors>({})
   const paymentSaveStateRef = useRef(createPaymentPlanSaveState())
   const savedProjectRef = useRef<{ id: number; signature: string } | null>(null)
   const currentFormRef = useRef(form)
@@ -126,12 +132,6 @@ export default function ProjectCreateView() {
     form.type && !projectTypes.some((option) => option.value === form.type)
       ? [...projectTypes, { label: form.type, value: form.type }]
       : projectTypes
-  const unsavedItems = getUnsavedPaymentItems(
-    projectId || savedProjectRef.current?.id || 0,
-    paymentItems,
-    paymentSaveStateRef.current,
-  )
-  const paymentErrors = showValidation ? validatePaymentPlan(unsavedItems) : {}
   const receivedAmount = paymentItems.reduce(
     (sum, item) => sum + (isReceivedPayment(item.status) ? Number(item.amount) || 0 : 0),
     0,
@@ -194,6 +194,21 @@ export default function ProjectCreateView() {
 
   const updateForm = (patch: Partial<ProjectRequest>) =>
     setForm((current) => ({ ...current, ...patch }))
+
+  const updatePaymentItems = (items: PaymentPlanItem[]) => {
+    setPaymentItems(sortReceiptItems(items))
+    if (showValidation) {
+      setPaymentErrors(
+        validatePaymentPlan(
+          getUnsavedPaymentItems(
+            projectId || savedProjectRef.current?.id || 0,
+            items,
+            paymentSaveStateRef.current,
+          ),
+        ),
+      )
+    }
+  }
 
   const updateContractDate = async (date: string) => {
     const contractNumber = currentFormRef.current.contract_number || ''
@@ -268,7 +283,7 @@ export default function ProjectCreateView() {
           type: project.type || '',
         })
 
-        const loadedItems = paymentsRes.data.data.map(toPaymentPlanItem)
+        const loadedItems = sortPaymentsByReceiptDate(paymentsRes.data.data).map(toPaymentPlanItem)
         paymentSaveStateRef.current = createLoadedPaymentPlanSaveState(
           requestedProjectId,
           loadedItems,
@@ -315,7 +330,14 @@ export default function ProjectCreateView() {
     event.preventDefault()
     if (saving || saveRequestRef.current || (isEdit && loadedProjectId !== projectId)) return
     const errors = validateProject(form, amountText)
-    const planErrors = validatePaymentPlan(unsavedItems)
+    const planErrors = validatePaymentPlan(
+      getUnsavedPaymentItems(
+        projectId || savedProjectRef.current?.id || 0,
+        paymentItems,
+        paymentSaveStateRef.current,
+      ),
+    )
+    setPaymentErrors(planErrors)
     setValidationScope(id ?? 'new')
     if (Object.keys(errors).length || Object.keys(planErrors).length) {
       toastError('请检查并填写标红的必填项')
@@ -368,7 +390,9 @@ export default function ProjectCreateView() {
       const result = await savePaymentPlan(savedProjectId, submittedItems, state)
       if (!isCurrentSave()) return
       setPaymentItems((current) =>
-        current.map((item) => ({ ...item, id: result.ids.get(item.clientKey) ?? item.id })),
+        sortReceiptItems(
+          current.map((item) => ({ ...item, id: result.ids.get(item.clientKey) ?? item.id })),
+        ),
       )
       if (result.issue) {
         setSaveIssue(result.issue)
@@ -587,9 +611,9 @@ export default function ProjectCreateView() {
 
               <PaymentPlanEditor
                 className="project-form-section"
-                errors={paymentErrors}
+                errors={showValidation ? paymentErrors : {}}
                 items={paymentItems}
-                onItemsChange={setPaymentItems}
+                onItemsChange={updatePaymentItems}
                 title="收款记录"
               />
 

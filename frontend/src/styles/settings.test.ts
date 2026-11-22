@@ -32,13 +32,13 @@ describe('settings design-system ownership contract', () => {
     expect(settingsCss).not.toContain('!important')
   })
 
-  it('uses shared card radios for the database, token-expiry and theme choices', () => {
+  it('uses shared card radios for the database, token-expiry, theme and app-icon choices', () => {
     expect(radioSource).toContain("variant?: 'card' | 'default'")
     expect(radioSource).toContain('columns?: 1 | 2 | 3')
     expect(radioCss).toContain(".ods-radio[data-variant='card']")
     expect(dataSyncSource).toContain('columns={3}')
     expect(tokenSource).toContain('columns={2}')
-    expect(settingsProductionSource.match(/variant="card"/g)).toHaveLength(3)
+    expect(settingsProductionSource.match(/variant="card"/g)).toHaveLength(4)
     expect(settingsSource).toContain('<RadioGroup')
     expect(settingsSource).not.toContain('<SegmentedControl')
   })

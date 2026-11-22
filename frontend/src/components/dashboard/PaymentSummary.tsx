@@ -5,20 +5,21 @@ import { PAYMENT_SUMMARY_SCOPES, type PaymentSummaryScope } from './paymentSumma
 
 export type PaymentSummaryStatus = 'loading' | 'data' | 'error'
 
-const scopeCopy: Record<PaymentSummaryScope, { name: string; paid: string; pending: string }> = {
-  all: { name: '全部', paid: '已收款金额', pending: '待收款金额' },
-  month: { name: '本月', paid: '本月已收款', pending: '本月待收款' },
-  year: { name: '本年', paid: '本年已收款', pending: '本年待收款' },
+const contractScopes: Record<PaymentSummaryScope, string> = {
+  all: '全部合同',
+  year: '本年签约',
+  month: '本月签约',
 }
 
 export interface PaymentSummaryProps {
   onRetry?: () => void
-  /** Pressing the pie moves on to the next scope. */
+  /** Clicking the pie cycles contracts grouped by their signing date. */
   onScopeChange?: (scope: PaymentSummaryScope) => void
-  /** 已收款金额。 */
+  /** 已收合同款；每个项目最多计至该项目的合同总额。 */
   paid: number
-  /** 待收款金额，已包含逾期；超收时为负数。 */
+  /** 所选签约周期的合同未收金额，超收不抵消其他项目余额。 */
   pending: number
+  overpaid?: number
   refreshing?: boolean
   scope?: PaymentSummaryScope
   status: PaymentSummaryStatus
@@ -39,8 +40,8 @@ function SummaryPie({ paid, pending }: { paid: number; pending: number }) {
   const paidShare = total > 0 ? paidPart / total : 0
   const label =
     total > 0
-      ? `已收 ${Math.round(paidShare * 100)}%，待收 ${100 - Math.round(paidShare * 100)}%`
-      : '暂无收款数据'
+      ? `合同已收 ${Math.round(paidShare * 100)}%，合同未收 ${100 - Math.round(paidShare * 100)}%`
+      : '暂无合同数据'
   const domeVolumeId = `summary-pie-volume-${uid}`
   const bounceId = `summary-pie-bounce-${uid}`
   const catchlightId = `summary-pie-catchlight-${uid}`
@@ -73,14 +74,7 @@ function SummaryPie({ paid, pending }: { paid: number; pending: number }) {
           <stop className="payment-summary__highlight-stop" offset="56%" stopOpacity="0.24" />
           <stop className="payment-summary__highlight-stop" offset="100%" stopOpacity="0" />
         </radialGradient>
-        <linearGradient
-          gradientUnits="userSpaceOnUse"
-          id={rimId}
-          x1="2"
-          x2="23"
-          y1="12"
-          y2="2"
-        >
+        <linearGradient gradientUnits="userSpaceOnUse" id={rimId} x1="2" x2="23" y1="12" y2="2">
           <stop className="payment-summary__highlight-stop" offset="0%" stopOpacity="0" />
           <stop className="payment-summary__highlight-stop" offset="50%" stopOpacity="0.68" />
           <stop className="payment-summary__highlight-stop" offset="100%" stopOpacity="0" />
@@ -145,15 +139,14 @@ export default function PaymentSummary({
   onScopeChange,
   paid,
   pending,
+  overpaid = 0,
   refreshing = false,
   scope = 'all',
   status,
 }: PaymentSummaryProps) {
   const loading = status === 'loading'
   const empty = status === 'data' && paid === 0 && pending === 0
-  const overpaid = status === 'data' && pending < 0
-  const copy = scopeCopy[scope]
-  const next =
+  const nextScope =
     PAYMENT_SUMMARY_SCOPES[
       (PAYMENT_SUMMARY_SCOPES.indexOf(scope) + 1) % PAYMENT_SUMMARY_SCOPES.length
     ]
@@ -181,10 +174,10 @@ export default function PaymentSummary({
       ) : null}
       {onScopeChange ? (
         <Button
-          aria-label={`统计范围：${copy.name}，点击切换到${scopeCopy[next].name}`}
+          aria-label={`合同范围：${contractScopes[scope]}，点击切换到${contractScopes[nextScope]}`}
           className="payment-summary__switch"
-          onClick={() => onScopeChange(next)}
-          title={`切换到${scopeCopy[next].name}`}
+          onClick={() => onScopeChange(nextScope)}
+          title={`${contractScopes[scope]}，点击切换到${contractScopes[nextScope]}`}
           variant="bare"
         >
           {pie}
@@ -192,55 +185,56 @@ export default function PaymentSummary({
       ) : (
         pie
       )}
-      {status === 'error' ? (
-        <div className="payment-summary__message" role="alert">
-          <span>收款数据加载失败</span>
-          {onRetry ? (
-            <Button onClick={onRetry} size="sm" variant="ghost">
-              重试
-            </Button>
-          ) : null}
-        </div>
-      ) : empty ? (
-        <div className="payment-summary__message">
-          {copy.name === '全部' ? '' : copy.name}暂无收款数据
-        </div>
-      ) : (
-        <dl aria-live="polite" className="payment-summary__legend" key={scope}>
-          <div className="payment-summary__row">
-            <span aria-hidden="true" className="payment-summary__dot" data-part="paid" />
-            <dt className="payment-summary__label">{copy.paid}</dt>
-            <dd className="payment-summary__amount">
-              {loading ? (
-                <Skeleton
-                  className="payment-summary__amount-placeholder"
-                  height="1.2em"
-                  width="5.5rem"
-                />
-              ) : (
-                formatAmount(paid)
-              )}
-            </dd>
+      <div className="payment-summary__content">
+        {status === 'error' ? (
+          <div className="payment-summary__message" role="alert">
+            <span>收款数据加载失败</span>
+            {onRetry ? (
+              <Button onClick={onRetry} size="sm" variant="ghost">
+                重试
+              </Button>
+            ) : null}
           </div>
-          <div className="payment-summary__row">
-            <span aria-hidden="true" className="payment-summary__dot" data-part="pending" />
-            <dt className="payment-summary__label">
-              {overpaid ? `${scope === 'all' ? '' : copy.name}已超收` : copy.pending}
-            </dt>
-            <dd className="payment-summary__amount">
-              {loading ? (
-                <Skeleton
-                  className="payment-summary__amount-placeholder"
-                  height="1.2em"
-                  width="5.5rem"
-                />
-              ) : (
-                formatAmount(Math.abs(pending))
-              )}
-            </dd>
-          </div>
-        </dl>
-      )}
+        ) : empty ? (
+          <div className="payment-summary__message">暂无合同数据</div>
+        ) : (
+          <dl aria-live="polite" className="payment-summary__legend">
+            <div className="payment-summary__row">
+              <span aria-hidden="true" className="payment-summary__dot" data-part="paid" />
+              <dt className="payment-summary__label">合同已收</dt>
+              <dd className="payment-summary__amount">
+                {loading ? (
+                  <Skeleton
+                    className="payment-summary__amount-placeholder"
+                    height="1.2em"
+                    width="5.5rem"
+                  />
+                ) : (
+                  formatAmount(paid)
+                )}
+              </dd>
+            </div>
+            <div className="payment-summary__row">
+              <span aria-hidden="true" className="payment-summary__dot" data-part="pending" />
+              <dt className="payment-summary__label">合同未收</dt>
+              <dd className="payment-summary__amount">
+                {loading ? (
+                  <Skeleton
+                    className="payment-summary__amount-placeholder"
+                    height="1.2em"
+                    width="5.5rem"
+                  />
+                ) : (
+                  formatAmount(pending)
+                )}
+              </dd>
+            </div>
+          </dl>
+        )}
+        {status === 'data' && overpaid > 0 ? (
+          <span className="payment-summary__overpaid">超收 {formatAmount(overpaid)}</span>
+        ) : null}
+      </div>
       {refreshing && !loading ? <Skeleton className="payment-summary__refresh-skeleton" /> : null}
     </Surface>
   )

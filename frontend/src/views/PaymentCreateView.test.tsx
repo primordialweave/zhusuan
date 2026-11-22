@@ -215,7 +215,8 @@ describe('PaymentCreateView design system migration', () => {
 
     expect(screen.getByRole('button', { name: '添加收款' })).toBeInTheDocument()
     expect(screen.getAllByRole('group', { name: /第 .* 笔收款/ })).toHaveLength(2)
-    for (const category of screen.getAllByRole('button', { name: '收款分类' })) expect(category).toBeEnabled()
+    for (const category of screen.getAllByRole('button', { name: '收款分类' }))
+      expect(category).toBeEnabled()
   })
 
   it('loads a fixed project directly even when it is outside the first project page', async () => {

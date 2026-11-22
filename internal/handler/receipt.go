@@ -25,14 +25,18 @@ func receiptScope(c *gin.Context) (period string, year, month int, ok bool) {
 	return period, year, month, true
 }
 
-// ReceiptOverview reports lifetime contract balances and natural-period actual receipts.
+// ReceiptOverview reports current balances of period-signed contracts and period cash receipts.
 // @Summary 合同应收与实际收款统计
+// @Description 合同指标按所选周期的签约日期筛选合同，计算该批合同截至现在的已收、未收和超收；期间收款按实际到账日独立统计。all包含无签约日期和无实际到账日的历史记录。
 // @Tags Dashboard
 // @Security Bearer
+// @Produce json
 // @Param period query string false "自然周期: week, month, quarter, year, all (默认month)"
 // @Param year query int false "自选自然年份，传入后忽略period"
 // @Param month query int false "自选月份1-12；0或不传表示全年"
-// @Success 200 {object} dto.ReceiptOverview
+// @Success 200 {object} response.Response{data=dto.ReceiptOverview}
+// @Failure 400 {object} response.Response
+// @Failure 401 {object} response.Response
 // @Router /api/v1/dashboard/receipt-overview [get]
 func (h *DashboardHandler) ReceiptOverview(c *gin.Context) {
 	period, year, month, ok := receiptScope(c)
@@ -50,12 +54,16 @@ func (h *DashboardHandler) ReceiptOverview(c *gin.Context) {
 
 // ReceiptTrend returns actual cash receipts grouped by natural calendar days or months.
 // @Summary 实际收款趋势
+// @Description 自然周期按实际到账日聚合已确认收款；不包含待收计划或缺少实际到账日的历史记录。
 // @Tags Dashboard
 // @Security Bearer
+// @Produce json
 // @Param period query string false "自然周期: week, month, quarter, year, all (默认month)"
 // @Param year query int false "自选自然年份，传入后忽略period"
 // @Param month query int false "自选月份1-12；0或不传表示全年"
-// @Success 200 {object} dto.IncomeTrend
+// @Success 200 {object} response.Response{data=dto.IncomeTrend}
+// @Failure 400 {object} response.Response
+// @Failure 401 {object} response.Response
 // @Router /api/v1/dashboard/receipt-trend [get]
 func (h *DashboardHandler) ReceiptTrend(c *gin.Context) {
 	period, year, month, ok := receiptScope(c)

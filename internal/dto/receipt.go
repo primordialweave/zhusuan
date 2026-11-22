@@ -1,6 +1,7 @@
 package dto
 
-// ReceiptOverview separates lifetime contract balances from receipts in a calendar period.
+// ReceiptOverview separates current balances of contracts signed in the selected
+// calendar period from cash received in it. An all scope includes every contract.
 type ReceiptOverview struct {
 	ContractTotal    float64 `json:"contract_total"`
 	ReceivedTotal    float64 `json:"received_total"`

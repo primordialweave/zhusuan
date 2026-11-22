@@ -48,6 +48,7 @@ Var ZhusuanRegistryWritten
 ; Refresh only this app and its shortcuts; never delete or rebuild the user's icon cache.
 Function ZhusuanNotifyShell
     System::Call 'shell32::SHChangeNotify(i 0x2000, i 0x1005, w "$INSTDIR\${PRODUCT_EXECUTABLE}", p 0)'
+    System::Call 'shell32::SHChangeNotify(i 0x2000, i 0x1005, w "$INSTDIR\${SHORTCUT_ICON}", p 0)'
     System::Call 'shell32::SHChangeNotify(i 0x2000, i 0x1005, w "$SMPROGRAMS\${INFO_PRODUCTNAME}.lnk", p 0)'
     System::Call 'shell32::SHChangeNotify(i 0x2000, i 0x1005, w "$DESKTOP\${INFO_PRODUCTNAME}.lnk", p 0)'
 FunctionEnd

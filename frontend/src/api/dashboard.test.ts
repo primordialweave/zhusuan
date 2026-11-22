@@ -19,9 +19,27 @@ describe('dashboardApi cancellation', () => {
     dashboardApi.getReceiptTrend({ year: 2024, month: 2 }, signal)
     dashboardApi.getReceipts('2026-11-01', '2026-11-30')
     expect(vi.mocked(api.get).mock.calls).toEqual([
-      ['/dashboard/receipt-overview', expect.objectContaining({ params: expect.objectContaining({ period: 'year' }), signal })],
-      ['/dashboard/receipt-trend', expect.objectContaining({ params: expect.objectContaining({ year: 2024, month: 2 }), signal })],
-      ['/payments', expect.objectContaining({ params: expect.objectContaining({ date_field: 'actual', start_date: '2026-11-01', end_date: '2026-11-30' }) })],
+      [
+        '/dashboard/receipt-overview',
+        expect.objectContaining({ params: expect.objectContaining({ period: 'year' }), signal }),
+      ],
+      [
+        '/dashboard/receipt-trend',
+        expect.objectContaining({
+          params: expect.objectContaining({ year: 2024, month: 2 }),
+          signal,
+        }),
+      ],
+      [
+        '/payments',
+        expect.objectContaining({
+          params: expect.objectContaining({
+            date_field: 'actual',
+            start_date: '2026-11-01',
+            end_date: '2026-11-30',
+          }),
+        }),
+      ],
     ])
   })
 

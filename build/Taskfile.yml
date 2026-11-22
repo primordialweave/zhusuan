@@ -110,15 +110,20 @@ tasks:
     sources:
       - "appicon.png"
       - "appicon-dark.png"
+      - "appicon-windows.png"
+      - "appicon-windows.source.json"
       - "darwin/AppIcon.icon/icon.json"
       - "../scripts/build_macos_icon.py"
+      - "../scripts/build_windows_icon.py"
     generates:
       - "darwin/icons.icns"
       - "darwin/Assets.car"
       - "darwin/Assets.car.source.sha256"
       - "windows/icon.ico"
     cmds:
-      - wails3 generate icons -input appicon.png -macfilename darwin/icons.icns -windowsfilename windows/icon.ico
+      - python3 ../scripts/build_windows_icon.py --input appicon.png --output appicon-windows.png --verify
+      - wails3 generate icons -input appicon.png -macfilename darwin/icons.icns -windowsfilename=
+      - wails3 generate icons -input appicon-windows.png -macfilename= -windowsfilename windows/icon.ico -sizes 16,20,24,32,40,48,60,64,72,80,96,128,256
       - cmd: python3 ../scripts/build_macos_icon.py --input appicon.png --output darwin/icons.icns
         platforms: [darwin]
 

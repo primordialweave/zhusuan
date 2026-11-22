@@ -8,13 +8,25 @@ import (
 	"gorm.io/gorm"
 
 	"github.com/primordialweave/zhusuan/internal/database"
+	"github.com/primordialweave/zhusuan/internal/dto"
 	"github.com/primordialweave/zhusuan/internal/models"
 	"github.com/primordialweave/zhusuan/internal/repository"
 )
 
+func insertDatedReceiptProject(t *testing.T, input dto.CreateProjectRequest) *models.Project {
+	t.Helper()
+	project := insertContractProject(t, input)
+	contractDate, err := time.Parse(time.DateOnly, input.ContractDate)
+	require.NoError(t, err)
+	require.NoError(t, database.GetDB().Model(project).UpdateColumn("contract_date", contractDate).Error)
+	return project
+}
+
 func TestReceiptOverviewCalendarAmountMatchesTrend(t *testing.T) {
 	user := contractTestUser(t, 22101)
-	project := insertContractProject(t, contractTestInput(user.ID))
+	input := contractTestInput(user.ID)
+	input.ContractDate = "2024-02-01"
+	project := insertDatedReceiptProject(t, input)
 	svc := NewPaymentService()
 	_, err := svc.Create(receiptWriteInput(t, user.ID, project.ID, `{"amount":500,"actual_date":"2024-02-29","status":"confirmed"}`))
 	require.NoError(t, err)
@@ -44,7 +56,7 @@ func TestReceiptOverviewCalendarAmountMatchesTrend(t *testing.T) {
 
 func TestReceiptOverviewUnknownActualDateIsLifetimeOnly(t *testing.T) {
 	user := contractTestUser(t, 22102)
-	project := insertContractProject(t, contractTestInput(user.ID))
+	project := insertDatedReceiptProject(t, contractTestInput(user.ID))
 	unknown := models.Payment{UserID: user.ID, ProjectID: project.ID, Amount: 600, Status: "confirmed", Stage: "all", PlanDate: time.Now()}
 	require.NoError(t, database.GetDB().Create(&unknown).Error)
 	dashboard := NewDashboardService()
@@ -70,7 +82,7 @@ func TestReceiptOverviewUnknownActualDateIsLifetimeOnly(t *testing.T) {
 
 func TestReceiptOverviewReflectsWritesWithoutStaleStatisticsCache(t *testing.T) {
 	user := contractTestUser(t, 22103)
-	project := insertContractProject(t, contractTestInput(user.ID))
+	project := insertDatedReceiptProject(t, contractTestInput(user.ID))
 	dashboard := NewDashboardService()
 	before, err := dashboard.GetReceiptOverview(user.ID, "month", 0, 0)
 	require.NoError(t, err)
@@ -91,7 +103,7 @@ func TestReceiptOverviewReflectsWritesWithoutStaleStatisticsCache(t *testing.T) 
 
 func TestReceiptOverviewUsesOneAggregateQuery(t *testing.T) {
 	user := contractTestUser(t, 22104)
-	insertContractProject(t, contractTestInput(user.ID))
+	insertDatedReceiptProject(t, contractTestInput(user.ID))
 	db := database.GetDB()
 	queries := 0
 	callback := "test:receipt-overview-queries"

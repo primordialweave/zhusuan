@@ -16,6 +16,11 @@ import (
 	"gorm.io/gorm/clause"
 )
 
+const (
+	paymentStageAll     = "all"
+	paymentStageReceipt = "receipt"
+)
+
 // PaymentService 款项(回款)服务
 // 负责处理所有与款项相关的业务逻辑，包括生成收款计划、更新收款状态、
 // 执行回款确认事务以及自动计算回款百分比。
@@ -139,12 +144,20 @@ func (s *PaymentService) Create(input dto.PaymentRequest) (*models.Payment, erro
 		UserID:     input.UserID,
 	}
 	if strings.TrimSpace(payment.Stage) == "" {
-		payment.Stage = "all"
+		if actualDate != nil {
+			payment.Stage = paymentStageReceipt
+		} else {
+			payment.Stage = paymentStageAll
+		}
 	}
 
-	// 默认状态为"待收款"
+	// Actual-date input represents a receipt; plan-only legacy input remains pending.
 	if payment.Status == "" {
-		payment.Status = constants.PaymentStatusPending
+		if actualDate != nil {
+			payment.Status = constants.PaymentStatusConfirmed
+		} else {
+			payment.Status = constants.PaymentStatusPending
+		}
 	}
 
 	// 在事务中完成创建 + 规则处理 + 项目金额同步，确保一致性
@@ -224,6 +237,8 @@ func (s *PaymentService) applyUpdate(payment *models.Payment, input dto.PaymentR
 		if err := tx.Clauses(clause.Locking{Strength: "UPDATE"}).Where("id = ? AND user_id = ?", payment.ID, payment.UserID).First(&current).Error; err != nil {
 			return err
 		}
+		preserveUnknownActualDate := current.ActualDate == nil && actualDate == nil &&
+			(current.Status == constants.PaymentStatusConfirmed || current.Status == "paid")
 		current.Amount = input.Amount
 		if planDate != nil {
 			current.PlanDate = *planDate
@@ -234,7 +249,11 @@ func (s *PaymentService) applyUpdate(payment *models.Payment, input dto.PaymentR
 		if strings.TrimSpace(input.Stage) != "" {
 			current.Stage = input.Stage
 		} else if strings.TrimSpace(current.Stage) == "" {
-			current.Stage = "all"
+			if actualDate != nil {
+				current.Stage = paymentStageReceipt
+			} else {
+				current.Stage = paymentStageAll
+			}
 		}
 		if input.Status != "" {
 			current.Status = input.Status
@@ -244,6 +263,11 @@ func (s *PaymentService) applyUpdate(payment *models.Payment, input dto.PaymentR
 		// 重新应用业务规则（如重新计算百分比，因为金额可能变了）
 		if err := s.processPaymentRulesInTx(tx, payment); err != nil {
 			return err
+		}
+		// A known receipt with an unknown historical date must not be assigned a
+		// planned date merely because its amount or note is edited.
+		if preserveUnknownActualDate && payment.Status == constants.PaymentStatusConfirmed {
+			payment.ActualDate = nil
 		}
 		if err := tx.Save(payment).Error; err != nil {
 			return err

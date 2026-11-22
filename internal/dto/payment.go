@@ -8,7 +8,9 @@ type PaymentRequest struct {
 	Percentage float64 `json:"percentage"`
 	PlanDate   string  `json:"plan_date"`
 	ActualDate string  `json:"actual_date"`
-	// Status 收款状态；"paid" 为历史兼容值，服务层会归一为 "confirmed"
+	// Status on creation defaults to confirmed for actual-date input, pending for legacy plan-only input.
+	// Omitted status on update preserves the existing state.
+	// "paid" is a legacy alias normalized to confirmed.
 	Status string `json:"status" binding:"omitempty,oneof=pending confirmed overdue paid"`
 	Method string `json:"method"`
 	Remark string `json:"remark"`

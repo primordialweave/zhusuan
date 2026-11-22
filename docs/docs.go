@@ -101,6 +101,144 @@ const docTemplate = `{
                 }
             }
         },
+        "/api/v1/dashboard/receipt-overview": {
+            "get": {
+                "security": [
+                    {
+                        "Bearer": []
+                    }
+                ],
+                "description": "合同指标按所选周期的签约日期筛选合同，计算该批合同截至现在的已收、未收和超收；期间收款按实际到账日独立统计。all包含无签约日期和无实际到账日的历史记录。",
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "Dashboard"
+                ],
+                "summary": "合同应收与实际收款统计",
+                "parameters": [
+                    {
+                        "type": "string",
+                        "description": "自然周期: week, month, quarter, year, all (默认month)",
+                        "name": "period",
+                        "in": "query"
+                    },
+                    {
+                        "type": "integer",
+                        "description": "自选自然年份，传入后忽略period",
+                        "name": "year",
+                        "in": "query"
+                    },
+                    {
+                        "type": "integer",
+                        "description": "自选月份1-12；0或不传表示全年",
+                        "name": "month",
+                        "in": "query"
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "schema": {
+                            "allOf": [
+                                {
+                                    "$ref": "#/definitions/response.Response"
+                                },
+                                {
+                                    "type": "object",
+                                    "properties": {
+                                        "data": {
+                                            "$ref": "#/definitions/dto.ReceiptOverview"
+                                        }
+                                    }
+                                }
+                            ]
+                        }
+                    },
+                    "400": {
+                        "description": "Bad Request",
+                        "schema": {
+                            "$ref": "#/definitions/response.Response"
+                        }
+                    },
+                    "401": {
+                        "description": "Unauthorized",
+                        "schema": {
+                            "$ref": "#/definitions/response.Response"
+                        }
+                    }
+                }
+            }
+        },
+        "/api/v1/dashboard/receipt-trend": {
+            "get": {
+                "security": [
+                    {
+                        "Bearer": []
+                    }
+                ],
+                "description": "自然周期按实际到账日聚合已确认收款；不包含待收计划或缺少实际到账日的历史记录。",
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "Dashboard"
+                ],
+                "summary": "实际收款趋势",
+                "parameters": [
+                    {
+                        "type": "string",
+                        "description": "自然周期: week, month, quarter, year, all (默认month)",
+                        "name": "period",
+                        "in": "query"
+                    },
+                    {
+                        "type": "integer",
+                        "description": "自选自然年份，传入后忽略period",
+                        "name": "year",
+                        "in": "query"
+                    },
+                    {
+                        "type": "integer",
+                        "description": "自选月份1-12；0或不传表示全年",
+                        "name": "month",
+                        "in": "query"
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "schema": {
+                            "allOf": [
+                                {
+                                    "$ref": "#/definitions/response.Response"
+                                },
+                                {
+                                    "type": "object",
+                                    "properties": {
+                                        "data": {
+                                            "$ref": "#/definitions/dto.IncomeTrend"
+                                        }
+                                    }
+                                }
+                            ]
+                        }
+                    },
+                    "400": {
+                        "description": "Bad Request",
+                        "schema": {
+                            "$ref": "#/definitions/response.Response"
+                        }
+                    },
+                    "401": {
+                        "description": "Unauthorized",
+                        "schema": {
+                            "$ref": "#/definitions/response.Response"
+                        }
+                    }
+                }
+            }
+        },
         "/api/v1/dashboard/recent-projects": {
             "get": {
                 "security": [
@@ -687,6 +825,12 @@ const docTemplate = `{
                         "type": "string",
                         "description": "结束日期 (YYYY-MM-DD)",
                         "name": "end_date",
+                        "in": "query"
+                    },
+                    {
+                        "type": "string",
+                        "description": "日期字段: plan(默认)或actual；actual只查询已确认到账",
+                        "name": "date_field",
                         "in": "query"
                     },
                     {
@@ -1520,11 +1664,12 @@ const docTemplate = `{
             "type": "object",
             "required": [
                 "amount",
-                "plan_date",
-                "project_id",
-                "stage"
+                "project_id"
             ],
             "properties": {
+                "actual_date": {
+                    "type": "string"
+                },
                 "amount": {
                     "type": "number"
                 },
@@ -1547,7 +1692,7 @@ const docTemplate = `{
                     "type": "string"
                 },
                 "status": {
-                    "description": "Status 收款状态；\"paid\" 为历史兼容值，服务层会归一为 \"confirmed\"",
+                    "description": "Status on creation defaults to confirmed for actual-date input, pending for legacy plan-only input.\nOmitted status on update preserves the existing state.\n\"paid\" is a legacy alias normalized to confirmed.",
                     "type": "string",
                     "enum": [
                         "pending",
@@ -1555,6 +1700,38 @@ const docTemplate = `{
                         "overdue",
                         "paid"
                     ]
+                }
+            }
+        },
+        "dto.ReceiptOverview": {
+            "type": "object",
+            "properties": {
+                "contract_received": {
+                    "type": "number"
+                },
+                "contract_total": {
+                    "type": "number"
+                },
+                "end_date": {
+                    "type": "string"
+                },
+                "outstanding_total": {
+                    "type": "number"
+                },
+                "overpaid_total": {
+                    "type": "number"
+                },
+                "period_count": {
+                    "type": "integer"
+                },
+                "period_received": {
+                    "type": "number"
+                },
+                "received_total": {
+                    "type": "number"
+                },
+                "start_date": {
+                    "type": "string"
                 }
             }
         },

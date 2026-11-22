@@ -76,7 +76,7 @@
 
 .calendar-entry {
   display: grid;
-  grid-template-columns: minmax(0, 1fr) auto auto;
+  grid-template-columns: minmax(0, 1fr) auto;
   align-items: center;
   gap: var(--ods-space-4);
   padding-block: var(--ods-space-5);
@@ -190,7 +190,7 @@
 .calendar-loading-entry {
   display: grid;
   min-height: 4.5rem;
-  grid-template-columns: minmax(0, 1fr) auto auto;
+  grid-template-columns: minmax(0, 1fr) auto;
   align-items: center;
   gap: var(--ods-space-3);
   padding-block: var(--ods-space-3);

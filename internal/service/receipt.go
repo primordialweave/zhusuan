@@ -8,7 +8,8 @@ import (
 	"github.com/primordialweave/zhusuan/internal/repository"
 )
 
-// GetReceiptOverview returns lifetime contract balances and actual receipts for a natural period.
+// GetReceiptOverview returns current balances of contracts signed in a natural
+// period, separately from actual receipts received in that period for all contracts.
 func (s *DashboardService) GetReceiptOverview(userID int64, period string, year, month int) (*dto.ReceiptOverview, error) {
 	if userID <= 0 {
 		return nil, pkgerrors.ErrInvalidParam
@@ -63,7 +64,7 @@ func (s *DashboardService) GetReceiptTrend(userID int64, period string, year, mo
 		return nil, pkgerrors.Wrap(err, "收款结束日期无效")
 	}
 	trend.StartDate, trend.EndDate = rangeValue.StartDate, rangeValue.EndDate
-	if rangeValue.Interval == "month" {
+	if rangeValue.Interval == calendarUnitMonth {
 		start = time.Date(start.Year(), start.Month(), 1, 0, 0, 0, 0, start.Location())
 		for date := start; !date.After(end); date = date.AddDate(0, 1, 0) {
 			key := date.Format("2006-01")

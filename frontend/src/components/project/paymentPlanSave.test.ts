@@ -23,9 +23,13 @@ describe('payment plan date payloads', () => {
     async (actualDate) => {
       const item = { ...createPaymentPlanItem(), amount: '100', actualDate, stage: '' }
       await savePaymentPlan(42, [item], createPaymentPlanSaveState())
-      expect(paymentApi.create).toHaveBeenCalledExactlyOnceWith(expect.objectContaining({
-        actual_date: '2026-11-22', status: 'confirmed', stage: 'receipt',
-      }))
+      expect(paymentApi.create).toHaveBeenCalledExactlyOnceWith(
+        expect.objectContaining({
+          actual_date: '2026-11-22',
+          status: 'confirmed',
+          stage: 'receipt',
+        }),
+      )
       expect(vi.mocked(paymentApi.create).mock.calls[0]?.[0]).not.toHaveProperty('plan_date')
       expect(item.actualDate).toBe(actualDate)
     },
@@ -65,7 +69,7 @@ describe('payment plan failure summaries', () => {
       .mockRejectedValueOnce(new Error('计划日期格式错误'))
       .mockRejectedValueOnce(new Error('网络暂时不可用'))
     const items = Array.from({ length: 3 }, () => ({
-      ...createPaymentPlanItem(true),
+      ...createPaymentPlanItem(),
       amount: '100',
       planDate: '2026-11-22',
     }))

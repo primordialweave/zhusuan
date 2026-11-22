@@ -30,6 +30,7 @@ import { useProjectExport } from '@/components/project/useProjectExport'
 import { useToastStore } from '@/composables/useToast'
 import { formatCurrency, formatDate } from '@/utils/format'
 import { toDateOnly } from '@/utils/dateOnly'
+import { sortPaymentsByReceiptDate } from '@/utils/receiptOrder'
 import '@/styles/project-domain.css'
 import '@/styles/main-page-loading.css'
 
@@ -150,7 +151,7 @@ export default function ProjectDetailView() {
           return
         }
         setProject(projectRes.data.data)
-        setPayments(paymentsRes.data.data)
+        setPayments(sortPaymentsByReceiptDate(paymentsRes.data.data))
       } catch {
         if (
           !isMountedRef.current ||
@@ -306,8 +307,10 @@ export default function ProjectDetailView() {
     : 0
   const latestReceipt = payments
     .filter(isPaymentSettled)
-    .sort((left, right) =>
-      toDateOnly(right.actual_date).localeCompare(toDateOnly(left.actual_date)),
+    .sort(
+      (left, right) =>
+        toDateOnly(right.actual_date).localeCompare(toDateOnly(left.actual_date)) ||
+        right.id - left.id,
     )[0]
   const runwayStage =
     project.status === 'completed' || project.status === 'archived'

@@ -51,6 +51,7 @@ public static class ZhusuanTaskbarProbe {
     [DllImport("advapi32.dll", CharSet = CharSet.Unicode, ExactSpelling = true, SetLastError = true)]
     private static extern bool ConvertSidToStringSidW(IntPtr sid, out IntPtr text);
     [DllImport("user32.dll")] private static extern bool SetCursorPos(int x, int y);
+    [DllImport("user32.dll")] private static extern bool GetCursorPos(out NativePoint point);
     [DllImport("user32.dll")] private static extern void mouse_event(uint flags, uint x, uint y, uint data, UIntPtr extra);
     [DllImport("user32.dll")] private static extern void keybd_event(byte key, byte scan, uint flags, UIntPtr extra);
     [DllImport("user32.dll", CharSet = CharSet.Unicode, ExactSpelling = true)]
@@ -122,6 +123,11 @@ public static class ZhusuanTaskbarProbe {
         public uint ProcessId;
         public string Class, Title;
         public NativeRect Bounds;
+    }
+    public class ClickValue {
+        public int RequestedX, RequestedY, CursorX, CursorY;
+        public string TimestampUTC;
+        public NativeWindowValue NativeHitBeforeInput;
     }
 
     public static string[] CodeUnits(string value) {
@@ -228,9 +234,16 @@ public static class ZhusuanTaskbarProbe {
                                        Arguments = arguments.ToString(), IconPath = icon.ToString(), IconIndex = index };
         } finally { Marshal.FinalReleaseComObject(instance); }
     }
-    public static void RightClick(int x, int y) {
+    public static ClickValue PrepareRightClick(int x, int y) {
         if (!SetCursorPos(x, y)) throw new InvalidOperationException("SetCursorPos failed.");
         Thread.Sleep(100);
+        NativePoint cursor;
+        if (!GetCursorPos(out cursor) || cursor.X != x || cursor.Y != y) throw new InvalidOperationException("Cursor did not reach the observed taskbar button.");
+        var trace = new ClickValue { RequestedX = x, RequestedY = y, CursorX = cursor.X, CursorY = cursor.Y,
+            TimestampUTC = DateTime.UtcNow.ToString("o"), NativeHitBeforeInput = WindowAt(x, y) };
+        return trace;
+    }
+    public static void SendRightClick() {
         mouse_event(0x0008, 0, 0, 0, UIntPtr.Zero);
         mouse_event(0x0010, 0, 0, 0, UIntPtr.Zero);
     }
@@ -256,6 +269,16 @@ function Wait-TaskbarCondition([string]$description, [scriptblock]$condition, [i
 function Get-ElementSnapshot($element) {
     $current = $element.Current
     $bounds = $current.BoundingRectangle
+    $hasInvokePattern = $false
+    $patternError = $null
+    try {
+        $hasInvokePattern = @($element.GetSupportedPatterns() | Where-Object { $_.Id -eq [System.Windows.Automation.InvokePattern]::Pattern.Id }).Count -gt 0
+    } catch [System.Runtime.InteropServices.COMException] {
+        # Pattern enumeration is optional diagnostic data. A stale/unsupported
+        # peer must not discard valid names and geometry from the whole popup.
+        $patternError = [ordered]@{ operation = 'GetSupportedPatterns'; message = $_.Exception.Message;
+            hresult = ('0x{0:X8}' -f ([uint32]([int64]$_.Exception.HResult -band 0xffffffff))) }
+    }
     return [ordered]@{
         runtimeId = ($element.GetRuntimeId() -join '.')
         name = $current.Name
@@ -270,7 +293,8 @@ function Get-ElementSnapshot($element) {
         offscreen = $current.IsOffscreen
         controlElement = $current.IsControlElement
         contentElement = $current.IsContentElement
-        hasInvokePattern = @($element.GetSupportedPatterns() | Where-Object { $_.Id -eq [System.Windows.Automation.InvokePattern]::Pattern.Id }).Count -gt 0
+        hasInvokePattern = $hasInvokePattern
+        optionalPatternError = $patternError
         bounds = [ordered]@{ left = $bounds.Left; top = $bounds.Top; width = $bounds.Width; height = $bounds.Height }
     }
 }
@@ -410,6 +434,55 @@ function Get-TaskbarHitTests {
         if ($screen.Contains($x, $y)) { $hits.Add([pscustomobject]@{ x = $x; y = $y; native = [ZhusuanTaskbarProbe]::WindowAt($x, $y) }) }
     }
     return $hits.ToArray()
+}
+
+function Invoke-ObservedTaskbarRightClick {
+    $expected = $script:report.checks.chosenButton
+    $current = @(Get-TaskbarButtons | Where-Object { $_.snapshot.automationId -eq $expected.automationId -and
+        $_.snapshot.class -eq $expected.class -and $_.snapshot.name -eq $expected.name })
+    if ($current.Count -ne 1) { throw 'The owned taskbar button is not unambiguous before real input.' }
+    $snapshot = Get-ElementSnapshot $current[0].element
+    $bounds = $snapshot.bounds
+    if ($bounds.width -le 0 -or $bounds.height -le 0 -or $snapshot.offscreen) { throw 'The owned taskbar button has no visible hit area.' }
+    $x = [int]($bounds.left + $bounds.width / 2)
+    $y = [int]($bounds.top + $bounds.height / 2)
+    $attempt = [ordered]@{ timestampUTC = [DateTime]::UtcNow.ToString('o'); currentButton = $snapshot;
+        requestedPoint = @{ x = $x; y = $y }; uiaHitBeforeInput = $null; uiaHitRelated = $null;
+        optionalHitError = $null; input = $null; inputSent = $false }
+    # Persist the attempted geometry before any diagnostic or native assertion,
+    # so a failed pre-input check cannot erase the evidence as run6 did.
+    $script:report.checks.pendingRightClick = $attempt
+    try {
+        $hit = [System.Windows.Automation.AutomationElement]::FromPoint([System.Windows.Point]::new($x, $y))
+        $hitSnapshot = Get-ElementSnapshot $hit
+        $attempt.uiaHitBeforeInput = $hitSnapshot
+        $matchesButton = $hitSnapshot.runtimeId -eq $snapshot.runtimeId
+        $walker = [System.Windows.Automation.TreeWalker]::RawViewWalker
+        for ($depth = 0; -not $matchesButton -and $hit -and $depth -lt 16; $depth++) {
+            $hit = $walker.GetParent($hit)
+            if ($hit) { $matchesButton = ($hit.GetRuntimeId() -join '.') -eq $snapshot.runtimeId }
+        }
+        $attempt.uiaHitRelated = $matchesButton
+    } catch [System.Runtime.InteropServices.COMException] {
+        $attempt.optionalHitError = [ordered]@{ message = $_.Exception.Message; hresult = $_.Exception.HResult }
+    } catch [System.Windows.Automation.ElementNotAvailableException] {
+        $attempt.optionalHitError = [ordered]@{ message = $_.Exception.Message; hresult = $_.Exception.HResult }
+    }
+    $script:report.checks.chosenButton = $snapshot
+    $trace = [ZhusuanTaskbarProbe]::PrepareRightClick($x, $y)
+    $attempt.input = $trace
+    $attempt.timestampUTC = $trace.TimestampUTC
+    $inside = ($trace.CursorX -ge $bounds.left -and $trace.CursorX -lt $bounds.left + $bounds.width -and
+        $trace.CursorY -ge $bounds.top -and $trace.CursorY -lt $bounds.top + $bounds.height)
+    $proof = if ($trace.NativeHitBeforeInput) { Get-TrustedShellProcess $trace.NativeHitBeforeInput.ProcessId } else { $null }
+    $attempt.nativeHitProof = $proof
+    if (-not $inside -or -not $proof -or -not $proof.trusted) { throw 'The actual native cursor hit is outside the observed button or trusted shell.' }
+    # FromPoint may return a taskbar ancestor/provider peer with a different
+    # RuntimeId. It is diagnostic; native hit + fresh bounds govern real input.
+    [ZhusuanTaskbarProbe]::SendRightClick()
+    $attempt.inputSent = $true
+    $attempt.foregroundBeforeObservation = [ZhusuanTaskbarProbe]::InspectWindow([ZhusuanTaskbarProbe]::GetForegroundWindow())
+    return $attempt
 }
 
 function Get-RawAncestorIds($snapshot, $map) {
@@ -655,8 +728,9 @@ try {
     $report.checks.rawShellBeforeClick = @($rawBeforeClick | ForEach-Object { $_.snapshot })
     $rawVisibleIdsBeforeClick = @($rawBeforeClick | Where-Object { Test-VisiblePopupNode $_.snapshot } | ForEach-Object { $_.snapshot.runtimeId })
     $report.checks.nativeShellWindowsBeforeClick = [ZhusuanTaskbarProbe]::VisibleShellWindows($report.checks.taskbarRoot.processId)
-    $bounds = $button.element.Current.BoundingRectangle
-    [ZhusuanTaskbarProbe]::RightClick([int]($bounds.Left + $bounds.Width / 2), [int]($bounds.Top + $bounds.Height / 2))
+    $clickAttempts = [System.Collections.Generic.List[object]]::new()
+    $report.checks.rightClickAttempts = $clickAttempts
+    $clickAttempts.Add((Invoke-ObservedTaskbarRightClick))
     $popupOpened = $true
     $popup = $null
     $popupAutomationObserved = $false
@@ -673,6 +747,17 @@ try {
         $script:report.checks.nativeForegroundAfterClick = $foreground
         $nativeRoots = @(Get-NativePopupRoots @($allNative + @($hits | ForEach-Object { $_.native }) + @($foreground)) $nativeHandlesBeforeClick)
         $script:report.checks.nativePopupRootCandidates = $nativeRoots
+        if ($clickAttempts.Count -eq 1 -and $nativeRoots.Count -eq 0 -and $hits.Count -gt 0 -and
+            @($hits | Where-Object { -not $_.native -or $_.native.ProcessId -ne $script:process.Id }).Count -eq 0 -and
+            ([DateTime]::UtcNow - [DateTimeOffset]::Parse($clickAttempts[0].timestampUTC).UtcDateTime).TotalSeconds -ge 3) {
+            # Run5's third phase had no native popup: both hit tests still reached
+            # the app, while both baselines had worked. Retry real input once from
+            # refreshed UIA geometry, within this SAME wait deadline.
+            $clickAttempts[0].verifiedPopupAbsence = [ordered]@{ timestampUTC = [DateTime]::UtcNow.ToString('o');
+                nativeWindows = $allNative; hitTests = $hits; foreground = $foreground }
+            $clickAttempts.Add((Invoke-ObservedTaskbarRightClick))
+            return $false
+        }
         $nodes = @(Get-RawShellNodes)
         $nodeIds = [System.Collections.Generic.HashSet[string]]::new()
         foreach ($node in $nodes) { [void]$nodeIds.Add($node.snapshot.runtimeId) }

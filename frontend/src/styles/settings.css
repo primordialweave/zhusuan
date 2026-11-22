@@ -391,6 +391,71 @@
   text-align: center;
 }
 
+/* App icon picker: compact horizontal cards with 42px sculpted icon + label (no oversized box). */
+.settings-app-icon-option {
+  display: flex;
+  min-width: 0;
+  align-items: center;
+  justify-content: center;
+  gap: var(--ods-space-3);
+  padding-block: var(--ods-space-1);
+}
+
+.settings-app-icon {
+  position: relative;
+  display: block;
+  width: 2.625rem;
+  height: 2.625rem;
+  flex: 0 0 auto;
+  filter: drop-shadow(0 4px 8px var(--ods-material-jade-icon-shadow));
+  transition: transform var(--ods-duration-fast) var(--ods-ease-spring);
+}
+
+@media (hover: hover) and (pointer: fine) {
+  .settings-app-icon-option:hover .settings-app-icon {
+    transform: translateY(-1px) scale(1.05);
+  }
+}
+
+.settings-app-icon__layer {
+  position: absolute;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  inset: 0;
+}
+
+.settings-app-icon__layer[data-half] {
+  clip-path: polygon(100% 0, 100% 100%, 0 100%);
+}
+
+.settings-app-icon__image {
+  width: 100%;
+  height: 100%;
+}
+
+.settings-app-icon__name {
+  color: var(--ods-color-fg-default);
+  font-size: var(--ods-font-size-sm);
+  font-weight: var(--ods-font-weight-medium);
+  line-height: var(--ods-line-height-tight);
+  white-space: nowrap;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .settings-app-icon,
+  .settings-app-icon-option:hover .settings-app-icon {
+    transform: none;
+    transition: none;
+  }
+}
+
+:root[data-motion='reduced'] .settings-app-icon,
+:root[data-motion='reduced'] .settings-app-icon-option:hover .settings-app-icon {
+  transform: none;
+  transition: none;
+}
+
 /* Notifications: fixed columns, so the tags and times line up down the list. Unread rows
    carry a dot and a heavier title. */
 .notification-row {

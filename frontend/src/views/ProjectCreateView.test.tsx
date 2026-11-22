@@ -193,7 +193,12 @@ describe('ProjectCreateView design system migration', () => {
     )
     vi.mocked(projectApi.getPayments).mockResolvedValue(
       apiResponse([
-        { ...payments[0], plan_date: '2026-08-01T00:00:00+14:00', actual_date: null, status: 'pending' },
+        {
+          ...payments[0],
+          plan_date: '2026-08-01T00:00:00+14:00',
+          actual_date: null,
+          status: 'pending',
+        },
         {
           ...payments[1],
           amount: 60_000,
@@ -204,8 +209,8 @@ describe('ProjectCreateView design system migration', () => {
       ]) as never,
     )
     vi.mocked(paymentApi.update)
-      .mockResolvedValueOnce(apiResponse(payments[0]) as never)
       .mockRejectedValueOnce(new Error('计划日期格式错误'))
+      .mockResolvedValueOnce(apiResponse(payments[0]) as never)
       .mockResolvedValueOnce(apiResponse(payments[1]) as never)
     renderEditor()
     await screen.findByRole('group', { name: '第 2 笔收款' })
@@ -216,8 +221,8 @@ describe('ProjectCreateView design system migration', () => {
       fireEvent.change(within(group).getByLabelText('备注'), { target: { value: '编辑后的备注' } })
     }
     await user.click(screen.getByRole('button', { name: '确认保存' }))
-    expect(await screen.findByRole('alert')).toHaveTextContent('第 2 笔收款未保存')
-    expect(errorToast).toHaveBeenCalledWith('第 2 笔收款未保存：计划日期格式错误')
+    expect(await screen.findByRole('alert')).toHaveTextContent('第 1 笔收款未保存')
+    expect(errorToast).toHaveBeenCalledWith('第 1 笔收款未保存：计划日期格式错误')
     expect(projectApi.update).toHaveBeenCalledExactlyOnceWith(
       42,
       expect.objectContaining({
@@ -229,13 +234,18 @@ describe('ProjectCreateView design system migration', () => {
     )
     expect(paymentApi.update).toHaveBeenNthCalledWith(
       1,
-      7,
-      expect.objectContaining({ plan_date: '2026-08-01', amount: 30_000, status: 'pending' }),
+      8,
+      expect.objectContaining({
+        actual_date: '2026-09-02',
+        plan_date: '2026-09-01',
+        amount: 60_000,
+        status: 'confirmed',
+      }),
     )
     expect(paymentApi.update).toHaveBeenNthCalledWith(
       2,
-      8,
-      expect.objectContaining({ plan_date: '2026-09-01', amount: 60_000, status: 'confirmed' }),
+      7,
+      expect.objectContaining({ plan_date: '2026-08-01', amount: 30_000, status: 'pending' }),
     )
     await user.click(screen.getByRole('button', { name: '确认保存' }))
     await waitFor(() => expect(paymentApi.update).toHaveBeenCalledTimes(3))
@@ -364,6 +374,88 @@ describe('ProjectCreateView design system migration', () => {
       30000, 70000, 70000,
     ])
     expect(paymentApi.update).not.toHaveBeenCalled()
+  }, 30_000)
+
+  it('orders acknowledged same-day receipt IDs after a partial save and retries only the draft', async () => {
+    const user = userEvent.setup()
+    vi.mocked(paymentApi.create)
+      .mockResolvedValueOnce(apiResponse({ ...payments[0], id: 8 }) as never)
+      .mockResolvedValueOnce(apiResponse({ ...payments[1], id: 7 }) as never)
+      .mockRejectedValueOnce(new Error('第三笔保存失败'))
+      .mockResolvedValueOnce(apiResponse({ ...payments[0], id: 9 }) as never)
+    render(
+      <Routes>
+        <Route element={<ProjectCreateView />} path="/projects/create" />
+        <Route element={<h1>项目列表</h1>} path="/projects" />
+      </Routes>,
+      { initialEntries: ['/projects/create'] },
+    )
+    await fillNewProject(user)
+    await user.click(screen.getByRole('button', { name: '添加收款' }))
+    const draft = screen.getByRole('group', { name: '第 3 笔收款' })
+    fireEvent.change(within(draft).getByLabelText(/收款金额/), { target: { value: '1000' } })
+    await chooseDate(user, '实际到账日期', draft)
+    fireEvent.change(within(draft).getByLabelText('备注'), {
+      target: { value: '等待重试' },
+    })
+
+    await user.click(screen.getByRole('button', { name: '确认保存' }))
+    expect(await screen.findByRole('alert')).toHaveTextContent('第 3 笔收款未保存')
+    const groups = screen.getAllByRole('group', { name: /第 .* 笔收款/ })
+    expect(
+      groups.map((group) => (within(group).getByLabelText(/收款金额/) as HTMLInputElement).value),
+    ).toEqual(['70000', '30000', '1000'])
+    expect(within(groups[2]!).getByLabelText('备注')).toHaveValue('等待重试')
+    const actualDates = new Set(
+      vi.mocked(paymentApi.create).mock.calls.map(([payload]) => payload.actual_date),
+    )
+    expect(actualDates.size).toBe(1)
+
+    await user.click(screen.getByRole('button', { name: '确认保存' }))
+    await screen.findByRole('heading', { name: '项目列表' })
+    expect(projectApi.create).toHaveBeenCalledOnce()
+    expect(projectApi.update).not.toHaveBeenCalled()
+    expect(paymentApi.create).toHaveBeenCalledTimes(4)
+    expect(vi.mocked(paymentApi.create).mock.calls.map(([payload]) => payload.amount)).toEqual([
+      30000, 70000, 1000, 1000,
+    ])
+    expect(paymentApi.update).not.toHaveBeenCalled()
+    expect(paymentApi.delete).not.toHaveBeenCalled()
+  }, 30_000)
+
+  it('moves an unfinished same-day receipt behind the acknowledged receipt without repeating its write', async () => {
+    const user = userEvent.setup()
+    vi.mocked(paymentApi.create)
+      .mockRejectedValueOnce(new Error('第一笔保存失败'))
+      .mockResolvedValueOnce(apiResponse(payments[1]) as never)
+      .mockResolvedValueOnce(apiResponse({ ...payments[0], id: 9 }) as never)
+    render(
+      <Routes>
+        <Route element={<ProjectCreateView />} path="/projects/create" />
+        <Route element={<h1>项目列表</h1>} path="/projects" />
+      </Routes>,
+      { initialEntries: ['/projects/create'] },
+    )
+    await fillNewProject(user)
+    await user.click(screen.getByRole('button', { name: '确认保存' }))
+    expect(await screen.findByRole('alert')).toHaveTextContent('第 1 笔收款未保存')
+    expect(
+      within(screen.getByRole('group', { name: '第 1 笔收款' })).getByLabelText(/收款金额/),
+    ).toHaveValue('70000')
+    expect(
+      within(screen.getByRole('group', { name: '第 2 笔收款' })).getByLabelText(/收款金额/),
+    ).toHaveValue('30000')
+
+    await user.click(screen.getByRole('button', { name: '确认保存' }))
+    await screen.findByRole('heading', { name: '项目列表' })
+    expect(projectApi.create).toHaveBeenCalledOnce()
+    expect(projectApi.update).not.toHaveBeenCalled()
+    expect(paymentApi.create).toHaveBeenCalledTimes(3)
+    expect(vi.mocked(paymentApi.create).mock.calls.map(([payload]) => payload.amount)).toEqual([
+      30000, 70000, 30000,
+    ])
+    expect(paymentApi.update).not.toHaveBeenCalled()
+    expect(paymentApi.delete).not.toHaveBeenCalled()
   }, 30_000)
 
   it('does not repeat acknowledged deletions or the saved project when a deletion is retried', async () => {
@@ -638,7 +730,10 @@ describe('ProjectCreateView design system migration', () => {
     expect(availableDate).not.toBeNull()
     await user.click(availableDate!)
     await user.click(screen.getByRole('button', { name: '删除第 2 笔收款' }))
-    fireEvent.change(within(screen.getByRole('group', { name: '第 1 笔收款' })).getByLabelText('备注'), { target: { value: '更新备注' } })
+    fireEvent.change(
+      within(screen.getByRole('group', { name: '第 1 笔收款' })).getByLabelText('备注'),
+      { target: { value: '更新备注' } },
+    )
     await user.click(screen.getByRole('button', { name: '确认保存' }))
 
     await waitFor(() => expect(paymentApi.delete).toHaveBeenCalledWith(8))

@@ -31,15 +31,64 @@ const payments = [
 ] as Payment[]
 
 describe('project export', () => {
-  it('writes the record, then the payments in plan order with readable statuses', () => {
+  it('exports the default receipt classification in Chinese while giving dictionary labels priority', () => {
+    const receipt = { ...payments[1], stage: 'receipt' }
+    expect(buildProjectExportRows(project, [receipt]).at(-1)?.[0]).toBe('收款')
+    expect(
+      buildProjectExportRows(project, [receipt], { stage: { receipt: '维护费' } }).at(-1)?.[0],
+    ).toBe('维护费')
+  })
+
+  it('keeps overpayment separate from the nonnegative contract balance and bounded collection rate', () => {
+    const rows = buildProjectExportRows(
+      { ...project, total_amount: 1000, received_amount: 1500 },
+      [],
+    )
+    expect(rows).toContainEqual(['已收款', 1500])
+    expect(rows).toContainEqual(['合同未收余额', 0])
+    expect(rows).toContainEqual(['收款进度', '100%'])
+    expect(rows).toContainEqual(['超收金额', 500])
+    const negativeLegacy = buildProjectExportRows(
+      { ...project, total_amount: 1000, received_amount: -100 },
+      [],
+    )
+    expect(negativeLegacy).toContainEqual(['收款进度', '0%'])
+    expect(negativeLegacy.some((row) => row[0] === '超收金额')).toBe(false)
+  })
+  it('exports actual receipts in chronological order and keeps legacy dates without assigning them to receipts', () => {
+    const rows = buildProjectExportRows(project, [
+      {
+        ...payments[1],
+        id: 8,
+        stage: 'later',
+        actual_date: '2026-11-21T00:00:00Z',
+        plan_date: '2026-01-01',
+      },
+      {
+        ...payments[1],
+        id: 7,
+        stage: 'earlier',
+        actual_date: '2026-10-16T23:00:00-12:00',
+        plan_date: '2026-12-31',
+      },
+      { ...payments[1], id: 9, stage: 'unknown', actual_date: null, plan_date: '2026-01-01' },
+      { ...payments[0], id: 10, stage: 'pending', actual_date: null, plan_date: '2026-01-01' },
+    ] as Payment[])
+    const data = rows.slice(-4)
+    expect(data.map((row) => row[0])).toEqual(['earlier', 'later', 'unknown', 'pending'])
+    expect(data[0]?.[3]).toBe('2026-10-16')
+    expect(data[0]?.[4]).toBe('2026-12-31')
+    expect(data[2]?.[3]).toBe('')
+  })
+  it('writes the record, then actual receipts and legacy plans with readable statuses', () => {
     const rows = buildProjectExportRows(project, payments)
 
     expect(rows).toContainEqual(['状态', '进行中'])
-    expect(rows).toContainEqual(['待收款', 2400])
+    expect(rows).toContainEqual(['合同未收余额', 2400])
     expect(rows).toContainEqual(['收款进度', '60%'])
     expect(rows.slice(-2)).toEqual([
-      ['首付款', 3600, '60%', '2024-10-20', '2024-10-21', '已收款', '转账', undefined],
-      ['尾款', 2400, '', '2024-12-20', '', '待收款', undefined, undefined],
+      ['首付款', 3600, '60%', '2024-10-21', '2024-10-20', '已收款', '转账', undefined],
+      ['尾款', 2400, '', '', '2024-12-20', '待收款', undefined, undefined],
     ])
   })
 

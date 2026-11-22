@@ -1,5 +1,7 @@
 import type { Payment, Project } from '@/api/project'
 import type { CsvValue } from './csv'
+import { toDateOnly } from './dateOnly'
+import { sortPaymentsByReceiptDate } from './receiptOrder'
 
 const projectStatusLabels: Record<string, string> = {
   active: '进行中',
@@ -24,21 +26,25 @@ export interface ProjectExportLabels {
   type?: Record<string, string>
 }
 
-const day = (value?: string | null) => (value ? value.slice(0, 10) : '')
+const day = toDateOnly
 
 export const projectExportFilename = (project: Project) =>
   `珠算-项目-${project.name.replace(/[\\/:*?"<>|\s]+/g, '_').slice(0, 40) || project.id}.csv`
 
-/** One project as a sheet: its record first, then every payment in plan order. */
+/** One project as a sheet, with receipt order matching the detail and editing pages. */
 export function buildProjectExportRows(
   project: Project,
   payments: Payment[],
   labels: ProjectExportLabels = {},
 ): CsvValue[][] {
   const received = project.received_amount || 0
+  const outstanding = Math.max(project.total_amount - received, 0)
+  const overpaid = Math.max(received - project.total_amount, 0)
   const progress =
-    project.total_amount > 0 ? `${Math.round((received / project.total_amount) * 100)}%` : '—'
-  const ordered = [...payments].sort((a, b) => day(a.plan_date).localeCompare(day(b.plan_date)))
+    project.total_amount > 0
+      ? `${Math.min(100, Math.max(0, Math.round((received / project.total_amount) * 100)))}%`
+      : '—'
+  const ordered = sortPaymentsByReceiptDate(payments)
 
   return [
     ['项目名称', project.name],
@@ -51,17 +57,18 @@ export function buildProjectExportRows(
     ['截止日期', day(project.end_date)],
     ['合同金额', project.total_amount],
     ['已收款', received],
-    ['待收款', project.total_amount - received],
+    ['合同未收余额', outstanding],
+    ...(overpaid > 0 ? [['超收金额', overpaid]] : []),
     ['收款进度', progress],
     ['备注', project.description],
     [],
-    ['收款阶段', '金额', '占比', '计划日期', '实际到账日期', '状态', '收款方式', '备注'],
+    ['收款分类', '金额', '占比', '实际到账日期', '历史计划日期', '状态', '收款方式', '备注'],
     ...ordered.map((payment) => [
-      labels.stage?.[payment.stage] ?? payment.stage,
+      labels.stage?.[payment.stage] ?? (payment.stage === 'receipt' ? '收款' : payment.stage),
       payment.amount,
       payment.percentage ? `${payment.percentage}%` : '',
-      day(payment.plan_date),
       day(payment.actual_date),
+      day(payment.plan_date),
       paymentStatusLabels[payment.status] ?? payment.status,
       labels.method?.[payment.method] ?? payment.method,
       payment.remark,

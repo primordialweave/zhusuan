@@ -101,6 +101,8 @@ definitions:
     type: object
   dto.PaymentRequest:
     properties:
+      actual_date:
+        type: string
       amount:
         type: number
       method:
@@ -116,7 +118,10 @@ definitions:
       stage:
         type: string
       status:
-        description: Status 收款状态；"paid" 为历史兼容值，服务层会归一为 "confirmed"
+        description: |-
+          Status on creation defaults to confirmed for actual-date input, pending for legacy plan-only input.
+          Omitted status on update preserves the existing state.
+          "paid" is a legacy alias normalized to confirmed.
         enum:
         - pending
         - confirmed
@@ -125,9 +130,28 @@ definitions:
         type: string
     required:
     - amount
-    - plan_date
     - project_id
-    - stage
+    type: object
+  dto.ReceiptOverview:
+    properties:
+      contract_received:
+        type: number
+      contract_total:
+        type: number
+      end_date:
+        type: string
+      outstanding_total:
+        type: number
+      overpaid_total:
+        type: number
+      period_count:
+        type: integer
+      period_received:
+        type: number
+      received_total:
+        type: number
+      start_date:
+        type: string
     type: object
   dto.Stats:
     properties:
@@ -553,6 +577,88 @@ paths:
       summary: 收入趋势折线图
       tags:
       - Dashboard
+  /api/v1/dashboard/receipt-overview:
+    get:
+      description: 合同指标按所选周期的签约日期筛选合同，计算该批合同截至现在的已收、未收和超收；期间收款按实际到账日独立统计。all包含无签约日期和无实际到账日的历史记录。
+      parameters:
+      - description: '自然周期: week, month, quarter, year, all (默认month)'
+        in: query
+        name: period
+        type: string
+      - description: 自选自然年份，传入后忽略period
+        in: query
+        name: year
+        type: integer
+      - description: 自选月份1-12；0或不传表示全年
+        in: query
+        name: month
+        type: integer
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            allOf:
+            - $ref: '#/definitions/response.Response'
+            - properties:
+                data:
+                  $ref: '#/definitions/dto.ReceiptOverview'
+              type: object
+        "400":
+          description: Bad Request
+          schema:
+            $ref: '#/definitions/response.Response'
+        "401":
+          description: Unauthorized
+          schema:
+            $ref: '#/definitions/response.Response'
+      security:
+      - Bearer: []
+      summary: 合同应收与实际收款统计
+      tags:
+      - Dashboard
+  /api/v1/dashboard/receipt-trend:
+    get:
+      description: 自然周期按实际到账日聚合已确认收款；不包含待收计划或缺少实际到账日的历史记录。
+      parameters:
+      - description: '自然周期: week, month, quarter, year, all (默认month)'
+        in: query
+        name: period
+        type: string
+      - description: 自选自然年份，传入后忽略period
+        in: query
+        name: year
+        type: integer
+      - description: 自选月份1-12；0或不传表示全年
+        in: query
+        name: month
+        type: integer
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            allOf:
+            - $ref: '#/definitions/response.Response'
+            - properties:
+                data:
+                  $ref: '#/definitions/dto.IncomeTrend'
+              type: object
+        "400":
+          description: Bad Request
+          schema:
+            $ref: '#/definitions/response.Response'
+        "401":
+          description: Unauthorized
+          schema:
+            $ref: '#/definitions/response.Response'
+      security:
+      - Bearer: []
+      summary: 实际收款趋势
+      tags:
+      - Dashboard
   /api/v1/dashboard/recent-projects:
     get:
       description: 获取最近更新的5个项目，用于仪表盘展示
@@ -915,6 +1021,10 @@ paths:
       - description: 结束日期 (YYYY-MM-DD)
         in: query
         name: end_date
+        type: string
+      - description: '日期字段: plan(默认)或actual；actual只查询已确认到账'
+        in: query
+        name: date_field
         type: string
       - description: 项目ID (可选，若提供则忽略日期范围)
         in: query

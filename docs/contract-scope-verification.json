@@ -1,0 +1,271 @@
+{
+  "verified_on": "2026-11-22",
+  "rule": {
+    "cohort_date": "projects.contract_date",
+    "period_balances": "selected-period signed contracts, current confirmed receipts across all receipt dates",
+    "contract_paid": "per-project receipts capped at contract amount",
+    "contract_unpaid": "per-project positive balance, overpayment cannot offset other contracts",
+    "cash": "all owned contracts by actual receipt date, independent of signing cohort",
+    "undated_contracts": "all only"
+  },
+  "user_confirmation": "按签约日期归属（推荐）",
+  "changes": {
+    "homepage": "only 合同已收 / 合同未收; pie cycles all/year/month and both values follow the scope",
+    "analytics": "contract totals, paid, unpaid, collection rate and pie follow signing scope; cash remains actual-date based",
+    "export": "month/year CSV uses same contract fields and explicitly records signing-date ownership"
+  },
+  "database": "private backup of previous anonymized acceptance database with task-owned fixtures; figures are not current user ledger",
+  "api_expected_calculation": "independent Python per-project sums from read-only SQLite compared to actual HTTP results",
+  "api_by_scope": {
+    "month": {
+      "contract_count": 1,
+      "expected": {
+        "contract_total": 10000.0,
+        "received_total": 3000.0,
+        "contract_received": 3000.0,
+        "outstanding_total": 7000.0,
+        "overpaid_total": 0,
+        "period_received": 3000.0,
+        "period_count": 2
+      },
+      "api": {
+        "contract_total": 10000,
+        "received_total": 3000,
+        "contract_received": 3000,
+        "outstanding_total": 7000,
+        "overpaid_total": 0,
+        "period_received": 3000,
+        "period_count": 2,
+        "start_date": "2026-11-01",
+        "end_date": "2026-11-30"
+      }
+    },
+    "year": {
+      "contract_count": 31,
+      "expected": {
+        "contract_total": 115700.0,
+        "received_total": 48200.0,
+        "contract_received": 48200.0,
+        "outstanding_total": 67500.0,
+        "overpaid_total": 0.0,
+        "period_received": 108400.0,
+        "period_count": 113
+      },
+      "api": {
+        "contract_total": 115700,
+        "received_total": 48200,
+        "contract_received": 48200,
+        "outstanding_total": 67500,
+        "overpaid_total": 0,
+        "period_received": 108400,
+        "period_count": 113,
+        "start_date": "2026-01-01",
+        "end_date": "2026-12-31"
+      }
+    },
+    "all": {
+      "contract_count": 78,
+      "expected": {
+        "contract_total": 311000.0,
+        "received_total": 204400.0,
+        "contract_received": 204400.0,
+        "outstanding_total": 106600.0,
+        "overpaid_total": 0.0,
+        "period_received": 204400.0,
+        "period_count": 149
+      },
+      "api": {
+        "contract_total": 311000,
+        "received_total": 204400,
+        "contract_received": 204400,
+        "outstanding_total": 106600,
+        "overpaid_total": 0,
+        "period_received": 204400,
+        "period_count": 149,
+        "start_date": "",
+        "end_date": ""
+      }
+    }
+  },
+  "home_mouse_space_enter": {
+    "all": {
+      "text": "合同已收¥204,400合同未收¥106,600",
+      "range": "合同范围：全部合同，点击切换到本年签约",
+      "pie": "合同已收 66%，合同未收 34%",
+      "cashRowPresent": false
+    },
+    "year": {
+      "text": "合同已收¥48,200合同未收¥67,500",
+      "range": "合同范围：本年签约，点击切换到本月签约",
+      "pie": "合同已收 42%，合同未收 58%",
+      "cashRowPresent": false
+    },
+    "month": {
+      "text": "合同已收¥3,000合同未收¥7,000",
+      "range": "合同范围：本月签约，点击切换到全部合同",
+      "pie": "合同已收 30%，合同未收 70%",
+      "cashRowPresent": false
+    }
+  },
+  "analytics_scopes": {
+    "month": {
+      "contract": "合同回款合同总额¥10,000合同已收¥3,000合同未收¥7,000收款率30%合同已收¥3,000合同未收¥7,000",
+      "cash": "收款金额¥3,000收款笔数2",
+      "pie": "合同已收 30%，合同未收 70%"
+    },
+    "all": {
+      "contract": "合同回款合同总额¥311,000合同已收¥204,400合同未收¥106,600收款率65.7%合同已收¥204,400合同未收¥106,600",
+      "cash": "收款金额¥204,400收款笔数149",
+      "pie": "合同已收 66%，合同未收 34%"
+    },
+    "year": {
+      "contract": "合同回款合同总额¥115,700合同已收¥48,200合同未收¥67,500收款率41.7%合同已收¥48,200合同未收¥67,500",
+      "cash": "收款金额¥108,400收款笔数113",
+      "pie": "合同已收 42%，合同未收 58%"
+    }
+  },
+  "csv_confirmation": {
+    "month": {
+      "metrics": {
+        "统计周期": "本月",
+        "日期范围": "2026-11-01 — 2026-11-30",
+        "本期收款金额": "3000",
+        "本期收款笔数": "2",
+        "合同总额": "10000",
+        "合同归属日期": "签约日期",
+        "合同已收": "3000",
+        "合同未收": "7000",
+        "超收金额": "0",
+        "收款率": "30%"
+      },
+      "matches_api_and_trend": true
+    },
+    "year": {
+      "metrics": {
+        "统计周期": "本年",
+        "日期范围": "2026-01-01 — 2026-12-31",
+        "本期收款金额": "108400",
+        "本期收款笔数": "113",
+        "合同总额": "115700",
+        "合同归属日期": "签约日期",
+        "合同已收": "48200",
+        "合同未收": "67500",
+        "超收金额": "0",
+        "收款率": "41.7%"
+      },
+      "matches_api_and_trend": true
+    }
+  },
+  "layout": {
+    "home": {
+      "width": 760,
+      "scrollWidth": 760,
+      "summary": {
+        "x": 230,
+        "y": 437.515625,
+        "width": 300,
+        "height": 80,
+        "top": 437.515625,
+        "right": 530,
+        "bottom": 517.515625,
+        "left": 230
+      }
+    },
+    "analytics": {
+      "width": 760,
+      "scrollWidth": 760,
+      "contractRect": {
+        "x": 36.71875,
+        "y": 173.5,
+        "width": 686.5625,
+        "height": 183,
+        "top": 173.5,
+        "right": 723.28125,
+        "bottom": 356.5,
+        "left": 36.71875
+      }
+    }
+  },
+  "screenshots": {
+    "root": "docs/screenshots/contracts",
+    "files": [
+      "home-month-light.png",
+      "home-year-dark.png",
+      "home-year-narrow.png",
+      "analytics-year-light.png",
+      "analytics-year-dark.png",
+      "analytics-year-narrow.png"
+    ]
+  },
+  "checks": {
+    "frontend": {
+      "passed": 803,
+      "files": 125,
+      "failed": 0,
+      "skipped_or_pending": 0,
+      "todo": 0,
+      "evidence": "/tmp/zhusuan-frontend-review.XRC7pu/cohort-full.json"
+    },
+    "go_race": {
+      "top_level": 196,
+      "subtests": 228,
+      "failed": 0,
+      "test_skipped": 0,
+      "test_packages": 17,
+      "packages_without_tests": 15,
+      "evidence": "/tmp/zhusuan-backend-review-sA8I2a/contract-scope-full-race.jsonl"
+    },
+    "docs_tests": {
+      "passed_top_level": 4,
+      "result": "passed"
+    },
+    "eslint": "passed without autofix",
+    "prettier": "passed",
+    "vet": "passed",
+    "build": {
+      "result": "passed",
+      "log": "/var/folders/h4/_dnvr_4x4t93j64lvqrndtb40000gn/T/zhusuan-contract-scope-nnejt4lz/build.log",
+      "existing_warning": "bootstrap chunk exceeds 500kB"
+    },
+    "query_count": 1,
+    "new_frontend_requests": 0
+  },
+  "regression_before_change": {
+    "frontend": "7 failures in changed-requirement target checks",
+    "backend": "out-of-period contracts incorrectly included, cash-only period incorrectly returned contract total",
+    "logs_preserved": [
+      "/tmp/zhusuan-frontend-review.XRC7pu/cohort-before.json",
+      "/tmp/zhusuan-backend-review-sA8I2a"
+    ]
+  },
+  "limits": [
+    "SQLite tests and isolated browser/API acceptance; no live MySQL/PostgreSQL instance tested",
+    "Historical period shows current balance for contracts signed in that period, not a period-end historical snapshot",
+    "Real ledger and installed user application not changed; screenshots include task-owned fixtures"
+  ],
+  "state": {
+    "local_changes": true,
+    "committed": false,
+    "pushed": false,
+    "published": false,
+    "real_ledger_modified": false
+  },
+  "work_dir": "/var/folders/h4/_dnvr_4x4t93j64lvqrndtb40000gn/T/zhusuan-contract-scope-nnejt4lz",
+  "cleanup": {
+    "ego_space_closed": true,
+    "stopped_task_services": [
+      {
+        "port": 3494,
+        "pid": 66244
+      },
+      {
+        "port": 9362,
+        "pid": 66552
+      }
+    ],
+    "user_services_untouched": [
+      3456,
+      9245
+    ]
+  }
+}

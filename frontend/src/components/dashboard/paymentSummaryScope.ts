@@ -1,4 +1,4 @@
-/** What the workbench summary counts: everything, this calendar year, or this calendar month. */
+/** Signing-date scope of the contracts whose current receipt balances are shown. */
 export type PaymentSummaryScope = 'all' | 'year' | 'month'
 
 export const PAYMENT_SUMMARY_SCOPES: PaymentSummaryScope[] = ['all', 'year', 'month']

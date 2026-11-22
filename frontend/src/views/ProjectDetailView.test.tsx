@@ -137,6 +137,50 @@ describe('ProjectDetailView payment deep links', () => {
     vi.spyOn(HTMLElement.prototype, 'focus').mockImplementation(() => undefined)
   })
 
+  it('numbers the earliest actual receipt first even when API and planned dates disagree', async () => {
+    vi.mocked(projectApi.getPayments).mockResolvedValue(
+      apiResponse([
+        {
+          ...laterPayment,
+          amount: 200,
+          status: 'confirmed',
+          actual_date: '2026-11-21T00:00:00Z',
+          plan_date: '2026-01-01',
+        },
+        {
+          ...payment,
+          amount: 100,
+          status: 'confirmed',
+          actual_date: '2026-10-16T23:00:00-12:00',
+          plan_date: '2026-12-31',
+        },
+      ]) as never,
+    )
+    renderProjectDetail('/projects/42?tab=payments')
+    const first = await screen.findByTestId('payment-7')
+    const second = screen.getByTestId('payment-8')
+    expect(
+      [...document.querySelectorAll('[data-payment-id]')].map((row) =>
+        row.getAttribute('data-payment-id'),
+      ),
+    ).toEqual(['7', '8'])
+    expect(within(first).getByText('01')).toBeInTheDocument()
+    expect(within(second).getByText('02')).toBeInTheDocument()
+    expect(first).toHaveTextContent('实际到账：2026-10-16')
+  })
+
+  it('uses the highest ID as the latest receipt when actual calendar dates are equal', async () => {
+    vi.mocked(projectApi.getPayments).mockResolvedValue(
+      apiResponse([
+        { ...payment, amount: 100, status: 'confirmed', actual_date: '2026-11-21T00:00:00+14:00' },
+        { ...laterPayment, amount: 200, status: 'confirmed', actual_date: '2026-11-21T00:00:00Z' },
+      ]) as never,
+    )
+    renderProjectDetail('/projects/42')
+    const recent = await screen.findByText('最近收款')
+    expect(recent.closest('.ods-card')).toHaveTextContent('¥200.00')
+  })
+
   it('shows received amounts on their actual calendar dates and retains legacy plans as history', async () => {
     vi.mocked(projectApi.getPayments).mockResolvedValue(
       apiResponse([

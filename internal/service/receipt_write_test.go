@@ -3,6 +3,7 @@ package service
 import (
 	"encoding/json"
 	"testing"
+	"time"
 
 	"github.com/stretchr/testify/require"
 
@@ -26,7 +27,7 @@ func TestReceiptWriteCreatesActualReceiptWithoutPlan(t *testing.T) {
 	input := receiptWriteInput(t, user.ID, project.ID, `{"amount":500,"actual_date":"2026-11-22","status":"confirmed","method":"bank_transfer"}`)
 	receipt, err := NewPaymentService().Create(input)
 	require.NoError(t, err)
-	require.Equal(t, "all", receipt.Stage)
+	require.Equal(t, "receipt", receipt.Stage)
 	require.Equal(t, "confirmed", receipt.Status)
 	require.NotNil(t, receipt.ActualDate)
 	require.Equal(t, "2026-11-22", receipt.ActualDate.Format("2006-01-02"))
@@ -64,7 +65,7 @@ func TestReceiptWriteLegacyPendingDoesNotBecomeReceived(t *testing.T) {
 		require.NoError(t, err)
 		require.Equal(t, status, created.Status)
 		require.Nil(t, created.ActualDate)
-		updated, err := svc.UpdateForUser(user.ID, created.ID, receiptWriteInput(t, user.ID, project.ID, `{"amount":200}`))
+		updated, err := svc.UpdateForUser(user.ID, created.ID, receiptWriteInput(t, user.ID, project.ID, `{"amount":200,"actual_date":"2026-11-22"}`))
 		require.NoError(t, err)
 		require.Equal(t, status, updated.Status)
 		require.Nil(t, updated.ActualDate)
@@ -93,4 +94,55 @@ func TestReceiptWriteRejectsInvalidActualDateWithoutMutation(t *testing.T) {
 	require.NoError(t, database.GetDB().First(&unchanged, created.ID).Error)
 	require.Equal(t, 100.0, unchanged.Amount)
 	require.Equal(t, "2026-11-01", unchanged.ActualDate.Format("2006-01-02"))
+}
+
+func TestReceiptWriteActualDateDefaultsToConfirmedReceipt(t *testing.T) {
+	user := contractTestUser(t, 22005)
+	project := insertContractProject(t, contractTestInput(user.ID))
+	created, err := NewPaymentService().Create(receiptWriteInput(t, user.ID, project.ID, `{"amount":500,"actual_date":"2026-11-22"}`))
+	require.NoError(t, err)
+	require.Equal(t, "confirmed", created.Status)
+	require.Equal(t, "receipt", created.Stage)
+	require.NotNil(t, created.ActualDate)
+	require.Equal(t, "2026-11-22", created.ActualDate.Format(time.DateOnly))
+	var saved models.Project
+	require.NoError(t, database.GetDB().First(&saved, project.ID).Error)
+	require.Equal(t, 500.0, saved.ReceivedAmount)
+}
+
+func TestReceiptWriteUpdatePreservesUnknownActualDate(t *testing.T) {
+	for index, status := range []string{"confirmed", "paid"} {
+		t.Run(status, func(t *testing.T) {
+			user := contractTestUser(t, int64(22006+index))
+			project := insertDatedReceiptProject(t, contractTestInput(user.ID))
+			legacy := models.Payment{UserID: user.ID, ProjectID: project.ID, Amount: 100, Stage: "historical", Status: status, PlanDate: collectionDate(t, "2026-11-01")}
+			require.NoError(t, database.GetDB().Create(&legacy).Error)
+			updated, err := NewPaymentService().UpdateForUser(user.ID, legacy.ID, receiptWriteInput(t, user.ID, project.ID, `{"amount":200,"remark":"更新备注"}`))
+			require.NoError(t, err)
+			require.Equal(t, "confirmed", updated.Status)
+			require.Nil(t, updated.ActualDate)
+			var saved models.Payment
+			require.NoError(t, database.GetDB().First(&saved, legacy.ID).Error)
+			require.Nil(t, saved.ActualDate)
+			require.Equal(t, legacy.PlanDate, saved.PlanDate)
+			overview, err := NewDashboardService().GetReceiptOverview(user.ID, "year", 0, 0)
+			require.NoError(t, err)
+			require.Equal(t, 200.0, overview.ReceivedTotal)
+			require.Zero(t, overview.PeriodReceived)
+		})
+	}
+}
+
+func TestReceiptWritePendingConfirmationKeepsLegacyPlanFallback(t *testing.T) {
+	user := contractTestUser(t, 22008)
+	project := insertContractProject(t, contractTestInput(user.ID))
+	svc := NewPaymentService()
+	created, err := svc.Create(receiptWriteInput(t, user.ID, project.ID, `{"amount":100,"plan_date":"2026-11-01"}`))
+	require.NoError(t, err)
+	require.Equal(t, "pending", created.Status)
+	require.Equal(t, "all", created.Stage)
+	updated, err := svc.UpdateForUser(user.ID, created.ID, receiptWriteInput(t, user.ID, project.ID, `{"amount":100,"status":"confirmed"}`))
+	require.NoError(t, err)
+	require.NotNil(t, updated.ActualDate)
+	require.True(t, created.PlanDate.Equal(*updated.ActualDate))
 }

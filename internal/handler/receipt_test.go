@@ -28,7 +28,8 @@ func receiptHandlerFixture(t *testing.T) (*gin.Engine, models.Project) {
 	require.NoError(t, db.AutoMigrate(&models.User{}, &models.Project{}, &models.Payment{}))
 	user := models.User{ID: 55001, Username: "receipt-handler", Password: "test"}
 	require.NoError(t, db.Create(&user).Error)
-	project := models.Project{UserID: user.ID, Name: "actual receipts", Company: "fixture", Type: "test", TotalAmount: 1000, ContractNumber: "HTTP-RECEIPT", Status: "active", StartDate: time.Now(), EndDate: time.Now()}
+	contractDate := time.Date(2024, time.February, 1, 0, 0, 0, 0, time.UTC)
+	project := models.Project{UserID: user.ID, Name: "actual receipts", Company: "fixture", Type: "test", TotalAmount: 1000, ContractNumber: "HTTP-RECEIPT", ContractDate: &contractDate, Status: "active", StartDate: time.Now(), EndDate: time.Now()}
 	require.NoError(t, db.Create(&project).Error)
 	t.Cleanup(func() {
 		require.NoError(t, db.Where("user_id = ?", user.ID).Delete(&models.Payment{}).Error)
@@ -70,7 +71,7 @@ func TestReceiptHTTPActualOnlyInputAndCalendarStatistics(t *testing.T) {
 	require.Equal(t, http.StatusOK, createdResponse.Code, createdResponse.Body.String())
 	var created struct{ Data models.Payment }
 	require.NoError(t, json.Unmarshal(createdResponse.Body.Bytes(), &created))
-	require.Equal(t, "all", created.Data.Stage)
+	require.Equal(t, "receipt", created.Data.Stage)
 	require.NotNil(t, created.Data.ActualDate)
 	overviewResponse := receiptHTTP(t, engine, http.MethodGet, "/overview?year=2024&month=2", nil)
 	require.Equal(t, http.StatusOK, overviewResponse.Code, overviewResponse.Body.String())

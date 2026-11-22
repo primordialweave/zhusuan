@@ -16,7 +16,7 @@ let nextPaymentPlanKey = 0
 
 export const isReceivedPayment = (status: string) => status === 'confirmed' || status === 'paid'
 
-export const createPaymentPlanItem = (_installment = false): PaymentPlanItem => ({
+export const createPaymentPlanItem = (): PaymentPlanItem => ({
   amount: '',
   clientKey: `payment-plan-${nextPaymentPlanKey++}`,
   method: 'bank_transfer',

@@ -6,27 +6,18 @@ import type { PaymentSummaryScope } from '@/components/dashboard/paymentSummaryS
 interface PaymentSummaryState {
   paid: number
   pending: number
+  overpaid: number
   refreshing: boolean
   scope: PaymentSummaryScope
   status: PaymentSummaryStatus
 }
 
-const requestScope = (scope: PaymentSummaryScope) => {
-  if (scope === 'all') return undefined
-  const today = new Date()
-  return { month: scope === 'month' ? today.getMonth() + 1 : 0, year: today.getFullYear() }
-}
-
-/**
- * Collected and outstanding amounts for the workbench: all time, this year or this month.
- *
- * The stats already count overdue money inside `pending_amount`, so the two values are the
- * whole picture and must not be combined with `overdue_amount`.
- */
+/** Current collected and outstanding amounts of contracts signed in the selected period. */
 export function usePaymentSummary(scope: PaymentSummaryScope = 'all') {
   const [state, setState] = useState<PaymentSummaryState>({
     paid: 0,
     pending: 0,
+    overpaid: 0,
     refreshing: false,
     scope,
     status: 'loading',
@@ -44,12 +35,13 @@ export function usePaymentSummary(scope: PaymentSummaryScope = 'all') {
     )
 
     try {
-      const response = await dashboardApi.getStats(requestScope(scope), controller.signal)
+      const response = await dashboardApi.getReceiptOverview(scope, controller.signal)
       if (controller.signal.aborted) return
       const stats = response.data.data
       setState({
-        paid: stats.paid_amount,
-        pending: stats.pending_amount,
+        paid: stats.contract_received,
+        pending: stats.outstanding_total,
+        overpaid: stats.overpaid_total,
         refreshing: false,
         scope,
         status: 'data',
