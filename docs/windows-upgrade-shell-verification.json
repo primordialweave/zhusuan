@@ -1,0 +1,110 @@
+{
+  "application_installer_source": "eb91727731feb09f5120761b72de10b2c07d1833",
+  "fixture_source": "a675d6c6c1a76b00a5b7403fd825aacb0d331c4f",
+  "full_build_run": 44976588358,
+  "final_native_run": 44982162466,
+  "final_native_passed": true,
+  "installer_sha256": "33dcc05e78879260ef9fb17ebda8a43ea2ac0fcd6613ade1a1aef7eec5216a86",
+  "exe_sha256": "deb34bf8f9b005550efb627f95784b15fbe67f03f9f879718c0e04251f5e8129",
+  "icon_upgrade": {
+    "PreviousVersion": "1.1.0",
+    "CurrentVersion": "1.2.0",
+    "SameInstallDirectory": "C:\\Users\\runneradmin\\AppData\\Local\\PrimordialWeave\\zhusuan",
+    "PreviousExecutableSHA256": "036C1E11D0C4542C5CECE21D239B4149031DF0E15ABC97B66C92C1F35F797B1E",
+    "CurrentExecutableSHA256": "DEB34BF8F9B005550EFB627F95784B15FBE67F03F9F879718C0E04251F5E8129",
+    "DesktopBefore": {
+      "Width": 32,
+      "Height": 32,
+      "PixelSHA256": "d7dc6cd5fb547fc70ebe62414dd62f070bae483e28e52cd22d0ef055dd1a07f6"
+    },
+    "DesktopAfter": {
+      "Width": 32,
+      "Height": 32,
+      "PixelSHA256": "b1bc01f8d025ce34dff985b5b22f65563cd7e4a902a3d11aec9e5d3b06992117"
+    },
+    "StartMenuBefore": {
+      "Width": 32,
+      "Height": 32,
+      "PixelSHA256": "d7dc6cd5fb547fc70ebe62414dd62f070bae483e28e52cd22d0ef055dd1a07f6"
+    },
+    "StartMenuAfter": {
+      "Width": 32,
+      "Height": 32,
+      "PixelSHA256": "b1bc01f8d025ce34dff985b5b22f65563cd7e4a902a3d11aec9e5d3b06992117"
+    },
+    "ExplorerRestarted": false,
+    "IconCacheDeleted": false
+  },
+  "taskbar_phases": [
+    {
+      "name": "01-previous-1.1.0",
+      "product_name": "",
+      "file_version": "",
+      "product_version": "",
+      "numeric_product_version": [
+        0,
+        0,
+        0,
+        0
+      ],
+      "menu_names": [
+        "珠算"
+      ],
+      "native_title": "珠算",
+      "native_unicode": true,
+      "real_popup_automated": true,
+      "installer_sha256": "08a58fb008a0439e4d7ecd215cf1f202248167662e11284fe842a41bb35ddb78",
+      "exe_sha256": "036c1e11d0c4542c5cece21d239b4149031df0e15abc97b66c92c1f35f797b1e"
+    },
+    {
+      "name": "02-published-1.2.0",
+      "product_name": "",
+      "file_version": "",
+      "product_version": "",
+      "numeric_product_version": [
+        0,
+        0,
+        0,
+        0
+      ],
+      "menu_names": [
+        "珠算"
+      ],
+      "native_title": "珠算",
+      "native_unicode": true,
+      "real_popup_automated": true,
+      "installer_sha256": "6278ec32af20db37a6b8bff87d829a9d9df2c7aa87cb6b496ed6d9d196aa154f",
+      "exe_sha256": "e13648847be5a624bad0f16651a04692afcb3a08266f7febcb358096ff863b8e"
+    },
+    {
+      "name": "03-fixed-candidate",
+      "product_name": "珠算",
+      "file_version": "1.2.0",
+      "product_version": "1.2.0",
+      "numeric_product_version": [
+        1,
+        2,
+        0,
+        0
+      ],
+      "menu_names": [
+        "珠算"
+      ],
+      "native_title": "珠算",
+      "native_unicode": true,
+      "real_popup_automated": true,
+      "installer_sha256": "33dcc05e78879260ef9fb17ebda8a43ea2ac0fcd6613ade1a1aef7eec5216a86",
+      "exe_sha256": "deb34bf8f9b005550efb627f95784b15fbe67f03f9f879718c0e04251f5e8129"
+    }
+  ],
+  "cleanup": {
+    "uninstallerExitCode": 0,
+    "fallbackRegistryRemoved": false,
+    "fallbackLinksRemoved": [],
+    "fixtureRemoved": true,
+    "errors": []
+  },
+  "user_mojibake_reproduced": false,
+  "published_v1_2_0_modified": false,
+  "scope": "Windows fixes only; primary checkout has unrelated concurrent changes not covered by this snapshot"
+}
