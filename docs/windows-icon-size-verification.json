@@ -1,0 +1,349 @@
+{
+  "recipe": {
+    "recipe_version": 1,
+    "optical_ratio": 0.93,
+    "input_sha256": "1210f2e22f476af5ba2b69a510beb3e7ce6f96dc7ed6131e2a09f69a64e61884",
+    "output_sha256": "a62105cbefb708aa0b31797837c55d0a3d98e5aaa38e68ab7b035a308b26953a",
+    "generator_sha256": "a7d93b49b732b65d97f76dc09e234caff77c78a0b32144a8b4234ab117a5c66d",
+    "input_size": [
+      1024,
+      1024
+    ],
+    "output_size": [
+      1024,
+      1024
+    ]
+  },
+  "native_run": 44990742904,
+  "native_source_commit": "7556466a535432244e7cd38b0b2d3c71bd9dee05",
+  "native_verification": {
+    "passed": true,
+    "iconFile": "icon.ico",
+    "iconSHA256": "a828230d2f7c946931af25d3209ea9102c65b0d50a6d9b764841d1d8f0e5864d",
+    "sourceCommit": "7556466a535432244e7cd38b0b2d3c71bd9dee05",
+    "expectedFrames": [
+      16,
+      20,
+      24,
+      32,
+      40,
+      48,
+      60,
+      64,
+      72,
+      80,
+      96,
+      128,
+      256
+    ],
+    "targetOpticalRatio": 0.93,
+    "acceptedOpticalRange": [
+      0.9,
+      0.97
+    ],
+    "alphaThreshold": 16,
+    "directory": {
+      "Count": 13,
+      "Frames": [
+        {
+          "Width": 256,
+          "Height": 256,
+          "Planes": 1,
+          "BitCount": 32,
+          "Offset": 214,
+          "Bytes": 71777,
+          "Encoding": "PNG RGBA32"
+        },
+        {
+          "Width": 128,
+          "Height": 128,
+          "Planes": 1,
+          "BitCount": 32,
+          "Offset": 71991,
+          "Bytes": 20419,
+          "Encoding": "PNG RGBA32"
+        },
+        {
+          "Width": 96,
+          "Height": 96,
+          "Planes": 1,
+          "BitCount": 32,
+          "Offset": 92410,
+          "Bytes": 12489,
+          "Encoding": "PNG RGBA32"
+        },
+        {
+          "Width": 80,
+          "Height": 80,
+          "Planes": 1,
+          "BitCount": 32,
+          "Offset": 104899,
+          "Bytes": 9332,
+          "Encoding": "PNG RGBA32"
+        },
+        {
+          "Width": 72,
+          "Height": 72,
+          "Planes": 1,
+          "BitCount": 32,
+          "Offset": 114231,
+          "Bytes": 7798,
+          "Encoding": "PNG RGBA32"
+        },
+        {
+          "Width": 64,
+          "Height": 64,
+          "Planes": 1,
+          "BitCount": 32,
+          "Offset": 122029,
+          "Bytes": 6366,
+          "Encoding": "PNG RGBA32"
+        },
+        {
+          "Width": 60,
+          "Height": 60,
+          "Planes": 1,
+          "BitCount": 32,
+          "Offset": 128395,
+          "Bytes": 5773,
+          "Encoding": "PNG RGBA32"
+        },
+        {
+          "Width": 48,
+          "Height": 48,
+          "Planes": 1,
+          "BitCount": 32,
+          "Offset": 134168,
+          "Bytes": 4146,
+          "Encoding": "PNG RGBA32"
+        },
+        {
+          "Width": 40,
+          "Height": 40,
+          "Planes": 1,
+          "BitCount": 32,
+          "Offset": 138314,
+          "Bytes": 3018,
+          "Encoding": "PNG RGBA32"
+        },
+        {
+          "Width": 32,
+          "Height": 32,
+          "Planes": 1,
+          "BitCount": 32,
+          "Offset": 141332,
+          "Bytes": 2150,
+          "Encoding": "PNG RGBA32"
+        },
+        {
+          "Width": 24,
+          "Height": 24,
+          "Planes": 1,
+          "BitCount": 32,
+          "Offset": 143482,
+          "Bytes": 1430,
+          "Encoding": "PNG RGBA32"
+        },
+        {
+          "Width": 20,
+          "Height": 20,
+          "Planes": 1,
+          "BitCount": 32,
+          "Offset": 144912,
+          "Bytes": 1078,
+          "Encoding": "PNG RGBA32"
+        },
+        {
+          "Width": 16,
+          "Height": 16,
+          "Planes": 1,
+          "BitCount": 32,
+          "Offset": 145990,
+          "Bytes": 778,
+          "Encoding": "PNG RGBA32"
+        }
+      ],
+      "ExactNativeDPISizes": true,
+      "AllFrames32Bpp": true,
+      "ValidNonOverlappingPayloads": true
+    },
+    "largeIconSystemMetrics": [
+      32,
+      32
+    ],
+    "shellVsLoadImage32": {
+      "sameOpticalExtentWithinOnePixel": true,
+      "nativeContent": [
+        30,
+        30
+      ],
+      "shellContent": [
+        30,
+        30
+      ]
+    },
+    "measurements": [
+      {
+        "Method": "LoadImageW LR_LOADFROMFILE",
+        "PNGPath": "D:\\a\\_temp\\zhusuan-icon-size-check\\loadimage-32.png",
+        "RequestedSize": 32,
+        "Width": 32,
+        "Height": 32,
+        "BitmapBitsPerPixel": 32,
+        "AlphaThreshold": 16,
+        "ContentLeft": 1,
+        "ContentTop": 1,
+        "ContentWidth": 30,
+        "ContentHeight": 30,
+        "MarginLeft": 1,
+        "MarginTop": 1,
+        "MarginRight": 1,
+        "MarginBottom": 1,
+        "VisiblePixels": 868,
+        "EdgePixelsAtThreshold": 0,
+        "ContentWidthRatio": 0.9375,
+        "ContentHeightRatio": 0.9375,
+        "MajorRatio": 0.9375,
+        "BodyAspect": 1.0,
+        "NativeHandleReleased": true
+      },
+      {
+        "Method": "LoadImageW LR_LOADFROMFILE",
+        "PNGPath": "D:\\a\\_temp\\zhusuan-icon-size-check\\loadimage-48.png",
+        "RequestedSize": 48,
+        "Width": 48,
+        "Height": 48,
+        "BitmapBitsPerPixel": 32,
+        "AlphaThreshold": 16,
+        "ContentLeft": 1,
+        "ContentTop": 1,
+        "ContentWidth": 46,
+        "ContentHeight": 46,
+        "MarginLeft": 1,
+        "MarginTop": 1,
+        "MarginRight": 1,
+        "MarginBottom": 1,
+        "VisiblePixels": 1989,
+        "EdgePixelsAtThreshold": 0,
+        "ContentWidthRatio": 0.9583333333333334,
+        "ContentHeightRatio": 0.9583333333333334,
+        "MajorRatio": 0.9583333333333334,
+        "BodyAspect": 1.0,
+        "NativeHandleReleased": true
+      },
+      {
+        "Method": "LoadImageW LR_LOADFROMFILE",
+        "PNGPath": "D:\\a\\_temp\\zhusuan-icon-size-check\\loadimage-64.png",
+        "RequestedSize": 64,
+        "Width": 64,
+        "Height": 64,
+        "BitmapBitsPerPixel": 32,
+        "AlphaThreshold": 16,
+        "ContentLeft": 2,
+        "ContentTop": 2,
+        "ContentWidth": 60,
+        "ContentHeight": 60,
+        "MarginLeft": 2,
+        "MarginTop": 2,
+        "MarginRight": 2,
+        "MarginBottom": 2,
+        "VisiblePixels": 3432,
+        "EdgePixelsAtThreshold": 0,
+        "ContentWidthRatio": 0.9375,
+        "ContentHeightRatio": 0.9375,
+        "MajorRatio": 0.9375,
+        "BodyAspect": 1.0,
+        "NativeHandleReleased": true
+      },
+      {
+        "Method": "LoadImageW LR_LOADFROMFILE",
+        "PNGPath": "D:\\a\\_temp\\zhusuan-icon-size-check\\loadimage-96.png",
+        "RequestedSize": 96,
+        "Width": 96,
+        "Height": 96,
+        "BitmapBitsPerPixel": 32,
+        "AlphaThreshold": 16,
+        "ContentLeft": 3,
+        "ContentTop": 3,
+        "ContentWidth": 90,
+        "ContentHeight": 90,
+        "MarginLeft": 3,
+        "MarginTop": 3,
+        "MarginRight": 3,
+        "MarginBottom": 3,
+        "VisiblePixels": 7704,
+        "EdgePixelsAtThreshold": 0,
+        "ContentWidthRatio": 0.9375,
+        "ContentHeightRatio": 0.9375,
+        "MajorRatio": 0.9375,
+        "BodyAspect": 1.0,
+        "NativeHandleReleased": true
+      },
+      {
+        "Method": "LoadImageW LR_LOADFROMFILE",
+        "PNGPath": "D:\\a\\_temp\\zhusuan-icon-size-check\\loadimage-256.png",
+        "RequestedSize": 256,
+        "Width": 256,
+        "Height": 256,
+        "BitmapBitsPerPixel": 32,
+        "AlphaThreshold": 16,
+        "ContentLeft": 9,
+        "ContentTop": 9,
+        "ContentWidth": 238,
+        "ContentHeight": 238,
+        "MarginLeft": 9,
+        "MarginTop": 9,
+        "MarginRight": 9,
+        "MarginBottom": 9,
+        "VisiblePixels": 53952,
+        "EdgePixelsAtThreshold": 0,
+        "ContentWidthRatio": 0.9296875,
+        "ContentHeightRatio": 0.9296875,
+        "MajorRatio": 0.9296875,
+        "BodyAspect": 1.0,
+        "NativeHandleReleased": true
+      },
+      {
+        "Method": "SHGetFileInfoW bare ICO large HICON",
+        "PNGPath": "D:\\a\\_temp\\zhusuan-icon-size-check\\shell-large-32.png",
+        "RequestedSize": 32,
+        "Width": 32,
+        "Height": 32,
+        "BitmapBitsPerPixel": 32,
+        "AlphaThreshold": 16,
+        "ContentLeft": 1,
+        "ContentTop": 1,
+        "ContentWidth": 30,
+        "ContentHeight": 30,
+        "MarginLeft": 1,
+        "MarginTop": 1,
+        "MarginRight": 1,
+        "MarginBottom": 1,
+        "VisiblePixels": 868,
+        "EdgePixelsAtThreshold": 0,
+        "ContentWidthRatio": 0.9375,
+        "ContentHeightRatio": 0.9375,
+        "MajorRatio": 0.9375,
+        "BodyAspect": 1.0,
+        "NativeHandleReleased": true
+      }
+    ],
+    "error": null,
+    "boundary": {
+      "actualDesktopItemsCompared": false,
+      "shortcutOverlaysCompared": false,
+      "applicationExecuted": false,
+      "userInstallationChanged": false,
+      "explorerRestarted": false,
+      "globalIconCacheDeleted": false
+    }
+  },
+  "local_python_tests": {
+    "passed": 43,
+    "failed": 0,
+    "skipped": 0
+  },
+  "original_master_unchanged": true,
+  "public_release_changed": false,
+  "boundary": "Native ICO/Shell loading measured; no user desktop comparison or installer/device update was performed."
+}
