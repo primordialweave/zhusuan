@@ -123,6 +123,20 @@
   line-height: var(--ods-line-height-tight);
 }
 
+.payment-summary__content {
+  display: flex;
+  flex: 1;
+  min-width: 0;
+  flex-direction: column;
+  gap: var(--ods-space-3);
+}
+
+.payment-summary__overpaid {
+  color: var(--ods-color-status-warning);
+  font-size: var(--ods-font-size-sm);
+  text-align: end;
+}
+
 .payment-summary__row {
   display: contents;
 }

@@ -5,10 +5,20 @@ import { projectApi, type Payment, type ProjectRequest } from '@/api/project'
 import { PaymentPlanEditor } from '@/components/project/PaymentPlanEditor'
 import { ProjectFormSkeleton } from '@/components/project/ProjectFormSkeleton'
 import { MoneyInput } from '@/components/project/MoneyInput'
-import { validateProject, validatePaymentPlan } from '@/components/project/formValidation'
-import { createPaymentPlanItem, type PaymentPlanItem } from '@/components/project/paymentPlan'
+import {
+  validateProject,
+  validatePaymentPlan,
+  type PaymentPlanErrors,
+} from '@/components/project/formValidation'
+import {
+  createPaymentPlanItem,
+  isReceivedPayment,
+  type PaymentPlanItem,
+} from '@/components/project/paymentPlan'
 import {
   createPaymentPlanSaveState,
+  createLoadedPaymentPlanSaveState,
+  getUnsavedPaymentItems,
   hasUnsavedPaymentPlan,
   savePaymentPlan,
 } from '@/components/project/paymentPlanSave'
@@ -30,12 +40,13 @@ import {
   ProgressBar,
   Select,
   Skeleton,
-  Surface,
   TextArea,
   type SelectOption,
 } from '@/design-system'
 import { useToastStore } from '@/composables/useToast'
 import { formatCurrency } from '@/utils/format'
+import { toDateOnly } from '@/utils/dateOnly'
+import { sortPaymentsByReceiptDate, sortReceiptItems } from '@/utils/receiptOrder'
 import '@/styles/project-domain.css'
 
 const emptyForm: ProjectRequest = {
@@ -72,26 +83,16 @@ const paymentMethodOptions: SelectOption[] = [
   { label: '分期付款', value: '分期付款' },
 ]
 
-const installmentStageOptions: SelectOption[] = [
-  { label: '预付款', value: 'deposit' },
-  { label: '阶段款', value: 'milestone' },
-  { label: '尾款', value: 'final' },
-]
-
-const oneTimeStageOptions: SelectOption[] = [
-  { label: '全款', value: 'all' },
-  ...installmentStageOptions,
-]
-
 const getOptionLabel = (options: SelectOption[], value: string | undefined) =>
   options.find((option) => option.value === value)?.label || value || '待填写'
 
 const toPaymentPlanItem = (payment: Payment): PaymentPlanItem => ({
-  ...createPaymentPlanItem(payment.stage !== 'all'),
+  ...createPaymentPlanItem(),
   amount: String(payment.amount),
   id: payment.id,
   method: payment.method || 'bank_transfer',
-  planDate: payment.plan_date || '',
+  planDate: toDateOnly(payment.plan_date),
+  actualDate: toDateOnly(payment.actual_date),
   remark: payment.remark || '',
   stage: payment.stage || 'all',
   status: payment.status || 'pending',
@@ -109,12 +110,15 @@ export default function ProjectCreateView() {
   const fieldErrors = showValidation ? validateProject(form, amountText) : {}
   const [projectTypes, setProjectTypes] = useState<SelectOption[]>(defaultProjectTypeOptions)
   const [loadingProjectTypes, setLoadingProjectTypes] = useState(true)
-  const [paymentItems, setPaymentItems] = useState<PaymentPlanItem[]>([createPaymentPlanItem()])
+  const [paymentItems, setPaymentItems] = useState<PaymentPlanItem[]>([])
+  const [paymentErrors, setPaymentErrors] = useState<PaymentPlanErrors>({})
   const paymentSaveStateRef = useRef(createPaymentPlanSaveState())
   const savedProjectRef = useRef<{ id: number; signature: string } | null>(null)
   const currentFormRef = useRef(form)
   const currentPaymentItemsRef = useRef(paymentItems)
   const saveRequestRef = useRef<object | null>(null)
+  const contractNumberGenerationRef = useRef(0)
+  const automaticContractNumberRef = useRef<string | null>(null)
   const [saveIssue, setSaveIssue] = useState<string | null>(null)
   const [saving, setSaving] = useState(false)
   const [loadedProjectId, setLoadedProjectId] = useState<number | null>(null)
@@ -124,15 +128,14 @@ export default function ProjectCreateView() {
   const projectId = id ? Number(id) : null
   const activeProjectIdRef = useRef<number | null>(projectId)
   const isEdit = projectId !== null
-  const isInstallment =
-    form.payment_method === '分期付款' ||
-    (!form.payment_method && paymentItems.some((item) => item.stage !== 'all'))
   const projectTypeOptions =
     form.type && !projectTypes.some((option) => option.value === form.type)
       ? [...projectTypes, { label: form.type, value: form.type }]
       : projectTypes
-  const paymentErrors = showValidation ? validatePaymentPlan(paymentItems) : {}
-  const plannedAmount = paymentItems.reduce((sum, item) => sum + (Number(item.amount) || 0), 0)
+  const receivedAmount = paymentItems.reduce(
+    (sum, item) => sum + (isReceivedPayment(item.status) ? Number(item.amount) || 0 : 0),
+    0,
+  )
   const requiredFields = [
     form.name.trim(),
     form.company.trim(),
@@ -141,20 +144,17 @@ export default function ProjectCreateView() {
     form.end_date,
     form.contract_date,
     form.total_amount > 0,
-    paymentItems.every((item) => Boolean(item.amount && item.planDate)),
   ]
   const completion = Math.round(
     (requiredFields.filter(Boolean).length / requiredFields.length) * 100,
   )
-  const planDifference = form.total_amount - plannedAmount
-  const planAligned = form.total_amount > 0 && Math.abs(planDifference) < 0.01
-  const planState = !form.total_amount ? 'neutral' : planAligned ? 'success' : 'warning'
 
   useEffect(() => {
     isMountedRef.current = true
     return () => {
       isMountedRef.current = false
       loadGenerationRef.current += 1
+      contractNumberGenerationRef.current += 1
     }
   }, [])
 
@@ -163,6 +163,8 @@ export default function ProjectCreateView() {
     saveRequestRef.current = null
     savedProjectRef.current = null
     paymentSaveStateRef.current = createPaymentPlanSaveState()
+    contractNumberGenerationRef.current += 1
+    automaticContractNumberRef.current = null
   }, [projectId])
 
   useLayoutEffect(() => {
@@ -193,16 +195,55 @@ export default function ProjectCreateView() {
   const updateForm = (patch: Partial<ProjectRequest>) =>
     setForm((current) => ({ ...current, ...patch }))
 
-  const ensurePaymentItems = (paymentMethod: string) => {
-    setPaymentItems((current) => {
-      if (paymentMethod === '一次性付款') {
-        const first = current[0] || createPaymentPlanItem()
-        return [{ ...first, stage: 'all' }]
-      }
-      return current.length
-        ? current.map((item) => (item.stage === 'all' ? { ...item, stage: 'deposit' } : item))
-        : [createPaymentPlanItem(true)]
+  const updatePaymentItems = (items: PaymentPlanItem[]) => {
+    setPaymentItems(sortReceiptItems(items))
+    if (showValidation) {
+      setPaymentErrors(
+        validatePaymentPlan(
+          getUnsavedPaymentItems(
+            projectId || savedProjectRef.current?.id || 0,
+            items,
+            paymentSaveStateRef.current,
+          ),
+        ),
+      )
+    }
+  }
+
+  const updateContractDate = async (date: string) => {
+    const contractNumber = currentFormRef.current.contract_number || ''
+    const shouldGenerate =
+      !isEdit &&
+      !savedProjectRef.current &&
+      !saveRequestRef.current &&
+      (!contractNumber.trim() || contractNumber === automaticContractNumberRef.current)
+    const generation = ++contractNumberGenerationRef.current
+    updateForm({
+      contract_date: date,
+      ...(shouldGenerate ? { contract_number: '' } : {}),
     })
+    if (!shouldGenerate) return
+    automaticContractNumberRef.current = null
+    if (!date) return
+
+    const isCurrentRequest = () =>
+      isMountedRef.current &&
+      activeProjectIdRef.current === null &&
+      contractNumberGenerationRef.current === generation
+    try {
+      const response = await projectApi.generateContractNumber(date)
+      if (!isCurrentRequest()) return
+      automaticContractNumberRef.current = response.data.data.contract_number
+      updateForm({ contract_number: response.data.data.contract_number })
+    } catch {
+      if (isCurrentRequest()) toastError('合同编号生成失败')
+    }
+  }
+
+  const updateContractNumber = (contractNumber: string) => {
+    contractNumberGenerationRef.current += 1
+    automaticContractNumberRef.current = null
+    updateForm({ contract_number: contractNumber })
   }
 
   const loadProject = useCallback(
@@ -230,26 +271,24 @@ export default function ProjectCreateView() {
         setAmountText(project.total_amount.toFixed(2))
         setForm({
           company: project.company,
-          contract_date: project.contract_date || '',
+          contract_date: toDateOnly(project.contract_date),
           contract_number: project.contract_number || '',
           description: project.description || '',
-          end_date: project.end_date || '',
+          end_date: toDateOnly(project.end_date),
           name: project.name,
           payment_method: project.payment_method || '一次性付款',
-          start_date: project.start_date || '',
+          start_date: toDateOnly(project.start_date),
           status: project.status,
           total_amount: project.total_amount,
           type: project.type || '',
         })
 
-        paymentSaveStateRef.current = createPaymentPlanSaveState(
-          paymentsRes.data.data.map((payment) => payment.id),
+        const loadedItems = sortPaymentsByReceiptDate(paymentsRes.data.data).map(toPaymentPlanItem)
+        paymentSaveStateRef.current = createLoadedPaymentPlanSaveState(
+          requestedProjectId,
+          loadedItems,
         )
-        setPaymentItems(
-          paymentsRes.data.data.length
-            ? paymentsRes.data.data.map(toPaymentPlanItem)
-            : [createPaymentPlanItem()],
-        )
+        setPaymentItems(loadedItems)
         setLoadedProjectId(requestedProjectId)
       } catch {
         if (
@@ -291,9 +330,16 @@ export default function ProjectCreateView() {
     event.preventDefault()
     if (saving || saveRequestRef.current || (isEdit && loadedProjectId !== projectId)) return
     const errors = validateProject(form, amountText)
-    const planErrors = validatePaymentPlan(paymentItems)
+    const planErrors = validatePaymentPlan(
+      getUnsavedPaymentItems(
+        projectId || savedProjectRef.current?.id || 0,
+        paymentItems,
+        paymentSaveStateRef.current,
+      ),
+    )
+    setPaymentErrors(planErrors)
     setValidationScope(id ?? 'new')
-    if (Object.keys(errors).length || Object.keys(planErrors).length || !paymentItems.length) {
+    if (Object.keys(errors).length || Object.keys(planErrors).length) {
       toastError('请检查并填写标红的必填项')
       requestAnimationFrame(() => {
         document.querySelector<HTMLElement>('.project-form [aria-invalid="true"]')?.focus()
@@ -303,15 +349,21 @@ export default function ProjectCreateView() {
 
     const request = {}
     saveRequestRef.current = request
+    const contractNumberGeneration = ++contractNumberGenerationRef.current
     const generation = loadGenerationRef.current
     const isCurrentSave = () =>
       isMountedRef.current &&
       loadGenerationRef.current === generation &&
       saveRequestRef.current === request
-    const submittedForm = { ...form }
+    let submittedForm = {
+      ...form,
+      start_date: toDateOnly(form.start_date),
+      end_date: toDateOnly(form.end_date),
+      contract_date: toDateOnly(form.contract_date),
+    }
     const submittedItems = paymentItems.map((item) => ({ ...item }))
     const state = paymentSaveStateRef.current
-    const signature = JSON.stringify(submittedForm)
+    let signature = JSON.stringify(submittedForm)
     setSaving(true)
     setSaveIssue(null)
     try {
@@ -321,6 +373,16 @@ export default function ProjectCreateView() {
           ? await projectApi.update(savedProjectId, submittedForm)
           : await projectApi.create(submittedForm)
         if (!isCurrentSave()) return
+        const acceptedNumber = response.data.data.contract_number
+        if (!submittedForm.contract_number?.trim() && acceptedNumber) {
+          submittedForm = { ...submittedForm, contract_number: acceptedNumber }
+          signature = JSON.stringify(submittedForm)
+          if (contractNumberGenerationRef.current === contractNumberGeneration) {
+            const acceptedForm = { ...currentFormRef.current, contract_number: acceptedNumber }
+            currentFormRef.current = acceptedForm
+            setForm(acceptedForm)
+          }
+        }
         savedProjectId = savedProjectId ?? response.data.data.id
         savedProjectRef.current = { id: savedProjectId, signature }
       }
@@ -328,11 +390,13 @@ export default function ProjectCreateView() {
       const result = await savePaymentPlan(savedProjectId, submittedItems, state)
       if (!isCurrentSave()) return
       setPaymentItems((current) =>
-        current.map((item) => ({ ...item, id: result.ids.get(item.clientKey) ?? item.id })),
+        sortReceiptItems(
+          current.map((item) => ({ ...item, id: result.ids.get(item.clientKey) ?? item.id })),
+        ),
       )
       if (result.issue) {
         setSaveIssue(result.issue)
-        toastError('部分收款操作未完成')
+        toastError(result.summary)
         return
       }
       if (
@@ -505,7 +569,7 @@ export default function ProjectCreateView() {
                     <Field.Label>合同日期</Field.Label>
                     <DatePicker
                       aria-label="合同日期"
-                      onValueChange={(value) => updateForm({ contract_date: value })}
+                      onValueChange={(value) => void updateContractDate(value)}
                       placeholder="请选择合同日期"
                       value={form.contract_date || ''}
                     />
@@ -520,9 +584,7 @@ export default function ProjectCreateView() {
                       autoCapitalize="off"
                       autoComplete="off"
                       autoCorrect="off"
-                      onChange={(event) =>
-                        updateForm({ contract_number: event.currentTarget.value })
-                      }
+                      onChange={(event) => updateContractNumber(event.currentTarget.value)}
                       placeholder="选择合同日期后自动生成"
                       spellCheck={false}
                       type="text"
@@ -536,7 +598,6 @@ export default function ProjectCreateView() {
                       aria-label="付款模式"
                       onValueChange={(value) => {
                         updateForm({ payment_method: value })
-                        if (value) ensurePaymentItems(value)
                       }}
                       options={paymentMethodOptions}
                       value={form.payment_method}
@@ -550,12 +611,10 @@ export default function ProjectCreateView() {
 
               <PaymentPlanEditor
                 className="project-form-section"
-                installment={isInstallment}
-                errors={paymentErrors}
+                errors={showValidation ? paymentErrors : {}}
                 items={paymentItems}
-                onItemsChange={setPaymentItems}
-                stageOptions={isInstallment ? installmentStageOptions : oneTimeStageOptions}
-                title="收款计划"
+                onItemsChange={updatePaymentItems}
+                title="收款记录"
               />
 
               <FormSection className="project-form-section" title="补充说明">
@@ -628,35 +687,15 @@ export default function ProjectCreateView() {
                   <dd>{form.payment_method || '待填写'}</dd>
                 </div>
                 <div>
-                  <dt>收款节点</dt>
+                  <dt>收款记录</dt>
                   <dd>{paymentItems.length} 笔</dd>
                 </div>
-              </dl>
-
-              <div className="project-plan-check" data-state={planState}>
-                <Surface padding="none" radius="control" tone="accent" variant="inset">
-                  <JadeIcon name={planAligned ? 'check' : 'scales'} size="1em" />
-                </Surface>
-                <div className="project-plan-check__content">
-                  <span>计划金额</span>
-                  <strong>{formatCurrency(plannedAmount)}</strong>
-                  <small>
-                    {!form.total_amount
-                      ? '填写合同金额后自动核对'
-                      : planAligned
-                        ? '与合同金额一致'
-                        : planDifference > 0
-                          ? `还有 ${formatCurrency(planDifference)} 待分配`
-                          : `已超出 ${formatCurrency(Math.abs(planDifference))}`}
-                  </small>
+                <div>
+                  <dt>已录收款</dt>
+                  <dd>{formatCurrency(receivedAmount)}</dd>
                 </div>
-              </div>
+              </dl>
             </Card.Root>
-
-            <p className="project-form-aside__note">
-              <JadeIcon name="shield-check" size={16} tone="success" />
-              保存后将同步生成项目台账与收款跟踪记录
-            </p>
           </aside>
         </div>
       )}

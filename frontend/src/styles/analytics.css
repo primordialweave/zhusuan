@@ -32,10 +32,11 @@
   flex-direction: column;
 }
 
-/* Four open figures in one row, short rules between them, one rule underneath. */
+/* Each scope keeps its own figures beside its own chart. */
 .analytics-metrics {
   display: grid;
-  grid-template-columns: repeat(4, minmax(0, 1fr));
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  row-gap: var(--ods-space-4);
   margin: 0;
   padding-block: var(--ods-space-2) var(--ods-space-6);
   border-block-end: 1px solid var(--ods-color-border-default);
@@ -47,12 +48,16 @@
   min-width: 0;
   flex-direction: column;
   gap: var(--ods-space-2);
-  padding-inline: var(--ods-space-8) var(--ods-space-4);
+  padding-inline: var(--ods-space-4);
 }
 
 /* The first figure and the first chart start under the page title. */
-.analytics-metric:first-child {
-  padding-inline-start: var(--ods-space-4);
+.analytics-metric:nth-child(odd) {
+  padding-inline-start: 0;
+}
+
+.analytics-metric:nth-child(odd)::before {
+  content: none;
 }
 
 .analytics-metric + .analytics-metric::before {
@@ -84,13 +89,12 @@
   white-space: nowrap;
 }
 
-/* Trend takes about two thirds; the structure sits beside it behind one hairline. */
+/* Cash activity and all-contract balances are separate scopes. */
 .analytics-chart-layout {
   display: grid;
   min-height: 0;
   flex: 1;
-  grid-template-columns: minmax(0, 2.1fr) minmax(15rem, 1fr);
-  padding-block-start: var(--ods-space-6);
+  grid-template-columns: minmax(0, 1.35fr) minmax(18rem, 1fr);
 }
 
 .analytics-chart {
@@ -121,6 +125,17 @@
   font-size: var(--ods-font-size-xl);
   font-weight: var(--ods-font-weight-semibold);
   line-height: var(--ods-line-height-heading);
+}
+
+.analytics-period-range {
+  color: var(--ods-color-fg-muted);
+  font-size: var(--ods-font-size-sm);
+}
+
+.analytics-overpaid {
+  color: var(--ods-color-status-warning);
+  margin: 0;
+  text-align: end;
 }
 
 .analytics-legend {

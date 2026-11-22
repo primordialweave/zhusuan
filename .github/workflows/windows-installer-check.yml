@@ -6,7 +6,7 @@ on:
       tag:
         description: Existing application candidate tag
         required: true
-        default: v1.0.1
+        default: v1.2.0
         type: string
       application_ref:
         description: Optional full commit SHA to verify before moving an unpublished candidate tag
@@ -16,17 +16,40 @@ on:
         description: Reviewed main commit SHA for the installation smoke fixture
         required: false
         type: string
+      previous_installer_tag:
+        description: Published version with the previous icon for same-directory upgrade checks
+        required: true
+        default: v1.1.0
+        type: string
+      published_installer_tag:
+        description: Published current version for the taskbar baseline before the fix
+        required: true
+        default: v1.2.0
+        type: string
+      reuse_installer_run:
+        description: Prior Windows check run whose installer can be reused for test-only corrections
+        required: false
+        type: string
+      icon_size_only:
+        description: Verify Windows icon assets and native DPI rendering without installing an app
+        required: false
+        default: false
+        type: boolean
 
 permissions:
   contents: read
+  actions: read
 
 jobs:
   windows:
+    if: inputs.icon_size_only != true
     runs-on: windows-2025
     env:
       RELEASE_TAG: ${{ inputs.tag }}
       TEST_RECIPE_REF: ${{ inputs.test_recipe_ref }}
       APPLICATION_REF: ${{ inputs.application_ref }}
+      PREVIOUS_INSTALLER_TAG: ${{ inputs.previous_installer_tag }}
+      PUBLISHED_INSTALLER_TAG: ${{ inputs.published_installer_tag }}
     steps:
       - uses: actions/checkout@v7.0.1
         with:
@@ -46,6 +69,14 @@ jobs:
           SOURCE_SHA=$(git rev-parse HEAD)
           printf 'Application source: %s\n' "$SOURCE_SHA"
           printf 'APPLICATION_SOURCE_SHA=%s\n' "$SOURCE_SHA" >> "$GITHUB_ENV"
+      - uses: actions/checkout@v7.0.1
+        with:
+          ref: ${{ github.sha }}
+          path: .windows-check-fixtures
+          sparse-checkout: |
+            scripts/windows-taskbar-smoke.ps1
+            scripts/windows-shell-upgrade-smoke.ps1
+          sparse-checkout-cone-mode: false
       - name: Apply reviewed installation fixture
         if: env.TEST_RECIPE_REF != ''
         shell: bash
@@ -55,39 +86,100 @@ jobs:
           git merge-base --is-ancestor "$TEST_RECIPE_REF" origin/main
           git show "${TEST_RECIPE_REF}:scripts/windows-installer-smoke.ps1" > scripts/windows-installer-smoke.ps1
       - uses: actions/setup-node@v7.1.0
+        if: inputs.reuse_installer_run == ''
         with:
           node-version: '24.15.0'
           cache: npm
           cache-dependency-path: frontend/package-lock.json
       - uses: actions/setup-go@v7.1.0
+        if: inputs.reuse_installer_run == ''
         with:
           go-version-file: go.mod
       - uses: actions/setup-python@v7.1.0
+        if: inputs.reuse_installer_run == ''
         with:
           python-version: '3.12'
       - name: Install pinned build tools
+        if: inputs.reuse_installer_run == ''
         shell: bash
         run: |
           go install github.com/wailsapp/wails/v3/cmd/wails3@v3.1.0
           go install github.com/go-task/task/v3/cmd/task@v3.54.0
       - name: Install NSIS
+        if: inputs.reuse_installer_run == ''
         shell: pwsh
         run: |
           choco install nsis --yes --no-progress
           'C:\Program Files (x86)\NSIS' | Out-File -FilePath $env:GITHUB_PATH -Encoding utf8 -Append
           'C:\Program Files (x86)\NSIS\Bin' | Out-File -FilePath $env:GITHUB_PATH -Encoding utf8 -Append
+      - name: Download published upgrade fixtures
+        shell: pwsh
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          $directory = Join-Path $env:RUNNER_TEMP 'zhusuan-published-installers'
+          New-Item -ItemType Directory -Path $directory -Force | Out-Null
+          foreach ($tag in @($env:PREVIOUS_INSTALLER_TAG, $env:PUBLISHED_INSTALLER_TAG) | Select-Object -Unique) {
+            if ($tag -notmatch '^v(0|[1-9]\d*)\.(0|[1-9]\d*)\.(0|[1-9]\d*)$') { throw 'Fixture tag must be a stable published version.' }
+            $release = gh release view $tag --repo $env:GITHUB_REPOSITORY --json isDraft,isPrerelease | ConvertFrom-Json
+            if ($LASTEXITCODE -ne 0 -or $release.isDraft -or $release.isPrerelease) { throw 'Fixture must be a published stable release.' }
+            gh release download $tag --repo $env:GITHUB_REPOSITORY --pattern "zhusuan-$tag-windows-amd64-installer.exe" --dir $directory
+            if ($LASTEXITCODE -ne 0) { throw 'Published installer download failed.' }
+          }
+          "PREVIOUS_INSTALLER=$directory\zhusuan-$env:PREVIOUS_INSTALLER_TAG-windows-amd64-installer.exe" | Out-File -FilePath $env:GITHUB_ENV -Encoding utf8 -Append
+          "PUBLISHED_INSTALLER=$directory\zhusuan-$env:PUBLISHED_INSTALLER_TAG-windows-amd64-installer.exe" | Out-File -FilePath $env:GITHUB_ENV -Encoding utf8 -Append
       - name: Build tagged Windows installer
+        if: inputs.reuse_installer_run == ''
         id: build
         shell: bash
         run: |
           python scripts/release.py metadata "$RELEASE_TAG"
           task windows:package ARCH=amd64
+      - name: Reuse unchanged installer for test-only corrections
+        if: inputs.reuse_installer_run != ''
+        id: reuse
+        shell: pwsh
+        env:
+          REUSE_RUN: ${{ inputs.reuse_installer_run }}
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          if ($env:REUSE_RUN -notmatch '^[1-9]\d*$') { throw 'Reuse run must be a numeric Actions run ID.' }
+          $run = gh api "repos/$env:GITHUB_REPOSITORY/actions/runs/$env:REUSE_RUN" | ConvertFrom-Json
+          if ($LASTEXITCODE -ne 0 -or $run.status -ne 'completed' -or $run.head_sha -notmatch '^[0-9a-f]{40}$') { throw 'Previous run source identity is unavailable.' }
+          $jobs = gh api "repos/$env:GITHUB_REPOSITORY/actions/runs/$env:REUSE_RUN/jobs" | ConvertFrom-Json
+          if ($LASTEXITCODE -ne 0 -or @($jobs.jobs.steps | Where-Object { $_.name -eq 'Build tagged Windows installer' -and $_.conclusion -eq 'success' }).Count -ne 1) { throw 'Previous installer build did not pass.' }
+          git fetch --no-tags origin $run.head_sha
+          if ($LASTEXITCODE -ne 0) { throw 'Previous source object fetch failed.' }
+          $allowed = @('.github/workflows/windows-installer-check.yml', 'scripts/windows-installer-smoke.ps1', 'scripts/windows-taskbar-smoke.ps1', 'scripts/windows-shell-upgrade-smoke.ps1')
+          $changed = @(git diff --name-only $run.head_sha HEAD)
+          if ($LASTEXITCODE -ne 0 -or @($changed | Where-Object { $_ -notin $allowed }).Count -gt 0) { throw 'Application or installer inputs changed; rebuild is required.' }
+          $download = Join-Path $env:RUNNER_TEMP 'zhusuan-reused-installer'
+          gh run download $env:REUSE_RUN --repo $env:GITHUB_REPOSITORY --name windows-installer-check --dir $download
+          if ($LASTEXITCODE -ne 0) { throw 'Previous installer artifact download failed.' }
+          $installers = @(Get-ChildItem -LiteralPath $download -Recurse -File -Filter 'zhusuan-amd64-installer.exe')
+          if ($installers.Count -ne 1) { throw 'Previous artifact must contain exactly one installer.' }
+          New-Item -ItemType Directory -Path bin -Force | Out-Null
+          Copy-Item -LiteralPath $installers[0].FullName -Destination bin/zhusuan-amd64-installer.exe
+          $sevenZip = Join-Path $env:ProgramFiles '7-Zip/7z.exe'
+          if (-not (Test-Path -LiteralPath $sevenZip)) { throw 'Pinned runner image must provide 7-Zip for read-only NSIS extraction.' }
+          $extract = Join-Path $env:RUNNER_TEMP 'zhusuan-reused-payload'
+          & $sevenZip e '-y' "-o$extract" $installers[0].FullName 'zhusuan.exe'
+          if ($LASTEXITCODE -ne 0) { throw 'Read-only installer payload extraction failed.' }
+          $executables = @(Get-ChildItem -LiteralPath $extract -Recurse -File -Filter 'zhusuan.exe')
+          if ($executables.Count -ne 1) { throw 'Previous installer must contain exactly one application payload.' }
+          Copy-Item -LiteralPath $executables[0].FullName -Destination bin/zhusuan.exe
+          "APPLICATION_SOURCE_SHA=$($run.head_sha)" | Out-File -FilePath $env:GITHUB_ENV -Encoding utf8 -Append
+          Write-Host "Reused verified application/installer source $($run.head_sha); fixture source $env:APPLICATION_REF."
       - name: Verify standard-user installation without elevation
         shell: pwsh
         run: ./scripts/windows-standard-user-installer-smoke.ps1 -Installer bin/zhusuan-amd64-installer.exe
       - name: Verify installation and upgrade
         shell: pwsh
-        run: ./scripts/windows-installer-smoke.ps1 -Installer bin/zhusuan-amd64-installer.exe
+        run: ./scripts/windows-installer-smoke.ps1 -Installer bin/zhusuan-amd64-installer.exe -PreviousInstaller $env:PREVIOUS_INSTALLER
+      - name: Verify same-path taskbar identity across published and fixed versions
+        if: always() && !cancelled() && (steps.build.outcome == 'success' || steps.reuse.outcome == 'success')
+        shell: pwsh
+        run: ./.windows-check-fixtures/scripts/windows-shell-upgrade-smoke.ps1 -PreviousInstaller $env:PREVIOUS_INSTALLER -PublishedInstaller $env:PUBLISHED_INSTALLER -Installer bin/zhusuan-amd64-installer.exe
       - name: Verify native window controls and fullscreen
         if: always() && !cancelled() && steps.build.outcome == 'success'
         shell: pwsh
@@ -110,5 +202,42 @@ jobs:
             ${{ runner.temp }}/zhusuan-window-check/*.png
             ${{ runner.temp }}/zhusuan-window-check/*.json
             ${{ runner.temp }}/zhusuan-window-check/*.log
+            ${{ runner.temp }}/zhusuan-shell-upgrade/**/taskbar-*.png
+            ${{ runner.temp }}/zhusuan-shell-upgrade/**/taskbar-*.json
+            ${{ runner.temp }}/zhusuan-shell-upgrade/**/taskbar-*.log
+            ${{ runner.temp }}/zhusuan-shell-upgrade/shell-upgrade-verification.json
+            ${{ runner.temp }}/zhusuan-shell-upgrade/**/*.log
           if-no-files-found: warn
+          retention-days: 7
+  windows-icon-size:
+    if: inputs.icon_size_only == true
+    runs-on: windows-2025
+    steps:
+      - uses: actions/checkout@v7.0.1
+        env:
+          GIT_CONFIG_COUNT: '1'
+          GIT_CONFIG_KEY_0: core.autocrlf
+          GIT_CONFIG_VALUE_0: 'false'
+      - uses: actions/setup-python@v7.1.0
+        with:
+          python-version: '3.12'
+      - name: Verify normalized source without image dependencies
+        shell: pwsh
+        run: |
+          python -S scripts/build_windows_icon.py --verify
+          if ($LASTEXITCODE -ne 0) { throw 'Windows artwork source is stale.' }
+          python -m unittest discover -s scripts -p 'test_windows_icon.py'
+          if ($LASTEXITCODE -ne 0) { throw 'Windows source guard tests failed.' }
+          "APPLICATION_SOURCE_SHA=$env:GITHUB_SHA" | Out-File -FilePath $env:GITHUB_ENV -Encoding utf8 -Append
+      - name: Verify native DPI frames and Shell optical extent
+        shell: pwsh
+        run: ./scripts/windows-icon-size-smoke.ps1 -IconPath build/windows/icon.ico
+      - uses: actions/upload-artifact@v7.0.2
+        if: always()
+        with:
+          name: windows-icon-size-check
+          path: |
+            ${{ runner.temp }}/zhusuan-icon-size-check/*.json
+            ${{ runner.temp }}/zhusuan-icon-size-check/*.png
+          if-no-files-found: error
           retention-days: 7

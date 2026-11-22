@@ -1,8 +1,9 @@
 import { act, screen, waitFor, within } from '@testing-library/react'
 import userEvent from '@testing-library/user-event'
 import { Route, Routes, useNavigate } from 'react-router-dom'
-import { beforeEach, describe, expect, it, vi } from 'vitest'
+import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 import { paymentApi, projectApi, type Project } from '@/api/project'
+import { useToastStore } from '@/composables/useToast'
 import { render } from '@/test/render'
 import PaymentCreateView from './PaymentCreateView'
 
@@ -53,9 +54,9 @@ async function fillPayment(
   index: number,
   amount: string,
 ) {
-  const group = screen.getByRole('group', { name: `第 ${index} 期收款` })
+  const group = screen.getByRole('group', { name: `第 ${index} 笔收款` })
   await user.type(within(group).getByRole('textbox', { name: /收款金额/ }), amount)
-  await user.click(within(group).getByRole('button', { name: '收款日期' }))
+  await user.click(within(group).getByRole('button', { name: '实际到账日期' }))
   await user.click(
     document.querySelector<HTMLButtonElement>(
       '[data-slot="popover"] .ods-calendar__day:not(:disabled)',
@@ -64,6 +65,8 @@ async function fillPayment(
 }
 
 describe('PaymentCreateView design system migration', () => {
+  afterEach(() => vi.restoreAllMocks())
+
   beforeEach(() => {
     vi.resetAllMocks()
     vi.mocked(projectApi.list).mockResolvedValue({
@@ -96,7 +99,7 @@ describe('PaymentCreateView design system migration', () => {
     const amount = screen.getByRole('textbox', { name: /收款金额/ })
     await user.type(amount, '1234')
     await user.click(screen.getByRole('button', { name: '重试' }))
-    await screen.findByRole('button', { name: '添加分期' })
+    await screen.findByRole('button', { name: '添加收款' })
     expect(screen.getByRole('textbox', { name: /收款金额/ })).toHaveValue('1234.00')
     expect(screen.getByRole('button', { name: '确认保存' })).toBeEnabled()
     expect(projectApi.get).toHaveBeenCalledTimes(2)
@@ -104,9 +107,10 @@ describe('PaymentCreateView design system migration', () => {
 
   it('retains a successful payment and retries only the failed installment', async () => {
     const user = userEvent.setup()
+    const errorToast = vi.spyOn(useToastStore.getState(), 'error').mockReturnValue(1)
     vi.mocked(paymentApi.create)
       .mockResolvedValueOnce({ data: { data: { id: 7 } } } as never)
-      .mockRejectedValueOnce(new Error('第二期保存失败'))
+      .mockRejectedValueOnce(new Error('计划日期格式错误'))
       .mockResolvedValueOnce({ data: { data: { id: 8 } } } as never)
     render(
       <Routes>
@@ -115,21 +119,22 @@ describe('PaymentCreateView design system migration', () => {
       </Routes>,
       { initialEntries: ['/payment/create'] },
     )
-    await screen.findByRole('button', { name: '添加分期' })
+    await screen.findByRole('button', { name: '添加收款' })
     await fillPayment(user, 1, '30000')
-    await user.click(screen.getByRole('button', { name: '添加分期' }))
+    await user.click(screen.getByRole('button', { name: '添加收款' }))
     await fillPayment(user, 2, '70000')
     await user.type(
-      within(screen.getByRole('group', { name: '第 2 期收款' })).getByRole('textbox', {
+      within(screen.getByRole('group', { name: '第 2 笔收款' })).getByRole('textbox', {
         name: '备注',
       }),
       '待保存备注',
     )
     await user.click(screen.getByRole('button', { name: '确认保存' }))
-    expect(await screen.findByRole('alert')).toHaveTextContent('第 2 期收款未保存')
+    expect(await screen.findByRole('alert')).toHaveTextContent('第 2 笔收款未保存')
+    expect(errorToast).toHaveBeenCalledWith('第 2 笔收款未保存：计划日期格式错误')
     expect(screen.getByRole('button', { name: '选择项目' })).toBeDisabled()
     expect(
-      within(screen.getByRole('group', { name: '第 2 期收款' })).getByRole('textbox', {
+      within(screen.getByRole('group', { name: '第 2 笔收款' })).getByRole('textbox', {
         name: '备注',
       }),
     ).toHaveValue('待保存备注')
@@ -158,7 +163,7 @@ describe('PaymentCreateView design system migration', () => {
       </Routes>,
       { initialEntries: ['/projects/42/payment/create'] },
     )
-    await screen.findByRole('button', { name: '添加分期' })
+    await screen.findByRole('button', { name: '添加收款' })
     await fillPayment(user, 1, '30000')
     await user.click(screen.getByRole('button', { name: '确认保存' }))
     await waitFor(() => expect(paymentApi.create).toHaveBeenCalledOnce())
@@ -184,9 +189,9 @@ describe('PaymentCreateView design system migration', () => {
       { initialEntries: ['/payment/create'] },
     )
 
-    expect(screen.getByRole('heading', { name: '创建收款计划' })).toBeInTheDocument()
+    expect(screen.getByRole('heading', { name: '录入收款' })).toBeInTheDocument()
     await waitFor(() =>
-      expect(screen.getByRole('button', { name: '添加分期' })).toBeInTheDocument(),
+      expect(screen.getByRole('button', { name: '添加收款' })).toBeInTheDocument(),
     )
     expect(screen.getByRole('button', { name: '选择项目' })).toHaveClass('ods-button')
     expect(container.querySelector('.payment-plan-editor')).toBeInTheDocument()
@@ -194,7 +199,7 @@ describe('PaymentCreateView design system migration', () => {
     expect(screen.getByRole('button', { name: '确认保存' })).toHaveClass('ods-button')
   })
 
-  it('normalizes the payment plan when the selected project changes payment mode', async () => {
+  it('preserves multiple receipt drafts when the selected project changes payment mode', async () => {
     const user = userEvent.setup()
     render(
       <Routes>
@@ -203,12 +208,15 @@ describe('PaymentCreateView design system migration', () => {
       { initialEntries: ['/payment/create'] },
     )
 
-    await user.click(await screen.findByRole('button', { name: '选择项目' }))
+    await screen.findByRole('button', { name: '添加收款' })
+    await user.click(screen.getByRole('button', { name: '添加收款' }))
+    await user.click(screen.getByRole('button', { name: '选择项目' }))
     await user.click(screen.getByRole('option', { name: '年度维护项目' }))
 
-    expect(screen.queryByRole('button', { name: '添加分期' })).not.toBeInTheDocument()
-    expect(screen.getByRole('button', { name: '款项阶段' })).toBeDisabled()
-    expect(screen.getByRole('button', { name: '款项阶段' })).toHaveTextContent('全款')
+    expect(screen.getByRole('button', { name: '添加收款' })).toBeInTheDocument()
+    expect(screen.getAllByRole('group', { name: /第 .* 笔收款/ })).toHaveLength(2)
+    for (const category of screen.getAllByRole('button', { name: '收款分类' }))
+      expect(category).toBeEnabled()
   })
 
   it('loads a fixed project directly even when it is outside the first project page', async () => {
@@ -225,7 +233,7 @@ describe('PaymentCreateView design system migration', () => {
       'true',
     )
     expect(screen.queryByRole('button', { name: '确认保存' })).not.toBeInTheDocument()
-    expect(await screen.findByRole('button', { name: '添加分期' })).toBeInTheDocument()
+    expect(await screen.findByRole('button', { name: '添加收款' })).toBeInTheDocument()
     expect(screen.getByText('列表后面的分期项目')).toBeInTheDocument()
     expect(projectApi.get).toHaveBeenCalledWith(142)
     expect(projectApi.list).not.toHaveBeenCalled()
@@ -265,7 +273,7 @@ describe('PaymentCreateView design system migration', () => {
     await act(async () => {
       finish({ data: { data: project } } as never)
     })
-    expect(screen.queryByRole('button', { name: '添加分期' })).not.toBeInTheDocument()
+    expect(screen.getByRole('button', { name: '添加收款' })).toBeInTheDocument()
     expect(screen.queryByText('星轨项目')).not.toBeInTheDocument()
   })
 })

@@ -34,16 +34,22 @@ import {
   type JadeIconName,
 } from '@/design-system'
 import { useMediaQuery } from '@/hooks/useMediaQuery'
-import { useAppearanceStore, type AppearancePreferences } from '@/stores/appearance'
+import {
+  APP_ICON_OPTIONS,
+  useAppearanceStore,
+  type AppIconMode,
+  type AppearanceToggleKey,
+} from '@/stores/appearance'
 import { useAuthStore } from '@/stores/auth'
 import { THEME_OPTIONS, useThemeStore, type ThemeMode } from '@/stores/theme'
+import { getAppIconSrc } from '@/utils/appIcon'
 import { appUpdater, type UpdateStatus } from '@/utils/appUpdater'
 import '@/styles/settings.css'
 import pkg from '../../package.json'
 
 const techStack = ['Wails v3', 'React', 'TypeScript', 'Go']
 
-const appearanceSwitches: ReadonlyArray<{ key: keyof AppearancePreferences; title: string }> = [
+const appearanceSwitches: ReadonlyArray<{ key: AppearanceToggleKey; title: string }> = [
   { key: 'sceneMotion', title: '江南动态场景' },
   { key: 'reduceMotion', title: '减少动态效果' },
   { key: 'liquidGlass', title: '液态玻璃效果' },
@@ -107,6 +113,33 @@ function ThemeThumbnail({ mode }: { mode: ThemeMode }) {
         >
           <span className="settings-theme__panel" />
           <span className="settings-theme__dock" />
+        </span>
+      ))}
+    </span>
+  )
+}
+
+function AppIconThumbnail({ mode }: { mode: AppIconMode }) {
+  const appearances = mode === 'auto' ? (['light', 'dark'] as const) : [mode]
+
+  return (
+    <span aria-hidden="true" className="settings-app-icon">
+      {appearances.map((appearance, index) => (
+        <span
+          className="settings-app-icon__layer"
+          data-half={index === 1 || undefined}
+          data-theme={appearance}
+          key={appearance}
+        >
+          <Image
+            alt=""
+            background="transparent"
+            className="settings-app-icon__image"
+            disableAnimation
+            fit="contain"
+            radius="none"
+            src={getAppIconSrc(appearance)}
+          />
         </span>
       ))}
     </span>
@@ -590,6 +623,25 @@ export default function SettingsView() {
             </RadioGroup>
           </SettingsGroup>
 
+          <SettingsGroup title="应用图标">
+            <RadioGroup
+              aria-label="应用图标"
+              className="settings-icons"
+              columns={3}
+              onValueChange={(value) => appearance.setAppIcon(value as AppIconMode)}
+              value={appearance.appIcon}
+            >
+              {APP_ICON_OPTIONS.map((option) => (
+                <Radio key={option.value} value={option.value} variant="card">
+                  <span className="settings-app-icon-option">
+                    <AppIconThumbnail mode={option.value} />
+                    <span className="settings-app-icon__name">{option.label}</span>
+                  </span>
+                </Radio>
+              ))}
+            </RadioGroup>
+          </SettingsGroup>
+
           <SettingsGroup flush title="动态与材质">
             <ul className="settings-list">
               {appearanceSwitches.map((item) => (
@@ -624,7 +676,7 @@ export default function SettingsView() {
                   fit="contain"
                   radius="none"
                   showSkeleton
-                  src="/玉雕风珠算字标.png"
+                  src="/zhusuan-wordmark.png"
                 />
               </div>
               <div className="about-hero__copy">

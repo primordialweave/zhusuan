@@ -1,4 +1,5 @@
 import { paymentApi, type PaymentRequest } from '@/api/project'
+import { toDateOnly } from '@/utils/dateOnly'
 import type { PaymentPlanItem } from './paymentPlan'
 
 export interface PaymentPlanSaveState {
@@ -14,15 +15,47 @@ export const createPaymentPlanSaveState = (ids: number[] = []): PaymentPlanSaveS
 const payloadFor = (projectId: number, item: PaymentPlanItem): PaymentRequest => ({
   amount: Number(item.amount) || 0,
   method: item.method || 'bank_transfer',
-  plan_date: item.planDate,
+  ...(item.planDate ? { plan_date: toDateOnly(item.planDate) } : {}),
+  ...(item.actualDate ? { actual_date: toDateOnly(item.actualDate) } : {}),
   project_id: projectId,
   remark: item.remark,
-  stage: item.stage || '款项',
+  stage: item.stage || 'receipt',
   status: item.status,
 })
 
 const itemId = (item: PaymentPlanItem, state: PaymentPlanSaveState) =>
   state.savedItems.get(item.clientKey)?.id ?? item.id
+
+/** Loaded records are already saved; unchanged legacy dates and statuses must not be rewritten. */
+export function createLoadedPaymentPlanSaveState(projectId: number, items: PaymentPlanItem[]) {
+  const state = createPaymentPlanSaveState()
+  for (const item of items) {
+    if (!item.id) continue
+    state.knownIds.add(item.id)
+    state.savedItems.set(item.clientKey, {
+      id: item.id,
+      signature: JSON.stringify(payloadFor(projectId, item)),
+    })
+  }
+  return state
+}
+
+export function getUnsavedPaymentItems(
+  projectId: number,
+  items: PaymentPlanItem[],
+  state: PaymentPlanSaveState,
+) {
+  return items.filter(
+    (item) =>
+      state.savedItems.get(item.clientKey)?.signature !==
+      JSON.stringify(payloadFor(projectId, item)),
+  )
+}
+
+const failureMessage = (reason: unknown, fallback: string) => {
+  const message = reason instanceof Error ? reason.message : reason
+  return typeof message === 'string' && message.trim() ? message : fallback
+}
 
 export function hasUnsavedPaymentPlan(
   projectId: number,
@@ -49,7 +82,9 @@ export async function savePaymentPlan(
   const desiredIds = new Set(items.map((item) => itemId(item, state)).filter(Boolean))
   const removedIds = [...state.knownIds].filter((id) => !desiredIds.has(id))
   const deletions = await Promise.allSettled(removedIds.map((id) => paymentApi.delete(id)))
-  const failedDeletionCount = deletions.filter((result) => result.status === 'rejected').length
+  const deletionFailures = deletions.flatMap((result) =>
+    result.status === 'rejected' ? [failureMessage(result.reason, '删除失败')] : [],
+  )
   deletions.forEach((result, index) => {
     if (result.status !== 'fulfilled') return
     const deletedId = removedIds[index]!
@@ -60,10 +95,11 @@ export async function savePaymentPlan(
   })
 
   // Finish the requested deletions before submitting the remaining payment plan.
-  if (failedDeletionCount) {
+  if (deletionFailures.length) {
     return {
       ids: new Map<string, number>(),
-      issue: `${failedDeletionCount} 笔收款删除失败。已完成的操作已保留，请再次保存继续。`,
+      summary: `收款删除失败：${deletionFailures[0]}${deletionFailures.length > 1 ? `；另有 ${deletionFailures.length - 1} 笔未删除` : ''}`,
+      issue: `${deletionFailures.length} 笔收款删除失败：${deletionFailures.join('；')}。已完成的操作已保留，请再次保存继续。`,
     }
   }
 
@@ -86,7 +122,7 @@ export async function savePaymentPlan(
     if (result.status !== 'fulfilled') {
       failures.push({
         index: write.index + 1,
-        message: result.reason instanceof Error ? result.reason.message : '保存失败',
+        message: failureMessage(result.reason, '保存失败'),
       })
       return
     }
@@ -95,10 +131,14 @@ export async function savePaymentPlan(
     state.savedItems.set(write.item.clientKey, { id, signature: write.signature })
     ids.set(write.item.clientKey, id)
   })
+  const firstFailure = failures[0]
   return {
     ids,
+    summary: firstFailure
+      ? `第 ${firstFailure.index} 笔收款未保存：${firstFailure.message}${failures.length > 1 ? `；另有 ${failures.length - 1} 笔未保存` : ''}`
+      : '',
     issue: failures.length
-      ? `${failures.map(({ index, message }) => `第 ${index} 期收款未保存：${message}`).join('；')}。已保存的款项会保留，请再次保存继续。`
+      ? `${failures.map(({ index, message }) => `第 ${index} 笔收款未保存：${message}`).join('；')}。已保存的款项会保留，请再次保存继续。`
       : null,
   }
 }

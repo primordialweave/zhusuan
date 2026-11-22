@@ -2,5 +2,6 @@
 
 package main
 
-// Other platforms use their bundled native icon resources.
+// Other platforms fall back to bundled icon assets or embedded web PNGs.
 var nativeAppIcon []byte
+var nativeAppIconDark []byte

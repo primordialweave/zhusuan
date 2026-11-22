@@ -126,6 +126,8 @@ func NewRouter() *gin.Engine {
 				dashboardHandler := handler.NewDashboardHandler()
 				dashboard.GET("/stats", dashboardHandler.Stats)
 				dashboard.GET("/income-trend", dashboardHandler.IncomeTrend)
+				dashboard.GET("/receipt-overview", dashboardHandler.ReceiptOverview)
+				dashboard.GET("/receipt-trend", dashboardHandler.ReceiptTrend)
 				dashboard.GET("/recent-projects", dashboardHandler.RecentProjects)
 				dashboard.GET("/upcoming-payments", dashboardHandler.UpcomingPayments)
 			}

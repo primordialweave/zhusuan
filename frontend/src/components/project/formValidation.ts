@@ -1,10 +1,11 @@
 import type { ProjectRequest } from '@/api/project'
 import type { PaymentPlanItem } from './paymentPlan'
 import { isPositiveMoney } from './money'
+import { isReceivedPayment } from './paymentPlan'
 
 export type ProjectFieldErrors = Partial<Record<keyof ProjectRequest, string>>
 export type PaymentFieldErrors = Partial<
-  Record<'amount' | 'planDate' | 'stage' | 'method' | 'status', string>
+  Record<'amount' | 'planDate' | 'actualDate' | 'stage' | 'method' | 'status', string>
 >
 export type PaymentPlanErrors = Record<string, PaymentFieldErrors>
 
@@ -29,8 +30,9 @@ export function validatePaymentPlan(items: PaymentPlanItem[]): PaymentPlanErrors
   for (const item of items) {
     const fields: PaymentFieldErrors = {}
     if (!isPositiveMoney(item.amount)) fields.amount = '请输入大于 0 的收款金额，最多保留两位小数'
-    if (!item.planDate) fields.planDate = '请选择收款日期'
-    if (!item.stage) fields.stage = '请选择款项阶段'
+    if (isReceivedPayment(item.status)) {
+      if (!item.actualDate) fields.actualDate = '请选择实际到账日期'
+    } else if (!item.planDate) fields.planDate = '请选择历史计划日期'
     if (!item.method) fields.method = '请选择收款方式'
     if (!item.status) fields.status = '请选择收款状态'
     if (Object.keys(fields).length) errors[item.clientKey] = fields

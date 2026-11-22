@@ -8,6 +8,7 @@ import subprocess
 import sys
 
 from PIL import Image, ImageChops, ImageDraw
+from build_windows_icon import WINDOWS_ICON_SIZES, build_windows_source
 
 ROOT = Path(__file__).resolve().parents[1]
 IOS_BACKGROUND = (200, 228, 211, 255)
@@ -40,17 +41,28 @@ def generate(source_path, native=True):
     if source_path.resolve() != master.resolve():
         shutil.copy2(source_path, master)
 
+    windows_master = ROOT / 'build/appicon-windows.png'
+    build_windows_source(master, windows_master)
+    with Image.open(windows_master) as image:
+        windows_source = image.convert('RGBA')
+
     web = fit(source, 256, 256)
-    for name in ('zhusuan.png', 'orange.png', 'orange-new.png'):
-        save(web, ROOT / 'frontend/public' / name)
+    save(web, ROOT / 'frontend/public/zhusuan.png')
     web.save(ROOT / 'frontend/public/favicon.ico', format='ICO',
              sizes=[(size, size) for size in (16, 32, 48, 64, 128, 256)])
+    dark_master = master.with_name(f'{master.stem}-dark{master.suffix}')
+    if dark_master.is_file():
+        with Image.open(dark_master) as dark_image:
+            dark_source = dark_image.convert('RGBA')
+        if dark_source.width != dark_source.height:
+            raise ValueError('The dark master icon must be square.')
+        save(fit(dark_source, 256, 256), ROOT / 'frontend/public/zhusuan-dark.png')
 
     windows = {'AppIcon.png': (256, 256), 'Square44x44Logo.png': (44, 44),
                'Square150x150Logo.png': (150, 150), 'StoreLogo.png': (50, 50),
                'Wide310x150Logo.png': (310, 150), 'SplashScreen.png': (620, 300)}
     for name, dimensions in windows.items():
-        save(fit(source, *dimensions), ROOT / 'build/windows/msix/Assets' / name)
+        save(fit(windows_source, *dimensions), ROOT / 'build/windows/msix/Assets' / name)
 
     for size in (128, 256, 512):
         save(fit(source, size, size), ROOT / f'build/linux/icons/{size}/zhusuan.png')
@@ -78,7 +90,10 @@ def generate(source_path, native=True):
     if native:
         subprocess.run(['wails3', 'generate', 'icons', '-input', str(master),
                         '-macfilename', str(ROOT / 'build/darwin/icons.icns'),
-                        '-windowsfilename', str(ROOT / 'build/windows/icon.ico')], check=True)
+                        '-windowsfilename='], check=True)
+        subprocess.run(['wails3', 'generate', 'icons', '-input', str(windows_master),
+                        '-macfilename=', '-windowsfilename', str(ROOT / 'build/windows/icon.ico'),
+                        '-sizes', ','.join(str(size) for size in WINDOWS_ICON_SIZES)], check=True)
         if sys.platform == 'darwin':
             subprocess.run([sys.executable, str(ROOT/'scripts/build_macos_icon.py'), '--input', str(master), '--output', str(ROOT/'build/darwin/icons.icns')], check=True)
     print('Generated macOS/Windows/Web/Linux/Android and opaque iOS icons from', source_path.name)

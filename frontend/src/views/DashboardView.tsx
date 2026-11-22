@@ -10,13 +10,13 @@ const SCOPE_KEY = 'workbenchSummaryScope'
 
 const readScope = (): PaymentSummaryScope => {
   const saved = typeof window === 'undefined' ? null : window.localStorage.getItem(SCOPE_KEY)
-  return PAYMENT_SUMMARY_SCOPES.find((scope) => scope === saved) ?? 'all'
+  return PAYMENT_SUMMARY_SCOPES.find((scope) => scope === saved) ?? 'month'
 }
 
 /** The workbench is the scene itself; the payment summary is the only thing placed on it. */
 export default function DashboardView() {
   const [scope, setScope] = useState(readScope)
-  const { paid, pending, refreshing, retry, status } = usePaymentSummary(scope)
+  const { paid, pending, overpaid, refreshing, retry, status } = usePaymentSummary(scope)
 
   const changeScope = (next: PaymentSummaryScope) => {
     setScope(next)
@@ -31,6 +31,7 @@ export default function DashboardView() {
         onScopeChange={changeScope}
         paid={paid}
         pending={pending}
+        overpaid={overpaid}
         refreshing={refreshing}
         scope={scope}
         status={status}

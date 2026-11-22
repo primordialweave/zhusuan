@@ -115,7 +115,7 @@ describe('BrandLockup', () => {
   it('renders the Orange identity and optional subtitle', () => {
     render(<BrandLockup subtitle="项目收款管理系统" />)
 
-    expect(screen.getByRole('img', { name: 'Orange' })).toHaveAttribute('src', '/orange.png')
+    expect(screen.getByRole('img', { name: 'Orange' })).toHaveAttribute('src', '/zhusuan.png')
     expect(screen.getByText('Orange')).toBeInTheDocument()
     expect(screen.getByText('项目收款管理系统')).toBeInTheDocument()
   })
@@ -178,7 +178,7 @@ export default function BrandLockup({
       className={`brand-lockup ${compact ? 'brand-lockup--compact' : ''} ${className}`.trim()}
       {...props}
     >
-      <img alt="Orange" className="brand-lockup__logo" src="/orange.png" />
+      <img alt="Orange" className="brand-lockup__logo" src="/zhusuan.png" />
       <div className="brand-lockup__copy">
         <strong>Orange</strong>
         {subtitle ? <span>{subtitle}</span> : null}

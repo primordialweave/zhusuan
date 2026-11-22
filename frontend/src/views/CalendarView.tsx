@@ -1,24 +1,25 @@
 import dayjs from 'dayjs'
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react'
 import { useSearchParams } from 'react-router-dom'
-import { paymentApi, type Payment } from '@/api/project'
+import type { Payment } from '@/api/project'
+import { dashboardApi } from '@/api/dashboard'
 import { useToastStore } from '@/composables/useToast'
 import {
   Button,
   Calendar,
-  Chip,
   EmptyScene,
   EmptyState,
   JadeIcon,
   PageHeader,
   RouterLink,
   Skeleton,
-  type SurfaceTone,
 } from '@/design-system'
 import { formatAmount } from '@/utils/format'
+import { toDateOnly } from '@/utils/dateOnly'
 import '@/styles/calendar-domain.css'
 
 const paymentStageLabels: Record<string, string> = {
+  receipt: '收款',
   all: '全款',
   deposit: '预付款',
   final: '尾款',
@@ -30,32 +31,11 @@ const paymentStageLabels: Record<string, string> = {
 const formatStage = (payment: Payment) =>
   paymentStageLabels[payment.stage] || payment.stage || '收款'
 
-const statusMeta: Record<Payment['status'], { label: string; tone: SurfaceTone }> = {
-  confirmed: { label: '已收', tone: 'success' },
-  overdue: { label: '逾期', tone: 'danger' },
-  paid: { label: '已收', tone: 'success' },
-  pending: { label: '待收', tone: 'warning' },
-}
+type StatusGroup = 'received'
 
-const getPaymentStatus = (payment: Payment): Payment['status'] => {
-  const planDate = dayjs(payment.plan_date)
-  return payment.status === 'pending' && planDate.isValid() && planDate.isBefore(dayjs(), 'day')
-    ? 'overdue'
-    : payment.status
-}
-
-type PaymentStatus = Payment['status']
-type StatusGroup = 'overdue' | 'pending' | 'received'
-
-// Most urgent first: the order of in-cell lines and of a day's entries.
-const STATUS_GROUPS: StatusGroup[] = ['overdue', 'pending', 'received']
 const GROUP_LABEL: Record<StatusGroup, string> = {
-  overdue: '逾期',
-  pending: '待收',
   received: '已收',
 }
-const statusGroup = (status: PaymentStatus): StatusGroup =>
-  status === 'overdue' || status === 'pending' ? status : 'received'
 
 const WEEKDAY_NAMES = ['日', '一', '二', '三', '四', '五', '六']
 const CELL_LINE_LIMIT = 2
@@ -69,20 +49,17 @@ interface DaySummary {
 const paymentLink = (payment: Payment) =>
   `/projects/${payment.project_id}?tab=payments&payment=${payment.id}`
 
-const byUrgency = (a: Payment, b: Payment) =>
-  STATUS_GROUPS.indexOf(statusGroup(getPaymentStatus(a))) -
-    STATUS_GROUPS.indexOf(statusGroup(getPaymentStatus(b))) || a.id - b.id
+const byReceiptId = (a: Payment, b: Payment) => a.id - b.id
 
 const summarizeDay = (payments: Payment[]): DaySummary => ({
   count: payments.length,
-  groups: STATUS_GROUPS.map((group) => {
-    const matching = payments.filter((payment) => statusGroup(getPaymentStatus(payment)) === group)
-    return {
-      amount: matching.reduce((sum, payment) => sum + payment.amount, 0),
-      count: matching.length,
-      group,
-    }
-  }).filter((entry) => entry.count > 0),
+  groups: [
+    {
+      amount: payments.reduce((sum, payment) => sum + payment.amount, 0),
+      count: payments.length,
+      group: 'received',
+    },
+  ],
 })
 
 const formatDayHeading = (date: string) => {
@@ -117,27 +94,15 @@ function DayEntries({ summary }: { summary: DaySummary }) {
 }
 
 function PaymentEntry({ payment }: { payment: Payment }) {
-  const status = getPaymentStatus(payment)
-  const received = statusGroup(status) === 'received'
-  const actualDate = received && payment.actual_date ? payment.actual_date.slice(0, 10) : ''
-
   return (
     <li className="calendar-entry" data-motion-item>
       <div className="calendar-entry__identity">
         <RouterLink className="calendar-entry__name" to={paymentLink(payment)} tone="foreground">
           {payment.project?.name || '未知项目'}
         </RouterLink>
-        <span className="calendar-entry__stage">
-          {formatStage(payment)}
-          {actualDate && actualDate !== payment.plan_date
-            ? ` · ${formatShortDate(actualDate)}到账`
-            : ''}
-        </span>
+        <span className="calendar-entry__stage">{formatStage(payment)}</span>
       </div>
       <span className="calendar-entry__amount">{formatAmount(payment.amount)}</span>
-      <Chip size="lg" tone={statusMeta[status].tone}>
-        {statusMeta[status].label}
-      </Chip>
     </li>
   )
 }
@@ -176,18 +141,18 @@ export default function CalendarView() {
     setLoading(true)
     setLoadError(false)
     try {
-      const response = await paymentApi.list({
-        _t: Date.now(),
-        end_date: currentMonth.endOf('month').format('YYYY-MM-DD'),
-        start_date: currentMonth.startOf('month').format('YYYY-MM-DD'),
-      })
+      const response = await dashboardApi.getReceipts(
+        currentMonth.startOf('month').format('YYYY-MM-DD'),
+        currentMonth.endOf('month').format('YYYY-MM-DD'),
+      )
       if (!mountedRef.current || requestId !== requestIdRef.current) return
       setPayments(
-        response.data.data.map((payment) => ({
-          ...payment,
-          // Go serializes this date-only field as a timestamp; keep its calendar day in any timezone.
-          plan_date: payment.plan_date.slice(0, 10),
-        })),
+        response.data.data.flatMap((payment) => {
+          const date = toDateOnly(payment.actual_date)
+          return date && (payment.status === 'confirmed' || payment.status === 'paid')
+            ? [{ ...payment, actual_date: date }]
+            : []
+        }),
       )
     } catch {
       if (!mountedRef.current || requestId !== requestIdRef.current) return
@@ -212,29 +177,26 @@ export default function CalendarView() {
   const daySummaries = useMemo(() => {
     const byDate = new Map<string, Payment[]>()
     for (const payment of payments) {
-      if (!payment.plan_date.startsWith(monthKey)) continue
-      byDate.set(payment.plan_date, [...(byDate.get(payment.plan_date) ?? []), payment])
+      const date = payment.actual_date ?? ''
+      if (!date.startsWith(monthKey)) continue
+      byDate.set(date, [...(byDate.get(date) ?? []), payment])
     }
     return new Map([...byDate].map(([date, items]) => [date, summarizeDay(items)]))
   }, [monthKey, payments])
 
   const selectedDatePayments = useMemo(
-    () => payments.filter((payment) => payment.plan_date === selectedDate).sort(byUrgency),
+    () => payments.filter((payment) => payment.actual_date === selectedDate).sort(byReceiptId),
     [payments, selectedDate],
   )
 
-  // Pending plans from today on, within the visible month; the selected day is already listed above.
+  // Other actual receipts in the visible month, newest first.
   const upcomingPayments = useMemo(() => {
-    const today = dayjs().format('YYYY-MM-DD')
     return payments
       .filter(
         (payment) =>
-          payment.status === 'pending' &&
-          payment.plan_date.startsWith(monthKey) &&
-          payment.plan_date >= today &&
-          payment.plan_date !== selectedDate,
+          payment.actual_date?.startsWith(monthKey) && payment.actual_date !== selectedDate,
       )
-      .sort((a, b) => a.plan_date.localeCompare(b.plan_date) || a.id - b.id)
+      .sort((a, b) => (b.actual_date ?? '').localeCompare(a.actual_date ?? '') || b.id - a.id)
   }, [monthKey, payments, selectedDate])
 
   const handleVisibleMonthChange = useCallback(
@@ -303,7 +265,7 @@ export default function CalendarView() {
             <section className="calendar-detail__section">
               <h2 className="calendar-detail__heading">{formatDayHeading(selectedDate)}</h2>
               {loading ? (
-                <div aria-label="正在加载收款计划" className="calendar-loading-list" role="status">
+                <div aria-label="正在加载收款记录" className="calendar-loading-list" role="status">
                   {[0, 1].map((row) => (
                     <div className="calendar-loading-entry" key={row}>
                       <div className="calendar-loading-identity">
@@ -311,7 +273,6 @@ export default function CalendarView() {
                         <Skeleton height="0.75rem" width="48%" />
                       </div>
                       <Skeleton height="1rem" width="4rem" />
-                      <Skeleton height="1.5rem" width="3rem" />
                     </div>
                   ))}
                 </div>
@@ -324,13 +285,13 @@ export default function CalendarView() {
                   }
                   icon={<JadeIcon name="wifi-off" size="1em" />}
                   size="sm"
-                  title="收款计划暂时不可用"
+                  title="收款记录暂时不可用"
                 />
               ) : selectedDatePayments.length === 0 ? (
                 <EmptyState
                   scene={<EmptyScene name="calendar-empty" size="compact" />}
                   size="sm"
-                  title="该日无收款计划"
+                  title="该日无收款"
                 />
               ) : (
                 <ul className="calendar-entries" key={selectedDate}>
@@ -358,7 +319,7 @@ export default function CalendarView() {
                     ))}
                   </div>
                 ) : upcomingPayments.length === 0 ? (
-                  <p className="calendar-detail__empty">本月没有其他待收款项</p>
+                  <p className="calendar-detail__empty">本月没有其他收款记录</p>
                 ) : (
                   <ul className="calendar-upcoming">
                     {upcomingPayments.slice(0, UPCOMING_LIMIT).map((payment) => (
@@ -366,12 +327,12 @@ export default function CalendarView() {
                         <RouterLink
                           className="calendar-upcoming__link"
                           replace
-                          to={`?date=${payment.plan_date}`}
+                          to={`?date=${payment.actual_date}`}
                           tone="foreground"
                           underline="none"
                         >
                           <span className="calendar-upcoming__date">
-                            {formatShortDate(payment.plan_date)}
+                            {formatShortDate(payment.actual_date ?? '')}
                           </span>
                           <span className="calendar-upcoming__name">
                             {payment.project?.name || '未知项目'}

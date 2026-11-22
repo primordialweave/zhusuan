@@ -209,6 +209,23 @@ func main() {
 		log.Fatal(err)
 	}
 
+	lightAppIcon := nativeAppIcon
+	if len(lightAppIcon) == 0 {
+		if data, readErr := fs.ReadFile(assets, "frontend/dist/zhusuan.png"); readErr == nil {
+			lightAppIcon = data
+		} else {
+			slog.Debug("Embedded light app icon unavailable", "error", readErr)
+		}
+	}
+	darkAppIcon := nativeAppIconDark
+	if len(darkAppIcon) == 0 {
+		if data, readErr := fs.ReadFile(assets, "frontend/dist/zhusuan-dark.png"); readErr == nil {
+			darkAppIcon = data
+		} else {
+			slog.Debug("Embedded dark app icon unavailable", "error", readErr)
+		}
+	}
+
 	// 7. 创建 Wails 应用程序实例
 	// 配置项说明:
 	// - Name & Description: 应用元数据
@@ -224,6 +241,7 @@ func main() {
 			application.NewService(desktop.NewCredentialStore()),
 			application.NewService(desktop.NewFileExporter()),
 			application.NewService(desktop.NewAppUpdater(metadata.Version, config.AppConfig.GitHubRepo)),
+			application.NewService(desktop.NewAppIconManager(lightAppIcon, darkAppIcon)),
 		},
 		Assets: application.AssetOptions{
 			Handler: assetHandler,

@@ -1,417 +1,326 @@
 import userEvent from '@testing-library/user-event'
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
-import { dashboardApi, type DashboardStats } from '@/api/dashboard'
+import { dashboardApi } from '@/api/dashboard'
 import { render, screen, waitFor, within } from '@/test/render'
 import AnalyticsView from './AnalyticsView'
+import { useAppearanceStore } from '@/stores/appearance'
 
-interface ChartMockInstance {
-  config: { type: string; data: { datasets: Array<Record<string, unknown>> } }
-  data: { datasets: Array<{ data: number[] }>; labels: string[] }
-}
-
-const { chartInstances } = vi.hoisted(() => ({
-  chartInstances: [] as ChartMockInstance[],
+const { chartInstances, exportCsv } = vi.hoisted(() => ({
+  chartInstances: [] as Array<{
+    data: { labels: string[]; datasets: Array<{ data: number[]; label: string }> }
+    config: { options: { animation: { duration: number } } }
+  }>,
+  exportCsv: vi.fn(),
 }))
-
-const createDeferred = <T,>() => {
-  let resolve!: (value: T | PromiseLike<T>) => void
-  let reject!: (reason?: unknown) => void
-  const promise = new Promise<T>((promiseResolve, promiseReject) => {
-    resolve = promiseResolve
-    reject = promiseReject
-  })
-  return { promise, reject, resolve }
-}
-
-const exportCsv = vi.hoisted(() => vi.fn())
 
 vi.mock('@/utils/csv', () => ({ exportCsv }))
-
 vi.mock('@/api/dashboard', () => ({
   dashboardApi: {
-    getIncomeTrend: vi.fn(),
+    getReceiptOverview: vi.fn(),
+    getReceiptTrend: vi.fn(),
     getStats: vi.fn(),
+    getIncomeTrend: vi.fn(),
   },
 }))
-
 vi.mock('chart.js/auto', () => ({
-  default: class ChartMock {
-    data: { datasets: Array<{ data: number[] }>; labels: string[] }
-
-    config: ChartMockInstance['config']
-
-    constructor(_context: unknown, configuration: ChartMockInstance['config']) {
-      this.config = configuration
-      this.data = configuration.data as unknown as ChartMock['data']
+  default: class {
+    data
+    config
+    constructor(
+      _context: unknown,
+      config: (typeof chartInstances)[number]['config'] & {
+        data: (typeof chartInstances)[number]['data']
+      },
+    ) {
+      this.data = config.data
+      this.config = config
       chartInstances.push(this)
     }
-
     destroy() {}
-
     update() {}
   },
 }))
 
-const stats: DashboardStats = {
-  avg_collection_days: 12,
-  avg_collection_days_trend: -2,
-  overdue_amount: 50,
-  overdue_trend: -1,
-  paid_amount: 750,
-  planned_received_amount: 800,
-  paid_trend: 5,
-  pending_amount: 200,
-  pending_trend: 3,
-  total_amount: 1_000,
-  total_trend: 4,
+const overview = {
+  contract_total: 6000,
+  received_total: 3600,
+  contract_received: 3600,
+  outstanding_total: 2400,
+  overpaid_total: 0,
+  period_received: 1200,
+  period_count: 2,
+  start_date: '2026-01-01',
+  end_date: '2026-12-31',
+}
+const response = <T,>(data: T) => ({ data: { data } })
+const deferred = <T,>() => {
+  let resolve!: (value: T) => void
+  let reject!: (reason: unknown) => void
+  const promise = new Promise<T>((yes, no) => {
+    resolve = yes
+    reject = no
+  })
+  return { promise, resolve, reject }
 }
 
-const apiResponse = <T,>(data: T) => ({ data: { data } })
-
-describe('AnalyticsView', () => {
+describe('AnalyticsView actual receipts', () => {
   beforeEach(() => {
-    vi.clearAllMocks()
+    vi.resetAllMocks()
     chartInstances.length = 0
     vi.spyOn(HTMLCanvasElement.prototype, 'getContext').mockReturnValue({} as never)
-    vi.mocked(dashboardApi.getStats).mockResolvedValue(apiResponse(stats) as never)
-    vi.mocked(dashboardApi.getIncomeTrend).mockResolvedValue(
-      apiResponse({ actual_values: [750], expected_values: [1_000], labels: ['本期'] }) as never,
+    vi.mocked(dashboardApi.getReceiptOverview).mockResolvedValue(response(overview) as never)
+    vi.mocked(dashboardApi.getReceiptTrend).mockResolvedValue(
+      response({ labels: ['2026-01'], actual_values: [1200], expected_values: [] }) as never,
     )
-  })
-
-  afterEach(() => {
-    vi.restoreAllMocks()
-  })
-
-  it('explains early receipts as timing rather than a negative collection cycle', async () => {
     vi.mocked(dashboardApi.getStats).mockResolvedValue(
-      apiResponse({ ...stats, avg_collection_days: -2 }) as never,
-    )
-    render(<AnalyticsView />)
-    expect(await screen.findByText('提前 2 天')).toBeInTheDocument()
-    expect(screen.getByText('平均到账偏差')).toBeInTheDocument()
-    expect(screen.queryByText('-2 天')).not.toBeInTheDocument()
-  })
-
-  it('uses Orange Design System controls and switches the reporting period', async () => {
-    const user = userEvent.setup()
-    const { container } = render(<AnalyticsView />)
-
-    await waitFor(() =>
-      expect(dashboardApi.getStats).toHaveBeenCalledWith('month', expect.any(AbortSignal)),
-    )
-    const periodTabs = screen.getByRole('tablist', { name: '统计周期' })
-    expect(periodTabs).toHaveAttribute('data-variant', 'accent')
-    expect(screen.getByRole('tab', { name: '月' })).toHaveAttribute('aria-selected', 'true')
-    expect(screen.getAllByRole('tabpanel', { hidden: true })).toHaveLength(5)
-    expect(screen.getByRole('tabpanel', { name: '月' })).toBeVisible()
-    expect(container.querySelectorAll('.ods-tabs__tab')).toHaveLength(5)
-    expect(screen.getByRole('button', { name: '导出报表' })).toHaveAttribute(
-      'data-variant',
-      'outline',
-    )
-    // The header says what the page is for; the period lives in the tabs and on the chart axis.
-    expect(document.querySelector('.ods-page-header__description, .scene-page__text')).toBeNull()
-    expect(container.querySelector('.ods-page-header__eyebrow')).not.toBeInTheDocument()
-    // Open sections, no cards.
-    expect(container.querySelector('.ods-card')).not.toBeInTheDocument()
-    expect(container.querySelector('.ods-summary-metric')).not.toBeInTheDocument()
-    expect(screen.getByRole('region', { name: '收款趋势' })).toBeInTheDocument()
-    expect(screen.getByRole('region', { name: '收款结构' })).toBeInTheDocument()
-    expect(container.querySelector('.glass-card')).not.toBeInTheDocument()
-    expect(container.querySelector('.btn')).not.toBeInTheDocument()
-
-    await user.click(screen.getByRole('tab', { name: '周' }))
-
-    await waitFor(() =>
-      expect(dashboardApi.getStats).toHaveBeenCalledWith('week', expect.any(AbortSignal)),
-    )
-    expect(screen.getByRole('tab', { name: '周' })).toHaveAttribute('aria-selected', 'true')
-    expect(screen.getByRole('tabpanel', { name: '周' })).toBeVisible()
-    expect(await screen.findByText('近7天收款趋势数据')).toBeInTheDocument()
-  })
-
-  it('shows four plain figures without trend badges', async () => {
-    render(<AnalyticsView />)
-
-    await screen.findByText('¥1,000')
-    const figures = [...screen.getByLabelText('关键指标').querySelectorAll('.analytics-metric')]
-    expect(figures.map((figure) => figure.textContent)).toEqual([
-      '平均到账偏差延后 12 天',
-      '预期收款¥1,000',
-      '收款率80%',
-      '逾期比例5%',
-    ])
-    expect(screen.queryByLabelText(/上升|下降|持平/)).not.toBeInTheDocument()
-  })
-
-  it('counts early receipts toward the planned collection rate and structure while retaining cash flow', async () => {
-    const user = userEvent.setup()
-    exportCsv.mockResolvedValue({ path: '/tmp/report.csv', status: 'saved' })
-    vi.mocked(dashboardApi.getStats).mockResolvedValue(
-      apiResponse({
-        ...stats,
-        total_amount: 134_200,
-        paid_amount: 131_200,
-        planned_received_amount: 134_200,
-        pending_amount: 0,
-        overdue_amount: 0,
+      response({
+        total_amount: 1000,
+        paid_amount: 750,
+        planned_received_amount: 800,
+        pending_amount: 200,
+        overdue_amount: 50,
+        avg_collection_days: -2,
       }) as never,
     )
     vi.mocked(dashboardApi.getIncomeTrend).mockResolvedValue(
-      apiResponse({
-        actual_values: [131_200],
-        expected_values: [134_200],
-        labels: ['2026-04'],
+      response({ labels: ['2026-01'], actual_values: [750], expected_values: [1000] }) as never,
+    )
+  })
+  afterEach(() => vi.restoreAllMocks())
+
+  it('keeps an undated all-time receipt in the amount without pretending it has a chart date', async () => {
+    const user = userEvent.setup()
+    vi.mocked(dashboardApi.getReceiptOverview).mockResolvedValue(
+      response({ ...overview, period_received: 100, period_count: 1 }) as never,
+    )
+    vi.mocked(dashboardApi.getReceiptTrend).mockResolvedValue(
+      response({ labels: [], actual_values: [], expected_values: [] }) as never,
+    )
+    render(<AnalyticsView />)
+    await user.click(screen.getByRole('tab', { name: '全部' }))
+    await screen.findByText('暂无有日期的收款')
+    expect(
+      within(screen.getByRole('region', { name: '本期收款' }))
+        .getByText('收款金额')
+        .closest('div'),
+    ).toHaveTextContent('¥100')
+    expect(dashboardApi.getReceiptOverview).toHaveBeenLastCalledWith('all', expect.any(AbortSignal))
+  })
+
+  it('disables chart animation when the app requests reduced motion', async () => {
+    const previous = useAppearanceStore.getState().reduceMotion
+    useAppearanceStore.setState({ reduceMotion: true })
+    try {
+      render(<AnalyticsView />)
+      await waitFor(() => expect(chartInstances.at(-1)?.config.options.animation.duration).toBe(0))
+    } finally {
+      useAppearanceStore.setState({ reduceMotion: previous })
+    }
+  })
+
+  it('keeps cash from earlier contracts visible when the signing scope has no contracts', async () => {
+    vi.mocked(dashboardApi.getReceiptOverview).mockResolvedValue(
+      response({
+        ...overview,
+        contract_total: 0,
+        contract_received: 0,
+        outstanding_total: 0,
+        received_total: 0,
       }) as never,
     )
     render(<AnalyticsView />)
+    await screen.findByText('暂无合同')
+    expect(
+      within(screen.getByRole('region', { name: '合同回款' }))
+        .getByText('收款率')
+        .closest('div'),
+    ).toHaveTextContent('—')
+    expect(
+      within(screen.getByRole('region', { name: '本期收款' }))
+        .getByText('收款金额')
+        .closest('div'),
+    ).toHaveTextContent('¥1,200')
+    expect(screen.queryByRole('img', { name: /合同已收/ })).not.toBeInTheDocument()
+  })
 
-    await waitFor(() => expect(screen.getByLabelText('关键指标')).toHaveTextContent('收款率100%'))
-    const structure = within(screen.getByRole('region', { name: '收款结构' }))
-    expect(structure.getByText('已收款').closest('div')).toHaveTextContent('已收款¥134,200')
-    expect(structure.getByText('待收款').closest('div')).toHaveTextContent('待收款¥0')
-    expect(structure.getByRole('img', { name: '已收款 100%，待收款 0%' })).toBeInTheDocument()
-    await waitFor(() => expect(chartInstances.at(-1)?.data.datasets[0].data).toEqual([131_200]))
+  it('shows the selected signed contracts separately from cash received in the period', async () => {
+    render(<AnalyticsView />)
+    const contract = within(await screen.findByRole('region', { name: '合同回款' }))
+    await waitFor(() =>
+      expect(contract.getAllByText('合同未收')[0].closest('div')).toHaveTextContent('¥2,400'),
+    )
+    expect(contract.getByText('合同总额').closest('div')).toHaveTextContent('¥6,000')
+    expect(contract.getAllByText('合同已收')[0].closest('div')).toHaveTextContent('¥3,600')
+    expect(contract.getByText('收款率').closest('div')).toHaveTextContent('60%')
+    const period = within(screen.getByRole('region', { name: '本期收款' }))
+    expect(period.getByText('收款金额').closest('div')).toHaveTextContent('¥1,200')
+    expect(period.getByText('收款笔数').closest('div')).toHaveTextContent('2')
+    expect(screen.queryByText('平均到账偏差')).not.toBeInTheDocument()
+    expect(screen.queryByText('逾期比例')).not.toBeInTheDocument()
+    expect(screen.queryByText('累计已收')).not.toBeInTheDocument()
+    expect(screen.queryByText('未收余额')).not.toBeInTheDocument()
+    expect(contract.getByRole('heading', { name: '合同回款' })).toHaveAttribute(
+      'title',
+      '本年签约合同，截至现在的已收与未收',
+    )
+  })
 
+  it('draws only actual receipts and keeps overpayments from erasing other contract balances', async () => {
+    vi.mocked(dashboardApi.getReceiptOverview).mockResolvedValue(
+      response({
+        ...overview,
+        contract_total: 8000,
+        received_total: 9000,
+        contract_received: 4000,
+        outstanding_total: 4000,
+        overpaid_total: 5000,
+      }) as never,
+    )
+    render(<AnalyticsView />)
+    await waitFor(() => expect(chartInstances.at(-1)?.data.datasets).toHaveLength(1))
+    expect(chartInstances.at(-1)?.data.datasets[0]).toMatchObject({
+      label: '实际收款',
+      data: [1200],
+    })
+    expect(screen.getByRole('img', { name: '合同已收 50%，合同未收 50%' })).toBeInTheDocument()
+    const contract = within(screen.getByRole('region', { name: '合同回款' }))
+    expect(contract.getAllByText('合同已收')[0].closest('div')).toHaveTextContent('¥4,000')
+    expect(contract.getAllByText('合同未收')[0].closest('div')).toHaveTextContent('¥4,000')
+    expect(screen.getByText('超收 ¥5,000')).toBeInTheDocument()
+    expect(screen.queryByText('计划收款')).not.toBeInTheDocument()
+  })
+
+  it('changes signed-contract amounts, the ring and actual receipts with the natural scope', async () => {
+    const user = userEvent.setup()
+    vi.mocked(dashboardApi.getReceiptOverview).mockImplementation((scope) =>
+      Promise.resolve(
+        response(
+          scope === 'week'
+            ? {
+                ...overview,
+                contract_total: 1000,
+                received_total: 200,
+                contract_received: 200,
+                outstanding_total: 800,
+                period_received: 50,
+              }
+            : overview,
+        ) as never,
+      ),
+    )
+    render(<AnalyticsView />)
+    await waitFor(() =>
+      expect(dashboardApi.getReceiptOverview).toHaveBeenCalledWith('year', expect.any(AbortSignal)),
+    )
+    expect(screen.getByRole('tab', { name: '本年' })).toHaveAttribute('aria-selected', 'true')
+    await user.click(screen.getByRole('tab', { name: '本周' }))
+    await waitFor(() =>
+      expect(dashboardApi.getReceiptOverview).toHaveBeenLastCalledWith(
+        'week',
+        expect.any(AbortSignal),
+      ),
+    )
+    const cash = within(screen.getByRole('region', { name: '本期收款' }))
+    await waitFor(() => expect(cash.getByText('收款金额').closest('div')).toHaveTextContent('¥50'))
+    expect(
+      within(screen.getByRole('region', { name: '合同回款' }))
+        .getAllByText('合同未收')[0]
+        .closest('div'),
+    ).toHaveTextContent('¥800')
+    expect(screen.getByRole('img', { name: '合同已收 20%，合同未收 80%' })).toBeInTheDocument()
+    const contract = within(screen.getByRole('region', { name: '合同回款' }))
+    expect(contract.getByText('合同总额').closest('div')).toHaveTextContent('¥1,000')
+    expect(contract.getAllByText('合同已收')[0].closest('div')).toHaveTextContent('¥200')
+    expect(contract.getByRole('heading', { name: '合同回款' })).toHaveAttribute(
+      'title',
+      '本周签约合同，截至现在的已收与未收',
+    )
+  })
+
+  it('exports contract balances and actual cash without planned or overdue fields', async () => {
+    const user = userEvent.setup()
+    exportCsv.mockResolvedValue({ status: 'saved', path: '/tmp/receipts.csv' })
+    render(<AnalyticsView />)
+    await waitFor(() => expect(screen.getByRole('button', { name: '导出报表' })).toBeEnabled())
     await user.click(screen.getByRole('button', { name: '导出报表' }))
     await waitFor(() => expect(exportCsv).toHaveBeenCalledOnce())
     const rows = exportCsv.mock.calls[0][1]
-    expect(rows).toContainEqual(['本期计划已收金额', 134_200])
-    expect(rows).toContainEqual(['本期实际到账金额', 131_200])
-    expect(rows).toContainEqual(['收款率', '100%'])
-    expect(rows).toContainEqual(['2026-04', 131_200, 134_200])
+    expect(rows).toContainEqual(['合同总额', 6000])
+    expect(rows).toContainEqual(['合同已收', 3600])
+    expect(rows).toContainEqual(['合同未收', 2400])
+    expect(rows).toContainEqual(['合同归属日期', '签约日期'])
+    expect(rows).toContainEqual(['本期收款金额', 1200])
+    expect(rows).toContainEqual(['本期收款笔数', 2])
+    expect(rows).toContainEqual(['2026-01', 1200])
+    expect(JSON.stringify(rows)).not.toMatch(/计划|逾期|到账偏差|累计已收|未收余额/)
   })
 
-  it('excludes receipts from other planned periods from the collection rate and structure', async () => {
-    vi.mocked(dashboardApi.getStats).mockResolvedValue(
-      apiResponse({ ...stats, paid_amount: 1_500 }) as never,
-    )
-    render(<AnalyticsView />)
-
-    await waitFor(() => expect(screen.getByLabelText('关键指标')).toHaveTextContent('收款率80%'))
-    const structure = within(screen.getByRole('region', { name: '收款结构' }))
-    expect(structure.getByText('已收款').closest('div')).toHaveTextContent('已收款¥800')
-    expect(structure.getByRole('img', { name: '已收款 80%，待收款 20%' })).toBeInTheDocument()
-  })
-
-  it('shows a dash instead of a zero rate when nothing is planned in the period', async () => {
-    vi.mocked(dashboardApi.getStats).mockResolvedValue(
-      apiResponse({
-        ...stats,
-        overdue_amount: 0,
-        paid_amount: 300,
-        planned_received_amount: 0,
-        pending_amount: 0,
-        total_amount: 0,
-      }) as never,
-    )
-    render(<AnalyticsView />)
-
-    await screen.findByText('本期暂无收款结构')
-    const figures = [...screen.getByLabelText('关键指标').querySelectorAll('.analytics-metric')]
-    expect(figures[2]).toHaveTextContent('收款率—')
-    expect(figures[3]).toHaveTextContent('逾期比例—')
-    expect(screen.getByText('本期暂无收款结构')).toBeInTheDocument()
-  })
-
-  it('draws the trend as a solid received line over a dashed planned line', async () => {
-    render(<AnalyticsView />)
-
-    await waitFor(() => expect(chartInstances).toHaveLength(1))
-    const { config } = chartInstances[0]
-    expect(config.type).toBe('line')
-    const [actual, planned] = config.data.datasets
-    expect(actual).toMatchObject({ fill: 'origin', label: '实际收款' })
-    expect(actual.borderDash).toBeUndefined()
-    expect(planned).toMatchObject({ borderDash: [8, 5], fill: false, label: '计划收款' })
-    expect(
-      [...screen.getByRole('list', { name: '图例' }).children].map((item) => item.textContent),
-    ).toEqual(['实际收款', '计划收款'])
-  })
-
-  it('writes the trend axis as dates rather than raw API keys, and adds no range caption', async () => {
-    vi.mocked(dashboardApi.getIncomeTrend).mockResolvedValue(
-      apiResponse({
-        actual_values: [750, 0],
-        end_date: '2026-11-17',
-        expected_values: [1_000, 0],
-        labels: ['11-08', '2026-01'],
-        start_date: '2026-10-19',
-      }) as never,
-    )
-    render(<AnalyticsView />)
-
-    await waitFor(() =>
-      expect(chartInstances.at(-1)?.data.labels).toEqual(['11月8日', '2026年1月']),
-    )
-    const trend = within(screen.getByRole('region', { name: '收款趋势' }))
-    expect(trend.getByRole('rowheader', { name: '11月8日' })).toBeInTheDocument()
-    expect(trend.getByRole('rowheader', { name: '2026年1月' })).toBeInTheDocument()
-    expect(trend.queryByText(/2026-10-19/)).not.toBeInTheDocument()
-  })
-
-  it('keeps the latest period when older stats and trend requests resolve last', async () => {
+  it('retains the newest scope when old overview and trend responses arrive later', async () => {
     const user = userEvent.setup()
-    const monthStats = createDeferred<Awaited<ReturnType<typeof dashboardApi.getStats>>>()
-    const weekStats = createDeferred<Awaited<ReturnType<typeof dashboardApi.getStats>>>()
-    const monthTrend = createDeferred<Awaited<ReturnType<typeof dashboardApi.getIncomeTrend>>>()
-    const weekTrend = createDeferred<Awaited<ReturnType<typeof dashboardApi.getIncomeTrend>>>()
-    const latestStats = { ...stats, total_amount: 2_000 }
-
-    vi.mocked(dashboardApi.getStats).mockImplementation((period) =>
-      period === 'month' ? monthStats.promise : weekStats.promise,
+    const oldOverview = deferred<never>()
+    const oldTrend = deferred<never>()
+    vi.mocked(dashboardApi.getReceiptOverview).mockImplementation((scope) =>
+      scope === 'year'
+        ? oldOverview.promise
+        : Promise.resolve(response({ ...overview, period_received: 55 }) as never),
     )
-    vi.mocked(dashboardApi.getIncomeTrend).mockImplementation((period) =>
-      period === 'month' ? monthTrend.promise : weekTrend.promise,
-    )
-
-    render(<AnalyticsView />)
-    await waitFor(() =>
-      expect(dashboardApi.getStats).toHaveBeenCalledWith('month', expect.any(AbortSignal)),
-    )
-    await user.click(screen.getByRole('tab', { name: '周' }))
-    await waitFor(() =>
-      expect(dashboardApi.getStats).toHaveBeenCalledWith('week', expect.any(AbortSignal)),
-    )
-
-    weekStats.resolve(apiResponse(latestStats) as never)
-    weekTrend.resolve(
-      apiResponse({
-        actual_values: [1_500],
-        expected_values: [2_000],
-        labels: ['最新周'],
-      }) as never,
-    )
-    await waitFor(() => expect(screen.getByText('¥2,000')).toBeInTheDocument())
-    await waitFor(() => expect(chartInstances.at(-1)?.data.labels).toEqual(['最新周']))
-    const trendChart = chartInstances.at(-1)
-
-    monthStats.resolve(apiResponse(stats) as never)
-    monthTrend.resolve(
-      apiResponse({ actual_values: [750], expected_values: [1_000], labels: ['旧月份'] }) as never,
-    )
-    await Promise.all([monthStats.promise, monthTrend.promise, Promise.resolve()])
-
-    expect(screen.getByText('¥2,000')).toBeInTheDocument()
-    expect(trendChart?.data.labels).toEqual(['最新周'])
-  })
-
-  it('does not relabel stale data while a new period is loading or after it fails', async () => {
-    const user = userEvent.setup()
-    const weekStats = createDeferred<Awaited<ReturnType<typeof dashboardApi.getStats>>>()
-    const weekTrend = createDeferred<Awaited<ReturnType<typeof dashboardApi.getIncomeTrend>>>()
-
-    vi.mocked(dashboardApi.getStats).mockImplementation((period) =>
-      period === 'week' ? weekStats.promise : Promise.resolve(apiResponse(stats) as never),
-    )
-    vi.mocked(dashboardApi.getIncomeTrend).mockImplementation((period) =>
-      period === 'week'
-        ? weekTrend.promise
+    vi.mocked(dashboardApi.getReceiptTrend).mockImplementation((scope) =>
+      scope === 'year'
+        ? oldTrend.promise
         : Promise.resolve(
-            apiResponse({
-              actual_values: [750],
-              expected_values: [1_000],
-              labels: ['本期'],
-            }) as never,
+            response({ labels: ['最新'], actual_values: [55], expected_values: [] }) as never,
           ),
     )
-
     render(<AnalyticsView />)
-    await waitFor(() => expect(screen.getByText('¥1,000')).toBeInTheDocument())
-
-    await user.click(screen.getByRole('tab', { name: '周' }))
-
-    expect(screen.getByLabelText('关键指标')).toHaveAttribute('aria-busy', 'true')
-    expect(screen.getByRole('status', { name: '收款趋势加载中' })).toBeInTheDocument()
-    expect(screen.queryByText('¥1,000')).not.toBeInTheDocument()
-
-    weekStats.reject(new Error('stats failed'))
-    weekTrend.reject(new Error('trend failed'))
-
-    await waitFor(() => expect(screen.getByText('趋势数据暂不可用')).toBeInTheDocument())
-    expect(screen.getAllByText('暂不可用')).toHaveLength(4)
-    expect(screen.getAllByRole('button', { name: '重新加载' })).toHaveLength(2)
-    expect(screen.queryByText('¥1,000')).not.toBeInTheDocument()
-  })
-
-  it('splits the structure into received and pending, with overdue as a note on pending', async () => {
-    render(<AnalyticsView />)
-
-    await screen.findByText('¥1,000')
-    const structure = within(screen.getByRole('region', { name: '收款结构' }))
-    // This planned cohort is 800 received / 200 outstanding; cash receipts are a separate metric.
-    expect(structure.getByRole('img', { name: '已收款 80%，待收款 20%' })).toBeInTheDocument()
-    expect(
-      [...structure.getByRole('img').querySelectorAll('circle')].map((part) =>
-        part.getAttribute('data-part'),
-      ),
-    ).toEqual(['pending', 'paid'])
-    expect(structure.getByText('已收款').closest('div')).toHaveTextContent('已收款¥800')
-    expect(structure.getByText('待收款').closest('div')).toHaveTextContent('待收款¥200其中逾期 ¥50')
-  })
-
-  it('leaves the overdue note out when nothing is overdue', async () => {
-    vi.mocked(dashboardApi.getStats).mockResolvedValue(
-      apiResponse({ ...stats, overdue_amount: 0 }) as never,
+    await waitFor(() => expect(dashboardApi.getReceiptOverview).toHaveBeenCalledOnce())
+    await user.click(screen.getByRole('tab', { name: '本周' }))
+    await waitFor(() => expect(chartInstances.at(-1)?.data.labels).toEqual(['最新']))
+    oldOverview.resolve(response({ ...overview, period_received: 900 }) as never)
+    oldTrend.resolve(
+      response({ labels: ['旧'], actual_values: [900], expected_values: [] }) as never,
     )
-    render(<AnalyticsView />)
-
-    await screen.findByText('¥1,000')
-    expect(screen.queryByText(/其中逾期/)).not.toBeInTheDocument()
+    await Promise.all([oldOverview.promise, oldTrend.promise])
+    expect(chartInstances.at(-1)?.data.labels).toEqual(['最新'])
   })
 
-  it('uses design-system empty states instead of blank canvases when a period has no data', async () => {
-    vi.mocked(dashboardApi.getStats).mockResolvedValue(
-      apiResponse({
-        ...stats,
-        overdue_amount: 0,
-        paid_amount: 0,
-        planned_received_amount: 0,
-        pending_amount: 0,
-        total_amount: 0,
-      }) as never,
-    )
-    vi.mocked(dashboardApi.getIncomeTrend).mockResolvedValue(
-      apiResponse({ actual_values: [0], expected_values: [0], labels: ['本期'] }) as never,
-    )
-
-    const { container } = render(<AnalyticsView />)
-
-    expect(await screen.findByText('本期暂无回款趋势')).toBeInTheDocument()
-    expect(screen.getByText('本期暂无收款结构')).toBeInTheDocument()
-    expect(container.querySelectorAll('canvas')).toHaveLength(0)
-  })
-
-  it('reports a chosen calendar year or month and exports what is on screen', async () => {
+  it('ends skeletons on failure and retries the same scope without presenting old cash', async () => {
     const user = userEvent.setup()
-    const thisYear = new Date().getFullYear()
-    exportCsv.mockResolvedValue({ path: '/tmp/report.csv', status: 'saved' })
-    render(<AnalyticsView />)
-    await waitFor(() => expect(dashboardApi.getStats).toHaveBeenCalled())
-    expect(screen.queryByRole('button', { name: '统计年份' })).not.toBeInTheDocument()
+    vi.mocked(dashboardApi.getReceiptOverview).mockRejectedValueOnce(new Error('offline'))
+    const { container } = render(<AnalyticsView />)
+    expect(container.querySelector('[data-slot="skeleton"]')).toBeInTheDocument()
+    expect(screen.getByRole('button', { name: '导出报表' })).toBeDisabled()
+    await screen.findByText('趋势数据暂不可用')
+    expect(screen.queryByText('¥1,200')).not.toBeInTheDocument()
+    await user.click(screen.getAllByRole('button', { name: '重新加载' })[0])
+    await waitFor(() => expect(screen.getByRole('button', { name: '导出报表' })).toBeEnabled())
+    expect(dashboardApi.getReceiptOverview).toHaveBeenCalledTimes(2)
+  })
 
-    await user.click(screen.getByRole('tab', { name: '自选' }))
-    await waitFor(() =>
-      expect(dashboardApi.getStats).toHaveBeenLastCalledWith(
-        { month: 0, year: thisYear },
-        expect.any(AbortSignal),
-      ),
+  it('keeps valid contract balances when there are no receipts in the period', async () => {
+    vi.mocked(dashboardApi.getReceiptOverview).mockResolvedValue(
+      response({ ...overview, period_received: 0, period_count: 0 }) as never,
     )
+    vi.mocked(dashboardApi.getReceiptTrend).mockResolvedValue(
+      response({ labels: ['2026-01'], actual_values: [0], expected_values: [] }) as never,
+    )
+    render(<AnalyticsView />)
+    await screen.findByText('本期暂无收款')
+    expect(screen.getByRole('img', { name: '合同已收 60%，合同未收 40%' })).toBeInTheDocument()
+    expect(screen.queryByText('暂无合同')).not.toBeInTheDocument()
+  })
 
+  it('supports a chosen calendar month using the same receipt endpoints', async () => {
+    const user = userEvent.setup()
+    render(<AnalyticsView />)
+    await waitFor(() => expect(screen.getByRole('button', { name: '导出报表' })).toBeEnabled())
+    await user.click(screen.getByRole('tab', { name: '自选' }))
     await user.click(screen.getByRole('button', { name: '统计月份' }))
     await user.click(await screen.findByRole('option', { name: '3月' }))
     await waitFor(() =>
-      expect(dashboardApi.getIncomeTrend).toHaveBeenLastCalledWith(
-        { month: 3, year: thisYear },
+      expect(dashboardApi.getReceiptTrend).toHaveBeenLastCalledWith(
+        { month: 3, year: new Date().getFullYear() },
         expect.any(AbortSignal),
       ),
     )
-
-    await user.click(screen.getByRole('button', { name: '导出报表' }))
-    await waitFor(() => expect(exportCsv).toHaveBeenCalledOnce())
-    const [filename, rows] = exportCsv.mock.calls[0]
-    expect(filename).toBe(`珠算-数据分析-${thisYear}年3月.csv`)
-    expect(rows).toContainEqual(['统计周期', `${thisYear}年3月`])
   })
 })

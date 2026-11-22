@@ -42,11 +42,6 @@ vi.mock('@/utils/appUpdater', () => ({
   },
 }))
 
-vi.mock('@wailsio/runtime', async (importOriginal) => ({
-  ...(await importOriginal<typeof import('@wailsio/runtime')>()),
-  Browser: { OpenURL: vi.fn() },
-}))
-
 vi.mock('@/components/settings/TokenManagement', () => ({
   default: ({ actions }: { actions?: ReactNode }) => (
     <div data-testid="token-management">{actions}</div>
@@ -150,6 +145,29 @@ describe('SettingsView', () => {
         layer.getAttribute('data-theme'),
       ),
     ).toEqual(['light', 'dark', 'light', 'dark'])
+
+    const appIconGroup = screen.getByRole('group', { name: '应用图标' })
+    expect(appIconGroup).toHaveClass('ods-radio-group')
+    expect(
+      within(appIconGroup)
+        .getAllByRole('radio')
+        .map((option) => option.closest('label')?.textContent),
+    ).toEqual(['浅色', '深色', '跟随系统'])
+    expect(
+      Array.from(appIconGroup.querySelectorAll('.settings-app-icon__layer')).map((layer) =>
+        layer.getAttribute('data-theme'),
+      ),
+    ).toEqual(['light', 'dark', 'light', 'dark'])
+    expect(
+      Array.from(appIconGroup.querySelectorAll('img')).map((img) => img.getAttribute('src')),
+    ).toEqual(['/zhusuan.png', '/zhusuan-dark.png', '/zhusuan.png', '/zhusuan-dark.png'])
+
+    expect(within(appIconGroup).getByRole('radio', { name: '跟随系统' })).toBeChecked()
+    await user.click(within(appIconGroup).getByRole('radio', { name: '深色' }))
+    expect(useAppearanceStore.getState().appIcon).toBe('dark')
+    expect(JSON.parse(window.localStorage.getItem(APPEARANCE_STORAGE_KEY)!).appIcon).toBe('dark')
+    await user.click(within(appIconGroup).getByRole('radio', { name: '浅色' }))
+    expect(useAppearanceStore.getState().appIcon).toBe('light')
     expect(within(theme).getByRole('radio', { name: '跟随系统' })).toBeChecked()
 
     await user.click(within(theme).getByRole('radio', { name: '深色' }))
@@ -176,6 +194,7 @@ describe('SettingsView', () => {
     expect(document.documentElement).toHaveAttribute('data-motion', 'reduced')
     expect(document.documentElement).toHaveAttribute('data-glass', 'solid')
     expect(JSON.parse(window.localStorage.getItem(APPEARANCE_STORAGE_KEY) ?? '{}')).toEqual({
+      appIcon: 'auto',
       liquidGlass: false,
       reduceMotion: true,
       sceneMotion: true,
@@ -361,7 +380,7 @@ describe('SettingsView', () => {
     expect(screen.getByRole('heading', { level: 2, name: '珠算' })).toBeInTheDocument()
     expect(container.querySelector('.about-brandmark img')).toHaveAttribute(
       'src',
-      '/玉雕风珠算字标.png',
+      '/zhusuan-wordmark.png',
     )
     expect(await screen.findByText(DEFAULT_APP_SLOGAN)).toBeInTheDocument()
     expect(screen.getByText(DEFAULT_WECHAT_PUBLIC_ACCOUNT)).toBeInTheDocument()

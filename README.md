@@ -1,56 +1,88 @@
 <div align="center">
-  <img src="frontend/public/zhusuan.png" alt="珠算 Logo" width="112" />
+  <picture>
+    <source media="(prefers-color-scheme: dark)" srcset="docs/assets/readme-banner-dark.png" />
+    <source media="(prefers-color-scheme: light)" srcset="docs/assets/readme-banner.png" />
+    <img src="docs/assets/readme-banner.png" alt="珠算 · Zhusuan" width="100%" />
+  </picture>
 
-# 珠算 · zhusuan
+  <p><strong>轻量、雅致的跨平台项目台账与收款管理桌面应用</strong></p>
 
-项目台账与收款管理桌面应用
+  <p>
+    <a href="https://github.com/primordialweave/zhusuan/releases/tag/v1.3.0">
+      <img src="https://img.shields.io/badge/release-v1.3.0-2f6d4f?style=flat-square" alt="Release v1.3.0" />
+    </a>
+    <img src="https://img.shields.io/badge/platform-macOS%20%7C%20Windows%20%7C%20Linux-4a7c59?style=flat-square" alt="Platforms" />
+    <img src="https://img.shields.io/badge/Wails-v3-528c68?style=flat-square" alt="Wails v3" />
+    <img src="https://img.shields.io/badge/Go-1.26+-00ADD8?style=flat-square" alt="Go 1.26+" />
+    <a href="LICENSE">
+      <img src="https://img.shields.io/badge/license-MIT-3b6e52?style=flat-square" alt="MIT License" />
+    </a>
+  </p>
 
-[English](README_EN.md) · [更新记录](CHANGELOG.md) · [迁移说明](docs/migration.md) · [发布说明](docs/release.md)
-
+  <p>
+    <a href="README_EN.md">English</a> ·
+    <a href="https://github.com/primordialweave/zhusuan/releases/tag/v1.3.0">下载安装包</a> ·
+    <a href="CHANGELOG.md">更新日志</a> ·
+    <a href="docs/migration.md">迁移指南</a> ·
+    <a href="docs/release.md">发布说明</a>
+  </p>
 </div>
 
-珠算基于 Wails v3、Go 和 React 构建，管理项目合同、分期收款、待收与逾期款项。原 Orange 仓库已迁入 [Primordial Weave](https://github.com/primordialweave/zhusuan)，当前版本为 **1.2.0**。[下载安装包](https://github.com/primordialweave/zhusuan/releases/tag/v1.2.0)。
+---
 
-macOS 下载：[Apple Silicon（M 系列）DMG](https://github.com/primordialweave/zhusuan/releases/download/v1.2.0/zhusuan-v1.2.0-macOS-arm64.dmg) · [Intel DMG](https://github.com/primordialweave/zhusuan/releases/download/v1.2.0/zhusuan-v1.2.0-macOS-amd64.dmg)。打开后将珠算拖入 Applications，再从应用程序文件夹启动。
+## 核心功能
 
-## 功能
-
-- 工作台：切换全部、本年、本月收款摘要。
-- 项目：维护客户、合同、项目类型和交付日期，查看回款进度。
-- 收款：一次性与分期计划、确认到账、日历跟进。
-- 分析：自然年/月或周期统计，项目表现与 CSV 导出。
-- 设置：个人资料、字典、用户、通知、数据同步、外观偏好。
-- 桌面能力：原生保存对话框、系统凭据存储、应用内下载校验与更新重启。
-- 外观：烟雨/夜雨主题、青瓷算盘图标、可关闭动态与玻璃材质。
+- **工作台**：点击切换全部、本年、本月签约合同，展示这批合同截至现在的已收与未收金额。
+- **项目台账**：管理客户信息、合同金额、项目类型与交付节点，直观追踪回款完成度。
+- **逐笔收款与日历**：项目可先创建，收到款后逐笔录入金额和实际到账日期，日历按到账日展示收款；保留历史计划记录。
+- **数据分析**：按自然周 / 月 / 季 / 年及自选年月展示签约合同回款，实际到账金额与趋势独立统计，支持 CSV 导出。
+- **系统管理**：内置个人资料、字典管理、用户权限、通知设置、云端数据同步与个性化外观偏好。
+- **原生桌面体验**：支持烟雨 / 夜雨双主题、macOS 图标浅色 / 深色 / 跟随系统实时切换，提供原生文件保存、系统凭据存储与应用内校验更新。
 
 ## 界面预览
 
-以下为当前界面的脱敏截图。项目名称、客户、合同编号、人员与联系信息已打码，金额保留。截图来自隔离的数据库副本，原数据未修改。点击图片可查看完整尺寸。
-
 | 工作台 | 项目管理 |
 | --- | --- |
-| ![工作台](docs/screenshots/dashboard.png) | ![项目管理](docs/screenshots/projects.png) |
-| 收款日历 | 数据分析 |
-| ![收款日历](docs/screenshots/calendar.png) | ![数据分析](docs/screenshots/analytics.png) |
-| 字典管理 | 关于 |
+| ![工作台](docs/screenshots/contracts/home-month-light.png) | ![项目管理](docs/screenshots/projects.png) |
+| **收款日历** | **数据分析** |
+| ![收款日历](docs/screenshots/calendar.png) | ![数据分析](docs/screenshots/contracts/analytics-year-light.png) |
+| **字典管理** | **关于** |
 | ![字典管理](docs/screenshots/dictionary.png) | ![关于](docs/screenshots/about.png) |
 
-[项目详情](docs/screenshots/project-detail.png) · [新建项目](docs/screenshots/project-create.png) · [登录页](docs/screenshots/login.png)
+更多页面：[项目详情](docs/screenshots/project-detail.png) · [新建项目](docs/screenshots/project-create.png) · [登录页](docs/screenshots/login.png)
+
+## 下载安装
+
+前往 [GitHub Releases](https://github.com/primordialweave/zhusuan/releases/tag/v1.3.0) 获取最新版 **v1.3.0** 安装包：
+
+| 平台 | 安装包 | 说明 |
+| --- | --- | --- |
+| macOS (Apple Silicon) | [zhusuan-v1.3.0-macOS-arm64.dmg](https://github.com/primordialweave/zhusuan/releases/download/v1.3.0/zhusuan-v1.3.0-macOS-arm64.dmg) | 适用于 M 系列芯片，macOS 12+ |
+| macOS (Intel) | [zhusuan-v1.3.0-macOS-amd64.dmg](https://github.com/primordialweave/zhusuan/releases/download/v1.3.0/zhusuan-v1.3.0-macOS-amd64.dmg) | 适用于 Intel 芯片，macOS 12+ |
+| Windows (x64) | [zhusuan-v1.3.0-windows-amd64-installer.exe](https://github.com/primordialweave/zhusuan/releases/download/v1.3.0/zhusuan-v1.3.0-windows-amd64-installer.exe) | 安装向导（支持用户目录安装与升级） |
+| Linux (x64) | [AppImage](https://github.com/primordialweave/zhusuan/releases/download/v1.3.0/zhusuan-v1.3.0-linux-x86_64.AppImage) · [.deb](https://github.com/primordialweave/zhusuan/releases/download/v1.3.0/zhusuan-v1.3.0-linux-amd64.deb) · [.rpm](https://github.com/primordialweave/zhusuan/releases/download/v1.3.0/zhusuan-v1.3.0-linux-amd64.rpm) | 桌面便携包与发行版安装包 |
+
+> macOS 用户打开 DMG 后将「珠算」拖入 `Applications`，从应用程序文件夹启动即可。
 
 ## 技术栈
 
-| 层 | 技术 |
+| 层级 | 技术方案 |
 | --- | --- |
-| 桌面 | Wails v3.1.0，系统 WebView |
-| 后端 | Go 1.26.11（最低 1.26.10）、Gin、GORM、SQLite/MySQL/PostgreSQL |
-| 前端 | React 19、TypeScript、Vite 8、React Router、Zustand |
-| 视觉 | ODS 组件与语义令牌、Tailwind 4、Chart.js、Remix Icon |
+| 桌面容器 | Wails v3.1，系统原生 WebView |
+| 后端服务 | Go 1.26、Gin、GORM、SQLite（默认）/ MySQL / PostgreSQL |
+| 前端应用 | React 19、TypeScript、Vite 8、React Router、Zustand |
+| 视觉系统 | ODS 设计系统与语义令牌、JadeIcon SVG 图标、Tailwind CSS 4、Chart.js |
 
-macOS、Windows、Linux 是当前发布工作流的目标。iOS/Android 保留构建脚手架与图标资产，尚未完成移动端发布验收。
+## 快速开始
 
-## 本地开发
+### 环境要求
 
-需要 Go 1.26.11（最低 1.26.10）、Node.js 24、npm 与固定版本 Wails/Task。前端兼容范围见 frontend/package.json。Linux 桌面构建还需要 GTK4/WebKitGTK 6.0 开发库。 macOS 最低系统版本为 12，使用仍支持 Monterey 的 Go 1.26 最新维护版本。
+- Go `1.26.10+`（推荐 `1.26.11`）
+- Node.js `24+` 与 npm
+- Wails CLI `v3.1.0`、Task `v3.54.0`
+- Linux 桌面构建另需 GTK4 与 WebKitGTK 6.0 开发库
+
+### 本地运行
 
 ```sh
 git clone https://github.com/primordialweave/zhusuan.git
@@ -61,47 +93,54 @@ cd frontend && npm ci && cd ..
 task dev
 ```
 
-- `task build`：构建本机应用。
-- `task package`：生成本机安装/分发包；macOS 输出本机架构 DMG 和 ZIP 更新载荷。
-- `task darwin:package ARCH=arm64` / `ARCH=amd64`：分别生成 Apple Silicon / Intel 包。
-- `task darwin:package:app`：仅生成 macOS app bundle。
-- `task server:dev`：启动独立 HTTP 服务。
-- `task icons`：从 build/appicon.png 生成全部平台图标。
+### 常用命令
 
-开发模式的普通 Vite 页面不包含 Wails API 代理。浏览器预览可运行独立后端，然后使用 frontend/vite.preview.config.mts；调试涉及写入时使用数据库副本。
+| 命令 | 说明 |
+| --- | --- |
+| `task dev` | 启动 Wails 桌面开发模式 |
+| `task build` | 构建当前平台应用 |
+| `task package` | 生成当前平台分发安装包 |
+| `task darwin:package ARCH=arm64` | 构建指定架构 macOS DMG 与更新 ZIP（支持 `arm64` / `amd64`） |
+| `task server:dev` | 启动独立 HTTP API 服务 |
+| `task icons` | 从 `build/appicon.png` / `build/appicon-dark.png` 重新生成全平台图标 |
 
-## 数据与旧版升级
+## 配置与数据目录
 
-默认配置目录为 `UserConfigDir/primordialweave/zhusuan`，数据库为 `zhusuan.db`：
+默认数据与配置目录为 `UserConfigDir/primordialweave/zhusuan`（数据库文件 `zhusuan.db`）：
 
-- macOS：`~/Library/Application Support/primordialweave/zhusuan`
-- Windows：`%APPDATA%\primordialweave\zhusuan`
-- Linux：`~/.config/primordialweave/zhusuan`
+- **macOS**：`~/Library/Application Support/primordialweave/zhusuan`
+- **Windows**：`%APPDATA%\primordialweave\zhusuan`
+- **Linux**：`~/.config/primordialweave/zhusuan`
 
-首次安装的新数据库会生成随机初始密码，保存于该目录的 `initial-credentials.txt`（0600权限）。不要把开发示例密码用于生产。
+首次初始化新数据库时会自动生成随机管理员密码，写入数据目录下的 `initial-credentials.txt`（`0600` 权限）。从旧版 Orange 升级的数据迁移规则请参阅 [迁移指南](docs/migration.md)。
 
-旧 Orange 默认数据库在首次启动时通过 SQLite 一致快照迁入新目录，原库保留，已有新库不覆盖。非空自定义 `DB_PATH` 继续使用原路径。Windows 首次安装使用新的用户目录，不继承 Orange 安装位置；完成安装后需要以原用户启动一次珠算；保存的登录信息与必要外观设置按新身份迁移。详见 [迁移说明](docs/migration.md)。
+可通过项目或配置目录下的 `.env` 自定义运行参数（参考 `.env.example`）：
 
-`.env` 可配置 `DB_TYPE`、`DB_PATH`、云端数据库连接、`API_SERVER_PORT`、`GITHUB_REPO` 和日志选项。生产环境必须配置随机 `JWT_SECRET`，限制外部 API/metrics 的访问，保持数据库与备份目录只对必要用户可读写。JWT 使用当前用户状态/角色校验；退出登录清除本地会话，不能据此宣称服务端令牌即时撤销。
+| 环境变量 | 说明 |
+| --- | --- |
+| `DB_TYPE` / `DB_PATH` | 数据库类型（`sqlite` / `mysql` / `postgres`）及自定义路径 |
+| `API_SERVER_PORT` | 独立后端服务端口 |
+| `JWT_SECRET` | JWT 签名密钥（生产环境请配置强随机值） |
+| `GITHUB_REPO` | 应用内更新检测仓库 |
+| `APP_SLOGAN` | 关于页标语（默认 `心中有数，账目有序`，重启生效） |
+| `APP_WECHAT_PUBLIC_ACCOUNT` | 关于页公众号名称（默认 `原初织界`，重启生效） |
 
-关于页介绍可在 `.env` 设置 `APP_SLOGAN="心中有数，账目有序"`，修改后重启应用或 API 服务生效。未配置、空值或仅空白时使用此默认文案；该介绍由后端提供，无需重新构建前端。微信公众号名称通过 `APP_WECHAT_PUBLIC_ACCOUNT="原初织界"` 配置，默认“原初织界”，遵循相同的重启与留空回退规则。
-
-
-## 检查与发布
+## 测试与校验
 
 ```sh
+# 前端检查与构建
 cd frontend
 node node_modules/eslint/bin/eslint.js src --max-warnings=0
 npm run test:run
 npm run build
 cd ..
+
+# 后端与工具脚本校验
 ZHUSUAN_CONFIG_ROOT=/tmp/zhusuan-check go test -race . ./internal/... ./cmd/...
 go vet . ./internal/... ./cmd/...
-python3 scripts/test_release.py
+python3 -m unittest discover -s scripts -p "test_*.py"
 ```
-
-发布流程在三个平台分别构建校验，再统一上传草稿、核对完整资产、公开 Release。更新器读取静态 update.json 并校验 SHA-256；新版本安装成功后请求重启应用。系统安装、UAC、旧操作系统兼容性与新进程初始化失败回滚的实际范围见 [发布说明](docs/release.md)。
 
 ## 贡献与许可证
 
-欢迎提交 Issue 或 Pull Request。变更请附对应测试/构建证据，UI 变更附脱敏截图。遵循 [MIT 许可证](LICENSE)。
+欢迎提交 Issue 或 Pull Request，提交变更时请附带必要的测试与构建验证。本项目基于 [MIT 许可证](LICENSE) 开源。

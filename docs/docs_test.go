@@ -70,3 +70,30 @@ func TestSwaggerPublicInfoAndCollectionContracts(t *testing.T) {
 		require.Equal(t, documents["runtime"][section], documents["json"][section], "generated %s must match the runtime Swagger template", section)
 	}
 }
+
+func TestSwaggerActualReceiptContracts(t *testing.T) {
+	file, err := os.ReadFile("swagger.json")
+	require.NoError(t, err)
+	for _, data := range [][]byte{file, []byte(SwaggerInfo.ReadDoc())} {
+		var document map[string]any
+		require.NoError(t, json.Unmarshal(data, &document))
+		paths := swaggerObject(t, document, "paths")
+		for _, path := range []string{"/api/v1/dashboard/receipt-overview", "/api/v1/dashboard/receipt-trend"} {
+			operation := swaggerObject(t, swaggerObject(t, paths, path), "get")
+			require.Equal(t, []any{map[string]any{"Bearer": []any{}}}, operation["security"])
+			require.Contains(t, swaggerObject(t, operation, "responses"), "400")
+			if path == "/api/v1/dashboard/receipt-overview" {
+				require.Contains(t, operation["description"], "签约日期")
+				require.Contains(t, operation["description"], "截至现在")
+				require.Contains(t, operation["description"], "实际到账日独立统计")
+			}
+		}
+		definitions := swaggerObject(t, document, "definitions")
+		receipt := swaggerObject(t, definitions, "dto.ReceiptOverview")
+		require.ElementsMatch(t, []string{"contract_total", "received_total", "contract_received", "outstanding_total", "overpaid_total", "period_received", "period_count", "start_date", "end_date"}, swaggerKeys(swaggerObject(t, receipt, "properties")))
+		payment := swaggerObject(t, definitions, "dto.PaymentRequest")
+		require.Equal(t, "string", swaggerObject(t, swaggerObject(t, payment, "properties"), "actual_date")["type"])
+		require.NotContains(t, payment["required"], "plan_date")
+		require.NotContains(t, payment["required"], "stage")
+	}
+}

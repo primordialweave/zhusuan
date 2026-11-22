@@ -1,4 +1,4 @@
-import { act, screen, waitFor } from '@testing-library/react'
+import { act, screen, waitFor, within } from '@testing-library/react'
 import userEvent from '@testing-library/user-event'
 import { Route, Routes, useNavigate } from 'react-router-dom'
 import { beforeEach, describe, expect, it, vi } from 'vitest'
@@ -98,6 +98,7 @@ function renderProjectDetail(initialEntry: string) {
         }
         path="/projects/:id"
       />
+      <Route element={<h1>编辑项目收款</h1>} path="/projects/edit/:id" />
     </Routes>,
     { initialEntries: [initialEntry] },
   )
@@ -134,6 +135,132 @@ describe('ProjectDetailView payment deep links', () => {
     )
     Element.prototype.scrollIntoView = vi.fn()
     vi.spyOn(HTMLElement.prototype, 'focus').mockImplementation(() => undefined)
+  })
+
+  it('numbers the earliest actual receipt first even when API and planned dates disagree', async () => {
+    vi.mocked(projectApi.getPayments).mockResolvedValue(
+      apiResponse([
+        {
+          ...laterPayment,
+          amount: 200,
+          status: 'confirmed',
+          actual_date: '2026-11-21T00:00:00Z',
+          plan_date: '2026-01-01',
+        },
+        {
+          ...payment,
+          amount: 100,
+          status: 'confirmed',
+          actual_date: '2026-10-16T23:00:00-12:00',
+          plan_date: '2026-12-31',
+        },
+      ]) as never,
+    )
+    renderProjectDetail('/projects/42?tab=payments')
+    const first = await screen.findByTestId('payment-7')
+    const second = screen.getByTestId('payment-8')
+    expect(
+      [...document.querySelectorAll('[data-payment-id]')].map((row) =>
+        row.getAttribute('data-payment-id'),
+      ),
+    ).toEqual(['7', '8'])
+    expect(within(first).getByText('01')).toBeInTheDocument()
+    expect(within(second).getByText('02')).toBeInTheDocument()
+    expect(first).toHaveTextContent('实际到账：2026-10-16')
+  })
+
+  it('uses the highest ID as the latest receipt when actual calendar dates are equal', async () => {
+    vi.mocked(projectApi.getPayments).mockResolvedValue(
+      apiResponse([
+        { ...payment, amount: 100, status: 'confirmed', actual_date: '2026-11-21T00:00:00+14:00' },
+        { ...laterPayment, amount: 200, status: 'confirmed', actual_date: '2026-11-21T00:00:00Z' },
+      ]) as never,
+    )
+    renderProjectDetail('/projects/42')
+    const recent = await screen.findByText('最近收款')
+    expect(recent.closest('.ods-card')).toHaveTextContent('¥200.00')
+  })
+
+  it('shows received amounts on their actual calendar dates and retains legacy plans as history', async () => {
+    vi.mocked(projectApi.getPayments).mockResolvedValue(
+      apiResponse([
+        {
+          ...payment,
+          status: 'confirmed',
+          stage: 'receipt',
+          actual_date: '2026-11-21T00:00:00+14:00',
+          plan_date: '2026-12-31T00:00:00Z',
+        },
+        { ...laterPayment, status: 'overdue', actual_date: '', plan_date: '2026-08-01' },
+      ]) as never,
+    )
+    renderProjectDetail('/projects/42?tab=payments')
+    const received = await screen.findByTestId('payment-7')
+    expect(received).toHaveTextContent('实际到账：2026-11-21')
+    expect(received).not.toHaveTextContent('2026-12-31')
+    expect(received).toHaveTextContent('收款')
+    expect(received).toHaveTextContent('银行转账')
+    expect(screen.getByTestId('payment-8')).toHaveTextContent('历史计划日期：2026-08-01')
+    expect(screen.getByTestId('payment-8')).toHaveTextContent('已逾期')
+    expect(paymentApi.confirm).not.toHaveBeenCalled()
+  })
+
+  it('does not invent an actual receipt date from a settled legacy plan', async () => {
+    vi.mocked(projectApi.getPayments).mockResolvedValue(
+      apiResponse([{ ...payment, status: 'confirmed', actual_date: null }]) as never,
+    )
+    renderProjectDetail('/projects/42?tab=payments')
+    const received = await screen.findByTestId('payment-7')
+    expect(received).toHaveTextContent('实际到账：日期未记录')
+    expect(received).not.toHaveTextContent('2026-08-01')
+  })
+
+  it('shows the latest receipt instead of the next historical plan without completing the project', async () => {
+    vi.mocked(projectApi.get).mockResolvedValue(
+      apiResponse({ ...project, received_amount: 100_000 }) as never,
+    )
+    vi.mocked(projectApi.getPayments).mockResolvedValue(
+      apiResponse([
+        { ...payment, status: 'pending', plan_date: '2026-12-31' },
+        {
+          ...laterPayment,
+          status: 'confirmed',
+          actual_date: '2026-11-21T00:00:00+14:00',
+          plan_date: '2026-08-01',
+        },
+      ]) as never,
+    )
+    const { container } = renderProjectDetail('/projects/42')
+    await screen.findByRole('heading', { name: '最近收款' })
+    const latest = container.querySelector('.project-next-payment-card')!
+    expect(latest).toHaveTextContent('2026-11-21')
+    expect(latest).not.toHaveTextContent('2026-12-31')
+    expect(screen.getByText('进行中')).toBeInTheDocument()
+    expect(screen.getByRole('progressbar', { name: '回款完成度' })).toHaveAttribute(
+      'aria-valuenow',
+      '100',
+    )
+    expect(container.querySelector('.project-runway__track > li:last-child')).not.toHaveAttribute(
+      'data-reached',
+      'true',
+    )
+  })
+
+  it('opens editing to register a historical receipt without confirming it automatically', async () => {
+    const user = userEvent.setup()
+    renderProjectDetail('/projects/42?tab=payments&payment=7')
+    const historical = await screen.findByTestId('payment-7')
+    await user.click(within(historical).getByRole('link', { name: '中期款：登记到账' }))
+    expect(await screen.findByRole('heading', { name: '编辑项目收款' })).toBeInTheDocument()
+    expect(paymentApi.confirm).not.toHaveBeenCalled()
+  })
+
+  it('offers receipt entry when no actual receipts or historical plans exist', async () => {
+    vi.mocked(projectApi.getPayments).mockResolvedValue(apiResponse([]) as never)
+    renderProjectDetail('/projects/42?tab=payments')
+    expect(await screen.findByText('暂无收款记录')).toBeInTheDocument()
+    expect(screen.getAllByRole('link', { name: '录入收款' })).toHaveLength(2)
+    expect(screen.queryByText('暂无收款计划')).not.toBeInTheDocument()
   })
 
   it.each(['project', 'payments'])(
@@ -261,11 +388,11 @@ describe('ProjectDetailView payment deep links', () => {
     expect(await screen.findByText('legacy_type')).toBeInTheDocument()
   })
 
-  it('opens the payment plan tab from the initial search params', async () => {
+  it('opens the receipt records tab from the initial search params', async () => {
     renderProjectDetail('/projects/42?tab=payments&payment=7')
 
-    await waitFor(() => expect(screen.getByText('收款记录')).toBeInTheDocument())
-    expect(screen.getByRole('tab', { name: '收款计划' })).toHaveClass('active')
+    await screen.findByRole('heading', { name: '收款记录' })
+    expect(screen.getByRole('tab', { name: '收款记录' })).toHaveClass('active')
     expect(screen.getByText('中期款')).toBeInTheDocument()
   })
 
@@ -276,7 +403,7 @@ describe('ProjectDetailView payment deep links', () => {
     expect(container.querySelector('.project-settlement-board')).toBeInTheDocument()
     expect(container.querySelector('.project-runway')).toBeInTheDocument()
     expect(screen.getByRole('heading', { name: '项目档案' })).toBeInTheDocument()
-    expect(screen.getByRole('heading', { name: '下一笔计划' })).toBeInTheDocument()
+    expect(screen.getByRole('heading', { name: '最近收款' })).toBeInTheDocument()
     expect(screen.getByText('¥80,000.00')).toBeInTheDocument()
     expect(screen.getByRole('button', { name: '返回项目列表' })).toHaveAttribute(
       'aria-label',
@@ -292,7 +419,7 @@ describe('ProjectDetailView payment deep links', () => {
     )
   })
 
-  it('switches to the payment plan tab when search params change', async () => {
+  it('switches to receipt records when search params change', async () => {
     const user = userEvent.setup()
     renderProjectDetail('/projects/42')
 
@@ -301,8 +428,8 @@ describe('ProjectDetailView payment deep links', () => {
 
     await user.click(screen.getByRole('button', { name: '打开收款深链' }))
 
-    expect(await screen.findByText('收款记录')).toBeInTheDocument()
-    expect(screen.getByRole('tab', { name: '收款计划' })).toHaveClass('active')
+    expect(await screen.findByRole('heading', { name: '收款记录' })).toBeInTheDocument()
+    expect(screen.getByRole('tab', { name: '收款记录' })).toHaveClass('active')
   })
 
   it('highlights, scrolls to, and focuses the requested payment after loading', async () => {
@@ -335,15 +462,14 @@ describe('ProjectDetailView payment deep links', () => {
     expect(projectApi.getPayments).toHaveBeenCalledTimes(1)
   })
 
-  it('does not steal focus again when payments refresh for the same deep link', async () => {
+  it('does not steal focus again when opening the same receipt deep link', async () => {
     const user = userEvent.setup()
-    vi.mocked(paymentApi.confirm).mockResolvedValue(apiResponse(payment) as never)
-    renderProjectDetail('/projects/42?tab=payments&payment=7')
+    renderProjectDetail('/projects/42?tab=payments&payment=8')
 
-    const target = await screen.findByTestId('payment-7')
+    const target = await screen.findByTestId('payment-8')
     await waitFor(() => expect(target.scrollIntoView).toHaveBeenCalledTimes(1))
-    await user.click(screen.getByRole('button', { name: '中期款：确认收款' }))
-    await waitFor(() => expect(projectApi.getPayments).toHaveBeenCalledTimes(2))
+    await user.click(screen.getByRole('button', { name: '打开收款深链' }))
+    expect(projectApi.getPayments).toHaveBeenCalledOnce()
 
     expect(target.scrollIntoView).toHaveBeenCalledTimes(1)
     expect(
@@ -355,7 +481,7 @@ describe('ProjectDetailView payment deep links', () => {
     delete (Element.prototype as Partial<Element>).scrollIntoView
     renderProjectDetail('/projects/42?tab=payments&payment=999')
 
-    await waitFor(() => expect(screen.getByText('收款记录')).toBeInTheDocument())
+    await screen.findByRole('heading', { name: '收款记录' })
     expect(screen.queryByTestId('payment-999')).not.toBeInTheDocument()
   })
 

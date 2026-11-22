@@ -58,6 +58,19 @@ func TestSystemInfoRequiresAuthentication(t *testing.T) {
 	require.Equal(t, http.StatusUnauthorized, recorder.Code)
 }
 
+func TestReceiptEndpointsRequireAuthentication(t *testing.T) {
+	gin.SetMode(gin.TestMode)
+	previous := config.AppConfig
+	config.AppConfig = &config.Config{JWTSecret: "receipt-auth-test-secret-with-more-than-32-characters"}
+	t.Cleanup(func() { config.AppConfig = previous })
+	engine := NewRouter()
+	for _, path := range []string{"/api/v1/dashboard/receipt-overview", "/api/v1/dashboard/receipt-trend"} {
+		recorder := httptest.NewRecorder()
+		engine.ServeHTTP(recorder, httptest.NewRequest(http.MethodGet, path, nil))
+		require.Equal(t, http.StatusUnauthorized, recorder.Code)
+	}
+}
+
 func TestCorsAllowsConfiguredOriginPreflight(t *testing.T) {
 	gin.SetMode(gin.TestMode)
 	config.AppConfig = &config.Config{

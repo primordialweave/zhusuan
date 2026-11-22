@@ -1,0 +1,235 @@
+{
+  "verified_on": "2026-11-22",
+  "continued_chat": "01a1fe14-5c6f-70e3-86da-9ca0ed0ddffc",
+  "scope": "合同应收与逐笔实际到账统计、首页点击切换、收款记录排序与导出",
+  "state": {
+    "local_changes": true,
+    "committed": false,
+    "pushed": false,
+    "deployed": false,
+    "real_ledger_modified": false
+  },
+  "initial_anonymized_snapshot": {
+    "provenance": "原会话保存的独立验收证据，本轮读取核对；不是本轮读取的真实账本现值",
+    "overview_by_period": {
+      "year": {
+        "contract_total": 301000,
+        "received_total": 201400,
+        "contract_received": 201400,
+        "outstanding_total": 99600,
+        "overpaid_total": 0,
+        "period_received": 105400,
+        "period_count": 111,
+        "start_date": "2026-01-01",
+        "end_date": "2026-12-31"
+      },
+      "month": {
+        "contract_total": 301000,
+        "received_total": 201400,
+        "contract_received": 201400,
+        "outstanding_total": 99600,
+        "overpaid_total": 0,
+        "period_received": 0,
+        "period_count": 0,
+        "start_date": "2026-11-01",
+        "end_date": "2026-11-30"
+      },
+      "all": {
+        "contract_total": 301000,
+        "received_total": 201400,
+        "contract_received": 201400,
+        "outstanding_total": 99600,
+        "overpaid_total": 0,
+        "period_received": 201400,
+        "period_count": 147,
+        "start_date": "",
+        "end_date": ""
+      }
+    }
+  },
+  "fresh_isolated_api_and_export_checks": {
+    "database": "isolated anonymized snapshot plus task-owned acceptance fixtures",
+    "overview_by_period": {
+      "month": {
+        "contract_total": 311000,
+        "received_total": 204400,
+        "contract_received": 204400,
+        "outstanding_total": 106600,
+        "overpaid_total": 0,
+        "period_received": 3000,
+        "period_count": 2,
+        "start_date": "2026-11-01",
+        "end_date": "2026-11-30"
+      },
+      "year": {
+        "contract_total": 311000,
+        "received_total": 204400,
+        "contract_received": 204400,
+        "outstanding_total": 106600,
+        "overpaid_total": 0,
+        "period_received": 108400,
+        "period_count": 113,
+        "start_date": "2026-01-01",
+        "end_date": "2026-12-31"
+      },
+      "all": {
+        "contract_total": 311000,
+        "received_total": 204400,
+        "contract_received": 204400,
+        "outstanding_total": 106600,
+        "overpaid_total": 0,
+        "period_received": 204400,
+        "period_count": 149,
+        "start_date": "",
+        "end_date": ""
+      }
+    },
+    "year_trend_total": 108400,
+    "analytics_export_matches_api": true,
+    "project_export_matches_ui_order": true,
+    "project_receipts": [
+      {
+        "id": 159,
+        "amount": 2000,
+        "status": "confirmed",
+        "actual_date": "2026-11-22T00:00:00+08:00"
+      },
+      {
+        "id": 160,
+        "amount": 1000,
+        "status": "confirmed",
+        "actual_date": "2026-11-21T00:00:00+08:00"
+      }
+    ]
+  },
+  "analytics_scope_checks": {
+    "本月": {
+      "cash": "收款金额¥3,000收款笔数2",
+      "contract": "合同总额¥311,000累计已收¥204,400未收余额¥106,600收款率65.7%",
+      "overflow": false
+    },
+    "全部": {
+      "cash": "收款金额¥204,400收款笔数149",
+      "contract": "合同总额¥311,000累计已收¥204,400未收余额¥106,600收款率65.7%",
+      "overflow": false
+    },
+    "本年": {
+      "cash": "收款金额¥108,400收款笔数113",
+      "contract": "合同总额¥311,000累计已收¥204,400未收余额¥106,600收款率65.7%",
+      "overflow": false
+    }
+  },
+  "homepage_mouse_space_enter": {
+    "click": {
+      "cash": "累计收款¥204,400",
+      "contract": "合同已收¥204,400未收余额¥106,600",
+      "hasDropdown": false
+    },
+    "Space": {
+      "cash": "本年收款¥108,400",
+      "contract": "合同已收¥204,400未收余额¥106,600",
+      "hasDropdown": false
+    },
+    "Enter": {
+      "cash": "本月收款¥3,000",
+      "contract": "合同已收¥204,400未收余额¥106,600",
+      "hasDropdown": false
+    }
+  },
+  "narrow_layout": {
+    "width": 760,
+    "scrollWidth": 760,
+    "panel": {
+      "x": 61.15625,
+      "y": 133.3125,
+      "width": 637.6875,
+      "height": 853,
+      "top": 133.3125,
+      "right": 698.84375,
+      "bottom": 986.3125,
+      "left": 61.15625
+    },
+    "contract_metrics_reachable_after_wheel_scroll": true
+  },
+  "screenshots": {
+    "root": "docs/screenshots/receipts",
+    "files": [
+      "analytics-light.png",
+      "analytics-dark.png",
+      "analytics-narrow.png",
+      "home-dark.png",
+      "detail-dark.png",
+      "analytics-narrow-contract.png"
+    ],
+    "themes": [
+      "light",
+      "dark"
+    ],
+    "analytics_viewports": [
+      [
+        1280,
+        800
+      ],
+      [
+        760,
+        620
+      ]
+    ]
+  },
+  "sorting_regression": {
+    "change": "服务器返回ID后重排；实际到账升序、同日ID升序，保留成功签名与未完成草稿",
+    "before_fix": "新增首条测试在未修代码上失败",
+    "after_fix": "反向ID部分保存、第一笔失败第二笔成功、仅重试失败记录均通过",
+    "evidence": "/tmp/zhusuan-frontend-review.XRC7pu/order-before.json"
+  },
+  "checks": {
+    "frontend": {
+      "passed": 801,
+      "files": 125,
+      "failed": 0,
+      "skipped_or_pending": 0,
+      "todo": 0,
+      "log": "/tmp/zhusuan-frontend-review.XRC7pu/vitest-final.json"
+    },
+    "go_race": {
+      "top_level_passed": 192,
+      "subtests_passed": 228,
+      "failed": 0,
+      "test_skipped": 0,
+      "packages_passed": 17,
+      "packages_without_tests": 15,
+      "log": "/tmp/zhusuan-backend-review-sA8I2a/go-test-race.jsonl"
+    },
+    "eslint": "passed without autofix",
+    "go_vet": "passed",
+    "production_build": {
+      "result": "passed",
+      "log": "/tmp/zhusuan-receipts-root/continuation-20261122/build.log",
+      "existing_warning": "bootstrap chunk exceeds 500kB"
+    },
+    "aggregation": {
+      "overview_queries": 1,
+      "n_plus_one": false,
+      "verified_by": "existing query-count regression and source review"
+    },
+    "diff_check": "passed"
+  },
+  "limits": [
+    "后端数据库回归使用隔离SQLite；未运行真实MySQL或PostgreSQL实例",
+    "页面与API使用匿名副本及本任务创建的验收记录；截图金额包含夹具，不能作为用户账本现值",
+    "实际无收款创建、逐笔登记及日历流程沿用原会话保留证据；本轮复验统计切换、详情顺序、导出与深浅主题及窄窗"
+  ],
+  "cleanup": {
+    "ego_task_space_closed": true,
+    "task_owned_services_stopped": [
+      7803,
+      35236
+    ],
+    "user_services_untouched": [
+      3456,
+      9245
+    ]
+  },
+  "superseded_by": "docs/contract-scope-verification.json",
+  "historical_behavior_only": "Fixed lifetime contract totals were replaced by user-confirmed signing-date period cohorts."
+}
