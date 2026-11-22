@@ -1,5 +1,17 @@
 # HANDOFF
 
+## 1. 已完成：珠算 1.3.0 合并、公开发布与分支整理（2026-11-22）
+
+- 用户明确要求发布新版本、核对其他分支并合入需要内容、发布后整理分支，覆盖此前本轮“不提交/不发版”限制。合同统计、逐笔收款、合同编号与日期重试、macOS图标偏好及Windows升级/图标修复均纳入1.3.0。
+- 三条旧UI分支虽不满足普通ancestor判断，但整树分别等价于main历史5d1f54e/044d5b5/1a5e33b，不重复合入。Windows shell是icon-size祖先，当前改动先提交再正常合入icon-size，保留完整历史；版本资源和图标文档冲突保留新的1.3.0/当前能力说明。
+- AppIcon并发同步先由控制性回归复现晚到请求问题，改为单in-flight、完成后追赶最新选择、成功后去重；失败等待明确再次同步，避免忙重试。原生独立控制直接使用发行组件，读取NSApp.applicationIconImage验证浅/深/跟随系统及连续切换最终状态，没有加载数据库、凭据服务或改变用户系统外观。
+- **CI定时器坑**：首轮45002696546虽810断言全过，仍有1个未处理异常；Wails SDK根入口导入drag.js，在drag已初始化时也建50ms timer，短jsdom测试关闭window后timer才清自身。测试setup明确替换宿主桥接、保留纯SDK Create/cancellable，Settings去掉importOriginal根入口绕过，新增复现先red后green；修正后812例/126文件且0未处理异常，不能用“断言全过”替代整轮pass。
+- 本地Go race196顶层228子测试/17有测试包、Python43例、ESLint/构建/vet/模块校验/增量lint0/actionlint1.7.12均通过。Windows完整候选45002755791与Mac45002759495通过，后续差异仅3个测试文件。PR36 CI45004451431及main CI45005814027四job成功，合并main bf75cd6e480b3c7630def1ecfe2352052f2524d1；正式Release45007125688五job全成功。
+- 上海2026-11-22 17:47:48已公开v1.3.0/latest，十附件完整；八应用资产实际匿名下载400,466,653字节全部200/大小/SHA256匹配API、manifest、SUMS，latest/direct清单相同。旧1.2.0 release/十附件/annotated及peeled标签完全未变。匿名REST额度403仅是验证元数据通道限制，元数据改用已有gh OAuth，真实manifest/下载保持匿名TLS；未调整连接器token或覆盖旧发布。
+- JS/CSS gzip比同依赖重建1.2.0分别多295/224B，全前端资源减约13.8%；字体不变，合同查询仍1条SQL，无新增前端请求/图标轮询。自有构建目录中两份DS_Store仅删输出副本；root Vitest cache移出Git并保留本地，generated events仅规范末尾空行。
+- 发布后已带精确SHA lease原子删除6远程分支、删除5本地分支，先保留6个refs/archive/release-1.3.0/<branch>。另一chat拥有Windows工作树，attach工具拒绝接管，因此保留本地图标分支及其Assets.car/events未提交内容。新验收工作树被archive工具以“task primary checkout”拒绝删除；未绕过保护，已备份自有生成物/控制源码/应用包，恢复干净并对齐main后留存。真实账本、用户3456/9245、已安装应用、旧路径别名、无关.claude删除及本地cache均保留。
+- 完整结果docs/release-readiness-1.3.0.md与docs/release-verification-1.3.0.json，私有证据 /var/folders/h4/_dnvr_4x4t93j64lvqrndtb40000gn/T/zhusuan-release-1.3.0-1hgg_1rr。macOS仍adhoc、Windows无Authenticode；不宣称客户乱码、目标设备CPU/GPU/启动/Retina/屏幕阅读器或完整hosted产品UI通过。
+
 接手任何任务前先读这份文档。它只记两类东西：**当前在制品的状态**，和**已经踩过的坑**。踩到新坑就追加到第 2 节，状态变了就改第 1 节。
 
 

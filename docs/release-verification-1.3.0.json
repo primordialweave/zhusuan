@@ -1,0 +1,1274 @@
+{
+  "version": "1.3.0",
+  "url": "https://github.com/primordialweave/zhusuan/releases/tag/v1.3.0",
+  "published_at": "2026-11-22T09:47:48Z",
+  "published_at_shanghai": "2026-11-22T17:47:48+08:00",
+  "application_commit": "bf75cd6e480b3c7630def1ecfe2352052f2524d1",
+  "pr": {
+    "number": 36,
+    "url": "https://github.com/primordialweave/zhusuan/pull/36",
+    "head": "c39e9d27db1987789a441d18e68f9c24ab0e0737",
+    "ci": 45004451431,
+    "merged": true
+  },
+  "main_ci": {
+    "id": 45005814027,
+    "passed_jobs": [
+      "frontend",
+      "backend",
+      "security",
+      "Build Docker Image"
+    ]
+  },
+  "release_workflow": {
+    "id": 45007125688,
+    "passed": true,
+    "jobs": {
+      "status": "completed",
+      "conclusion": "success",
+      "source": "bf75cd6e480b3c7630def1ecfe2352052f2524d1",
+      "url": "https://github.com/primordialweave/zhusuan/actions/runs/45007125688",
+      "jobs": [
+        {
+          "name": "prepare",
+          "status": "completed",
+          "conclusion": "success"
+        },
+        {
+          "name": "build (macos-15-intel, darwin)",
+          "status": "completed",
+          "conclusion": "success"
+        },
+        {
+          "name": "build (ubuntu-24.04, linux)",
+          "status": "completed",
+          "conclusion": "success"
+        },
+        {
+          "name": "build (windows-2025, windows)",
+          "status": "completed",
+          "conclusion": "success"
+        },
+        {
+          "name": "publish",
+          "status": "completed",
+          "conclusion": "success"
+        }
+      ]
+    }
+  },
+  "release_flags": {
+    "non_draft": true,
+    "non_prerelease": true,
+    "asset_count": 10,
+    "latest": true
+  },
+  "app_downloads": {
+    "zhusuan-v1.3.0-macOS-amd64.dmg": {
+      "name": "zhusuan-v1.3.0-macOS-amd64.dmg",
+      "anonymous": true,
+      "tls_verification": true,
+      "pass": true,
+      "http_status": 200,
+      "bytes": 48603779,
+      "sha256": "461d09feafe450707036bbd16d69536611f0d2935b48868b58ec87195a6e99c5",
+      "checks": {
+        "size_matches_api": true,
+        "size_matches_manifest": true,
+        "sha256_matches_api": true,
+        "sha256_matches_manifest": true,
+        "sha256_matches_sums": true
+      }
+    },
+    "zhusuan-v1.3.0-macOS-arm64.dmg": {
+      "name": "zhusuan-v1.3.0-macOS-arm64.dmg",
+      "anonymous": true,
+      "tls_verification": true,
+      "pass": true,
+      "http_status": 200,
+      "bytes": 45727911,
+      "sha256": "f2f69e5009b098340101a06c18b0f46409e5a104657eb3c56381a17431a49564",
+      "checks": {
+        "size_matches_api": true,
+        "size_matches_manifest": true,
+        "sha256_matches_api": true,
+        "sha256_matches_manifest": true,
+        "sha256_matches_sums": true
+      }
+    },
+    "zhusuan-v1.3.0-macOS-arm64.zip": {
+      "name": "zhusuan-v1.3.0-macOS-arm64.zip",
+      "anonymous": true,
+      "tls_verification": true,
+      "pass": true,
+      "http_status": 200,
+      "bytes": 41929133,
+      "sha256": "08767255ef391b64a557ff62560fac1305578008f383f285e7c7ef5126145e69",
+      "checks": {
+        "size_matches_api": true,
+        "size_matches_manifest": true,
+        "sha256_matches_api": true,
+        "sha256_matches_manifest": true,
+        "sha256_matches_sums": true
+      }
+    },
+    "zhusuan-v1.3.0-linux-amd64.deb": {
+      "name": "zhusuan-v1.3.0-linux-amd64.deb",
+      "anonymous": true,
+      "tls_verification": true,
+      "pass": true,
+      "http_status": 200,
+      "bytes": 36648230,
+      "sha256": "4d602cde6ccaacddfadcf60378fc0d756239fc9097eddb6e3a1c0808d6d0ec15",
+      "checks": {
+        "size_matches_api": true,
+        "size_matches_manifest": true,
+        "sha256_matches_api": true,
+        "sha256_matches_manifest": true,
+        "sha256_matches_sums": true
+      }
+    },
+    "zhusuan-v1.3.0-linux-x86_64.AppImage": {
+      "name": "zhusuan-v1.3.0-linux-x86_64.AppImage",
+      "anonymous": true,
+      "tls_verification": true,
+      "pass": true,
+      "http_status": 200,
+      "bytes": 108050936,
+      "sha256": "1221e909b354accff605dac5664e71d2e202d6748de6c2a630c65d735f3682fd",
+      "checks": {
+        "size_matches_api": true,
+        "size_matches_manifest": true,
+        "sha256_matches_api": true,
+        "sha256_matches_manifest": true,
+        "sha256_matches_sums": true
+      }
+    },
+    "zhusuan-v1.3.0-linux-amd64.rpm": {
+      "name": "zhusuan-v1.3.0-linux-amd64.rpm",
+      "anonymous": true,
+      "tls_verification": true,
+      "pass": true,
+      "http_status": 200,
+      "bytes": 37666067,
+      "sha256": "fbe8a01fc95aca148f7214e0489b80bc43546f5ccc3f173411185ee0e43835ff",
+      "checks": {
+        "size_matches_api": true,
+        "size_matches_manifest": true,
+        "sha256_matches_api": true,
+        "sha256_matches_manifest": true,
+        "sha256_matches_sums": true
+      }
+    },
+    "zhusuan-v1.3.0-windows-amd64-installer.exe": {
+      "name": "zhusuan-v1.3.0-windows-amd64-installer.exe",
+      "anonymous": true,
+      "tls_verification": true,
+      "pass": true,
+      "http_status": 200,
+      "bytes": 38092432,
+      "sha256": "c35a1a733c1c32fbac0ef2450e82ea2e595d8bb0ad22082d9d5a8aae3d7b3565",
+      "checks": {
+        "size_matches_api": true,
+        "size_matches_manifest": true,
+        "sha256_matches_api": true,
+        "sha256_matches_manifest": true,
+        "sha256_matches_sums": true
+      }
+    },
+    "zhusuan-v1.3.0-macOS-amd64.zip": {
+      "name": "zhusuan-v1.3.0-macOS-amd64.zip",
+      "anonymous": true,
+      "tls_verification": true,
+      "pass": true,
+      "http_status": 200,
+      "bytes": 43748165,
+      "sha256": "dc5a6a4d6c0104a685987bd95063414bf02323e5a9204a6f4272a171b51d95cd",
+      "checks": {
+        "size_matches_api": true,
+        "size_matches_manifest": true,
+        "sha256_matches_api": true,
+        "sha256_matches_manifest": true,
+        "sha256_matches_sums": true
+      }
+    }
+  },
+  "total_download_bytes": 400466653,
+  "manifest": {
+    "latest_matches_direct": true,
+    "maps": 9,
+    "checksum_application_records": 8,
+    "all_ten_assets_pass": true,
+    "anonymous_downloads": true,
+    "tls_verification": true
+  },
+  "old_release": {
+    "version": "1.2.0",
+    "all_unchanged": true,
+    "tag_unchanged": true
+  },
+  "local_validation": {
+    "frontend": {
+      "tests": 812,
+      "files": 126,
+      "unhandled_errors": 0
+    },
+    "go": {
+      "race_top_level": 196,
+      "race_subtests": 228,
+      "packages_with_tests": 17,
+      "packages_without_tests": 15,
+      "failed": 0,
+      "test_skipped": 0
+    },
+    "python_tests": 43,
+    "eslint": "passed",
+    "typecheck_build": "passed",
+    "go_vet": "passed",
+    "go_mod_verify": "passed",
+    "incremental_golangci_issues": 0,
+    "actionlint": "v1.7.12 passed"
+  },
+  "platform_candidates": {
+    "windows": {
+      "run": 45002755791,
+      "application_source": "5072c1d5854d95271f61bef94229e4cd2f1e1ca4",
+      "passed": true,
+      "candidate_display_version": "1.3.0",
+      "candidate_product_name": "珠算",
+      "candidate_product_version": "1.3.0",
+      "candidate_taskbar_passed": true,
+      "candidate_label_correct": true,
+      "phases": [
+        {
+          "name": "01-previous-1.1.0",
+          "passed": true,
+          "labelCorrect": true
+        },
+        {
+          "name": "02-published-1.2.0",
+          "passed": true,
+          "labelCorrect": true
+        },
+        {
+          "name": "03-fixed-candidate",
+          "passed": true,
+          "labelCorrect": true
+        }
+      ],
+      "standard_user_installation": true,
+      "window_controls": true,
+      "limits": "Clean runner baseline names were already correct; does not reproduce customer-device mojibake."
+    },
+    "macos": {
+      "run": 45002759495,
+      "source": "5072c1d5854d95271f61bef94229e4cd2f1e1ca4",
+      "passed": true
+    },
+    "difference_to_release": "Three test-only files changed after candidate checks; formal Release rebuilt and verified the final tag on all platforms."
+  },
+  "native_icon_control": {
+    "scope": "independent Wails/AppKit control using candidate AppIconManager and frontend appIcon.ts, not hosted product/XCTest acceptance",
+    "ui_actions": [
+      "light",
+      "dark",
+      "auto",
+      "light/dark/light/dark"
+    ],
+    "auto_resolved": "light",
+    "observed_final": "dark -> dark 已读取真实 AppKit 图标",
+    "native_property": "NSApp.applicationIconImage via main-thread native capture",
+    "snapshots": [
+      {
+        "file": "icon-01.png",
+        "appearance": "light",
+        "sha256": "5c143b36b0a41234a6bfa8b277371177ef371120311cd40042c2a34212241ec7",
+        "size": [
+          2048,
+          2048
+        ]
+      },
+      {
+        "file": "icon-02.png",
+        "appearance": "dark",
+        "sha256": "8dba7a4f8bf2636ea2969d10b4a8afef087978c8d934436e26738edbff940ab8",
+        "size": [
+          2048,
+          2048
+        ]
+      },
+      {
+        "file": "icon-03.png",
+        "appearance": "light",
+        "sha256": "5c143b36b0a41234a6bfa8b277371177ef371120311cd40042c2a34212241ec7",
+        "size": [
+          2048,
+          2048
+        ]
+      },
+      {
+        "file": "icon-04.png",
+        "appearance": "light",
+        "sha256": "5c143b36b0a41234a6bfa8b277371177ef371120311cd40042c2a34212241ec7",
+        "size": [
+          2048,
+          2048
+        ]
+      },
+      {
+        "file": "icon-05.png",
+        "appearance": "dark",
+        "sha256": "8dba7a4f8bf2636ea2969d10b4a8afef087978c8d934436e26738edbff940ab8",
+        "size": [
+          2048,
+          2048
+        ]
+      },
+      {
+        "file": "icon-06.png",
+        "appearance": "light",
+        "sha256": "5c143b36b0a41234a6bfa8b277371177ef371120311cd40042c2a34212241ec7",
+        "size": [
+          2048,
+          2048
+        ]
+      },
+      {
+        "file": "icon-07.png",
+        "appearance": "dark",
+        "sha256": "8dba7a4f8bf2636ea2969d10b4a8afef087978c8d934436e26738edbff940ab8",
+        "size": [
+          2048,
+          2048
+        ]
+      }
+    ],
+    "state_isolation": "no database, user settings, credential store or system appearance changes",
+    "test_source_base": "5072c1d5854d95271f61bef94229e4cd2f1e1ca4"
+  },
+  "performance": {
+    "baseline_commit": "1a5e33b4e37b52db6c3e9fd5dc511e3491062d3b",
+    "baseline_tag": "v1.2.0",
+    "candidate_commit": "1107d3a6f075846feadd20a7ad52cfa84ae01d7b",
+    "candidate_version": "1.3.0",
+    "method": "Rebuild exported tagged frontend source and candidate with the same installed dependencies, identical Vite and TypeScript config, production minification, clean private outDirs. Sum gzip level 6 per file. Dependency lock differs only in root app version. These are source rebuilds, not bytes extracted from installed release packages. Local Finder metadata files were removed only from the candidate owned outDir; original user files were retained.",
+    "baseline": {
+      "path": "/var/folders/h4/_dnvr_4x4t93j64lvqrndtb40000gn/T/zhusuan-release-1.3.0-1hgg_1rr/frontend-v1.2.0-build",
+      "groups": {
+        "js": {
+          "files": 3,
+          "bytes": 955580,
+          "gzip_bytes": 290718
+        },
+        "css": {
+          "files": 3,
+          "bytes": 294555,
+          "gzip_bytes": 61474
+        },
+        "fonts": {
+          "files": 28,
+          "bytes": 20378640,
+          "gzip_bytes": 14695546
+        },
+        "images": {
+          "files": 15,
+          "bytes": 4754260,
+          "gzip_bytes": 4565610
+        },
+        "other": {
+          "files": 3,
+          "bytes": 80598,
+          "gzip_bytes": 73326
+        }
+      },
+      "total_bytes": 26463633,
+      "total_files": 52,
+      "records": [
+        {
+          "file": "THIRD_PARTY_NOTICES.txt",
+          "group": "other",
+          "bytes": 604,
+          "gzip_bytes": 373,
+          "sha256": "8f72a2cfa72c076509e287873296b8397015a905c371c76b6705b71a5428e959"
+        },
+        {
+          "file": "Zhusuan-Dock-Celadon.png",
+          "group": "images",
+          "bytes": 1928421,
+          "gzip_bytes": 1921725,
+          "sha256": "f58b9bdd2465e29561d5a09202122f7dd644b0769b8870b6c8c782c27b2abed2"
+        },
+        {
+          "file": "assets/bootstrap-9DEurb7Q.js",
+          "group": "js",
+          "bytes": 943056,
+          "gzip_bytes": 285041,
+          "sha256": "7aeb2362dc037e9507dc20d1738faf275317a5d04e7ef6cb1a6a64dd72097d39"
+        },
+        {
+          "file": "assets/bootstrap-DXlx-Zym.css",
+          "group": "css",
+          "bytes": 55871,
+          "gzip_bytes": 10555,
+          "sha256": "496e91c052a926b383ae306038102018cafaebae58d63cbecb7e38abeefbfd04"
+        },
+        {
+          "file": "assets/card-hills-DEsyTXbe.webp",
+          "group": "images",
+          "bytes": 15758,
+          "gzip_bytes": 15781,
+          "sha256": "adb6bc4efccd00d32df3023088d141ea4f04b77bf76f620261ee24395c46cb78"
+        },
+        {
+          "file": "assets/card-plum-Dw-8RVRU.webp",
+          "group": "images",
+          "bytes": 8622,
+          "gzip_bytes": 8645,
+          "sha256": "b18beb405bbffd7d9125caf53e3a63414b6f0c655a6c9cfabf0575eed086e2c0"
+        },
+        {
+          "file": "assets/greeter-rest-BKziKoOf.webp",
+          "group": "images",
+          "bytes": 20098,
+          "gzip_bytes": 20126,
+          "sha256": "bf884075215c9c450a182a5f1148cac12283c4bcaec410d126f9b45ca50f670b"
+        },
+        {
+          "file": "assets/greeter-wave-a-DFxuzM6M.webp",
+          "group": "images",
+          "bytes": 20554,
+          "gzip_bytes": 20582,
+          "sha256": "39410bbb6a6751e8aa373a4533a57566f9e34b04649d187147c6a8acdb5cbcca"
+        },
+        {
+          "file": "assets/greeter-wave-b-20H5bcWS.webp",
+          "group": "images",
+          "bytes": 21032,
+          "gzip_bytes": 21060,
+          "sha256": "5d1b3fd41674017a301180bb330ddde537f47f1b1fbab7fb90db65debadc5911"
+        },
+        {
+          "file": "assets/index-B6xKMgmy.js",
+          "group": "js",
+          "bytes": 3289,
+          "gzip_bytes": 1610,
+          "sha256": "d644f894cf85b6c0aebb6d0bd5879e8024750d3acdf92939d78023a511643ed8"
+        },
+        {
+          "file": "assets/index-cTdwMwW1.css",
+          "group": "css",
+          "bytes": 236149,
+          "gzip_bytes": 50001,
+          "sha256": "b50fd5a73f7bd256650995625e2da50513fed1ee506d1d095ec4e74e2fc6ff87"
+        },
+        {
+          "file": "assets/jetbrains-mono-cyrillic-400-normal-BEIGL1Tu.woff2",
+          "group": "fonts",
+          "bytes": 5328,
+          "gzip_bytes": 5351,
+          "sha256": "522f5827308102a9c0ea7860b5a11306043610ecf03d150ba32056a06e8c56e2"
+        },
+        {
+          "file": "assets/jetbrains-mono-cyrillic-400-normal-ugxPyKxw.woff",
+          "group": "fonts",
+          "bytes": 6976,
+          "gzip_bytes": 6944,
+          "sha256": "67c9cc7864b4940dbfb246c7b452c1de8e96f140f334d363fcdd87dbfeadab72"
+        },
+        {
+          "file": "assets/jetbrains-mono-cyrillic-500-normal-DJqRU3vO.woff",
+          "group": "fonts",
+          "bytes": 7024,
+          "gzip_bytes": 6982,
+          "sha256": "d408a664dc721f614e6346e09f3f32b2837005db28f5e4797ce8dd19da07e4ea"
+        },
+        {
+          "file": "assets/jetbrains-mono-cyrillic-500-normal-DmUKJPL_.woff2",
+          "group": "fonts",
+          "bytes": 5356,
+          "gzip_bytes": 5379,
+          "sha256": "26c9ed511def1f0fd3d1b5fe6d5c0c594d9ef8dd2435d2ff240ea265a416b6e4"
+        },
+        {
+          "file": "assets/jetbrains-mono-cyrillic-600-normal-8K4wrrwR.woff",
+          "group": "fonts",
+          "bytes": 7020,
+          "gzip_bytes": 6986,
+          "sha256": "658b2246b9d068b64c9f2dbea7af4faa1a58c9428664ae5507a7306f3999895b"
+        },
+        {
+          "file": "assets/jetbrains-mono-cyrillic-600-normal-EVf6-Yzo.woff2",
+          "group": "fonts",
+          "bytes": 5384,
+          "gzip_bytes": 5407,
+          "sha256": "b450f960a0d29846370fc050b6183727d2075a2bcb1c5595c99374bf083b5a83"
+        },
+        {
+          "file": "assets/jetbrains-mono-greek-400-normal-B9oWc5Lo.woff",
+          "group": "fonts",
+          "bytes": 5664,
+          "gzip_bytes": 5606,
+          "sha256": "09f89e8369d7745ac5fe92e62a9ea13f66f40fd95b5495fac014c54b3a1ca6cc"
+        },
+        {
+          "file": "assets/jetbrains-mono-greek-400-normal-C190GLew.woff2",
+          "group": "fonts",
+          "bytes": 4228,
+          "gzip_bytes": 4251,
+          "sha256": "365b7a8eaff022b13ed0561fde3890a04a30507d773ecd5adb3aca8e766a285c"
+        },
+        {
+          "file": "assets/jetbrains-mono-greek-500-normal-D7SFKleX.woff",
+          "group": "fonts",
+          "bytes": 5720,
+          "gzip_bytes": 5665,
+          "sha256": "89656e472646bf4d52c23d499fa2e467ad3ee73447fda24eefb96e176b1312d6"
+        },
+        {
+          "file": "assets/jetbrains-mono-greek-500-normal-JpySY46c.woff2",
+          "group": "fonts",
+          "bytes": 4284,
+          "gzip_bytes": 4307,
+          "sha256": "5b6dee4610cdaab7c4218c1692aa9a536414010eef4e5b3cfb25f45007811bcc"
+        },
+        {
+          "file": "assets/jetbrains-mono-greek-600-normal-H7WoG9Et.woff2",
+          "group": "fonts",
+          "bytes": 4308,
+          "gzip_bytes": 4331,
+          "sha256": "de02415369898d9aa2d9f30379b6c201fc1c0a7017589d973747d993a68f709b"
+        },
+        {
+          "file": "assets/jetbrains-mono-greek-600-normal-mc2nkWzM.woff",
+          "group": "fonts",
+          "bytes": 5700,
+          "gzip_bytes": 5640,
+          "sha256": "5d78d0d7859974f41fc49b1cae442e25575016670c5946c2d1317661c4a728ad"
+        },
+        {
+          "file": "assets/jetbrains-mono-latin-400-normal-6-qcROiO.woff",
+          "group": "fonts",
+          "bytes": 27496,
+          "gzip_bytes": 27480,
+          "sha256": "658b9ee07b0249cf910a8d6f3d812d46c962bae81d7379a0355b1db35c61586f"
+        },
+        {
+          "file": "assets/jetbrains-mono-latin-400-normal-V6pRDFza.woff2",
+          "group": "fonts",
+          "bytes": 21168,
+          "gzip_bytes": 21196,
+          "sha256": "14425ba9c695763c1547f48a206b7aa60350a33ae23de09f0407877f3fcd89eb"
+        },
+        {
+          "file": "assets/jetbrains-mono-latin-500-normal-BWZEU5yA.woff2",
+          "group": "fonts",
+          "bytes": 21832,
+          "gzip_bytes": 21860,
+          "sha256": "cb182feeed4d798ff6961d3c79f7026279448fca0676438aaecb21f3fc39553a"
+        },
+        {
+          "file": "assets/jetbrains-mono-latin-500-normal-CJOVTJB7.woff",
+          "group": "fonts",
+          "bytes": 28208,
+          "gzip_bytes": 28184,
+          "sha256": "a270dd0bf13d91053b8999b7c120ffadb59680cfd63fe1a6b388a13bf2809fe1"
+        },
+        {
+          "file": "assets/jetbrains-mono-latin-600-normal-BfsvjouI.woff",
+          "group": "fonts",
+          "bytes": 28180,
+          "gzip_bytes": 28156,
+          "sha256": "3f4ad0687bcb0edc596c7c85138c5140ba3a9c5a3ce2ee944f27608c0f18bab9"
+        },
+        {
+          "file": "assets/jetbrains-mono-latin-600-normal-C8RAYTDA.woff2",
+          "group": "fonts",
+          "bytes": 21860,
+          "gzip_bytes": 21888,
+          "sha256": "400c6bfda18d5d14acad1c15d6dcb9f8e13c015e7286317e0b9a482539bef147"
+        },
+        {
+          "file": "assets/jetbrains-mono-latin-ext-400-normal-Bc8Ftmh3.woff2",
+          "group": "fonts",
+          "bytes": 7336,
+          "gzip_bytes": 7359,
+          "sha256": "505dfba8ecbe77e82765f36d317ed7ef4ac42719dc5f4ae68d1c483fd22d0d14"
+        },
+        {
+          "file": "assets/jetbrains-mono-latin-ext-400-normal-fXTG6kC5.woff",
+          "group": "fonts",
+          "bytes": 10128,
+          "gzip_bytes": 10087,
+          "sha256": "e7131bbf591e1ed9b74e44e162f6a39affa00ac21654cb683585d085733f6355"
+        },
+        {
+          "file": "assets/jetbrains-mono-latin-ext-500-normal-Cut-4mMH.woff2",
+          "group": "fonts",
+          "bytes": 7528,
+          "gzip_bytes": 7551,
+          "sha256": "879df9319f1cbf633bee1dd489e376a9e1e8c458f4abddcfe381cb83b5e6b027"
+        },
+        {
+          "file": "assets/jetbrains-mono-latin-ext-500-normal-ckzbgY84.woff",
+          "group": "fonts",
+          "bytes": 10336,
+          "gzip_bytes": 10286,
+          "sha256": "8006c29f8ec53d12d281774d669a02a70b599590d110ff1a4b4a40a6fd975676"
+        },
+        {
+          "file": "assets/jetbrains-mono-latin-ext-600-normal-BfB_LPfz.woff2",
+          "group": "fonts",
+          "bytes": 7512,
+          "gzip_bytes": 7535,
+          "sha256": "90899aac1c15552c028fd205376bb537a2a5205164fe8626efabad77d7260c20"
+        },
+        {
+          "file": "assets/jetbrains-mono-latin-ext-600-normal-DObL3zCW.woff",
+          "group": "fonts",
+          "bytes": 10316,
+          "gzip_bytes": 10279,
+          "sha256": "7f5fbd7caf6fefa665e65015225fea76b59d425a7bc4645dfd77e6eb7db35ea2"
+        },
+        {
+          "file": "assets/jetbrains-mono-vietnamese-400-normal-CqNFfHCs.woff",
+          "group": "fonts",
+          "bytes": 5372,
+          "gzip_bytes": 5327,
+          "sha256": "1dfe0f740fa86409034058e49474b01126ae9ea8c1ecda905917b90d57f03b00"
+        },
+        {
+          "file": "assets/jetbrains-mono-vietnamese-500-normal-DNRqzVM1.woff",
+          "group": "fonts",
+          "bytes": 5476,
+          "gzip_bytes": 5429,
+          "sha256": "6b14186bc983291a126aa8d6d9c3044415c968262279eecbb9bb194f1daf7800"
+        },
+        {
+          "file": "assets/jetbrains-mono-vietnamese-600-normal-OWROknRo.woff",
+          "group": "fonts",
+          "bytes": 5476,
+          "gzip_bytes": 5432,
+          "sha256": "1e3421e0f17174374ea4b6103d2f0118cf914c36004ca10cd4b092b8390ee6ed"
+        },
+        {
+          "file": "assets/scene-IkMLfxJi.webp",
+          "group": "images",
+          "bytes": 242202,
+          "gzip_bytes": 242295,
+          "sha256": "6f24e4aab937c93e77ccbe769dad1bf7c645e5bdbdf3aab01deb133c8c913ca0"
+        },
+        {
+          "file": "assets/scene-business-0jIDV3_k.webp",
+          "group": "images",
+          "bytes": 23046,
+          "gzip_bytes": 23074,
+          "sha256": "521cf7cea9d24332d2af749426819dd3a821be0320076954bb52e8c44daefa3a"
+        },
+        {
+          "file": "assets/scene-masks-B20IWJdZ.webp",
+          "group": "images",
+          "bytes": 27730,
+          "gzip_bytes": 27748,
+          "sha256": "247fff7d99e79cbd3dd4dcc1ed270b2a7bb95c8d90c40bdc21602c4faeffad6d"
+        },
+        {
+          "file": "assets/sceneRuntime-BG8UUdOI.js",
+          "group": "js",
+          "bytes": 9235,
+          "gzip_bytes": 4067,
+          "sha256": "fa7790984984ba2150e488e0f48ea2c6ce5462450651b3731ca651ba8b4d15a9"
+        },
+        {
+          "file": "favicon.ico",
+          "group": "images",
+          "bytes": 100521,
+          "gzip_bytes": 100321,
+          "sha256": "e13e024ea954a84c9ea2d5080f09630d94b6ed3b94a4d32b3f0c6497dc60530b"
+        },
+        {
+          "file": "fonts/misans/LICENSE-MiSans.pdf",
+          "group": "other",
+          "bytes": 79535,
+          "gzip_bytes": 72615,
+          "sha256": "4a93a27cd2bd81b3b5ecfd0a853144a876fa26938a93a68443c67d74172fcb86"
+        },
+        {
+          "file": "fonts/misans/MiSansVF.ttf",
+          "group": "fonts",
+          "bytes": 20093424,
+          "gzip_bytes": 14410648,
+          "sha256": "0ddef90648998900175cfdca9a6f087a2544c182f130b0ad4f7e94a03a115e79"
+        },
+        {
+          "file": "index.html",
+          "group": "other",
+          "bytes": 459,
+          "gzip_bytes": 338,
+          "sha256": "52f2c8862a6bd81a7793801fee4809d05a8a0dc03318439bd89e231112f5904c"
+        },
+        {
+          "file": "orange-new.png",
+          "group": "images",
+          "bytes": 63769,
+          "gzip_bytes": 63644,
+          "sha256": "368cd9b5dfb3430c572fc02f6ec7165b343f3ca4504563f12feb8238b4063db1"
+        },
+        {
+          "file": "orange.png",
+          "group": "images",
+          "bytes": 63769,
+          "gzip_bytes": 63644,
+          "sha256": "368cd9b5dfb3430c572fc02f6ec7165b343f3ca4504563f12feb8238b4063db1"
+        },
+        {
+          "file": "style.css",
+          "group": "css",
+          "bytes": 2535,
+          "gzip_bytes": 918,
+          "sha256": "ca911ba2471fced026893b236ec9cc030bad4c1c881fe4110fbd72fa0abf2a69"
+        },
+        {
+          "file": "zhusuan.png",
+          "group": "images",
+          "bytes": 63769,
+          "gzip_bytes": 63644,
+          "sha256": "368cd9b5dfb3430c572fc02f6ec7165b343f3ca4504563f12feb8238b4063db1"
+        },
+        {
+          "file": "帝王绿翡翠算盘图标.png",
+          "group": "images",
+          "bytes": 1646305,
+          "gzip_bytes": 1468036,
+          "sha256": "b6c938ba2cb8af426660a3d331e7884e4a33fcaaccc1018cda9a19ca46957c23"
+        },
+        {
+          "file": "玉雕风珠算字标.png",
+          "group": "images",
+          "bytes": 508664,
+          "gzip_bytes": 505285,
+          "sha256": "1d7bb4448d4099dc495efdee9cb31e139062ba8d52a1252b016b9f2b4c78da82"
+        }
+      ],
+      "html_references": [
+        "/zhusuan.png",
+        "/assets/index-B6xKMgmy.js",
+        "/assets/index-cTdwMwW1.css"
+      ],
+      "all_html_references_exist": true
+    },
+    "candidate": {
+      "path": "/var/folders/h4/_dnvr_4x4t93j64lvqrndtb40000gn/T/zhusuan-release-1.3.0-1hgg_1rr/frontend-build",
+      "groups": {
+        "js": {
+          "files": 3,
+          "bytes": 957514,
+          "gzip_bytes": 291013
+        },
+        "css": {
+          "files": 3,
+          "bytes": 296177,
+          "gzip_bytes": 61698
+        },
+        "fonts": {
+          "files": 28,
+          "bytes": 20378640,
+          "gzip_bytes": 14695546
+        },
+        "images": {
+          "files": 12,
+          "bytes": 1098617,
+          "gzip_bytes": 1095071
+        },
+        "other": {
+          "files": 3,
+          "bytes": 80598,
+          "gzip_bytes": 73327
+        }
+      },
+      "total_bytes": 22811546,
+      "total_files": 49,
+      "records": [
+        {
+          "file": "THIRD_PARTY_NOTICES.txt",
+          "group": "other",
+          "bytes": 604,
+          "gzip_bytes": 373,
+          "sha256": "8f72a2cfa72c076509e287873296b8397015a905c371c76b6705b71a5428e959"
+        },
+        {
+          "file": "assets/bootstrap-B4OQ3U8X.js",
+          "group": "js",
+          "bytes": 944990,
+          "gzip_bytes": 285333,
+          "sha256": "df4d4c6338f96045816c975a838ae95e3b46d81f2a09c1f2951b59a157a588e5"
+        },
+        {
+          "file": "assets/bootstrap-R_swQcw3.css",
+          "group": "css",
+          "bytes": 57276,
+          "gzip_bytes": 10755,
+          "sha256": "c07b3787f61d23609d0a3f5db61dd2a438226c18934558b4f19600dafe51988b"
+        },
+        {
+          "file": "assets/card-hills-DEsyTXbe.webp",
+          "group": "images",
+          "bytes": 15758,
+          "gzip_bytes": 15781,
+          "sha256": "adb6bc4efccd00d32df3023088d141ea4f04b77bf76f620261ee24395c46cb78"
+        },
+        {
+          "file": "assets/card-plum-Dw-8RVRU.webp",
+          "group": "images",
+          "bytes": 8622,
+          "gzip_bytes": 8645,
+          "sha256": "b18beb405bbffd7d9125caf53e3a63414b6f0c655a6c9cfabf0575eed086e2c0"
+        },
+        {
+          "file": "assets/greeter-rest-BKziKoOf.webp",
+          "group": "images",
+          "bytes": 20098,
+          "gzip_bytes": 20126,
+          "sha256": "bf884075215c9c450a182a5f1148cac12283c4bcaec410d126f9b45ca50f670b"
+        },
+        {
+          "file": "assets/greeter-wave-a-DFxuzM6M.webp",
+          "group": "images",
+          "bytes": 20554,
+          "gzip_bytes": 20582,
+          "sha256": "39410bbb6a6751e8aa373a4533a57566f9e34b04649d187147c6a8acdb5cbcca"
+        },
+        {
+          "file": "assets/greeter-wave-b-20H5bcWS.webp",
+          "group": "images",
+          "bytes": 21032,
+          "gzip_bytes": 21060,
+          "sha256": "5d1b3fd41674017a301180bb330ddde537f47f1b1fbab7fb90db65debadc5911"
+        },
+        {
+          "file": "assets/index-BB1ipIFy.js",
+          "group": "js",
+          "bytes": 3289,
+          "gzip_bytes": 1612,
+          "sha256": "d4c6b41e0d2aaa1f2d279b72b191a93a25effebc7022a53bfe10f2524dc0ac42"
+        },
+        {
+          "file": "assets/index-DWuG3fsb.css",
+          "group": "css",
+          "bytes": 236366,
+          "gzip_bytes": 50025,
+          "sha256": "f46457496e851b20c0f95fc2a82da66639653adeb18e05e74e176c0af3cf6ba2"
+        },
+        {
+          "file": "assets/jetbrains-mono-cyrillic-400-normal-BEIGL1Tu.woff2",
+          "group": "fonts",
+          "bytes": 5328,
+          "gzip_bytes": 5351,
+          "sha256": "522f5827308102a9c0ea7860b5a11306043610ecf03d150ba32056a06e8c56e2"
+        },
+        {
+          "file": "assets/jetbrains-mono-cyrillic-400-normal-ugxPyKxw.woff",
+          "group": "fonts",
+          "bytes": 6976,
+          "gzip_bytes": 6944,
+          "sha256": "67c9cc7864b4940dbfb246c7b452c1de8e96f140f334d363fcdd87dbfeadab72"
+        },
+        {
+          "file": "assets/jetbrains-mono-cyrillic-500-normal-DJqRU3vO.woff",
+          "group": "fonts",
+          "bytes": 7024,
+          "gzip_bytes": 6982,
+          "sha256": "d408a664dc721f614e6346e09f3f32b2837005db28f5e4797ce8dd19da07e4ea"
+        },
+        {
+          "file": "assets/jetbrains-mono-cyrillic-500-normal-DmUKJPL_.woff2",
+          "group": "fonts",
+          "bytes": 5356,
+          "gzip_bytes": 5379,
+          "sha256": "26c9ed511def1f0fd3d1b5fe6d5c0c594d9ef8dd2435d2ff240ea265a416b6e4"
+        },
+        {
+          "file": "assets/jetbrains-mono-cyrillic-600-normal-8K4wrrwR.woff",
+          "group": "fonts",
+          "bytes": 7020,
+          "gzip_bytes": 6986,
+          "sha256": "658b2246b9d068b64c9f2dbea7af4faa1a58c9428664ae5507a7306f3999895b"
+        },
+        {
+          "file": "assets/jetbrains-mono-cyrillic-600-normal-EVf6-Yzo.woff2",
+          "group": "fonts",
+          "bytes": 5384,
+          "gzip_bytes": 5407,
+          "sha256": "b450f960a0d29846370fc050b6183727d2075a2bcb1c5595c99374bf083b5a83"
+        },
+        {
+          "file": "assets/jetbrains-mono-greek-400-normal-B9oWc5Lo.woff",
+          "group": "fonts",
+          "bytes": 5664,
+          "gzip_bytes": 5606,
+          "sha256": "09f89e8369d7745ac5fe92e62a9ea13f66f40fd95b5495fac014c54b3a1ca6cc"
+        },
+        {
+          "file": "assets/jetbrains-mono-greek-400-normal-C190GLew.woff2",
+          "group": "fonts",
+          "bytes": 4228,
+          "gzip_bytes": 4251,
+          "sha256": "365b7a8eaff022b13ed0561fde3890a04a30507d773ecd5adb3aca8e766a285c"
+        },
+        {
+          "file": "assets/jetbrains-mono-greek-500-normal-D7SFKleX.woff",
+          "group": "fonts",
+          "bytes": 5720,
+          "gzip_bytes": 5665,
+          "sha256": "89656e472646bf4d52c23d499fa2e467ad3ee73447fda24eefb96e176b1312d6"
+        },
+        {
+          "file": "assets/jetbrains-mono-greek-500-normal-JpySY46c.woff2",
+          "group": "fonts",
+          "bytes": 4284,
+          "gzip_bytes": 4307,
+          "sha256": "5b6dee4610cdaab7c4218c1692aa9a536414010eef4e5b3cfb25f45007811bcc"
+        },
+        {
+          "file": "assets/jetbrains-mono-greek-600-normal-H7WoG9Et.woff2",
+          "group": "fonts",
+          "bytes": 4308,
+          "gzip_bytes": 4331,
+          "sha256": "de02415369898d9aa2d9f30379b6c201fc1c0a7017589d973747d993a68f709b"
+        },
+        {
+          "file": "assets/jetbrains-mono-greek-600-normal-mc2nkWzM.woff",
+          "group": "fonts",
+          "bytes": 5700,
+          "gzip_bytes": 5640,
+          "sha256": "5d78d0d7859974f41fc49b1cae442e25575016670c5946c2d1317661c4a728ad"
+        },
+        {
+          "file": "assets/jetbrains-mono-latin-400-normal-6-qcROiO.woff",
+          "group": "fonts",
+          "bytes": 27496,
+          "gzip_bytes": 27480,
+          "sha256": "658b9ee07b0249cf910a8d6f3d812d46c962bae81d7379a0355b1db35c61586f"
+        },
+        {
+          "file": "assets/jetbrains-mono-latin-400-normal-V6pRDFza.woff2",
+          "group": "fonts",
+          "bytes": 21168,
+          "gzip_bytes": 21196,
+          "sha256": "14425ba9c695763c1547f48a206b7aa60350a33ae23de09f0407877f3fcd89eb"
+        },
+        {
+          "file": "assets/jetbrains-mono-latin-500-normal-BWZEU5yA.woff2",
+          "group": "fonts",
+          "bytes": 21832,
+          "gzip_bytes": 21860,
+          "sha256": "cb182feeed4d798ff6961d3c79f7026279448fca0676438aaecb21f3fc39553a"
+        },
+        {
+          "file": "assets/jetbrains-mono-latin-500-normal-CJOVTJB7.woff",
+          "group": "fonts",
+          "bytes": 28208,
+          "gzip_bytes": 28184,
+          "sha256": "a270dd0bf13d91053b8999b7c120ffadb59680cfd63fe1a6b388a13bf2809fe1"
+        },
+        {
+          "file": "assets/jetbrains-mono-latin-600-normal-BfsvjouI.woff",
+          "group": "fonts",
+          "bytes": 28180,
+          "gzip_bytes": 28156,
+          "sha256": "3f4ad0687bcb0edc596c7c85138c5140ba3a9c5a3ce2ee944f27608c0f18bab9"
+        },
+        {
+          "file": "assets/jetbrains-mono-latin-600-normal-C8RAYTDA.woff2",
+          "group": "fonts",
+          "bytes": 21860,
+          "gzip_bytes": 21888,
+          "sha256": "400c6bfda18d5d14acad1c15d6dcb9f8e13c015e7286317e0b9a482539bef147"
+        },
+        {
+          "file": "assets/jetbrains-mono-latin-ext-400-normal-Bc8Ftmh3.woff2",
+          "group": "fonts",
+          "bytes": 7336,
+          "gzip_bytes": 7359,
+          "sha256": "505dfba8ecbe77e82765f36d317ed7ef4ac42719dc5f4ae68d1c483fd22d0d14"
+        },
+        {
+          "file": "assets/jetbrains-mono-latin-ext-400-normal-fXTG6kC5.woff",
+          "group": "fonts",
+          "bytes": 10128,
+          "gzip_bytes": 10087,
+          "sha256": "e7131bbf591e1ed9b74e44e162f6a39affa00ac21654cb683585d085733f6355"
+        },
+        {
+          "file": "assets/jetbrains-mono-latin-ext-500-normal-Cut-4mMH.woff2",
+          "group": "fonts",
+          "bytes": 7528,
+          "gzip_bytes": 7551,
+          "sha256": "879df9319f1cbf633bee1dd489e376a9e1e8c458f4abddcfe381cb83b5e6b027"
+        },
+        {
+          "file": "assets/jetbrains-mono-latin-ext-500-normal-ckzbgY84.woff",
+          "group": "fonts",
+          "bytes": 10336,
+          "gzip_bytes": 10286,
+          "sha256": "8006c29f8ec53d12d281774d669a02a70b599590d110ff1a4b4a40a6fd975676"
+        },
+        {
+          "file": "assets/jetbrains-mono-latin-ext-600-normal-BfB_LPfz.woff2",
+          "group": "fonts",
+          "bytes": 7512,
+          "gzip_bytes": 7535,
+          "sha256": "90899aac1c15552c028fd205376bb537a2a5205164fe8626efabad77d7260c20"
+        },
+        {
+          "file": "assets/jetbrains-mono-latin-ext-600-normal-DObL3zCW.woff",
+          "group": "fonts",
+          "bytes": 10316,
+          "gzip_bytes": 10279,
+          "sha256": "7f5fbd7caf6fefa665e65015225fea76b59d425a7bc4645dfd77e6eb7db35ea2"
+        },
+        {
+          "file": "assets/jetbrains-mono-vietnamese-400-normal-CqNFfHCs.woff",
+          "group": "fonts",
+          "bytes": 5372,
+          "gzip_bytes": 5327,
+          "sha256": "1dfe0f740fa86409034058e49474b01126ae9ea8c1ecda905917b90d57f03b00"
+        },
+        {
+          "file": "assets/jetbrains-mono-vietnamese-500-normal-DNRqzVM1.woff",
+          "group": "fonts",
+          "bytes": 5476,
+          "gzip_bytes": 5429,
+          "sha256": "6b14186bc983291a126aa8d6d9c3044415c968262279eecbb9bb194f1daf7800"
+        },
+        {
+          "file": "assets/jetbrains-mono-vietnamese-600-normal-OWROknRo.woff",
+          "group": "fonts",
+          "bytes": 5476,
+          "gzip_bytes": 5432,
+          "sha256": "1e3421e0f17174374ea4b6103d2f0118cf914c36004ca10cd4b092b8390ee6ed"
+        },
+        {
+          "file": "assets/scene-IkMLfxJi.webp",
+          "group": "images",
+          "bytes": 242202,
+          "gzip_bytes": 242295,
+          "sha256": "6f24e4aab937c93e77ccbe769dad1bf7c645e5bdbdf3aab01deb133c8c913ca0"
+        },
+        {
+          "file": "assets/scene-business-0jIDV3_k.webp",
+          "group": "images",
+          "bytes": 23046,
+          "gzip_bytes": 23074,
+          "sha256": "521cf7cea9d24332d2af749426819dd3a821be0320076954bb52e8c44daefa3a"
+        },
+        {
+          "file": "assets/scene-masks-B20IWJdZ.webp",
+          "group": "images",
+          "bytes": 27730,
+          "gzip_bytes": 27748,
+          "sha256": "247fff7d99e79cbd3dd4dcc1ed270b2a7bb95c8d90c40bdc21602c4faeffad6d"
+        },
+        {
+          "file": "assets/sceneRuntime-DTr4zLOq.js",
+          "group": "js",
+          "bytes": 9235,
+          "gzip_bytes": 4068,
+          "sha256": "cb9c0a74db2fe43daf8942b3010d81ffc6ebbf98cae54371c1962c6a84813d49"
+        },
+        {
+          "file": "favicon.ico",
+          "group": "images",
+          "bytes": 100521,
+          "gzip_bytes": 100321,
+          "sha256": "e13e024ea954a84c9ea2d5080f09630d94b6ed3b94a4d32b3f0c6497dc60530b"
+        },
+        {
+          "file": "fonts/misans/LICENSE-MiSans.pdf",
+          "group": "other",
+          "bytes": 79535,
+          "gzip_bytes": 72615,
+          "sha256": "4a93a27cd2bd81b3b5ecfd0a853144a876fa26938a93a68443c67d74172fcb86"
+        },
+        {
+          "file": "fonts/misans/MiSansVF.ttf",
+          "group": "fonts",
+          "bytes": 20093424,
+          "gzip_bytes": 14410648,
+          "sha256": "0ddef90648998900175cfdca9a6f087a2544c182f130b0ad4f7e94a03a115e79"
+        },
+        {
+          "file": "index.html",
+          "group": "other",
+          "bytes": 459,
+          "gzip_bytes": 339,
+          "sha256": "83bb53c889bf3e12d630df51813014d8270936b84fb6d3b27e4bf27cc0da25d1"
+        },
+        {
+          "file": "style.css",
+          "group": "css",
+          "bytes": 2535,
+          "gzip_bytes": 918,
+          "sha256": "ca911ba2471fced026893b236ec9cc030bad4c1c881fe4110fbd72fa0abf2a69"
+        },
+        {
+          "file": "zhusuan-dark.png",
+          "group": "images",
+          "bytes": 46621,
+          "gzip_bytes": 46510,
+          "sha256": "b8fab8dac4724e2b752e2074de332b3d32be771f2b8e016120116570177ae5e5"
+        },
+        {
+          "file": "zhusuan-wordmark.png",
+          "group": "images",
+          "bytes": 508664,
+          "gzip_bytes": 505285,
+          "sha256": "1d7bb4448d4099dc495efdee9cb31e139062ba8d52a1252b016b9f2b4c78da82"
+        },
+        {
+          "file": "zhusuan.png",
+          "group": "images",
+          "bytes": 63769,
+          "gzip_bytes": 63644,
+          "sha256": "368cd9b5dfb3430c572fc02f6ec7165b343f3ca4504563f12feb8238b4063db1"
+        }
+      ],
+      "html_references": [
+        "/zhusuan.png",
+        "/assets/index-BB1ipIFy.js",
+        "/assets/index-DWuG3fsb.css"
+      ],
+      "all_html_references_exist": true
+    },
+    "deltas": {
+      "js": {
+        "bytes": 1934,
+        "gzip_bytes": 295,
+        "bytes_percent": 0.2024,
+        "gzip_percent": 0.1015
+      },
+      "css": {
+        "bytes": 1622,
+        "gzip_bytes": 224,
+        "bytes_percent": 0.5507,
+        "gzip_percent": 0.3644
+      },
+      "fonts": {
+        "bytes": 0,
+        "gzip_bytes": 0,
+        "bytes_percent": 0.0,
+        "gzip_percent": 0.0
+      },
+      "images": {
+        "bytes": -3655643,
+        "gzip_bytes": -3470539,
+        "bytes_percent": -76.8919,
+        "gzip_percent": -76.0148
+      },
+      "other": {
+        "bytes": 0,
+        "gzip_bytes": 1,
+        "bytes_percent": 0.0,
+        "gzip_percent": 0.0014
+      }
+    },
+    "total_bytes_delta": -3652087,
+    "added_static_files": [
+      {
+        "file": "zhusuan-dark.png",
+        "group": "images",
+        "bytes": 46621,
+        "gzip_bytes": 46510,
+        "sha256": "b8fab8dac4724e2b752e2074de332b3d32be771f2b8e016120116570177ae5e5"
+      },
+      {
+        "file": "zhusuan-wordmark.png",
+        "group": "images",
+        "bytes": 508664,
+        "gzip_bytes": 505285,
+        "sha256": "1d7bb4448d4099dc495efdee9cb31e139062ba8d52a1252b016b9f2b4c78da82"
+      }
+    ],
+    "native_asset_increments": {
+      "mac_dark_embedded_png_bytes": 951519,
+      "windows_ico_delta_bytes": 55017
+    },
+    "bootstrap_warning": "Present in both rebuilt v1.2.0 and candidate; unchanged 500kB threshold.",
+    "removed_local_metadata_files": [
+      {
+        "file": ".DS_Store",
+        "group": "other",
+        "bytes": 6148,
+        "gzip_bytes": 216,
+        "sha256": "708514ea975b851983b3325a8757233548dbef8fcda82dd232f783d8db7934f9"
+      },
+      {
+        "file": "fonts/.DS_Store",
+        "group": "other",
+        "bytes": 6148,
+        "gzip_bytes": 233,
+        "sha256": "1da45f5a318fc0373461e9cb67a2b7019b40bb53fe75b810399597ea8a6854f9"
+      }
+    ]
+  },
+  "native_binary_comparison": {
+    "published_1_2_0_binary_bytes": 80663024,
+    "local_1_3_0_binary_bytes": 77861664,
+    "difference": -2801360,
+    "scope": "same arm64 architecture; local macOS compiler vs published runner toolchain, not identical build environment"
+  },
+  "cleanup": {
+    "remote_deleted": [
+      "codex/jade-branding-slogan",
+      "codex/release-1-1-0-ci",
+      "feat/jade-icons-motion",
+      "codex/windows-shell-fix",
+      "codex/windows-icon-size",
+      "codex/release-1-3-0"
+    ],
+    "local_deleted": [
+      "codex/jade-branding-slogan",
+      "codex/release-1-1-0-ci",
+      "feat/jade-icons-motion",
+      "codex/windows-shell-fix",
+      "codex/release-1-3-0"
+    ],
+    "local_retained": [
+      "main",
+      "codex/windows-icon-size"
+    ],
+    "archive_refs": {
+      "refs/archive/release-1.3.0/codex/jade-branding-slogan": "4eb48b2d94846869c0797b8fbe9e3a53dd505488",
+      "refs/archive/release-1.3.0/codex/release-1-1-0-ci": "991f69d7d28efda8dbb16db2f6cbcc757e508d47",
+      "refs/archive/release-1.3.0/feat/jade-icons-motion": "50225a82ab311f2d1c0f4b060446f4efab2e713e",
+      "refs/archive/release-1.3.0/codex/windows-shell-fix": "f37b094fbdf04a82ff59ced15c7512a565b0b140",
+      "refs/archive/release-1.3.0/codex/windows-icon-size": "e4ae1cb50d20f8a19af6fc71739aaf2fe732a88e",
+      "refs/archive/release-1.3.0/codex/release-1-3-0": "c39e9d27db1987789a441d18e68f9c24ab0e0737"
+    },
+    "retained_worktree": "/Users/willxue/.codex/worktrees/release-102-final/Orange",
+    "reason": "Owned by another chat; preserve its branch and uncommitted generated files.",
+    "validation_worktree": {
+      "path": "/Users/willxue/.codex/worktrees/release-1-3-0-native/zhusuan",
+      "retained": true,
+      "clean_at_final": true,
+      "reason": "archive_worktree refused because this is the chat primary checkout; preserved and updated to main",
+      "private_generated_backups": "/var/folders/h4/_dnvr_4x4t93j64lvqrndtb40000gn/T/zhusuan-release-1.3.0-1hgg_1rr/native-generated-backup"
+    }
+  },
+  "preserved_local_state": [
+    "real ledger",
+    "user dev services on 3456/9245",
+    "installed user application",
+    "legacy Orange path alias",
+    "existing Windows worktree generated files",
+    "unrelated .claude deletions",
+    "local root node_modules cache"
+  ],
+  "limits": [
+    "Native icon live switching was exercised in an independent Wails/AppKit control, not a hosted product/XCTest acceptance suite.",
+    "No target-device CPU/GPU/startup/retina/accessibility performance acceptance claim.",
+    "macOS ad-hoc signing and Windows without Authenticode remain existing distribution constraints.",
+    "Customer-device mojibake was not reproduced on a clean Windows runner; candidate native metadata and taskbar labels passed.",
+    "Anonymous GitHub REST quota was exhausted; metadata used existing gh OAuth, while all manifests and asset downloads were anonymously verified."
+  ],
+  "evidence_directory": "/var/folders/h4/_dnvr_4x4t93j64lvqrndtb40000gn/T/zhusuan-release-1.3.0-1hgg_1rr"
+}
