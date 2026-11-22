@@ -42,11 +42,6 @@ vi.mock('@/utils/appUpdater', () => ({
   },
 }))
 
-vi.mock('@wailsio/runtime', async (importOriginal) => ({
-  ...(await importOriginal<typeof import('@wailsio/runtime')>()),
-  Browser: { OpenURL: vi.fn() },
-}))
-
 vi.mock('@/components/settings/TokenManagement', () => ({
   default: ({ actions }: { actions?: ReactNode }) => (
     <div data-testid="token-management">{actions}</div>
