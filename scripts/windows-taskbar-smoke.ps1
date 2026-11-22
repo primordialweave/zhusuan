@@ -40,6 +40,16 @@ public static class ZhusuanTaskbarProbe {
     [DllImport("user32.dll", CharSet = CharSet.Unicode, ExactSpelling = true)]
     private static extern int GetClassNameW(IntPtr window, StringBuilder name, int count);
     [DllImport("user32.dll")] private static extern bool GetWindowRect(IntPtr window, out NativeRect bounds);
+    [DllImport("user32.dll")] public static extern IntPtr GetForegroundWindow();
+    [DllImport("user32.dll")] private static extern IntPtr WindowFromPoint(NativePoint point);
+    [DllImport("user32.dll")] private static extern IntPtr GetAncestor(IntPtr window, uint flags);
+    [DllImport("kernel32.dll", SetLastError = true)] private static extern IntPtr OpenProcess(uint access, bool inherit, uint processId);
+    [DllImport("kernel32.dll")] private static extern bool CloseHandle(IntPtr handle);
+    [DllImport("kernel32.dll")] private static extern IntPtr LocalFree(IntPtr memory);
+    [DllImport("advapi32.dll", SetLastError = true)] private static extern bool OpenProcessToken(IntPtr process, uint access, out IntPtr token);
+    [DllImport("advapi32.dll", SetLastError = true)] private static extern bool GetTokenInformation(IntPtr token, int kind, IntPtr data, uint size, out uint required);
+    [DllImport("advapi32.dll", CharSet = CharSet.Unicode, ExactSpelling = true, SetLastError = true)]
+    private static extern bool ConvertSidToStringSidW(IntPtr sid, out IntPtr text);
     [DllImport("user32.dll")] private static extern bool SetCursorPos(int x, int y);
     [DllImport("user32.dll")] private static extern void mouse_event(uint flags, uint x, uint y, uint data, UIntPtr extra);
     [DllImport("user32.dll")] private static extern void keybd_event(byte key, byte scan, uint flags, UIntPtr extra);
@@ -105,6 +115,8 @@ public static class ZhusuanTaskbarProbe {
     public class ShortcutValue { public string Target, Arguments, Description, IconPath; public int IconIndex; }
     [StructLayout(LayoutKind.Sequential)]
     public struct NativeRect { public int Left, Top, Right, Bottom; }
+    [StructLayout(LayoutKind.Sequential)]
+    private struct NativePoint { public int X, Y; }
     public class NativeWindowValue {
         public long Handle, OwnerHandle;
         public uint ProcessId;
@@ -124,10 +136,40 @@ public static class ZhusuanTaskbarProbe {
         return result.ToString();
     }
     public static uint Owner(IntPtr window) { uint owner; GetWindowThreadProcessId(window, out owner); return owner; }
+    public static NativeWindowValue InspectWindow(IntPtr window) {
+        if (window == IntPtr.Zero) return null;
+        var name = new StringBuilder(256); NativeRect bounds;
+        GetClassNameW(window, name, name.Capacity); GetWindowRect(window, out bounds);
+        return new NativeWindowValue { Handle = window.ToInt64(), OwnerHandle = GetWindow(window, 4).ToInt64(),
+            ProcessId = Owner(window), Class = name.ToString(), Title = Title(window), Bounds = bounds };
+    }
+    public static NativeWindowValue WindowAt(int x, int y) {
+        IntPtr hit = WindowFromPoint(new NativePoint { X = x, Y = y });
+        return InspectWindow(GetAncestor(hit, 2)); // GA_ROOT, using the actual native hit test.
+    }
+    public static string ProcessOwnerSid(uint processId) {
+        IntPtr process = OpenProcess(0x1000, false, processId); // Query limited information only.
+        if (process == IntPtr.Zero) throw new System.ComponentModel.Win32Exception(Marshal.GetLastWin32Error());
+        IntPtr token = IntPtr.Zero, buffer = IntPtr.Zero, text = IntPtr.Zero;
+        try {
+            if (!OpenProcessToken(process, 0x0008, out token)) throw new System.ComponentModel.Win32Exception(Marshal.GetLastWin32Error());
+            uint required; GetTokenInformation(token, 1, IntPtr.Zero, 0, out required); // TokenUser
+            if (required == 0) throw new System.ComponentModel.Win32Exception(Marshal.GetLastWin32Error());
+            buffer = Marshal.AllocHGlobal((int)required);
+            if (!GetTokenInformation(token, 1, buffer, required, out required)) throw new System.ComponentModel.Win32Exception(Marshal.GetLastWin32Error());
+            if (!ConvertSidToStringSidW(Marshal.ReadIntPtr(buffer), out text)) throw new System.ComponentModel.Win32Exception(Marshal.GetLastWin32Error());
+            return Marshal.PtrToStringUni(text);
+        } finally {
+            if (text != IntPtr.Zero) LocalFree(text);
+            if (buffer != IntPtr.Zero) Marshal.FreeHGlobal(buffer);
+            if (token != IntPtr.Zero) CloseHandle(token);
+            CloseHandle(process);
+        }
+    }
     public static NativeWindowValue[] VisibleShellWindows(uint processId) {
         var result = new List<NativeWindowValue>();
         EnumWindows(delegate(IntPtr window, IntPtr parameter) {
-            if (Owner(window) == processId && IsWindowVisible(window)) {
+            if ((processId == 0 || Owner(window) == processId) && IsWindowVisible(window)) {
                 var name = new StringBuilder(256); NativeRect bounds;
                 GetClassNameW(window, name, name.Capacity);
                 GetWindowRect(window, out bounds);
@@ -262,18 +304,22 @@ function Get-VisibleDesktopRoots {
     return $result.ToArray()
 }
 
-function Get-RawShellNodes {
+function Get-RawShellNodes($seed = $null) {
     # A Jump List can be a RawView descendant of an existing Explorer root.
     # Run3 proved that a real visible popup need not add a desktop ControlView root.
     $walker = [System.Windows.Automation.TreeWalker]::RawViewWalker
     $stack = [System.Collections.Generic.Stack[object]]::new()
-    $root = $walker.GetFirstChild([System.Windows.Automation.AutomationElement]::RootElement)
-    while ($root) {
-        $snapshot = Get-ElementSnapshot $root
-        if ($snapshot.processId -eq $script:report.checks.taskbarRoot.processId) {
-            $stack.Push([pscustomobject]@{ element = $root; parentRuntimeId = $null })
+    if ($seed) {
+        $stack.Push([pscustomobject]@{ element = $seed; parentRuntimeId = $null })
+    } else {
+        $root = $walker.GetFirstChild([System.Windows.Automation.AutomationElement]::RootElement)
+        while ($root) {
+            $snapshot = Get-ElementSnapshot $root
+            if ($snapshot.processId -in $script:trustedShellProcessIds) {
+                $stack.Push([pscustomobject]@{ element = $root; parentRuntimeId = $null })
+            }
+            $root = $walker.GetNextSibling($root)
         }
-        $root = $walker.GetNextSibling($root)
     }
     $seen = [System.Collections.Generic.HashSet[string]]::new()
     $result = [System.Collections.Generic.List[object]]::new()
@@ -294,7 +340,7 @@ function Get-RawShellNodes {
 }
 
 function Test-VisiblePopupNode($snapshot) {
-    return ($snapshot.processId -eq $script:report.checks.taskbarRoot.processId -and
+    return ($snapshot.processId -in $script:trustedShellProcessIds -and
         $snapshot.enabled -and -not $snapshot.offscreen -and
         $snapshot.bounds.width -gt 0 -and $snapshot.bounds.height -gt 0)
 }
@@ -303,6 +349,67 @@ function Test-OutsideTaskbar($bounds) {
     $bar = $script:report.checks.taskbarRoot.bounds
     return ($bounds.left + $bounds.width -le $bar.left -or $bounds.left -ge $bar.left + $bar.width -or
         $bounds.top + $bounds.height -le $bar.top -or $bounds.top -ge $bar.top + $bar.height)
+}
+
+function Get-TrustedShellProcess([int]$processId) {
+    if ($script:shellProcessProofs.ContainsKey($processId)) { return $script:shellProcessProofs[$processId] }
+    $proof = [ordered]@{ processId = $processId; trusted = $false; name = $null; path = $null; sessionId = $null; ownerSid = $null; error = $null }
+    try {
+        $provider = [System.Diagnostics.Process]::GetProcessById($processId)
+        try {
+            $proof.name = $provider.ProcessName
+            $proof.path = $provider.MainModule.FileName
+            $proof.sessionId = $provider.SessionId
+            $proof.ownerSid = [ZhusuanTaskbarProbe]::ProcessOwnerSid($processId)
+            $windowsRoot = [System.IO.Path]::GetFullPath($env:WINDIR).TrimEnd('\') + '\'
+            $proof.trusted = ($proof.name -in @('explorer', 'ShellExperienceHost', 'StartMenuExperienceHost', 'ShellHost') -and
+                $proof.path.StartsWith($windowsRoot, [StringComparison]::OrdinalIgnoreCase) -and
+                $proof.sessionId -eq $script:shellSessionId -and $proof.ownerSid -eq $script:shellOwnerSid)
+        } finally { $provider.Dispose() }
+    } catch { $proof.error = $_.Exception.Message }
+    $script:shellProcessProofs[$processId] = $proof
+    return $proof
+}
+
+function Get-NativePopupRoots($windows, $beforeHandles) {
+    $result = [System.Collections.Generic.List[object]]::new()
+    $seen = [System.Collections.Generic.HashSet[long]]::new()
+    foreach ($native in $windows) {
+        if (-not $native -or -not $seen.Add($native.Handle)) { continue }
+        $proof = Get-TrustedShellProcess $native.ProcessId
+        if (-not $proof.trusted) { continue }
+        if ($native.ProcessId -notin $script:trustedShellProcessIds) { $script:trustedShellProcessIds += [int]$native.ProcessId }
+        $bounds = @{ left = $native.Bounds.Left; top = $native.Bounds.Top;
+            width = $native.Bounds.Right - $native.Bounds.Left; height = $native.Bounds.Bottom - $native.Bounds.Top }
+        if ($bounds.width -le 0 -or $bounds.height -le 0 -or -not (Test-OutsideTaskbar $bounds)) { continue }
+        $bar = $script:report.checks.taskbarRoot.bounds
+        $button = $script:report.checks.chosenButton.bounds
+        $axis = if ($bar.width -ge $bar.height) { $button.left + $button.width / 2 } else { $button.top + $button.height / 2 }
+        $matchesAxis = if ($bar.width -ge $bar.height) { $axis -ge $bounds.left -and $axis -le $bounds.left + $bounds.width } else { $axis -ge $bounds.top -and $axis -le $bounds.top + $bounds.height }
+        if (-not $matchesAxis) { continue }
+        # WindowFromPoint/foreground roots can reuse native handles. New actionable
+        # RawView peers are still required by Find-RawTaskbarPopup below.
+        $result.Add([pscustomobject]@{ native = $native; proof = $proof; newVisibleHandle = $native.Handle -notin $beforeHandles })
+    }
+    return $result.ToArray()
+}
+
+function Get-TaskbarHitTests {
+    $bar = $script:report.checks.taskbarRoot.bounds
+    $button = $script:report.checks.chosenButton.bounds
+    $screen = [System.Windows.Forms.SystemInformation]::VirtualScreen
+    $hits = [System.Collections.Generic.List[object]]::new()
+    foreach ($distance in @(1, 2)) {
+        if ($bar.width -ge $bar.height) {
+            $x = [int]($button.left + $button.width / 2)
+            $y = if ($bar.top -ge $screen.Top + $screen.Height / 2) { [int]($bar.top - $bar.height * $distance) } else { [int]($bar.top + $bar.height * (1 + $distance)) }
+        } else {
+            $y = [int]($button.top + $button.height / 2)
+            $x = if ($bar.left -ge $screen.Left + $screen.Width / 2) { [int]($bar.left - $bar.width * $distance) } else { [int]($bar.left + $bar.width * (1 + $distance)) }
+        }
+        if ($screen.Contains($x, $y)) { $hits.Add([pscustomobject]@{ x = $x; y = $y; native = [ZhusuanTaskbarProbe]::WindowAt($x, $y) }) }
+    }
+    return $hits.ToArray()
 }
 
 function Get-RawAncestorIds($snapshot, $map) {
@@ -401,6 +508,10 @@ $process = $null
 $ownedProcess = $false
 $window = [IntPtr]::Zero
 $taskbarElement = $null
+$shellProcessProofs = @{}
+$shellSessionId = [System.Diagnostics.Process]::GetCurrentProcess().SessionId
+$shellOwnerSid = [System.Security.Principal.WindowsIdentity]::GetCurrent().User.Value
+$trustedShellProcessIds = @()
 $popupOpened = $false
 $previousDpiContext = [ZhusuanTaskbarProbe]::SetThreadDpiAwarenessContext([IntPtr]::new(-4))
 $report = [ordered]@{
@@ -427,6 +538,9 @@ try {
     if ($taskbar -eq [IntPtr]::Zero) { throw 'Explorer Shell_TrayWnd is absent; taskbar UI cannot be accepted.' }
     $taskbarElement = [System.Windows.Automation.AutomationElement]::FromHandle($taskbar)
     $report.checks.taskbarRoot = Get-ElementSnapshot $taskbarElement
+    $taskbarProof = Get-TrustedShellProcess $report.checks.taskbarRoot.processId
+    if (-not $taskbarProof.trusted) { throw 'Taskbar provider is not a trusted shell process in the current session/user.' }
+    $trustedShellProcessIds = @([int]$report.checks.taskbarRoot.processId)
     $beforeButtons = @(Get-TaskbarButtons)
     $report.checks.buttonsBefore = @($beforeButtons | ForEach-Object { $_.snapshot })
     $beforeRuntimeIds = @($beforeButtons | ForEach-Object { $_.snapshot.runtimeId })
@@ -531,6 +645,12 @@ try {
     $report.checks.chosenButton = $button.snapshot
     $rootsBeforeClick = @(Get-VisibleDesktopRoots)
     $report.checks.rootsBeforeClick = @($rootsBeforeClick | ForEach-Object { $_.snapshot })
+    $nativeBeforeClick = @([ZhusuanTaskbarProbe]::VisibleShellWindows(0))
+    $report.checks.nativeWindowsBeforeClick = $nativeBeforeClick
+    $nativeHandlesBeforeClick = @($nativeBeforeClick | ForEach-Object { $_.Handle })
+    foreach ($native in $nativeBeforeClick) {
+        if ((Get-TrustedShellProcess $native.ProcessId).trusted -and $native.ProcessId -notin $trustedShellProcessIds) { $trustedShellProcessIds += [int]$native.ProcessId }
+    }
     $rawBeforeClick = @(Get-RawShellNodes)
     $report.checks.rawShellBeforeClick = @($rawBeforeClick | ForEach-Object { $_.snapshot })
     $rawVisibleIdsBeforeClick = @($rawBeforeClick | Where-Object { Test-VisiblePopupNode $_.snapshot } | ForEach-Object { $_.snapshot.runtimeId })
@@ -539,24 +659,57 @@ try {
     [ZhusuanTaskbarProbe]::RightClick([int]($bounds.Left + $bounds.Width / 2), [int]($bounds.Top + $bounds.Height / 2))
     $popupOpened = $true
     $popup = $null
-    Wait-TaskbarCondition 'visible taskbar right-click popup' {
+    $popupAutomationObserved = $false
+    try {
+        Wait-TaskbarCondition 'visible taskbar right-click popup' {
         $roots = @(Get-VisibleDesktopRoots)
         $script:report.checks.rootsAfterClick = @($roots | ForEach-Object { $_.snapshot })
         $script:report.checks.nativeShellWindowsAfterClick = [ZhusuanTaskbarProbe]::VisibleShellWindows($report.checks.taskbarRoot.processId)
+        $allNative = @([ZhusuanTaskbarProbe]::VisibleShellWindows(0))
+        $script:report.checks.nativeWindowsAfterClick = $allNative
+        $hits = @(Get-TaskbarHitTests)
+        $script:report.checks.nativeHitTestsAfterClick = $hits
+        $foreground = [ZhusuanTaskbarProbe]::InspectWindow([ZhusuanTaskbarProbe]::GetForegroundWindow())
+        $script:report.checks.nativeForegroundAfterClick = $foreground
+        $nativeRoots = @(Get-NativePopupRoots @($allNative + @($hits | ForEach-Object { $_.native }) + @($foreground)) $nativeHandlesBeforeClick)
+        $script:report.checks.nativePopupRootCandidates = $nativeRoots
         $nodes = @(Get-RawShellNodes)
+        $nodeIds = [System.Collections.Generic.HashSet[string]]::new()
+        foreach ($node in $nodes) { [void]$nodeIds.Add($node.snapshot.runtimeId) }
+        foreach ($nativeRoot in $nativeRoots) {
+            $element = [System.Windows.Automation.AutomationElement]::FromHandle([IntPtr]::new($nativeRoot.native.Handle))
+            foreach ($node in @(Get-RawShellNodes $element)) {
+                if ($nodeIds.Add($node.snapshot.runtimeId)) { $nodes += $node }
+            }
+        }
+        $script:report.checks.shellProcessProofs = @($script:shellProcessProofs.Values)
         $script:report.checks.rawShellAfterClick = @($nodes | ForEach-Object { $_.snapshot })
         $script:popup = Find-RawTaskbarPopup $nodes $rawVisibleIdsBeforeClick
         if (-not $script:popup) { return $false }
         $script:report.checks.popupContainer = $script:popup.container
         $script:report.checks.popupNodes = $script:popup.rows
         return $true
+        }
+        $popupAutomationObserved = $true
+    } catch {
+        if ($RecordOnly -and $_.Exception.Message.StartsWith('Timed out waiting for visible taskbar right-click popup.') -and
+            @($report.checks.nativePopupRootCandidates).Count -gt 0) {
+            # Baseline observation can continue to the fixed candidate when the old
+            # shell popup has no readable UIA rows. Its screenshot still requires
+            # human review; never count this as an automated Unicode menu pass.
+            $report.checks.baselineVisualReviewRequired = $true
+            $report.checks.baselineAutomationError = $_.Exception.Message
+            Write-Warning 'Baseline native popup captured but UIA relaunch rows unavailable; visual review required.'
+        } else { throw }
     }
+    $report.checks.popupAutomationObserved = $popupAutomationObserved
     Save-TaskbarScreenshot 'taskbar-popup.png'
     $labelMatches = @($report.checks.popupNodes | Where-Object {
         $_.enabled -and -not $_.offscreen -and
         $_.bounds.width -gt 0 -and $_.bounds.height -gt 0 -and $_.label -in $expectedNames
     })
-    $report.labelCorrect = $labelMatches.Count -gt 0
+    $report.labelCorrect = if ($popupAutomationObserved) { $labelMatches.Count -gt 0 } else { $null }
+    $report.checks.automatedRelaunchLabelVerified = $popupAutomationObserved -and $report.labelCorrect
     $report.checks.relaunchLabelMatches = $labelMatches
     # The application may publish its properties from its first-show callback.
     # Record both the early snapshot and the actual values after the menu opens.
