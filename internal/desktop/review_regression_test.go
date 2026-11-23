@@ -226,3 +226,27 @@ func TestWindowRestoreRequiresVisibleDragArea(t *testing.T) {
 	_, ok = ValidateWindowBounds(bounds, screens)
 	require.True(t, ok)
 }
+
+func TestClosePoliciesRequestApplicationQuit(t *testing.T) {
+	for _, scenario := range []struct {
+		name   string
+		policy string
+		tray   bool
+	}{
+		{"explicit quit", CloseActionQuit, true},
+		{"tray unavailable", CloseActionMinimizeToTray, false},
+	} {
+		t.Run(scenario.name, func(t *testing.T) {
+			m, store := newTestDesktopManager(t, platformWindows, scenario.tray)
+			_, err := store.Update(func(p *DesktopPreferences) { p.CloseAction = scenario.policy })
+			require.NoError(t, err)
+			quits := 0
+			m.quitApp = func() { quits++ }
+			m.HandleWindowClosing(nil)
+			require.Equal(t, 1, quits, "closing the window alone does not stop a resident application")
+			require.True(t, m.quitting.Load())
+			m.HandleWindowClosing(nil)
+			require.Equal(t, 1, quits)
+		})
+	}
+}

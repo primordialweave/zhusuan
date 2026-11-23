@@ -182,7 +182,7 @@ func (r *NotificationRepository) ListByUser(userID int64, offset, limit int) ([]
 	// 2. 获取分页数据并计算是否已读 (is_read)
 	// COALESCE(un.is_read, 0): 如果关联表没有记录(如全员通知未读)，默认为0(未读)
 	err := db.Select(notificationInboxFields).
-		Order("notifications.create_time DESC").
+		Order("notifications.create_time DESC, notifications.id DESC").
 		Offset(offset).
 		Limit(limit).
 		Find(&notifications).Error
@@ -207,7 +207,7 @@ func (r *NotificationRepository) ListAll(offset, limit int) ([]models.Notificati
 		return nil, 0, err
 	}
 
-	if err := r.db.Order("create_time DESC").Offset(offset).Limit(limit).Find(&notifications).Error; err != nil {
+	if err := r.db.Order("create_time DESC, id DESC").Offset(offset).Limit(limit).Find(&notifications).Error; err != nil {
 		return nil, 0, err
 	}
 	r.fillSenders(notifications)

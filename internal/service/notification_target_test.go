@@ -281,10 +281,18 @@ func TestNotificationTargetInFlightReadCannotRestoreRemovedRelation(t *testing.T
 func TestNotificationTargetReadQueryCountIsBoundedPerPage(t *testing.T) {
 	svc, users := notificationTargetFixture(t)
 	global := notificationTargetCreate(t, svc, users[0], 0)
+	ids := []int64{global.ID}
+	targetedIDs := make(map[int64]bool)
 	for i := 0; i < 5; i++ {
-		notificationTargetCreate(t, svc, users[0], users[1])
+		notification := notificationTargetCreate(t, svc, users[0], users[1])
+		ids = append(ids, notification.ID)
+		targetedIDs[notification.ID] = true
 	}
 	db := database.GetDB()
+	// Coarse platform clocks can give this whole batch the same creation time.
+	// Make that condition explicit so the one-row page must exercise target recall.
+	stamp := time.Date(2100, time.January, 1, 0, 0, 0, 0, time.UTC)
+	require.NoError(t, db.Model(&models.Notification{}).Where("id IN ?", ids).UpdateColumn("create_time", stamp).Error)
 	var queries atomic.Int64
 	const callback = "notification_target:count_read_queries"
 	count := func(*gorm.DB) { queries.Add(1) }
@@ -295,22 +303,51 @@ func TestNotificationTargetReadQueryCountIsBoundedPerPage(t *testing.T) {
 		require.NoError(t, db.Callback().Row().Remove(callback))
 	})
 	for _, fixture := range []struct {
-		name  string
-		user  int64
-		limit int
-		want  int64
+		name    string
+		user    int64
+		limit   int
+		want    int64
+		targets int
 	}{
-		{"global inbox", users[0], 100, 3},
-		{"one targeted row", users[1], 1, 4},
-		{"five targeted rows", users[1], 100, 4},
+		{"global inbox", users[0], 100, 3, 0},
+		{"one targeted row", users[1], 1, 4, 1},
+		{"five targeted rows", users[1], 100, 4, 5},
 	} {
 		t.Run(fixture.name, func(t *testing.T) {
 			queries.Store(0)
-			_, _, err := svc.ListByUser(fixture.user, 1, fixture.limit)
+			list, _, err := svc.ListByUser(fixture.user, 1, fixture.limit)
 			require.NoError(t, err)
 			require.Equal(t, fixture.want, queries.Load())
+			targets := 0
+			for _, notification := range list {
+				if targetedIDs[notification.ID] {
+					targets++
+					assertNotificationResponseTarget(t, &notification, users[1])
+				}
+			}
+			require.Equal(t, fixture.targets, targets)
+			if fixture.limit == 1 {
+				require.Len(t, list, 1)
+				require.Equal(t, ids[len(ids)-1], list[0].ID, "equal timestamps must use newest ID first")
+			}
 		})
 	}
+	t.Run("stable one-row pages with tied timestamps", func(t *testing.T) {
+		for page := 1; page <= len(ids); page++ {
+			queries.Store(0)
+			list, _, err := svc.ListByUser(users[1], page, 1)
+			require.NoError(t, err)
+			require.Len(t, list, 1)
+			expectedID := ids[len(ids)-page]
+			require.Equal(t, expectedID, list[0].ID)
+			wantQueries := int64(3)
+			if targetedIDs[expectedID] {
+				wantQueries = 4
+				assertNotificationResponseTarget(t, &list[0], users[1])
+			}
+			require.Equal(t, wantQueries, queries.Load(), "each page retains the same bounded query budget")
+		}
+	})
 	queries.Store(0)
 	_, err := svc.GetForUser(users[0], global.ID)
 	require.NoError(t, err)

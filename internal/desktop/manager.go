@@ -416,12 +416,12 @@ func (m *DesktopManager) HandleWindowClosing(event *application.WindowEvent) {
 	prefs := m.store.Get()
 	switch prefs.CloseAction {
 	case CloseActionQuit:
-		m.BeginQuit()
+		m.quitFromWindowClose(event)
 		return
 	case CloseActionMinimizeToTray:
 		if !m.traySupported {
 			// Guard against invisible orphan processes on tray-less Linux sessions.
-			m.BeginQuit()
+			m.quitFromWindowClose(event)
 			return
 		}
 		if event != nil {
@@ -447,6 +447,15 @@ func (m *DesktopManager) HandleWindowClosing(event *application.WindowEvent) {
 			})
 		}
 	}
+}
+
+func (m *DesktopManager) quitFromWindowClose(event *application.WindowEvent) {
+	// Resident applications disable automatic exit when their last window closes.
+	// Cancel this close path and let intentional application shutdown close all windows.
+	if event != nil {
+		event.Cancel()
+	}
+	m.RequestQuit()
 }
 
 // ResolveClosePrompt executes the user's choice from the close confirmation modal.
