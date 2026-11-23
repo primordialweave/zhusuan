@@ -1,7 +1,12 @@
 import importlib.util
+import hashlib
 import json
+import os
 import shutil
+import subprocess
+import sys
 import tempfile
+import textwrap
 import unittest
 from pathlib import Path
 
@@ -211,6 +216,88 @@ class ReleaseTests(unittest.TestCase):
                 (self.directory/'update.json').write_text(json.dumps(manifest))
                 with self.assertRaisesRegex(ValueError, 'Update manifest does not match'):
                     release.verify_update_manifest(self.directory, self.tag, 'primordialweave/zhusuan', notes)
+
+
+class UploadedDraftGateTests(unittest.TestCase):
+    def run_gate(self, mode='matching', database_id='455412186'):
+        if not shutil.which('bash') or os.name == 'nt':
+            self.skipTest('the publish workflow gate runs in a POSIX GitHub runner')
+        with tempfile.TemporaryDirectory(prefix='zhusuan-draft-gate-') as temporary:
+            root = Path(temporary)
+            assets = root/'release'
+            assets.mkdir()
+            tag = 'v1.4.0'
+            names = [name for platform in ['darwin', 'windows', 'linux']
+                     for name in release.names_for_platform(tag, platform)] + ['SHA256SUMS', 'update.json']
+            for name in names:
+                (assets/name).write_bytes(('fixture payload '+name).encode())
+            response = {'id': 455412186, 'tag_name': tag, 'draft': True, 'assets': [
+                {'name': name, 'size': (assets/name).stat().st_size,
+                 'digest': 'sha256:'+hashlib.sha256((assets/name).read_bytes()).hexdigest()}
+                for name in names]}
+            if mode == 'missing':
+                response['assets'].pop()
+            elif mode == 'size':
+                response['assets'][0]['size'] += 1
+            elif mode == 'digest':
+                response['assets'][0]['digest'] = 'sha256:'+'0'*64
+            elif mode == 'published':
+                response['draft'] = False
+            response_path = root/'response.json'
+            response_path.write_text(json.dumps(response))
+            calls = root/'calls.jsonl'
+            bin_dir = root/'bin'
+            bin_dir.mkdir()
+            stub = bin_dir/'gh'
+            stub.write_text(f'#!{sys.executable}\n'+'''import json, os, pathlib, sys
+args = sys.argv[1:]
+with open(os.environ['GH_GATE_CALLS'], 'a') as output:
+    output.write(json.dumps(args) + '\\n')
+if args[:2] == ['release', 'view']:
+    print(os.environ['GH_GATE_RELEASE_ID'])
+elif args[0] == 'api' and args[1].endswith('/releases/455412186'):
+    print(pathlib.Path(os.environ['GH_GATE_RESPONSE']).read_text())
+elif args[:2] == ['release', 'edit']:
+    pass
+else:
+    print('HTTP 404: draft tag endpoint is unavailable', file=sys.stderr)
+    sys.exit(1)
+''')
+            stub.chmod(0o755)
+            lines = (REPO/'.github/workflows/release.yml').read_text().splitlines()
+            start = next(i for i, line in enumerate(lines) if 'name: Verify uploaded assets before publishing' in line)
+            start = next(i for i in range(start, len(lines)) if lines[i].strip() == 'run: |') + 1
+            end = next((i for i in range(start, len(lines)) if lines[i].startswith('      - ')), len(lines))
+            driver = root/'gate.sh'
+            driver.write_text(textwrap.dedent('\n'.join(lines[start:end]))+'\n')
+            env = dict(os.environ, PATH=f'{bin_dir}{os.pathsep}{os.environ["PATH"]}',
+                       GITHUB_REPOSITORY='fixture/repository', RELEASE_TAG=tag,
+                       GH_GATE_CALLS=str(calls), GH_GATE_RESPONSE=str(response_path),
+                       GH_GATE_RELEASE_ID=database_id)
+            result = subprocess.run(['bash', '--noprofile', '--norc', '-e', '-o', 'pipefail', str(driver)],
+                                    cwd=root, env=env, capture_output=True, text=True, timeout=20)
+            requests = [json.loads(line) for line in calls.read_text().splitlines()]
+            return result, requests
+
+    def test_draft_can_publish_through_database_id_when_tag_endpoint_returns_404(self):
+        result, requests = self.run_gate()
+        self.assertEqual(result.returncode, 0, result.stdout+result.stderr)
+        self.assertTrue(any(call[0] == 'api' and call[1].endswith('/releases/455412186') for call in requests))
+        self.assertTrue(any(call[:2] == ['release', 'edit'] for call in requests))
+
+    def test_changed_asset_identity_and_published_release_block_publication(self):
+        for mode in ['missing', 'size', 'digest', 'published']:
+            with self.subTest(mode=mode):
+                result, requests = self.run_gate(mode)
+                self.assertNotEqual(result.returncode, 0)
+                self.assertTrue(any(call[0] == 'api' and call[1].endswith('/releases/455412186') for call in requests))
+                self.assertIn('Uploaded draft names, sizes, or digests', result.stderr)
+                self.assertFalse(any(call[:2] == ['release', 'edit'] for call in requests))
+
+    def test_invalid_database_id_fails_before_querying_assets_or_publishing(self):
+        result, requests = self.run_gate(database_id='null')
+        self.assertNotEqual(result.returncode, 0)
+        self.assertFalse(any(call[0] == 'api' or call[:2] == ['release', 'edit'] for call in requests))
 
 
 if __name__ == '__main__':
