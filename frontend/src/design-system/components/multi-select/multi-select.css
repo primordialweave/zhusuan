@@ -1,0 +1,18 @@
+.ods-multi-select .ods-select__value {
+  min-width: 0;
+  flex: 1 1 auto;
+  text-align: start;
+}
+
+.ods-multi-select__count {
+  display: inline-flex;
+  flex: 0 0 auto;
+  align-items: center;
+  justify-content: center;
+  padding-inline: var(--ods-space-2);
+  border-radius: var(--ods-radius-pill);
+  background: var(--ods-color-accent-soft);
+  color: var(--ods-color-accent-text);
+  font-size: var(--ods-font-size-xs);
+  font-weight: var(--ods-font-weight-semibold);
+}

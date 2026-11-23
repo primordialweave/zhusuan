@@ -30,6 +30,7 @@ import {
   Link,
   Listbox,
   Modal,
+  MultiSelect,
   NativeSelect,
   NumberInput,
   PageHeader,
@@ -57,6 +58,13 @@ import {
 const buttonVariants = ['primary', 'secondary', 'tertiary', 'outline', 'ghost', 'danger'] as const
 const chipTones = ['neutral', 'accent', 'success', 'warning', 'danger', 'info'] as const
 const alertTones = ['neutral', 'success', 'warning', 'danger', 'info'] as const
+const projectStatusOptions = [
+  { label: '进行中', value: 'active' },
+  { label: '已完成', value: 'completed' },
+  { label: '未开始', value: 'notstarted' },
+  { label: '已逾期', value: 'overdue' },
+  { label: '已归档', value: 'archived' },
+]
 const showcaseActionIcons = ['edit', 'download', 'add', 'arrow-left', 'close', 'search'] as const
 const showcaseDockIcons = [
   { label: '工作台', name: 'dock-dashboard' as const },
@@ -90,6 +98,7 @@ export default function DesignSystemView() {
   const [modalOpen, setModalOpen] = useState(false)
   const [drawerOpen, setDrawerOpen] = useState(false)
   const [selectValue, setSelectValue] = useState<string>()
+  const [projectStatuses, setProjectStatuses] = useState<string[]>(['active', 'completed'])
   const [listboxValue, setListboxValue] = useState('inbox')
   const [channels, setChannels] = useState<string[]>(['email'])
   const [volume, setVolume] = useState(60)
@@ -449,7 +458,7 @@ export default function DesignSystemView() {
       </ShowcaseSection>
 
       <ShowcaseSection
-        title="选择 Select / Dropdown / Listbox"
+        title="选择 Select / MultiSelect / Dropdown / Listbox"
         description="Popover 锚定触发器原点缩放展开，列表项支持键盘导航。"
       >
         <div className="design-showcase__row">
@@ -462,6 +471,13 @@ export default function DesignSystemView() {
               { label: '按年结算', value: 'yearly' },
             ]}
             value={selectValue}
+          />
+          <MultiSelect
+            aria-label="多选项目状态"
+            onValueChange={setProjectStatuses}
+            options={projectStatusOptions}
+            placeholder="全部状态"
+            value={projectStatuses}
           />
           <Dropdown>
             <Dropdown.Trigger>

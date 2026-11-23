@@ -1,6 +1,7 @@
 package cache
 
 import (
+	"bytes"
 	"sync"
 	"time"
 )
@@ -19,6 +20,7 @@ type MemoryCache struct {
 	data     map[string]*cacheItem
 	mu       sync.RWMutex
 	stopChan chan struct{} // 用于停止清理 goroutine
+	stopOnce sync.Once
 }
 
 type cacheItem struct {
@@ -54,7 +56,7 @@ func (c *MemoryCache) Get(key string) ([]byte, error) {
 		return nil, ErrCacheMiss
 	}
 
-	return item.value, nil
+	return bytes.Clone(item.value), nil
 }
 
 // Set 设置缓存
@@ -63,7 +65,7 @@ func (c *MemoryCache) Set(key string, value []byte, ttl time.Duration) error {
 	defer c.mu.Unlock()
 
 	c.data[key] = &cacheItem{
-		value:      value,
+		value:      bytes.Clone(value),
 		expiration: time.Now().Add(ttl),
 	}
 
@@ -112,7 +114,7 @@ func (c *MemoryCache) cleanupExpired() {
 
 // Stop 停止清理 goroutine
 func (c *MemoryCache) Stop() {
-	close(c.stopChan)
+	c.stopOnce.Do(func() { close(c.stopChan) })
 }
 
 // Stats 缓存统计信息

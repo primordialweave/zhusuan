@@ -9,7 +9,11 @@ import { DEFAULT_APP_SLOGAN, DEFAULT_WECHAT_PUBLIC_ACCOUNT, systemApi } from '@/
 import { useToastStore } from '@/composables/useToast'
 import { APPEARANCE_STORAGE_KEY, DEFAULT_APPEARANCE, useAppearanceStore } from '@/stores/appearance'
 import { useAuthStore } from '@/stores/auth'
-import { useThemeStore } from '@/stores/theme'
+import {
+  DEFAULT_THEME_PACK_PREFERENCES,
+  THEME_PACK_STORAGE_KEY,
+  useThemeStore,
+} from '@/stores/theme'
 import { render, screen, waitFor, within } from '@/test/render'
 import { appUpdater, type UpdateInfo, type UpdateStatus } from '@/utils/appUpdater'
 import SettingsView from './SettingsView'
@@ -89,7 +93,15 @@ describe('SettingsView', () => {
 
   beforeEach(() => {
     window.localStorage.clear()
-    useThemeStore.setState({ effectiveTheme: 'light', theme: 'auto' })
+    useThemeStore.setState({
+      activeHoliday: null,
+      autoHolidayTheme: DEFAULT_THEME_PACK_PREFERENCES.autoHolidayTheme,
+      dismissedHolidayId: null,
+      effectiveTheme: 'light',
+      effectiveThemePack: 'spring-jiangnan',
+      theme: 'auto',
+      themePack: DEFAULT_THEME_PACK_PREFERENCES.themePack,
+    })
     useAppearanceStore.setState(DEFAULT_APPEARANCE)
     useAuthStore.setState({
       refreshUser: vi.fn().mockResolvedValue(undefined),
@@ -174,18 +186,42 @@ describe('SettingsView', () => {
     expect(useThemeStore.getState().theme).toBe('dark')
     expect(within(theme).getByRole('radio', { name: '深色' })).toBeChecked()
     expect(window.localStorage.getItem('theme')).toBe('dark')
+
+    const packGroup = screen.getByRole('group', { name: '主题风物' })
+    expect(packGroup).toHaveClass('ods-radio-group')
+    expect(within(packGroup).getAllByRole('radio')).toHaveLength(6)
+    await user.click(within(packGroup).getByRole('radio', { name: '冬 · 哈尔滨雾凇' }))
+    expect(useThemeStore.getState().effectiveThemePack).toBe('winter-harbin')
+    expect(document.documentElement).toHaveAttribute('data-theme-pack', 'winter-harbin')
+    expect(JSON.parse(window.localStorage.getItem(THEME_PACK_STORAGE_KEY)!).themePack).toBe(
+      'winter-harbin',
+    )
+
+    const autoSeason = screen.getByRole('switch', { name: '随季节自动切换' })
+    expect(autoSeason).not.toBeChecked()
+    await user.click(autoSeason)
+    expect(useThemeStore.getState().themePack).toBe('auto-season')
+    expect(autoSeason).toBeChecked()
   })
 
   it('applies and stores each appearance switch the moment it is flipped', async () => {
     const user = userEvent.setup()
     render(<SettingsView />, { initialEntries: ['/settings?tab=appearance'] })
 
-    const scene = screen.getByRole('switch', { name: '江南动态场景' })
+    const holiday = screen.getByRole('switch', { name: '节假日自动切换限定主题' })
+    const scene = screen.getByRole('switch', { name: '动态场景效果' })
     const reduce = screen.getByRole('switch', { name: '减少动态效果' })
     const glass = screen.getByRole('switch', { name: '液态玻璃效果' })
+    expect(holiday).toBeChecked()
     expect(scene).toBeChecked()
     expect(reduce).not.toBeChecked()
     expect(glass).toBeChecked()
+
+    await user.click(holiday)
+    expect(useThemeStore.getState().autoHolidayTheme).toBe(false)
+    expect(JSON.parse(window.localStorage.getItem(THEME_PACK_STORAGE_KEY)!).autoHolidayTheme).toBe(
+      false,
+    )
 
     await user.click(reduce)
     await user.click(glass)
@@ -708,6 +744,27 @@ describe('SettingsView in-app updates', () => {
     fireEvent.click(screen.getByRole('button', { name: '前往下载' }))
 
     await waitFor(() => expect(Browser.OpenURL).toHaveBeenCalledWith(info.releaseURL))
+    expect(appUpdater.startUpdate).not.toHaveBeenCalled()
+  })
+
+  it.each([
+    'javascript:alert(1)',
+    'file:///tmp/update',
+    'zhusuan://quit',
+    'https://user:secret@example.com/download',
+  ])('rejects unsafe update links before calling the native URL opener: %s', async (releaseURL) => {
+    vi.mocked(appUpdater.checkForUpdates).mockResolvedValue({
+      ...info,
+      supported: false,
+      releaseURL,
+    })
+    render(<SettingsView />, { initialEntries: ['/settings?tab=about'] })
+    fireEvent.click(await screen.findByRole('button', { name: '检测更新' }))
+    fireEvent.click(await screen.findByRole('button', { name: '前往下载' }))
+    await waitFor(() =>
+      expect(useToastStore.getState().error).toHaveBeenCalledWith('发布链接无效，请稍后重试'),
+    )
+    expect(Browser.OpenURL).not.toHaveBeenCalled()
     expect(appUpdater.startUpdate).not.toHaveBeenCalled()
   })
 

@@ -13,6 +13,7 @@ import (
 	"github.com/primordialweave/zhusuan/internal/constants"
 	"github.com/primordialweave/zhusuan/internal/database"
 	"github.com/primordialweave/zhusuan/internal/models"
+	"github.com/primordialweave/zhusuan/internal/pkg/cache"
 	"github.com/primordialweave/zhusuan/internal/pkg/jwt"
 	"github.com/primordialweave/zhusuan/internal/pkg/logger"
 	"github.com/primordialweave/zhusuan/internal/router"
@@ -49,6 +50,7 @@ func Bootstrap(mode RuntimeMode) (*Runtime, func(), error) {
 
 	logger.Setup()
 	cleanup := func() {
+		cache.Close()
 		if err := database.Close(); err != nil {
 			slog.Warn("Failed to close database", "error", err)
 		}

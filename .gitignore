@@ -18,8 +18,10 @@ Thumbs.db
 
 # Environment Variables
 .env
-.env.local
-.env.*.local
+.env.*
+!.env.example
+*.env
+initial-credentials.txt
 .vercel/
 
 # Logs
@@ -44,6 +46,11 @@ frontend/.DS_Store
 *.out
 *.syso
 *.db
+*.db-*
+*.sqlite
+*.sqlite-*
+*.sqlite3
+*.sqlite3-*
 cover.out
 
 

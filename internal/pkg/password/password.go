@@ -1,3 +1,4 @@
+// Package password hashes and verifies passwords with bcrypt.
 package password
 
 import (

@@ -16,6 +16,11 @@ import (
 	"github.com/primordialweave/zhusuan/internal/service"
 )
 
+const (
+	benchmarkPasswordPlaceholder = "hashed"
+	benchmarkCompany             = "测试公司"
+)
+
 // BenchmarkProjectServiceCreate 项目创建性能测试
 func BenchmarkProjectServiceCreate(b *testing.B) {
 	setupBenchmarkDB(b)
@@ -24,7 +29,7 @@ func BenchmarkProjectServiceCreate(b *testing.B) {
 	// 创建测试用户
 	user := &models.User{
 		Username: "benchuser",
-		Password: "hashed",
+		Password: benchmarkPasswordPlaceholder,
 		Email:    "bench@test.com",
 		Role:     constants.RoleUser,
 		Status:   1,
@@ -36,7 +41,7 @@ func BenchmarkProjectServiceCreate(b *testing.B) {
 
 	req := dto.CreateProjectRequest{
 		Name:           "性能测试项目",
-		Company:        "测试公司",
+		Company:        benchmarkCompany,
 		ContractNumber: "BENCH-001",
 		TotalAmount:    100000,
 		StartDate:      time.Now().Format("2006-01-02"),
@@ -62,7 +67,7 @@ func BenchmarkProjectServiceList(b *testing.B) {
 	// 创建测试数据
 	user := &models.User{
 		Username: "listuser",
-		Password: "hashed",
+		Password: benchmarkPasswordPlaceholder,
 		Email:    "list@test.com",
 		Role:     constants.RoleUser,
 		Status:   1,
@@ -106,7 +111,7 @@ func BenchmarkPaymentServiceCreate(b *testing.B) {
 	// 创建测试数据
 	user := &models.User{
 		Username: "paymentuser",
-		Password: "hashed",
+		Password: benchmarkPasswordPlaceholder,
 		Email:    "payment@test.com",
 		Role:     constants.RoleUser,
 		Status:   1,
@@ -118,7 +123,7 @@ func BenchmarkPaymentServiceCreate(b *testing.B) {
 
 	projectReq := dto.CreateProjectRequest{
 		Name:           "款项测试项目",
-		Company:        "测试公司",
+		Company:        benchmarkCompany,
 		ContractNumber: "PAY-BENCH",
 		TotalAmount:    1000000,
 		StartDate:      time.Now().Format("2006-01-02"),
@@ -157,7 +162,7 @@ func BenchmarkPaymentServiceConfirm(b *testing.B) {
 	// 创建测试数据
 	user := &models.User{
 		Username: "confirmuser",
-		Password: "hashed",
+		Password: benchmarkPasswordPlaceholder,
 		Email:    "confirm@test.com",
 		Role:     constants.RoleUser,
 		Status:   1,
@@ -169,7 +174,7 @@ func BenchmarkPaymentServiceConfirm(b *testing.B) {
 
 	projectReq := dto.CreateProjectRequest{
 		Name:           "确认测试项目",
-		Company:        "测试公司",
+		Company:        benchmarkCompany,
 		ContractNumber: "CONF-BENCH",
 		TotalAmount:    10000000,
 		StartDate:      time.Now().Format("2006-01-02"),
@@ -217,7 +222,7 @@ func BenchmarkDashboardServiceGetStats(b *testing.B) {
 	// 创建测试数据
 	user := &models.User{
 		Username: "dashuser",
-		Password: "hashed",
+		Password: benchmarkPasswordPlaceholder,
 		Email:    "dash@test.com",
 		Role:     constants.RoleUser,
 		Status:   1,

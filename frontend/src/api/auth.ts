@@ -9,14 +9,14 @@ import api, { type ApiResponse } from './index'
 export interface User {
   id: number
   username: string // 用户名
-  name: string     // 真实姓名
-  email: string    // 邮箱
-  phone: string    // 手机号
-  avatar: string   // 头像 URL
-  role: string     // 角色 (admin/user)
+  name: string // 真实姓名
+  email: string // 邮箱
+  phone: string // 手机号
+  avatar: string // 头像 URL
+  role: string // 角色 (admin/user)
   department: string // 部门
-  position: string   // 职位
-  status: number     // 状态 (1:正常, 0:禁用)
+  position: string // 职位
+  status: number // 状态 (1:正常, 0:禁用)
 }
 
 // 登录请求参数
@@ -28,9 +28,8 @@ export interface LoginRequest {
 // 登录响应数据
 export interface LoginResponse {
   token: string // JWT Token
-  user: User    // 用户信息
+  user: User // 用户信息
 }
-
 
 // 修改密码请求参数
 export interface ChangePasswordRequest {
@@ -86,38 +85,30 @@ export interface UpdateUserRequest {
 // 认证 API 集合
 export const authApi = {
   // 登录
-  login: (data: LoginRequest) =>
-    api.post<ApiResponse<LoginResponse>>('/auth/login', data),
-
+  login: (data: LoginRequest) => api.post<ApiResponse<LoginResponse>>('/auth/login', data),
 
   // 退出登录
-  logout: () =>
-    api.post<ApiResponse<null>>('/auth/logout'),
+  logout: () => api.post<ApiResponse<null>>('/auth/logout'),
 
   // 获取当前用户
-  getCurrentUser: () =>
-    api.get<ApiResponse<User>>('/users/me'),
+  getCurrentUser: () => api.get<ApiResponse<User>>('/users/me'),
 
   // 更新个人信息
-  updateProfile: (data: UpdateProfileRequest) =>
-    api.put<ApiResponse<User>>('/users/me', data),
+  updateProfile: (data: UpdateProfileRequest) => api.put<ApiResponse<User>>('/users/me', data),
 
   // 修改密码
   changePassword: (data: ChangePasswordRequest) =>
     api.put<ApiResponse<null>>('/users/me/password', data),
 
   // === User Management (Admin) ===
-  getUsers: (params: UserListParams) =>
-    api.get<ApiResponse<UserListResult>>('/users', { params }),
+  getUsers: (params: UserListParams) => api.get<ApiResponse<UserListResult>>('/users', { params }),
 
-  createUser: (data: CreateUserRequest) =>
-    api.post<ApiResponse<null>>('/users', data),
+  createUser: (data: CreateUserRequest) => api.post<ApiResponse<null>>('/users', data),
 
   updateUser: (id: number, data: UpdateUserRequest) =>
-    api.put<ApiResponse<null>>(`/users/${id}`, data),
+    api.put<ApiResponse<User>>(`/users/${id}`, data),
 
-  deleteUser: (id: number) =>
-    api.delete<ApiResponse<null>>(`/users/${id}`),
+  deleteUser: (id: number) => api.delete<ApiResponse<null>>(`/users/${id}`),
 
   resetPassword: (id: number, password: string) =>
     api.put<ApiResponse<null>>(`/users/${id}/password`, { new_password: password }),

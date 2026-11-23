@@ -6,6 +6,7 @@ import (
 	"time"
 
 	"gorm.io/gorm"
+	"gorm.io/gorm/clause"
 
 	"github.com/primordialweave/zhusuan/internal/constants"
 	"github.com/primordialweave/zhusuan/internal/database"
@@ -19,19 +20,19 @@ import (
 func getDateFormatExpr(column, interval, dbType string) string {
 	switch dbType {
 	case "mysql":
-		if interval == "month" {
+		if interval == receiptIntervalMonth {
 			return fmt.Sprintf("DATE_FORMAT(%s, '%%Y-%%m')", column)
 		}
 		return fmt.Sprintf("DATE_FORMAT(%s, '%%Y-%%m-%%d')", column)
 	case "postgres":
-		if interval == "month" {
+		if interval == receiptIntervalMonth {
 			return fmt.Sprintf("TO_CHAR(%s, 'YYYY-MM')", column)
 		}
 		return fmt.Sprintf("TO_CHAR(%s, 'YYYY-MM-DD')", column)
 	default: // sqlite
 		// SQLite's date functions convert offset-bearing timestamps to UTC.
 		// These fields represent calendar dates; keep the stored date component.
-		if interval == "month" {
+		if interval == receiptIntervalMonth {
 			return fmt.Sprintf("substr(%s, 1, 7)", column)
 		}
 		return fmt.Sprintf("substr(%s, 1, 10)", column)
@@ -62,6 +63,14 @@ func NewPaymentRepository() *PaymentRepository {
 	return &PaymentRepository{db: database.GetDB()}
 }
 
+// paymentOwnerScope excludes orphaned or mismatched imported relationships before
+// exposing associated project data or including the payment in money totals.
+func paymentOwnerScope(userID int64) func(*gorm.DB) *gorm.DB {
+	return func(db *gorm.DB) *gorm.DB {
+		return UserScope(userID)(db).Where("EXISTS (SELECT 1 FROM projects WHERE projects.id = payments.project_id AND projects.user_id = payments.user_id)")
+	}
+}
+
 // FindByID 根据ID查找收款
 func (r *PaymentRepository) FindByID(id int64) (*models.Payment, error) {
 	var payment models.Payment
@@ -74,7 +83,7 @@ func (r *PaymentRepository) FindByID(id int64) (*models.Payment, error) {
 // FindByIDForUser finds a payment owned by the given user.
 func (r *PaymentRepository) FindByIDForUser(id, userID int64) (*models.Payment, error) {
 	var payment models.Payment
-	if err := r.db.Where("id = ? AND user_id = ?", id, userID).First(&payment).Error; err != nil {
+	if err := r.db.Scopes(paymentOwnerScope(userID)).Where("id = ?", id).First(&payment).Error; err != nil {
 		return nil, err
 	}
 	return &payment, nil
@@ -83,7 +92,7 @@ func (r *PaymentRepository) FindByIDForUser(id, userID int64) (*models.Payment, 
 // ListByProject 根据项目ID获取收款列表
 func (r *PaymentRepository) ListByProject(projectID int64) ([]models.Payment, error) {
 	var payments []models.Payment
-	if err := r.db.Where("project_id = ?", projectID).
+	if err := r.db.Scopes(paymentOwnerScope(0)).Where("project_id = ?", projectID).
 		Order("plan_date DESC").
 		Find(&payments).Error; err != nil {
 		return nil, err
@@ -98,7 +107,7 @@ func (r *PaymentRepository) ListUpcoming(userID int64, days int, limit int) ([]m
 	today := now.Format("2006-01-02")
 	endDate := now.AddDate(0, 0, days).Format("2006-01-02") + " 23:59:59"
 
-	query := r.db.Scopes(UserScope(userID)).Preload("Project").
+	query := r.db.Scopes(paymentOwnerScope(userID)).Preload("Project").
 		Where("status = ? AND plan_date >= ? AND plan_date <= ?", "pending", today, endDate).
 		Order("plan_date ASC")
 	if limit > 0 {
@@ -116,10 +125,62 @@ func (r *PaymentRepository) SumOverdue(userID int64) (float64, error) {
 	var sum float64
 	today := time.Now().Format("2006-01-02")
 	err := r.db.Model(&models.Payment{}).
-		Scopes(UserScope(userID)).
+		Scopes(paymentOwnerScope(userID)).
 		Where("(status = ? OR (status = ? AND plan_date < ?))", constants.PaymentStatusOverdue, constants.PaymentStatusPending, today).
 		Select("COALESCE(SUM(amount), 0)").Scan(&sum).Error
 	return sum, err
+}
+
+// CountOverdueAndUpcoming 统计逾期笔数与未来 upcomingDays 天内待收笔数，用于桌面菜单栏/托盘轻量化摘要。
+func (r *PaymentRepository) CountOverdueAndUpcoming(userID int64, upcomingDays int) (overdueCount int, upcomingCount int, err error) {
+	now := time.Now()
+	today := now.Format("2006-01-02")
+	endDate := now.AddDate(0, 0, upcomingDays).Format("2006-01-02") + " 23:59:59"
+
+	var overdue int64
+	if err = r.db.Model(&models.Payment{}).
+		Scopes(paymentOwnerScope(userID)).
+		Where("(status = ? OR (status = ? AND plan_date < ?))", constants.PaymentStatusOverdue, constants.PaymentStatusPending, today).
+		Count(&overdue).Error; err != nil {
+		return 0, 0, err
+	}
+
+	var upcoming int64
+	if err = r.db.Model(&models.Payment{}).
+		Scopes(paymentOwnerScope(userID)).
+		Where("status = ? AND plan_date >= ? AND plan_date <= ?", constants.PaymentStatusPending, today, endDate).
+		Count(&upcoming).Error; err != nil {
+		return 0, 0, err
+	}
+
+	return int(overdue), int(upcoming), nil
+}
+
+// ListUrgent 查询逾期及未来 days 天内待收款项，按计划日期升序返回最多 limit 笔（用于菜单栏速览）。
+func (r *PaymentRepository) ListUrgent(userID int64, days int, limit int) ([]models.Payment, error) {
+	var payments []models.Payment
+	now := time.Now()
+	today := now.Format("2006-01-02")
+	endDate := now.AddDate(0, 0, days).Format("2006-01-02") + " 23:59:59"
+
+	query := r.db.Scopes(paymentOwnerScope(userID)).Preload("Project").
+		Where(
+			"(status = ? OR (status = ? AND plan_date <= ?))",
+			constants.PaymentStatusOverdue,
+			constants.PaymentStatusPending,
+			endDate,
+		).
+		Order(clause.Expr{
+			SQL:  "CASE WHEN status = ? OR plan_date < ? THEN 0 ELSE 1 END ASC, plan_date ASC",
+			Vars: []any{constants.PaymentStatusOverdue, today},
+		})
+	if limit > 0 {
+		query = query.Limit(limit)
+	}
+	if err := query.Find(&payments).Error; err != nil {
+		return nil, err
+	}
+	return payments, nil
 }
 
 // ListByDateRange 根据日期范围获取收款列表
@@ -129,7 +190,7 @@ func (r *PaymentRepository) ListByDateRange(userID int64, startDate, endDate str
 		return nil, err
 	}
 	var payments []models.Payment
-	if err := r.db.Scopes(UserScope(userID)).Preload("Project").
+	if err := r.db.Scopes(paymentOwnerScope(userID)).Preload("Project").
 		Where("plan_date >= ? AND plan_date < ?", startDate, endExclusive).
 		Order("plan_date ASC").
 		Find(&payments).Error; err != nil {
@@ -165,7 +226,7 @@ func (r *PaymentRepository) GetIncomeStats(userID int64, startDate, endDate, int
 	var expectedResults []Result
 	if err := r.db.Model(&models.Payment{}).
 		Select(dateExpr+" as date, COALESCE(SUM(amount), 0) as total").
-		Scopes(UserScope(userID)).
+		Scopes(paymentOwnerScope(userID)).
 		Where("plan_date >= ? AND plan_date < ?", startDate, endExclusive).
 		Group("date").
 		Scan(&expectedResults).Error; err != nil {
@@ -179,7 +240,7 @@ func (r *PaymentRepository) GetIncomeStats(userID int64, startDate, endDate, int
 	var actualResults []Result
 	if err := r.db.Model(&models.Payment{}).
 		Select(actualDateExpr+" as date, COALESCE(SUM(amount), 0) as total").
-		Scopes(UserScope(userID)).
+		Scopes(paymentOwnerScope(userID)).
 		Where("status = ? AND actual_date >= ? AND actual_date < ?", constants.PaymentStatusConfirmed, startDate, endExclusive).
 		Group("date").
 		Scan(&actualResults).Error; err != nil {
@@ -201,7 +262,7 @@ func (r *PaymentRepository) SumConfirmedByPlanPeriod(userID int64, startDate, en
 	}
 	var total float64
 	err = r.db.Model(&models.Payment{}).
-		Scopes(UserScope(userID)).
+		Scopes(paymentOwnerScope(userID)).
 		Where("status = ? AND plan_date >= ? AND plan_date < ?", constants.PaymentStatusConfirmed, startDate, endExclusive).
 		Select("COALESCE(SUM(amount), 0)").Scan(&total).Error
 	return total, err
@@ -222,7 +283,7 @@ func (r *PaymentRepository) GetStatsByPeriod(userID int64, startDate, endDate st
 	}
 	// 1. Total (TotalExpected): 计划日期在范围内的款项总和
 	if err = r.db.Model(&models.Payment{}).
-		Scopes(UserScope(userID)).
+		Scopes(paymentOwnerScope(userID)).
 		Where("plan_date >= ? AND plan_date < ?", startDate, endExclusive).
 		Select("COALESCE(SUM(amount), 0)").Scan(&total).Error; err != nil {
 		return
@@ -230,7 +291,7 @@ func (r *PaymentRepository) GetStatsByPeriod(userID int64, startDate, endDate st
 
 	// 2. Paid: 实际日期在范围内已支付的款项
 	if err = r.db.Model(&models.Payment{}).
-		Scopes(UserScope(userID)).
+		Scopes(paymentOwnerScope(userID)).
 		Where("status = ? AND actual_date >= ? AND actual_date < ?", constants.PaymentStatusConfirmed, startDate, endExclusive).
 		Select("COALESCE(SUM(amount), 0)").Scan(&paid).Error; err != nil {
 		return
@@ -238,7 +299,7 @@ func (r *PaymentRepository) GetStatsByPeriod(userID int64, startDate, endDate st
 
 	// 3. Pending: 计划日期在范围内，当前状态仍为 pending 的款项
 	if err = r.db.Model(&models.Payment{}).
-		Scopes(UserScope(userID)).
+		Scopes(paymentOwnerScope(userID)).
 		Where("status IN ? AND plan_date >= ? AND plan_date < ?", []string{constants.PaymentStatusPending, constants.PaymentStatusOverdue}, startDate, endExclusive).
 		Select("COALESCE(SUM(amount), 0)").Scan(&pending).Error; err != nil {
 		return
@@ -248,7 +309,7 @@ func (r *PaymentRepository) GetStatsByPeriod(userID int64, startDate, endDate st
 	//    这是 Pending 的子集
 	today := time.Now().Format("2006-01-02")
 	if err = r.db.Model(&models.Payment{}).
-		Scopes(UserScope(userID)).
+		Scopes(paymentOwnerScope(userID)).
 		Where("plan_date >= ? AND plan_date < ? AND (status = ? OR (status = ? AND plan_date < ?))", startDate, endExclusive, constants.PaymentStatusOverdue, constants.PaymentStatusPending, today).
 		Select("COALESCE(SUM(amount), 0)").Scan(&overdue).Error; err != nil {
 		return
@@ -259,7 +320,7 @@ func (r *PaymentRepository) GetStatsByPeriod(userID int64, startDate, endDate st
 	dbType := database.GetDBType()
 	dateDiffExpr := getDateDiffExpr("actual_date", "plan_date", dbType)
 	if err = r.db.Model(&models.Payment{}).
-		Scopes(UserScope(userID)).
+		Scopes(paymentOwnerScope(userID)).
 		Where("status = ? AND actual_date >= ? AND actual_date < ?", constants.PaymentStatusConfirmed, startDate, endExclusive).
 		Select("COALESCE(AVG(" + dateDiffExpr + "), 0)").Scan(&avgPeriod).Error; err != nil {
 		return

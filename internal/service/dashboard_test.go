@@ -472,6 +472,13 @@ func TestDashboardService_CalendarPeriod(t *testing.T) {
 	setupDashboardTestDB(t)
 	db := database.GetDB()
 	const userID = int64(2002)
+	createTestUser(t, userID, "calendar-period-owner")
+	project := models.Project{UserID: userID, Name: "calendar period", ContractNumber: "CALENDAR-PERIOD"}
+	require.NoError(t, db.Create(&project).Error)
+	t.Cleanup(func() {
+		require.NoError(t, db.Where("project_id = ?", project.ID).Delete(&models.Payment{}).Error)
+		require.NoError(t, db.Delete(&project).Error)
+	})
 	db.Where("user_id = ?", userID).Delete(&models.Payment{})
 	// Dates arrive from the API as plain days and are stored at UTC midnight.
 	day := func(year int, month time.Month, d int) time.Time {
@@ -486,6 +493,7 @@ func TestDashboardService_CalendarPeriod(t *testing.T) {
 		{UserID: userID, ProjectID: 9, Stage: "上年", Amount: 400, Status: constants.PaymentStatusConfirmed, PlanDate: day(2023, 6, 1), ActualDate: ptrTime(day(2023, 6, 1))},
 	}
 	for _, p := range payments {
+		p.ProjectID = project.ID
 		require.NoError(t, db.Create(&p).Error)
 	}
 	service := NewDashboardService()

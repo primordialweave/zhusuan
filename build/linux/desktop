@@ -9,5 +9,18 @@ Type=Application
 Icon=zhusuan
 Categories=Utility;
 StartupWMClass=zhusuan
+Actions=quick-receipt;new-project;calendar;
+
+[Desktop Action quick-receipt]
+Name=记一笔收款
+Exec=/usr/local/bin/zhusuan --action=quick-receipt
+
+[Desktop Action new-project]
+Name=新建项目
+Exec=/usr/local/bin/zhusuan --action=new-project
+
+[Desktop Action calendar]
+Name=收款日历
+Exec=/usr/local/bin/zhusuan --action=calendar
 
  

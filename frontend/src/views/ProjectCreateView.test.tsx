@@ -163,6 +163,21 @@ async function fillNewProject(user: ReturnType<typeof userEvent.setup>) {
 }
 
 describe('ProjectCreateView design system migration', () => {
+  it.each(['abc', '0', '-1', '9007199254740993'])(
+    'rejects invalid editing address %s without showing a new-project form',
+    async (id) => {
+      render(
+        <Routes>
+          <Route element={<ProjectCreateView />} path="/projects/edit/:id" />
+        </Routes>,
+        { initialEntries: [`/projects/edit/${id}`] },
+      )
+      expect(await screen.findByRole('alert')).toHaveTextContent('项目地址无效')
+      expect(projectApi.get).not.toHaveBeenCalled()
+      expect(projectApi.getPayments).not.toHaveBeenCalled()
+      expect(screen.queryByRole('form')).not.toBeInTheDocument()
+    },
+  )
   afterEach(() => vi.restoreAllMocks())
 
   beforeEach(() => {

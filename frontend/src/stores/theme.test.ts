@@ -1,7 +1,13 @@
 import { act } from '@testing-library/react'
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 
-import { THEME_OPTIONS, THEME_TRANSITION_DURATION, useThemeStore } from './theme'
+import {
+  DEFAULT_THEME_PACK_PREFERENCES,
+  THEME_OPTIONS,
+  THEME_PACK_STORAGE_KEY,
+  THEME_TRANSITION_DURATION,
+  useThemeStore,
+} from './theme'
 
 interface MediaController {
   dispatchSystemTheme: (dark: boolean) => void
@@ -53,10 +59,20 @@ describe('theme store', () => {
 
   beforeEach(() => {
     vi.useFakeTimers()
+    vi.setSystemTime(new Date(2026, 3, 15, 12, 0, 0))
     window.localStorage.clear()
     document.documentElement.removeAttribute('data-theme')
+    document.documentElement.removeAttribute('data-theme-pack')
     document.documentElement.classList.remove('theme-transitioning')
-    useThemeStore.setState({ theme: 'auto', effectiveTheme: 'light' })
+    useThemeStore.setState({
+      activeHoliday: null,
+      autoHolidayTheme: DEFAULT_THEME_PACK_PREFERENCES.autoHolidayTheme,
+      dismissedHolidayId: null,
+      effectiveTheme: 'light',
+      effectiveThemePack: 'spring-jiangnan',
+      theme: 'auto',
+      themePack: DEFAULT_THEME_PACK_PREFERENCES.themePack,
+    })
   })
 
   afterEach(() => {
@@ -179,5 +195,68 @@ describe('theme store', () => {
 
     expect(media.listenerCount()).toBe(0)
     expect(document.documentElement).not.toHaveClass('theme-transitioning')
+  })
+
+  it('persists scenic theme packs and applies data-theme-pack alongside data-theme', () => {
+    installMatchMedia(false)
+
+    useThemeStore.getState().setThemePack('winter-harbin')
+    expect(useThemeStore.getState().themePack).toBe('winter-harbin')
+    expect(useThemeStore.getState().effectiveThemePack).toBe('winter-harbin')
+    expect(document.documentElement).toHaveAttribute('data-theme-pack', 'winter-harbin')
+    expect(JSON.parse(window.localStorage.getItem(THEME_PACK_STORAGE_KEY)!)).toEqual({
+      autoHolidayTheme: true,
+      dismissedHolidayId: null,
+      themePack: 'winter-harbin',
+    })
+  })
+
+  it('resolves seasonal packs automatically when auto-season is active', () => {
+    installMatchMedia(false)
+    vi.setSystemTime(new Date(2026, 10, 20, 12, 0, 0)) // Nov 20 -> winter
+
+    useThemeStore.getState().setThemePack('auto-season')
+    expect(useThemeStore.getState().effectiveThemePack).toBe('winter-harbin')
+    expect(document.documentElement).toHaveAttribute('data-theme-pack', 'winter-harbin')
+
+    vi.setSystemTime(new Date(2026, 6, 15, 12, 0, 0)) // Jul 15 -> summer
+    useThemeStore.getState().applyTheme(false)
+    expect(useThemeStore.getState().effectiveThemePack).toBe('summer-westlake')
+  })
+
+  it('auto-activates holiday themes during festival windows and respects manual override', () => {
+    installMatchMedia(false)
+    vi.setSystemTime(new Date(2026, 1, 17, 12, 0, 0)) // 2026 Chinese New Year day
+
+    useThemeStore.getState().applyTheme(false)
+    expect(useThemeStore.getState().effectiveThemePack).toBe('holiday-spring-festival')
+    expect(useThemeStore.getState().activeHoliday?.instanceId).toBe('2026:holiday-spring-festival')
+
+    // Picking a non-holiday theme during the festival dismisses this festival instance.
+    useThemeStore.getState().setThemePack('autumn-forbidden')
+    expect(useThemeStore.getState().effectiveThemePack).toBe('autumn-forbidden')
+    expect(useThemeStore.getState().dismissedHolidayId).toBe('2026:holiday-spring-festival')
+
+    // Re-enabling autoHolidayTheme clears the dismissal and restores the active holiday.
+    useThemeStore.getState().setAutoHolidayTheme(false)
+    expect(useThemeStore.getState().effectiveThemePack).toBe('autumn-forbidden')
+    useThemeStore.getState().setAutoHolidayTheme(true)
+    expect(useThemeStore.getState().effectiveThemePack).toBe('holiday-spring-festival')
+  })
+
+  it('refreshes seasonal and holiday themes on visibilitychange after midnight rollover', () => {
+    installMatchMedia(false)
+    vi.setSystemTime(new Date(2026, 1, 15, 23, 55, 0)) // Day before 2026 Spring Festival Eve
+    cleanupThemeListener = useThemeStore.getState().initializeTheme()
+    expect(useThemeStore.getState().effectiveThemePack).toBe('spring-jiangnan')
+
+    // App wakes up on Spring Festival Eve
+    vi.setSystemTime(new Date(2026, 1, 16, 8, 0, 0))
+    Object.defineProperty(document, 'hidden', { configurable: true, value: false })
+    act(() => {
+      document.dispatchEvent(new Event('visibilitychange'))
+    })
+    expect(useThemeStore.getState().effectiveThemePack).toBe('holiday-spring-festival')
+    expect(document.documentElement).toHaveAttribute('data-theme-pack', 'holiday-spring-festival')
   })
 })

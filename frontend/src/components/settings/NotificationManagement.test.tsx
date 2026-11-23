@@ -58,8 +58,55 @@ describe('NotificationManagement request integrity', () => {
     vi.mocked(notificationApi.list)
       .mockReset()
       .mockResolvedValue(response([notification(1, '初始通知')]) as never)
-    vi.mocked(notificationApi.getUsers).mockResolvedValue({ data: { data: [] } } as never)
-    vi.mocked(notificationApi.create).mockResolvedValue(undefined as never)
+    vi.mocked(notificationApi.getUsers)
+      .mockReset()
+      .mockResolvedValue({ data: { data: [] } } as never)
+    vi.mocked(notificationApi.create)
+      .mockReset()
+      .mockResolvedValue(undefined as never)
+    vi.mocked(notificationApi.update)
+      .mockReset()
+      .mockResolvedValue(undefined as never)
+  })
+
+  it('refreshes the current page when a deletion completes after the user paginates', async () => {
+    const user = userEvent.setup()
+    const deletion = deferred<unknown>()
+    vi.mocked(notificationApi.list).mockImplementation(
+      (page) =>
+        Promise.resolve(
+          response([notification(page === 1 ? 1 : 6, page === 1 ? '第一页通知' : '当前页通知')]),
+        ) as never,
+    )
+    vi.mocked(notificationApi.delete).mockReturnValueOnce(deletion.promise as never)
+    render(<NotificationManagement isAdmin />)
+    await screen.findByText('第一页通知')
+    await user.click(screen.getByRole('button', { name: '删除通知' }))
+    await user.click(
+      within(screen.getByRole('alertdialog', { name: '确认删除' })).getByRole('button', {
+        name: '删除通知',
+      }),
+    )
+    await user.click(screen.getByRole('button', { name: '下一页' }))
+    await screen.findByText('当前页通知')
+    await act(async () => {
+      deletion.resolve(undefined)
+    })
+    await waitFor(() => expect(notificationApi.list).toHaveBeenCalledTimes(3))
+    expect(vi.mocked(notificationApi.list).mock.calls.map(([page]) => page)).toEqual([1, 2, 2])
+    expect(screen.getByText('当前页通知')).toBeInTheDocument()
+  })
+
+  it('does not delete a notification from a confirmation that outlives the panel', async () => {
+    const user = userEvent.setup()
+    vi.mocked(notificationApi.delete).mockReset()
+    const { rerender } = render(<NotificationManagement isAdmin />)
+    await screen.findByText('初始通知')
+    await user.click(screen.getByRole('button', { name: '删除通知' }))
+    const dialog = screen.getByRole('alertdialog', { name: '确认删除' })
+    rerender(<div>已离开通知设置</div>)
+    await user.click(within(dialog).getByRole('button', { name: '删除通知' }))
+    expect(notificationApi.delete).not.toHaveBeenCalled()
   })
 
   it('distinguishes an unknown notification list from a loaded empty list', async () => {
@@ -207,5 +254,180 @@ describe('NotificationManagement request integrity', () => {
     expect(editButton).toHaveAttribute('data-variant', 'secondary')
     expect(deleteButton).toHaveAttribute('data-variant', 'tertiary')
     expect(deleteButton).toHaveAttribute('data-tone', 'danger')
+  })
+
+  const targetUsers = [
+    { id: 11, name: '管理员', username: 'admin' },
+    { id: 12, name: '徐', username: 'xu' },
+  ]
+  const targetLabel = (id: number) =>
+    id === 0 ? '全员通知' : id === 11 ? '管理员 (admin)' : '徐 (xu)'
+
+  async function openEdit(user: ReturnType<typeof userEvent.setup>) {
+    await screen.findByText('对象通知')
+    await user.click(screen.getByRole('button', { name: '编辑通知' }))
+    return screen.findByRole('dialog', { name: '编辑通知' })
+  }
+
+  const recipientNotification = (id: number) => ({
+    ...notification(22, '对象通知'),
+    is_global: id === 0 ? 1 : 0,
+    target_user_id: id,
+    type: 2,
+  })
+
+  it('recalls a targeted recipient and preserves it when saving only content', async () => {
+    const stored = recipientNotification(11)
+    vi.mocked(notificationApi.list).mockResolvedValue(response([stored]) as never)
+    vi.mocked(notificationApi.getUsers).mockResolvedValue({ data: { data: targetUsers } } as never)
+    const user = userEvent.setup()
+    render(<NotificationManagement isAdmin />)
+    const dialog = await openEdit(user)
+
+    expect(within(dialog).getByRole('button', { name: '发送对象' })).toHaveTextContent(
+      '管理员 (admin)',
+    )
+    await user.clear(within(dialog).getByLabelText(/通知内容/))
+    await user.type(within(dialog).getByLabelText(/通知内容/), '新的内容')
+    await user.click(within(dialog).getByRole('button', { name: '更新' }))
+    await waitFor(() =>
+      expect(notificationApi.update).toHaveBeenCalledWith(22, {
+        content: '新的内容',
+        target_user_id: 11,
+        title: '对象通知',
+        type: 'activity',
+      }),
+    )
+  })
+
+  it.each([
+    [11, 12],
+    [11, 0],
+    [0, 12],
+  ])(
+    'submits recipient %i to %i and recalls the freshly fetched recipient on reopening',
+    async (from, to) => {
+      let stored = recipientNotification(from)
+      vi.mocked(notificationApi.list).mockImplementation(async () => response([stored]) as never)
+      vi.mocked(notificationApi.getUsers).mockResolvedValue({
+        data: { data: targetUsers },
+      } as never)
+      vi.mocked(notificationApi.update).mockImplementation(async (_id, request) => {
+        stored = {
+          ...stored,
+          target_user_id: request.target_user_id ?? 0,
+          is_global: to === 0 ? 1 : 0,
+        }
+        return { data: { data: stored } } as never
+      })
+      const user = userEvent.setup()
+      render(<NotificationManagement isAdmin />)
+      const dialog = await openEdit(user)
+      expect(within(dialog).getByRole('button', { name: '发送对象' })).toHaveTextContent(
+        targetLabel(from),
+      )
+      await user.click(within(dialog).getByRole('button', { name: '发送对象' }))
+      await user.click(screen.getByRole('option', { name: targetLabel(to) }))
+      await user.click(within(dialog).getByRole('button', { name: '更新' }))
+      await waitFor(() => expect(notificationApi.list).toHaveBeenCalledTimes(2))
+      expect(notificationApi.update).toHaveBeenCalledWith(
+        22,
+        expect.objectContaining({ target_user_id: to, type: 'activity' }),
+      )
+      await waitFor(() => expect(screen.queryByRole('dialog', { name: '编辑通知' })).toBeNull())
+      const reopened = await openEdit(user)
+      expect(within(reopened).getByRole('button', { name: '发送对象' })).toHaveTextContent(
+        targetLabel(to),
+      )
+    },
+  )
+
+  it('keeps the chosen recipient in the edit draft after failure and sends it again on retry', async () => {
+    const stored = recipientNotification(11)
+    vi.mocked(notificationApi.list).mockResolvedValue(response([stored]) as never)
+    vi.mocked(notificationApi.getUsers).mockResolvedValue({ data: { data: targetUsers } } as never)
+    vi.mocked(notificationApi.update).mockRejectedValueOnce(new Error('offline'))
+    const user = userEvent.setup()
+    render(<NotificationManagement isAdmin />)
+    const dialog = await openEdit(user)
+    await user.click(within(dialog).getByRole('button', { name: '发送对象' }))
+    await user.click(screen.getByRole('option', { name: '徐 (xu)' }))
+    await user.click(within(dialog).getByRole('button', { name: '更新' }))
+    await waitFor(() => expect(notificationApi.update).toHaveBeenCalledOnce())
+    expect(dialog).toBeInTheDocument()
+    expect(within(dialog).getByRole('button', { name: '发送对象' })).toHaveTextContent('徐 (xu)')
+    await user.click(within(dialog).getByRole('button', { name: '更新' }))
+    await waitFor(() => expect(notificationApi.update).toHaveBeenCalledTimes(2))
+    for (const [, request] of vi.mocked(notificationApi.update).mock.calls) {
+      expect(request.target_user_id).toBe(12)
+    }
+  })
+
+  it.each([undefined, 0])(
+    'does not broadcast an unknown private recipient (%s)',
+    async (target) => {
+      vi.mocked(notificationApi.list).mockResolvedValue(
+        response([
+          { ...notification(22, '对象通知'), is_global: 0, target_user_id: target },
+        ]) as never,
+      )
+      vi.mocked(notificationApi.getUsers).mockResolvedValue({
+        data: { data: targetUsers },
+      } as never)
+      const user = userEvent.setup()
+      render(<NotificationManagement isAdmin />)
+      const dialog = await openEdit(user)
+      expect(within(dialog).getByRole('button', { name: '发送对象' })).not.toHaveTextContent(
+        '全员通知',
+      )
+      await user.click(within(dialog).getByRole('button', { name: '更新' }))
+      expect(notificationApi.update).not.toHaveBeenCalled()
+      expect(dialog).toBeInTheDocument()
+    },
+  )
+
+  it('keeps recipient editing and user lookup unavailable to non-administrators', async () => {
+    render(<NotificationManagement />)
+    await screen.findByText('初始通知')
+    expect(screen.queryByRole('button', { name: '编辑通知' })).toBeNull()
+    expect(screen.queryByRole('button', { name: /发送通知/ })).toBeNull()
+    expect(notificationApi.getUsers).not.toHaveBeenCalled()
+  })
+
+  it('preserves the existing private type when changing only its recipient', async () => {
+    const stored = { ...recipientNotification(11), type: 3 }
+    vi.mocked(notificationApi.list).mockResolvedValue(response([stored]) as never)
+    vi.mocked(notificationApi.getUsers).mockResolvedValue({ data: { data: targetUsers } } as never)
+    const user = userEvent.setup()
+    render(<NotificationManagement isAdmin />)
+    const dialog = await openEdit(user)
+    expect(within(dialog).getByRole('button', { name: '通知类型' })).toHaveTextContent('私信')
+    await user.click(within(dialog).getByRole('button', { name: '发送对象' }))
+    await user.click(screen.getByRole('option', { name: '徐 (xu)' }))
+    await user.click(within(dialog).getByRole('button', { name: '更新' }))
+    await waitFor(() =>
+      expect(notificationApi.update).toHaveBeenCalledWith(
+        22,
+        expect.objectContaining({ target_user_id: 12, type: 'private' }),
+      ),
+    )
+  })
+
+  it('retains a known recipient ID when its name cannot be loaded', async () => {
+    vi.mocked(notificationApi.list).mockResolvedValue(
+      response([recipientNotification(11)]) as never,
+    )
+    vi.mocked(notificationApi.getUsers).mockRejectedValue(new Error('offline'))
+    const user = userEvent.setup()
+    render(<NotificationManagement isAdmin />)
+    const dialog = await openEdit(user)
+    expect(within(dialog).getByRole('button', { name: '发送对象' })).toHaveTextContent('用户 #11')
+    await user.click(within(dialog).getByRole('button', { name: '更新' }))
+    await waitFor(() =>
+      expect(notificationApi.update).toHaveBeenCalledWith(
+        22,
+        expect.objectContaining({ target_user_id: 11 }),
+      ),
+    )
   })
 })

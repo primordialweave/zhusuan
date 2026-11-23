@@ -35,6 +35,7 @@ type PageResult struct {
 // 业务错误码定义
 // 0 表示成功，其他值表示各种错误类型。
 const (
+	successMessage    = "success"
 	CodeSuccess       = 0    // 请求成功
 	CodeParamError    = 1001 // 参数错误 (如必填项缺失、格式不对)
 	CodeNotFound      = 1002 // 资源未找到
@@ -47,7 +48,7 @@ const (
 
 // 错误消息映射
 var codeMessages = map[int]string{ // #nosec G101 -- public API response messages, not credentials.
-	CodeSuccess:       "success",
+	CodeSuccess:       successMessage,
 	CodeParamError:    "参数错误",
 	CodeNotFound:      "资源不存在",
 	CodeUnauthorized:  "未授权",
@@ -62,7 +63,7 @@ var codeMessages = map[int]string{ // #nosec G101 -- public API response message
 func Success(c *gin.Context, data interface{}) {
 	c.JSON(http.StatusOK, Response{
 		Code:    CodeSuccess,
-		Message: "success",
+		Message: successMessage,
 		Data:    data,
 	})
 }
@@ -84,7 +85,7 @@ func SuccessWithMessage(c *gin.Context, message string, data interface{}) {
 func SuccessPage(c *gin.Context, list interface{}, total int64, page, pageSize int) {
 	c.JSON(http.StatusOK, Response{
 		Code:    CodeSuccess,
-		Message: "success",
+		Message: successMessage,
 		Data: PageData{
 			List:     list,
 			Total:    total,
@@ -178,6 +179,11 @@ func GetPagination(c *gin.Context) (page, pageSize int) {
 	if pageSize > 100 {
 		pageSize = 100
 	}
+	// Guard the offset multiplication used by every paginated repository.
+	maxInt := int(^uint(0) >> 1)
+	if page-1 > maxInt/pageSize {
+		page = 1
+	}
 	return
 }
 
@@ -185,7 +191,7 @@ func GetPagination(c *gin.Context) (page, pageSize int) {
 // param: 参数名称（如 "id"）
 func ParseIDParam(c *gin.Context, param string) (int64, error) {
 	id, err := strconv.ParseInt(c.Param(param), 10, 64)
-	if err != nil {
+	if err != nil || id <= 0 {
 		return 0, errors.New("无效的ID参数")
 	}
 	return id, nil

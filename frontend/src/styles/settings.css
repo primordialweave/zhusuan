@@ -349,13 +349,17 @@
   overflow: hidden;
   aspect-ratio: 16 / 10;
   border-radius: var(--ods-radius-sm);
+  box-shadow: inset 0 0 0 1px var(--ods-color-border-default);
 }
 
 .settings-theme__layer {
   position: absolute;
-  background:
+  background-image:
     linear-gradient(var(--ods-color-scene-veil), var(--ods-color-scene-veil)),
-    url('../assets/jiangnan/scene-business.webp') 50% 45% / cover no-repeat;
+    var(--ods-theme-preview-url, url('../assets/jiangnan/scene-business.webp'));
+  background-position: 50% 45%;
+  background-repeat: no-repeat;
+  background-size: cover;
   inset: 0;
 }
 
@@ -372,6 +376,28 @@
   inset: 12% 8% 30%;
 }
 
+.settings-theme__panel::before,
+.settings-theme__panel::after {
+  position: absolute;
+  border-radius: var(--ods-radius-pill);
+  content: '';
+  inset-inline-start: 10%;
+}
+
+.settings-theme__panel::before {
+  width: 34%;
+  height: 15%;
+  background: var(--ods-color-accent-soft);
+  inset-block-start: 20%;
+}
+
+.settings-theme__panel::after {
+  width: 68%;
+  height: 11%;
+  background: var(--ods-color-border-default);
+  inset-block-start: 52%;
+}
+
 .settings-theme__dock {
   position: absolute;
   width: 46%;
@@ -383,12 +409,149 @@
   inset-inline-start: 27%;
 }
 
+.settings-theme__dock::before {
+  position: absolute;
+  width: 24%;
+  height: 46%;
+  border-radius: var(--ods-radius-pill);
+  background: var(--ods-color-accent);
+  content: '';
+  inset-block-start: 27%;
+  inset-inline-start: 14%;
+}
+
 .settings-theme__name {
   display: block;
   margin-block-start: var(--ods-space-2);
   color: var(--ods-color-fg-default);
   font-size: var(--ods-font-size-sm);
   text-align: center;
+}
+
+/* Scenic theme pack gallery: 3x2 visual thumbnails with seasonal auto-switch in group header. */
+.settings-pack-auto {
+  display: inline-flex;
+  align-items: center;
+  gap: var(--ods-space-2);
+}
+
+.settings-pack-auto__label {
+  color: var(--ods-color-fg-muted);
+  font-size: var(--ods-font-size-xs);
+  line-height: var(--ods-line-height-heading);
+  white-space: nowrap;
+}
+
+.settings-pack__preview {
+  position: relative;
+  display: block;
+  overflow: hidden;
+  aspect-ratio: 16 / 10;
+  border-radius: var(--ods-radius-sm);
+  background: var(--ods-color-bg-canvas);
+  box-shadow: inset 0 0 0 1px var(--ods-color-border-default);
+}
+
+.settings-pack__preview::after {
+  position: absolute;
+  z-index: 1;
+  border-radius: inherit;
+  box-shadow: inset 0 0 0 1px var(--ods-color-border-default);
+  content: '';
+  inset: 0;
+  pointer-events: none;
+}
+
+.settings-pack__still {
+  position: absolute;
+  inset: 0;
+  background-image: var(--ods-pack-thumb-url, url('../assets/jiangnan/scene-business.webp'));
+  background-position: 50% 45%;
+  background-repeat: no-repeat;
+  background-size: cover;
+  transform: scale(1);
+  transition: transform var(--ods-duration-slow) var(--ods-ease-emphasized);
+}
+
+/* Keep dark-mode preview thumbnails atmospheric yet luminous so every painting stays vivid. */
+.settings-pack__preview[data-theme='dark'] .settings-pack__still::after {
+  position: absolute;
+  background: var(--ods-color-bg-canvas);
+  content: '';
+  inset: 0;
+  opacity: 0.34;
+  transition: opacity var(--ods-duration-fast) var(--ods-ease-standard);
+}
+
+@media (hover: hover) and (pointer: fine) {
+  .settings-pack__preview:hover .settings-pack__still {
+    transform: scale(1.055);
+  }
+
+  .settings-pack__preview[data-theme='dark']:hover .settings-pack__still::after {
+    opacity: 0.22;
+  }
+}
+
+.settings-pack__badge {
+  position: absolute;
+  z-index: 2;
+  inset-block-start: var(--ods-space-1);
+  inset-inline-end: var(--ods-space-1);
+  padding: 1px var(--ods-space-2);
+  border-radius: var(--ods-radius-pill);
+  background: var(--ods-color-bg-surface-raised);
+  box-shadow: 0 0 0 1px var(--ods-color-border-strong);
+  color: var(--ods-color-accent-text);
+  font-size: var(--ods-font-size-2xs);
+  font-weight: var(--ods-font-weight-medium);
+  line-height: var(--ods-line-height-heading);
+}
+
+.settings-pack__badge[data-active] {
+  background: var(--ods-gradient-glow);
+  color: var(--ods-color-accent-fg);
+}
+
+.settings-pack__caption {
+  display: flex;
+  min-width: 0;
+  align-items: center;
+  justify-content: center;
+  gap: var(--ods-space-2);
+  margin-block-start: var(--ods-space-2);
+}
+
+.settings-pack__dot {
+  width: 0.5rem;
+  height: 0.5rem;
+  flex: 0 0 auto;
+  border-radius: var(--ods-radius-pill);
+  background: var(--ods-material-jade-bead-background), var(--ods-color-accent);
+  box-shadow: var(--ods-material-jade-bead-shadow);
+}
+
+.settings-pack__name {
+  overflow: hidden;
+  color: var(--ods-color-fg-default);
+  font-size: var(--ods-font-size-sm);
+  line-height: var(--ods-line-height-tight);
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .settings-pack__still,
+  .settings-pack__preview:hover .settings-pack__still {
+    transform: none;
+    transition: none;
+  }
+}
+
+:root[data-motion='reduced'] .settings-pack__still,
+:root[data-motion='reduced'] .settings-pack__preview:hover .settings-pack__still {
+  transform: none;
+  transition: none;
 }
 
 /* App icon picker: compact horizontal cards with 42px sculpted icon + label (no oversized box). */

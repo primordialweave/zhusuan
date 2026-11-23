@@ -2,6 +2,7 @@ import { forwardRef, useCallback, type InputHTMLAttributes } from 'react'
 import { IconButton } from '../button'
 import { useFieldControlProps } from '../field/fieldContext'
 import { JadeIcon } from '../icon'
+import { textEntryAttributes } from '../input/textEntryDefaults'
 
 export type NumberInputSize = 'sm' | 'md' | 'lg'
 
@@ -60,7 +61,7 @@ export const NumberInput = forwardRef<HTMLInputElement, NumberInputProps>(functi
   return (
     <div
       className={['ods-number-input', className].filter(Boolean).join(' ')}
-      data-disabled={disabled || undefined}
+      data-disabled={controlProps.disabled || undefined}
       data-size={size}
       data-slot="number-input"
     >
@@ -68,7 +69,8 @@ export const NumberInput = forwardRef<HTMLInputElement, NumberInputProps>(functi
         className="ods-number-input__button"
         data-slot="decrement"
         disabled={
-          disabled || (numericMin !== undefined && value !== undefined && value <= numericMin)
+          controlProps.disabled ||
+          (numericMin !== undefined && value !== undefined && value <= numericMin)
         }
         label={decrementLabel}
         onClick={() => shift(-1)}
@@ -80,6 +82,7 @@ export const NumberInput = forwardRef<HTMLInputElement, NumberInputProps>(functi
       </IconButton>
       <input
         {...controlProps}
+        {...textEntryAttributes(props)}
         className="ods-number-input__field"
         data-slot="field"
         inputMode="decimal"
@@ -95,7 +98,8 @@ export const NumberInput = forwardRef<HTMLInputElement, NumberInputProps>(functi
         className="ods-number-input__button"
         data-slot="increment"
         disabled={
-          disabled || (numericMax !== undefined && value !== undefined && value >= numericMax)
+          controlProps.disabled ||
+          (numericMax !== undefined && value !== undefined && value >= numericMax)
         }
         label={incrementLabel}
         onClick={() => shift(1)}

@@ -95,9 +95,17 @@ func TestDashboardPlanCollectionExcludesOtherPeriodCashAndIncludesUndatedConfirm
 	setupDashboardTestDB(t)
 	const userID int64 = 994201
 	db := database.GetDB()
+	createTestUser(t, userID, "collection-cohort-owner")
+	createTestUser(t, userID+1, "collection-cohort-other")
+	project := models.Project{UserID: userID, Name: "cohort", ContractNumber: "COHORT-OWNER"}
+	otherProject := models.Project{UserID: userID + 1, Name: "other cohort", ContractNumber: "COHORT-OTHER"}
+	require.NoError(t, db.Create(&project).Error)
+	require.NoError(t, db.Create(&otherProject).Error)
 	require.NoError(t, db.Where("user_id = ?", userID).Delete(&models.Payment{}).Error)
 	t.Cleanup(func() {
 		require.NoError(t, db.Where("user_id IN ?", []int64{userID, userID + 1}).Delete(&models.Payment{}).Error)
+		require.NoError(t, db.Delete(&project).Error)
+		require.NoError(t, db.Delete(&otherProject).Error)
 	})
 	first := collectionDate(t, "2026-04-01")
 	last := collectionDate(t, "2026-04-30")
@@ -113,6 +121,12 @@ func TestDashboardPlanCollectionExcludesOtherPeriodCashAndIncludesUndatedConfirm
 		{UserID: userID, ProjectID: 1, Stage: "previous plan paid inside", Amount: 700, Status: constants.PaymentStatusConfirmed, PlanDate: before, ActualDate: &first},
 		{UserID: userID, ProjectID: 1, Stage: "next plan paid inside", Amount: 800, Status: constants.PaymentStatusConfirmed, PlanDate: after, ActualDate: &last},
 		{UserID: userID + 1, ProjectID: 1, Stage: "other user", Amount: 9999, Status: constants.PaymentStatusConfirmed, PlanDate: first, ActualDate: &first},
+	}
+	for i := range payments {
+		payments[i].ProjectID = project.ID
+		if payments[i].UserID == userID+1 {
+			payments[i].ProjectID = otherProject.ID
+		}
 	}
 	require.NoError(t, db.Create(&payments).Error)
 

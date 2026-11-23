@@ -35,7 +35,7 @@ func TestLegacyPreferencesIncludesWALWithoutCopyingTokensOrReplacingSource(t *te
 		}
 		return data
 	}
-	for key, value := range map[string]string{"theme": "dark", "lastUsername": "测试用户", "rememberPassword": "true", "token": "never copy", "password": "never copy"} {
+	for key, value := range map[string]string{"theme": "dark", "lastUsername": "测试用户", "rememberPassword": "true", "zhusuan.themePack.v1": "spring-jiangnan", "token": "never copy", "password": "never copy"} {
 		if _, err = db.Exec("INSERT INTO ItemTable VALUES(?,?)", key, encode(value)); err != nil {
 			t.Fatal(err)
 		}
@@ -46,6 +46,9 @@ func TestLegacyPreferencesIncludesWALWithoutCopyingTokensOrReplacingSource(t *te
 	}
 	if values["theme"] != "dark" || values["lastUsername"] != "测试用户" || values["rememberPassword"] != "true" {
 		t.Fatalf("preferences missing: %v", values)
+	}
+	if values["zhusuan.themePack.v1"] != "spring-jiangnan" {
+		t.Fatal("theme pack preference was not migrated")
 	}
 	if _, ok := values["token"]; ok {
 		t.Fatal("imported authentication token")

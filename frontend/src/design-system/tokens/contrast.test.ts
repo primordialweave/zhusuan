@@ -27,10 +27,45 @@ const contrast = (a: Color, b: Color) => {
   return (values[1] + 0.05) / (values[0] + 0.05)
 }
 
-describe.each(['jiangnan-mist', 'jiangnan-night'])('%s readable colors', (theme) => {
+const extractBlock = (source: string, mode: 'light' | 'dark') => {
+  const marker = `[data-theme='${mode}']`
+  const start = source.indexOf(marker)
+  if (start === -1) return ''
+  const open = source.indexOf('{', start)
+  const close = source.indexOf('}', open)
+  return open !== -1 && close !== -1 ? source.slice(open + 1, close) : ''
+}
+
+const themeVariants: ReadonlyArray<{
+  base: 'jiangnan-mist' | 'jiangnan-night'
+  label: string
+  mode: 'light' | 'dark'
+  pack?: string
+}> = [
+  { base: 'jiangnan-mist', label: 'jiangnan-mist (spring-jiangnan)', mode: 'light' },
+  { base: 'jiangnan-night', label: 'jiangnan-night (spring-jiangnan)', mode: 'dark' },
+  ...[
+    'summer-westlake',
+    'autumn-forbidden',
+    'winter-harbin',
+    'holiday-spring-festival',
+    'holiday-mid-autumn',
+  ].flatMap((pack) => [
+    { base: 'jiangnan-mist' as const, label: `${pack} (light)`, mode: 'light' as const, pack },
+    { base: 'jiangnan-night' as const, label: `${pack} (dark)`, mode: 'dark' as const, pack },
+  ]),
+]
+
+describe.each(themeVariants)('$label readable colors', ({ base, mode, pack }) => {
+  const packDefinitions = pack
+    ? definitions(
+        extractBlock(readFileSync(`src/design-system/tokens/themes/packs/${pack}.css`, 'utf8'), mode),
+      )
+    : new Map<string, string>()
   const tokens = new Map([
     ...reference,
-    ...definitions(readFileSync(`src/design-system/tokens/themes/${theme}.css`, 'utf8')),
+    ...definitions(readFileSync(`src/design-system/tokens/themes/${base}.css`, 'utf8')),
+    ...packDefinitions,
   ])
   const resolve = (value: string): string =>
     value.replace(/var\((--[\w-]+)\)/g, (_, key: string) => resolve(tokens.get(key) ?? ''))

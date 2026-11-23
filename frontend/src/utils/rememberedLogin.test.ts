@@ -31,4 +31,10 @@ describe('rememberedLogin', () => {
     expect(CredentialStore.Load).toHaveBeenCalledWith('zhusuan-desktop/api/v1')
     expect(CredentialStore.Clear).toHaveBeenCalledWith('zhusuan-desktop/api/v1')
   })
+
+  it('recognizes the compatibility runtime marker used by other native services', () => {
+    vi.stubGlobal('_wails', undefined)
+    vi.stubGlobal('__WAILS__', { environment: { OS: 'linux' } })
+    expect(rememberedLogin.isAvailable()).toBe(true)
+  })
 })

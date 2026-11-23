@@ -7,10 +7,14 @@ vi.mock('../../bindings/github.com/primordialweave/zhusuan/internal/desktop', ()
   FileExporter: { SaveText: saveText },
 }))
 
-type WailsWindow = Window & { _wails?: { environment?: { OS?: string } } }
+type WailsWindow = Window & {
+  _wails?: { environment?: { OS?: string } }
+  __WAILS__?: { environment?: { OS?: string } }
+}
 
 afterEach(() => {
   delete (window as WailsWindow)._wails
+  delete (window as WailsWindow).__WAILS__
   saveText.mockReset()
   vi.restoreAllMocks()
 })
@@ -69,5 +73,15 @@ describe('CSV export', () => {
     expect(revokeObjectURL).toHaveBeenCalledWith('blob:orange')
     expect(saveText).not.toHaveBeenCalled()
     expect(document.querySelector('a[download]')).toBeNull()
+  })
+
+  it('keeps native export available when the compatibility runtime marker is used', async () => {
+    ;(window as WailsWindow).__WAILS__ = { environment: { OS: 'windows' } }
+    saveText.mockResolvedValueOnce('C:\\reports\\report.csv')
+    await expect(exportCsv('report.csv', [['a']])).resolves.toEqual({
+      status: 'saved',
+      path: 'C:\\reports\\report.csv',
+    })
+    expect(saveText).toHaveBeenCalledOnce()
   })
 })

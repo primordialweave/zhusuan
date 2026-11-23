@@ -5,6 +5,11 @@
 @import './tokens/semantic.css' layer(tokens);
 @import './tokens/themes/jiangnan-mist.css' layer(tokens);
 @import './tokens/themes/jiangnan-night.css' layer(tokens);
+@import './tokens/themes/packs/summer-westlake.css' layer(tokens);
+@import './tokens/themes/packs/autumn-forbidden.css' layer(tokens);
+@import './tokens/themes/packs/winter-harbin.css' layer(tokens);
+@import './tokens/themes/packs/holiday-spring-festival.css' layer(tokens);
+@import './tokens/themes/packs/holiday-mid-autumn.css' layer(tokens);
 @import './foundations/reset.css' layer(reset);
 @import './foundations/typography.css' layer(base);
 @import './foundations/focus.css' layer(base);

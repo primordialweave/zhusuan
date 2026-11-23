@@ -15,12 +15,12 @@ def version_for_tag(tag):
     return tag[1:]
 
 
-def replace_required(path, pattern, replacement):
-    text = path.read_text(encoding='utf-8')
+def replace_required(path, pattern, replacement, updates):
+    text = updates[path] if path in updates else path.read_text(encoding='utf-8')
     updated, count = re.subn(pattern, replacement, text)
     if count == 0:
         raise ValueError(f'Version field not found in {path}')
-    path.write_text(updated, encoding='utf-8')
+    updates[path] = updated
 
 
 def sync_metadata(root, tag):
@@ -30,33 +30,37 @@ def sync_metadata(root, tag):
     code = parts[0] * 1000000 + parts[1] * 1000 + parts[2]
     if android.exists() and (code > 2100000000 or parts[1] >= 1000 or parts[2] >= 1000):
         raise ValueError('Android version components exceed the supported versionCode range')
+    # Validate every input before touching a file, including all required native fields.
+    updates = {}
     for filename in ['frontend/package.json', 'frontend/package-lock.json']:
         path = root / filename
         document = json.loads(path.read_text(encoding='utf-8'))
         document['version'] = version
         if filename.endswith('package-lock.json'):
             document['packages']['']['version'] = version
-        path.write_text(json.dumps(document, indent=2, ensure_ascii=False) + '\n', encoding='utf-8')
-    replace_required(root/'build/config.yml', r'(?m)^(  version: )"[^"]+"', rf'\g<1>"{version}"')
+        updates[path] = json.dumps(document, indent=2, ensure_ascii=False) + '\n'
+    replace_required(root/'build/config.yml', r'(?m)^(  version: )"[^"]+"', rf'\g<1>"{version}"', updates)
     constants = root/'internal/constants/constants.go'
     if constants.exists():
-        replace_required(constants, r'const AppVersion = "[^"]+"', f'const AppVersion = "{version}"')
-    replace_required(root/'build/linux/nfpm/nfpm.yaml', r'(?m)^(version: )"[^"]+"', rf'\g<1>"{version}"')
+        replace_required(constants, r'const AppVersion = "[^"]+"', f'const AppVersion = "{version}"', updates)
+    replace_required(root/'build/linux/nfpm/nfpm.yaml', r'(?m)^(version: )"[^"]+"', rf'\g<1>"{version}"', updates)
     for filename in ['build/darwin/Info.plist', 'build/darwin/Info.dev.plist']:
         for key in ['CFBundleShortVersionString', 'CFBundleVersion']:
-            replace_required(root/filename, rf'(<key>{key}</key>\s*<string>)[^<]*(</string>)', rf'\g<1>{version}\g<2>')
+            replace_required(root/filename, rf'(<key>{key}</key>\s*<string>)[^<]*(</string>)', rf'\g<1>{version}\g<2>', updates)
     for key in ['file_version', 'product_version', 'FileVersion', 'ProductVersion']:
-        replace_required(root/'build/windows/info.json', rf'("{key}":\s*")[^"]+("\s*)', rf'\g<1>{version}\g<2>')
+        replace_required(root/'build/windows/info.json', rf'("{key}":\s*")[^"]+("\s*)', rf'\g<1>{version}\g<2>', updates)
     for filename in ['build/ios/Info.plist', 'build/ios/Info.dev.plist']:
         if (root/filename).exists():
             for key in ['CFBundleShortVersionString', 'CFBundleVersion']:
-                replace_required(root/filename, rf'(<key>{key}</key>\s*<string>)[^<]*(</string>)', rf'\g<1>{version}\g<2>')
+                replace_required(root/filename, rf'(<key>{key}</key>\s*<string>)[^<]*(</string>)', rf'\g<1>{version}\g<2>', updates)
     for filename in ['build/windows/msix/template.xml', 'build/windows/msix/app_manifest.xml']:
         if (root/filename).exists():
-            replace_required(root/filename, r'\bVersion="\d+\.\d+\.\d+\.\d+"', f'Version="{version}.0"')
+            replace_required(root/filename, r'\bVersion="\d+\.\d+\.\d+\.\d+"', f'Version="{version}.0"', updates)
     if android.exists():
-        replace_required(android, r'versionName\s+"[^"]+"', f'versionName "{version}"')
-        replace_required(android, r'versionCode\s+\d+', f'versionCode {code}')
+        replace_required(android, r'versionName\s+"[^"]+"', f'versionName "{version}"', updates)
+        replace_required(android, r'versionCode\s+\d+', f'versionCode {code}', updates)
+    for path, text in updates.items():
+        path.write_text(text, encoding='utf-8')
     return version
 
 

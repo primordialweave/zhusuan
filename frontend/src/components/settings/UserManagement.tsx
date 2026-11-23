@@ -1,5 +1,14 @@
-import { FormEvent, useCallback, useEffect, useMemo, useRef, useState } from 'react'
+import {
+  FormEvent,
+  useCallback,
+  useEffect,
+  useLayoutEffect,
+  useMemo,
+  useRef,
+  useState,
+} from 'react'
 import { authApi, type User } from '@/api/auth'
+import { useAuthStore, type AuthSessionSnapshot } from '@/stores/auth'
 import { DEFAULT_PAGE_SIZE } from '@/constants/pagination'
 import { useConfirm } from '@/composables/useConfirm'
 import { useToastStore } from '@/composables/useToast'
@@ -48,10 +57,21 @@ const emptyForm: UserForm = {
   username: '',
 }
 
+const sessionMatches = (session: AuthSessionSnapshot) => {
+  const current = useAuthStore.getState().captureSession()
+  return (
+    current.token === session.token &&
+    current.userId === session.userId &&
+    current.generation === session.generation
+  )
+}
+
 export default function UserManagement() {
   const { confirm } = useConfirm()
   const toastError = useToastStore((state) => state.error)
   const toastSuccess = useToastStore((state) => state.success)
+  const sessionToken = useAuthStore((state) => state.token)
+  const sessionUserId = useAuthStore((state) => state.user?.id)
   const [users, setUsers] = useState<User[]>([])
   const [total, setTotal] = useState(0)
   const [loading, setLoading] = useState(true)
@@ -61,7 +81,13 @@ export default function UserManagement() {
   const [searchKeyword, setSearchKeyword] = useState('')
   const [currentPage, setCurrentPage] = useState(1)
   const [pageSize, setPageSize] = useState(DEFAULT_PAGE_SIZE)
-  const requestScope = JSON.stringify([currentPage, pageSize, searchKeyword])
+  const requestScope = JSON.stringify([
+    sessionToken,
+    sessionUserId,
+    currentPage,
+    pageSize,
+    searchKeyword,
+  ])
   const dataIsCurrent = loadedScope === requestScope
   const loadError = failedScope === requestScope
   const showingSkeleton = !dataIsCurrent && !loadError
@@ -76,6 +102,19 @@ export default function UserManagement() {
   const loadRequestRef = useRef(0)
   const submitInFlightRef = useRef(false)
   const resetInFlightRef = useRef(false)
+  const mountedRef = useRef(false)
+  const formRevisionRef = useRef(0)
+  const modalGenerationRef = useRef(0)
+  const loadUsersRef = useRef<() => Promise<void>>(async () => undefined)
+
+  useEffect(() => {
+    mountedRef.current = true
+    return () => {
+      mountedRef.current = false
+      loadRequestRef.current += 1
+      modalGenerationRef.current += 1
+    }
+  }, [])
 
   const totalPages = Math.ceil(total / pageSize)
   const paginationInfo = useMemo(() => {
@@ -87,6 +126,7 @@ export default function UserManagement() {
 
   const loadUsers = useCallback(async () => {
     const requestId = ++loadRequestRef.current
+    const session = useAuthStore.getState().captureSession()
     setLoading(true)
     setFailedScope(null)
     try {
@@ -95,20 +135,30 @@ export default function UserManagement() {
         page: currentPage,
         page_size: pageSize,
       })
-      if (requestId === loadRequestRef.current) {
+      if (mountedRef.current && sessionMatches(session) && requestId === loadRequestRef.current) {
         setUsers(response.data.data.list)
         setTotal(response.data.data.total)
         setLoadedScope(requestScope)
       }
     } catch {
-      if (requestId === loadRequestRef.current) {
+      if (mountedRef.current && sessionMatches(session) && requestId === loadRequestRef.current) {
         setFailedScope(requestScope)
         toastError('获取用户失败')
       }
     } finally {
-      if (requestId === loadRequestRef.current) setLoading(false)
+      if (mountedRef.current && sessionMatches(session) && requestId === loadRequestRef.current)
+        setLoading(false)
     }
   }, [currentPage, pageSize, requestScope, searchKeyword, toastError])
+
+  useLayoutEffect(() => {
+    loadUsersRef.current = loadUsers
+  }, [loadUsers])
+
+  const updateForm = (patch: Partial<UserForm>) => {
+    formRevisionRef.current += 1
+    setForm((current) => ({ ...current, ...patch }))
+  }
 
   useEffect(() => {
     const timer = window.setTimeout(loadUsers, 0)
@@ -119,12 +169,16 @@ export default function UserManagement() {
   }, [loadUsers])
 
   const openAddModal = () => {
+    modalGenerationRef.current += 1
+    formRevisionRef.current += 1
     setEditingUser(null)
     setForm(emptyForm)
     setShowModal(true)
   }
 
   const openEditModal = (user: User) => {
+    modalGenerationRef.current += 1
+    formRevisionRef.current += 1
     setEditingUser(user)
     setForm({
       department: user.department || '',
@@ -154,10 +208,13 @@ export default function UserManagement() {
     event.preventDefault()
     if (submitInFlightRef.current) return
     submitInFlightRef.current = true
+    const session = useAuthStore.getState().captureSession()
+    const modalGeneration = modalGenerationRef.current
+    const formRevision = formRevisionRef.current
     setSubmitting(true)
     try {
       if (editingUser) {
-        await authApi.updateUser(editingUser.id, {
+        const response = await authApi.updateUser(editingUser.id, {
           department: form.department,
           email: form.email,
           name: form.name,
@@ -166,6 +223,16 @@ export default function UserManagement() {
           role: form.role,
           status: form.status,
         })
+        if (!mountedRef.current || !sessionMatches(session)) return
+        const updatedUser = response.data.data
+        if (!updatedUser || updatedUser.id !== editingUser.id)
+          throw new Error('Invalid updated user')
+        loadRequestRef.current += 1
+        setUsers((current) =>
+          current.map((user) => (user.id === updatedUser.id ? updatedUser : user)),
+        )
+        useAuthStore.getState().syncCurrentUser(updatedUser, session)
+        if (modalGeneration === modalGenerationRef.current) setEditingUser(updatedUser)
         toastSuccess('用户已更新')
       } else {
         await authApi.createUser({
@@ -176,16 +243,28 @@ export default function UserManagement() {
           role: form.role,
           username: form.username,
         })
+        if (!mountedRef.current || !sessionMatches(session)) return
         toastSuccess('用户已创建')
       }
 
-      setShowModal(false)
-      await loadUsers()
+      if (
+        modalGeneration === modalGenerationRef.current &&
+        formRevision === formRevisionRef.current
+      )
+        setShowModal(false)
+      if (
+        mountedRef.current &&
+        sessionMatches(session) &&
+        useAuthStore.getState().user?.role === 'admin'
+      ) {
+        await loadUsersRef.current()
+      }
     } catch {
-      toastError(editingUser ? '更新用户失败' : '创建用户失败')
+      if (mountedRef.current && sessionMatches(session))
+        toastError(editingUser ? '更新用户失败' : '创建用户失败')
     } finally {
       submitInFlightRef.current = false
-      setSubmitting(false)
+      if (mountedRef.current) setSubmitting(false)
     }
   }
 
@@ -275,10 +354,7 @@ export default function UserManagement() {
         <EmptyState
           className="settings-empty"
           scene={
-            <EmptyScene
-              name={searchKeyword ? 'search-empty' : 'users-empty'}
-              size="standard"
-            />
+            <EmptyScene name={searchKeyword ? 'search-empty' : 'users-empty'} size="standard" />
           }
           size="lg"
           title={searchKeyword ? '没有符合条件的用户' : '暂无用户'}
@@ -398,7 +474,10 @@ export default function UserManagement() {
 
       <Modal.Root
         dismissable={!submitting}
-        onClose={() => setShowModal(false)}
+        onClose={() => {
+          modalGenerationRef.current += 1
+          setShowModal(false)
+        }}
         open={showModal}
         size="lg"
       >
@@ -413,18 +492,14 @@ export default function UserManagement() {
                 <Field.Label>用户名</Field.Label>
                 <Input
                   disabled={Boolean(editingUser)}
-                  onChange={(event) =>
-                    setForm((current) => ({ ...current, username: event.target.value }))
-                  }
+                  onChange={(event) => updateForm({ username: event.target.value })}
                   value={form.username}
                 />
               </Field.Root>
               <Field.Root required>
                 <Field.Label>姓名</Field.Label>
                 <Input
-                  onChange={(event) =>
-                    setForm((current) => ({ ...current, name: event.target.value }))
-                  }
+                  onChange={(event) => updateForm({ name: event.target.value })}
                   value={form.name}
                 />
               </Field.Root>
@@ -433,9 +508,7 @@ export default function UserManagement() {
                   <Field.Label>初始密码</Field.Label>
                   <Input
                     autoComplete="new-password"
-                    onChange={(event) =>
-                      setForm((current) => ({ ...current, password: event.target.value }))
-                    }
+                    onChange={(event) => updateForm({ password: event.target.value })}
                     type="password"
                     value={form.password}
                   />
@@ -446,9 +519,7 @@ export default function UserManagement() {
                 <Select
                   aria-label="角色"
                   clearable={false}
-                  onValueChange={(value) =>
-                    setForm((current) => ({ ...current, role: value as 'admin' | 'user' }))
-                  }
+                  onValueChange={(value) => updateForm({ role: value as 'admin' | 'user' })}
                   options={[
                     { label: '普通用户', value: 'user' },
                     { label: '管理员', value: 'admin' },
@@ -461,9 +532,7 @@ export default function UserManagement() {
                 <Select
                   aria-label="状态"
                   clearable={false}
-                  onValueChange={(value) =>
-                    setForm((current) => ({ ...current, status: Number(value) }))
-                  }
+                  onValueChange={(value) => updateForm({ status: Number(value) })}
                   options={[
                     { label: '正常', value: '1' },
                     { label: '禁用', value: '0' },
@@ -474,9 +543,7 @@ export default function UserManagement() {
               <Field.Root>
                 <Field.Label>邮箱</Field.Label>
                 <Input
-                  onChange={(event) =>
-                    setForm((current) => ({ ...current, email: event.target.value }))
-                  }
+                  onChange={(event) => updateForm({ email: event.target.value })}
                   type="email"
                   value={form.email}
                 />
@@ -484,27 +551,21 @@ export default function UserManagement() {
               <Field.Root>
                 <Field.Label>手机</Field.Label>
                 <Input
-                  onChange={(event) =>
-                    setForm((current) => ({ ...current, phone: event.target.value }))
-                  }
+                  onChange={(event) => updateForm({ phone: event.target.value })}
                   value={form.phone}
                 />
               </Field.Root>
               <Field.Root>
                 <Field.Label>部门</Field.Label>
                 <Input
-                  onChange={(event) =>
-                    setForm((current) => ({ ...current, department: event.target.value }))
-                  }
+                  onChange={(event) => updateForm({ department: event.target.value })}
                   value={form.department}
                 />
               </Field.Root>
               <Field.Root>
                 <Field.Label>职位</Field.Label>
                 <Input
-                  onChange={(event) =>
-                    setForm((current) => ({ ...current, position: event.target.value }))
-                  }
+                  onChange={(event) => updateForm({ position: event.target.value })}
                   value={form.position}
                 />
               </Field.Root>

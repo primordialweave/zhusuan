@@ -1,6 +1,7 @@
 package response
 
 import (
+	"fmt"
 	"net/http"
 	"net/http/httptest"
 	"testing"
@@ -14,6 +15,13 @@ func init() {
 }
 
 func TestGetPagination(t *testing.T) {
+	t.Run("offset multiplication cannot overflow", func(t *testing.T) {
+		c, _ := gin.CreateTestContext(httptest.NewRecorder())
+		c.Request = httptest.NewRequest(http.MethodGet, fmt.Sprintf("/test?page=%d&page_size=100", int(^uint(0)>>1)), nil)
+		page, size := GetPagination(c)
+		assert.Equal(t, 1, page)
+		assert.Equal(t, 100, size)
+	})
 	t.Run("数字溢出使用默认值", func(t *testing.T) {
 		c, _ := gin.CreateTestContext(httptest.NewRecorder())
 		request, err := http.NewRequest(http.MethodGet, "/test?page=999999999999999999999999999999&page_size=999999999999999999999999999999", nil)
@@ -77,6 +85,13 @@ func TestGetPagination(t *testing.T) {
 }
 
 func TestParseIDParam(t *testing.T) {
+	t.Run("zero ID is rejected", func(t *testing.T) {
+		c, _ := gin.CreateTestContext(httptest.NewRecorder())
+		c.Params = gin.Params{{Key: "id", Value: "0"}}
+		id, err := ParseIDParam(c, "id")
+		assert.Error(t, err)
+		assert.Zero(t, id)
+	})
 	t.Run("有效ID", func(t *testing.T) {
 		w := httptest.NewRecorder()
 		c, _ := gin.CreateTestContext(w)
@@ -107,15 +122,14 @@ func TestParseIDParam(t *testing.T) {
 		assert.Equal(t, int64(0), id)
 	})
 
-	t.Run("负数ID被解析", func(t *testing.T) {
+	t.Run("负数ID被拒绝", func(t *testing.T) {
 		w := httptest.NewRecorder()
 		c, _ := gin.CreateTestContext(w)
 		c.Params = gin.Params{{Key: "id", Value: "-1"}}
 
 		id, err := ParseIDParam(c, "id")
-		// -1 是有效的 int64，ParseIDParam 不验证正负
-		assert.NoError(t, err)
-		assert.Equal(t, int64(-1), id)
+		assert.Error(t, err)
+		assert.Equal(t, int64(0), id)
 	})
 
 	t.Run("无效ID-超出范围", func(t *testing.T) {

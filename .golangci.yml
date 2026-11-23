@@ -67,6 +67,7 @@ linters:
     paths:
       - vendor
       - third_party
+      - '(^|/)node_modules(/|$)'
       - '.*_test\.go'
     rules:
       # Keep the established internal helper package name; revive reports it on an arbitrary file.
@@ -76,6 +77,15 @@ linters:
       - path: cmd/
         linters: [gosec]
         text: G104
+      # Wails spells these native APIs in British English; WindowBounds also persists
+      # "maximised" in JSON. Keep the existing native and preference identifiers.
+      - path: '^internal/desktop/(manager|preferences)\.go$'
+        linters: [misspell]
+        text: '`(Maximise|Maximised|maximised)` is a misspelling of `(Maximize|Maximized|maximized)`'
+      # These public desktop names are consumed by generated Wails types/ByName calls.
+      - path: '^internal/desktop/(manager|preferences)\.go$'
+        linters: [revive]
+        text: 'exported: type name will be used as desktop\.Desktop(Capabilities|State|Manager|Preferences) by other packages, and that stutters'
 
 formatters:
   enable: [gofmt, goimports]
@@ -87,6 +97,7 @@ formatters:
     paths:
       - vendor
       - third_party
+      - '(^|/)node_modules(/|$)'
       - '.*_test\.go'
 
 issues:

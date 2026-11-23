@@ -6,19 +6,21 @@ import (
 	"strings"
 	"time"
 
+	"gorm.io/gorm"
+	"gorm.io/gorm/clause"
+
 	"github.com/primordialweave/zhusuan/internal/constants"
 	"github.com/primordialweave/zhusuan/internal/database"
 	"github.com/primordialweave/zhusuan/internal/dto"
 	"github.com/primordialweave/zhusuan/internal/models"
 	pkgerrors "github.com/primordialweave/zhusuan/internal/pkg/errors"
 	"github.com/primordialweave/zhusuan/internal/repository"
-	"gorm.io/gorm"
-	"gorm.io/gorm/clause"
 )
 
 const (
 	paymentStageAll     = "all"
 	paymentStageReceipt = "receipt"
+	paymentLockStrength = "UPDATE"
 )
 
 // PaymentService 款项(回款)服务
@@ -143,22 +145,7 @@ func (s *PaymentService) Create(input dto.PaymentRequest) (*models.Payment, erro
 		Remark:     input.Remark,
 		UserID:     input.UserID,
 	}
-	if strings.TrimSpace(payment.Stage) == "" {
-		if actualDate != nil {
-			payment.Stage = paymentStageReceipt
-		} else {
-			payment.Stage = paymentStageAll
-		}
-	}
-
-	// Actual-date input represents a receipt; plan-only legacy input remains pending.
-	if payment.Status == "" {
-		if actualDate != nil {
-			payment.Status = constants.PaymentStatusConfirmed
-		} else {
-			payment.Status = constants.PaymentStatusPending
-		}
-	}
+	initializePaymentState(payment)
 
 	// 在事务中完成创建 + 规则处理 + 项目金额同步，确保一致性
 	err = database.GetDB().Transaction(func(tx *gorm.DB) error {
@@ -187,6 +174,25 @@ func (s *PaymentService) Create(input dto.PaymentRequest) (*models.Payment, erro
 	return payment, nil
 }
 
+func initializePaymentState(payment *models.Payment) {
+	if strings.TrimSpace(payment.Stage) == "" {
+		if payment.ActualDate != nil {
+			payment.Stage = paymentStageReceipt
+		} else {
+			payment.Stage = paymentStageAll
+		}
+	}
+
+	// Actual-date input represents a receipt; plan-only legacy input remains pending.
+	if payment.Status == "" {
+		if payment.ActualDate != nil {
+			payment.Status = constants.PaymentStatusConfirmed
+		} else {
+			payment.Status = constants.PaymentStatusPending
+		}
+	}
+}
+
 // UpdateForUser 更新收款计划详情（校验款项与项目归属）
 func (s *PaymentService) UpdateForUser(userID, id int64, input dto.PaymentRequest) (*models.Payment, error) {
 	payment, err := s.paymentRepo.FindByIDForUser(id, userID)
@@ -205,8 +211,7 @@ func (s *PaymentService) UpdateForUser(userID, id int64, input dto.PaymentReques
 	return s.applyUpdate(payment, input)
 }
 
-// applyUpdate 应用款项更新的公共逻辑（校验 + 赋值 + 事务内规则处理与金额同步）
-// Update 与 UpdateForUser 仅鉴权查询方式不同，其余流程一致，此处统一收敛避免重复。
+// applyUpdate applies validated edits against the locked current payment and updates its project total.
 func (s *PaymentService) applyUpdate(payment *models.Payment, input dto.PaymentRequest) (*models.Payment, error) {
 	if err := validatePositiveAmount(input.Amount); err != nil {
 		return nil, err
@@ -234,31 +239,11 @@ func (s *PaymentService) applyUpdate(payment *models.Payment, input dto.PaymentR
 		}
 		// Read the current actual date after acquiring the common project lock.
 		var current models.Payment
-		if err := tx.Clauses(clause.Locking{Strength: "UPDATE"}).Where("id = ? AND user_id = ?", payment.ID, payment.UserID).First(&current).Error; err != nil {
+		if err := tx.Clauses(clause.Locking{Strength: paymentLockStrength}).Where("id = ? AND user_id = ?", payment.ID, payment.UserID).First(&current).Error; err != nil {
 			return err
 		}
-		preserveUnknownActualDate := current.ActualDate == nil && actualDate == nil &&
-			(current.Status == constants.PaymentStatusConfirmed || current.Status == "paid")
-		current.Amount = input.Amount
-		if planDate != nil {
-			current.PlanDate = *planDate
-		}
-		if actualDate != nil {
-			current.ActualDate = actualDate
-		}
-		if strings.TrimSpace(input.Stage) != "" {
-			current.Stage = input.Stage
-		} else if strings.TrimSpace(current.Stage) == "" {
-			if actualDate != nil {
-				current.Stage = paymentStageReceipt
-			} else {
-				current.Stage = paymentStageAll
-			}
-		}
-		if input.Status != "" {
-			current.Status = input.Status
-		}
-		current.Method, current.Remark = input.Method, input.Remark
+		preserveUnknownActualDate := shouldKeepUnknownActualDate(current, actualDate)
+		applyPaymentEdits(&current, input, planDate, actualDate)
 		*payment = current
 		// 重新应用业务规则（如重新计算百分比，因为金额可能变了）
 		if err := s.processPaymentRulesInTx(tx, payment); err != nil {
@@ -282,6 +267,34 @@ func (s *PaymentService) applyUpdate(payment *models.Payment, input dto.PaymentR
 	// 事务提交后清除该用户的 Dashboard 统计缓存
 	invalidateDashboardCache(payment.UserID)
 	return payment, nil
+}
+
+func shouldKeepUnknownActualDate(payment models.Payment, incomingDate *time.Time) bool {
+	return payment.ActualDate == nil && incomingDate == nil &&
+		(payment.Status == constants.PaymentStatusConfirmed || payment.Status == "paid")
+}
+
+func applyPaymentEdits(current *models.Payment, input dto.PaymentRequest, planDate, actualDate *time.Time) {
+	current.Amount = input.Amount
+	if planDate != nil {
+		current.PlanDate = *planDate
+	}
+	if actualDate != nil {
+		current.ActualDate = actualDate
+	}
+	if strings.TrimSpace(input.Stage) != "" {
+		current.Stage = input.Stage
+	} else if strings.TrimSpace(current.Stage) == "" {
+		if actualDate != nil {
+			current.Stage = paymentStageReceipt
+		} else {
+			current.Stage = paymentStageAll
+		}
+	}
+	if input.Status != "" {
+		current.Status = input.Status
+	}
+	current.Method, current.Remark = input.Method, input.Remark
 }
 
 func receiptActualDate(value string) (*time.Time, error) {
@@ -346,7 +359,7 @@ func validatePositiveAmount(amount float64) error {
 // All writers acquire the parent before touching payments so an aggregate cannot race another writer.
 func lockPaymentProjectInTx(tx *gorm.DB, projectID, userID int64) (*models.Project, error) {
 	var project models.Project
-	if err := tx.Clauses(clause.Locking{Strength: "UPDATE"}).Where("id = ? AND user_id = ?", projectID, userID).First(&project).Error; err != nil {
+	if err := tx.Clauses(clause.Locking{Strength: paymentLockStrength}).Where("id = ? AND user_id = ?", projectID, userID).First(&project).Error; err != nil {
 		if errors.Is(err, gorm.ErrRecordNotFound) {
 			return nil, pkgerrors.ErrProjectNotFound
 		}
@@ -367,7 +380,7 @@ func (s *PaymentService) syncProjectReceivedAmountInTx(tx *gorm.DB, projectID in
 	// 聚合计算所有已收款项的总额
 	var totalReceived float64
 	if err := tx.Model(&models.Payment{}).
-		Where("project_id = ? AND status = ?", projectID, constants.PaymentStatusConfirmed).
+		Where("project_id = ? AND user_id = ? AND status = ?", projectID, project.UserID, constants.PaymentStatusConfirmed).
 		Select("COALESCE(SUM(amount), 0)").
 		Scan(&totalReceived).Error; err != nil {
 		return err
@@ -437,7 +450,7 @@ func (s *PaymentService) ConfirmForUser(userID, id int64, actualDate, method str
 			return err
 		}
 		var payment models.Payment
-		if err := tx.Clauses(clause.Locking{Strength: "UPDATE"}).Where("id = ? AND user_id = ?", id, userID).First(&payment).Error; err != nil {
+		if err := tx.Clauses(clause.Locking{Strength: paymentLockStrength}).Where("id = ? AND user_id = ?", id, userID).First(&payment).Error; err != nil {
 			if err == gorm.ErrRecordNotFound {
 				return pkgerrors.ErrPaymentNotFound
 			}
@@ -449,7 +462,7 @@ func (s *PaymentService) ConfirmForUser(userID, id int64, actualDate, method str
 		}
 
 		if err := tx.Model(&payment).Updates(map[string]interface{}{
-			"status":      constants.PaymentStatusConfirmed,
+			columnStatus:  constants.PaymentStatusConfirmed,
 			"actual_date": actualAt,
 			"method":      method,
 		}).Error; err != nil {

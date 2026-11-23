@@ -21,9 +21,10 @@ import {
   Tabs,
 } from '@/design-system'
 import { useToastStore } from '@/composables/useToast'
+import { usePrivacyMode } from '@/stores/desktop'
 import { useThemeStore } from '@/stores/theme'
 import { exportCsv } from '@/utils/csv'
-import { formatAmount, formatCurrency } from '@/utils/format'
+import { formatAmount, formatCurrency, maskAmount } from '@/utils/format'
 import '@/styles/analytics.css'
 
 type Period = 'week' | 'month' | 'quarter' | 'year' | 'all' | 'custom'
@@ -284,9 +285,13 @@ function StructureDonut({ paid, pending }: { paid: number; pending: number }) {
 }
 
 export default function AnalyticsView() {
+  const privacyMode = usePrivacyMode()
+  const showAmount = (value: number) => maskAmount(formatAmount(value), privacyMode)
+  const showCurrency = (value: number) => maskAmount(formatCurrency(value), privacyMode)
   const toastError = useToastStore((state) => state.error)
   const toastSuccess = useToastStore((state) => state.success)
   const effectiveTheme = useThemeStore((state) => state.effectiveTheme)
+  const effectiveThemePack = useThemeStore((state) => state.effectiveThemePack)
   const reducedMotion = useReducedMotion()
   const [activePeriod, setActivePeriod] = useState<Period>('year')
   const [calendar, setCalendar] = useState<CalendarChoice>({ month: 0, year: thisYear })
@@ -334,28 +339,30 @@ export default function AnalyticsView() {
 
   const colors = useMemo(() => {
     const isDark = effectiveTheme === 'dark'
+    const accentRgb = readToken('--ods-color-accent-rgb', isDark ? '133, 188, 139' : '104, 155, 105')
     return {
       actual: readToken('--ods-data-series-actual', isDark ? '#85bc8b' : '#629569'),
       actualFill: readToken(
         '--ods-data-series-actual-fill',
         isDark ? 'rgba(133, 188, 139, 0.2)' : 'rgba(98, 149, 105, 0.2)',
       ),
-      actualFillMid: isDark ? 'rgba(133, 188, 139, 0.07)' : 'rgba(98, 149, 105, 0.07)',
-      actualGlow: isDark ? 'rgba(133, 188, 139, 0.28)' : 'rgba(75, 127, 88, 0.22)',
+      actualFillMid: `rgba(${accentRgb}, 0.07)`,
+      actualGlow: `rgba(${accentRgb}, ${isDark ? 0.28 : 0.22})`,
       actualLight: readToken('--ods-material-jade-icon-edge', isDark ? '#c8e9d1' : '#538a6d'),
       axis: readToken('--ods-color-border-strong', isDark ? '#799588' : '#a9bfb0'),
-      crosshair: isDark ? 'rgba(160, 215, 175, 0.26)' : 'rgba(45, 101, 74, 0.2)',
+      crosshair: `rgba(${accentRgb}, ${isDark ? 0.28 : 0.22})`,
       grid: readToken(
         '--ods-data-grid',
         isDark ? 'rgba(229, 242, 233, 0.1)' : 'rgba(24, 57, 44, 0.1)',
       ),
       pointBg: readToken('--ods-data-point-bg', isDark ? '#22362f' : '#f6fbf6'),
       text: readToken('--ods-color-fg-muted', isDark ? '#adc2b6' : '#4f655a'),
+      themePack: effectiveThemePack,
       tooltipBackground: readToken('--ods-data-tooltip-bg', isDark ? '#22362f' : '#f6fbf6'),
       tooltipBorder: readToken('--ods-data-tooltip-border', isDark ? '#3d564b' : '#cedcd1'),
       tooltipText: readToken('--ods-data-tooltip-fg', isDark ? '#e5f2e9' : '#10321a'),
     }
-  }, [effectiveTheme])
+  }, [effectiveTheme, effectiveThemePack])
 
   const initCharts = useCallback(() => {
     trendChart.current?.destroy()
@@ -572,13 +579,13 @@ export default function AnalyticsView() {
   }, [colors, reducedMotion, trend])
 
   const cashMetrics = [
-    { label: '收款金额', value: formatAmount(stats.period_received) },
+    { label: '收款金额', value: showAmount(stats.period_received) },
     { label: '收款笔数', value: String(stats.period_count) },
   ]
   const contractMetrics = [
-    { label: '合同总额', value: formatAmount(stats.contract_total) },
-    { label: '合同已收', value: formatAmount(stats.contract_received) },
-    { label: '合同未收', value: formatAmount(stats.outstanding_total) },
+    { label: '合同总额', value: showAmount(stats.contract_total) },
+    { label: '合同已收', value: showAmount(stats.contract_received) },
+    { label: '合同未收', value: showAmount(stats.outstanding_total) },
     { label: '收款率', value: formatShare(stats.contract_received, stats.contract_total) },
   ]
 
@@ -756,7 +763,7 @@ export default function AnalyticsView() {
                                 <Table.Cell>
                                   {trend.actual_values[index] == null
                                     ? '暂无数据'
-                                    : formatCurrency(trend.actual_values[index] ?? 0)}
+                                    : showCurrency(trend.actual_values[index] ?? 0)}
                                 </Table.Cell>
                               </Table.Row>
                             ))}
@@ -826,18 +833,18 @@ export default function AnalyticsView() {
                         <dl className="analytics-structure__legend">
                           <div className="analytics-structure__row" data-part="paid">
                             <dt>合同已收</dt>
-                            <dd>{formatAmount(stats.contract_received)}</dd>
+                            <dd>{showAmount(stats.contract_received)}</dd>
                           </div>
                           <div className="analytics-structure__row" data-part="pending">
                             <dt>合同未收</dt>
-                            <dd>{formatAmount(stats.outstanding_total)}</dd>
+                            <dd>{showAmount(stats.outstanding_total)}</dd>
                           </div>
                         </dl>
                       </div>
                     )}
                   </div>
                   {!isLoading && !loadError && stats.overpaid_total > 0 ? (
-                    <p className="analytics-overpaid">超收 {formatAmount(stats.overpaid_total)}</p>
+                    <p className="analytics-overpaid">超收 {showAmount(stats.overpaid_total)}</p>
                   ) : null}
                 </section>
               </div>

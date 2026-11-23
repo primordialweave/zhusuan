@@ -1,4 +1,4 @@
-import { useCallback, useEffect, useMemo, useRef, useState } from 'react'
+import { useCallback, useEffect, useLayoutEffect, useMemo, useRef, useState } from 'react'
 import { syncApi, type SyncConfig, type SyncResult, type TableCompareResult } from '@/api/sync'
 import { useConfirm } from '@/composables/useConfirm'
 import { useToastStore } from '@/composables/useToast'
@@ -80,13 +80,18 @@ export default function DataSyncPanel() {
   const comparisonConfigRef = useRef<SyncConfig | null>(null)
   const comparisonScopeCounterRef = useRef(0)
   const loadedScopeIdRef = useRef<number | null>(null)
+  const currentConfigRef = useRef(cloudConfig)
+  const testInFlightRef = useRef(false)
+  const syncInFlightRef = useRef(false)
+
+  useLayoutEffect(() => {
+    currentConfigRef.current = cloudConfig
+  }, [cloudConfig])
 
   const compareDataCurrent =
     activeCompareScopeId > 0 && loadedCompareScopeId === activeCompareScopeId
   const compareError =
-    activeCompareScopeId > 0 &&
-    !compareDataCurrent &&
-    failedCompareScopeId === activeCompareScopeId
+    activeCompareScopeId > 0 && !compareDataCurrent && failedCompareScopeId === activeCompareScopeId
   const compareShowingSkeleton = !compareDataCurrent && !compareError
 
   const diffCount = useMemo(
@@ -124,6 +129,7 @@ export default function DataSyncPanel() {
   )
 
   const compareData = useCallback(async () => {
+    if (!mountedRef.current) return
     clearScheduledRefresh()
     const requestId = ++compareRequestRef.current
     const snapshot: SyncConfig = { ...cloudConfig }
@@ -166,38 +172,62 @@ export default function DataSyncPanel() {
   }, [clearScheduledRefresh, cloudConfig, toastError])
 
   const testConnection = async () => {
+    if (!mountedRef.current || testInFlightRef.current) return
     if (!cloudConfig.host || !cloudConfig.user || !cloudConfig.db_name) {
       toastWarning('请填写完整的数据库连接信息')
       return
     }
 
+    const snapshot = { ...cloudConfig }
+    const isCurrentTest = () =>
+      mountedRef.current && configsEqual(snapshot, currentConfigRef.current)
+    testInFlightRef.current = true
     setTestLoading(true)
     try {
-      await syncApi.testConnection(cloudConfig)
+      await syncApi.testConnection(snapshot)
+      if (!isCurrentTest()) return
       toastSuccess('连接成功')
       await compareData()
     } catch {
-      toastError('连接失败，请检查网络或配置')
+      if (isCurrentTest()) toastError('连接失败，请检查网络或配置')
     } finally {
-      setTestLoading(false)
+      testInFlightRef.current = false
+      if (mountedRef.current) setTestLoading(false)
     }
   }
 
   const startSync = async () => {
-    const confirmed = await confirm({
-      actionLabel: '开始同步',
-      actionVariant: 'danger',
-      message: '此操作将把本地数据覆盖写入到云端数据库，云端已有的同ID数据将被更新。确定要继续吗？',
-      title: '确认同步',
-    })
-    if (!confirmed) return
-
-    setSyncLoading(true)
-    setStep('sync')
-
+    if (
+      !mountedRef.current ||
+      syncInFlightRef.current ||
+      loading ||
+      !compareDataCurrent ||
+      compareResults.length === 0
+    )
+      return
+    const snapshot = { ...cloudConfig }
+    const tables = compareResults.map((result) => result.table_name)
+    const comparisonRequest = compareRequestRef.current
+    const isCurrentSync = () =>
+      mountedRef.current &&
+      comparisonRequest === compareRequestRef.current &&
+      configsEqual(snapshot, currentConfigRef.current)
+    syncInFlightRef.current = true
     try {
-      const tables = compareResults.map((result) => result.table_name)
-      const response = await syncApi.execute(cloudConfig, tables)
+      const confirmed = await confirm({
+        actionLabel: '开始同步',
+        actionVariant: 'danger',
+        message:
+          '此操作将把本地数据覆盖写入到云端数据库，云端已有的同ID数据将被更新。确定要继续吗？',
+        title: '确认同步',
+      })
+      if (!confirmed || !isCurrentSync()) return
+
+      setSyncLoading(true)
+      setStep('sync')
+
+      const response = await syncApi.execute(snapshot, tables)
+      if (!isCurrentSync()) return
       const results = response.data.data
       setSyncResults(results)
 
@@ -211,15 +241,18 @@ export default function DataSyncPanel() {
         }, 1000)
       }
     } catch {
-      toastError('同步过程中发生错误')
+      if (isCurrentSync()) toastError('同步过程中发生错误')
     } finally {
-      setSyncLoading(false)
+      syncInFlightRef.current = false
+      if (mountedRef.current) setSyncLoading(false)
     }
   }
 
   const loadConfig = useCallback(async () => {
+    if (!mountedRef.current) return
     try {
       const response = await syncApi.getConfig()
+      if (!mountedRef.current) return
       const config = response.data.data as Partial<SyncConfig> | undefined
       if (!config?.host) return
 
@@ -229,9 +262,9 @@ export default function DataSyncPanel() {
         port: Number(config.port) || current.port,
       }))
     } catch {
-      toastError('加载同步配置失败')
+      if (mountedRef.current) toastError('加载同步配置失败')
     } finally {
-      setConfigLoading(false)
+      if (mountedRef.current) setConfigLoading(false)
     }
   }, [toastError])
 
@@ -402,7 +435,11 @@ export default function DataSyncPanel() {
                 onClick={() => void compareData()}
                 variant="secondary"
               >
-                {loading ? <Spinner label="正在重新对比" size="sm" /> : <JadeIcon name="refresh" size="1em" />}
+                {loading ? (
+                  <Spinner label="正在重新对比" size="sm" />
+                ) : (
+                  <JadeIcon name="refresh" size="1em" />
+                )}
                 <span>重新对比</span>
               </Button>
               <Button

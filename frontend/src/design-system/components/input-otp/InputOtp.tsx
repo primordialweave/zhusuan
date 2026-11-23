@@ -1,4 +1,5 @@
 import { forwardRef, useRef, type ClipboardEvent, type KeyboardEvent } from 'react'
+import { textEntryDefaults } from '../input/textEntryDefaults'
 
 export type InputOtpSize = 'sm' | 'md' | 'lg'
 
@@ -95,6 +96,7 @@ export const InputOtp = forwardRef<HTMLDivElement, InputOtpProps>(function Input
     >
       {digits.map((digit, index) => (
         <input
+          {...textEntryDefaults}
           aria-label={`${ariaLabel} ${index + 1}`}
           autoComplete={index === 0 ? 'one-time-code' : 'off'}
           className="ods-input-otp__slot"

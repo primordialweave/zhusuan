@@ -1,4 +1,4 @@
-import { useCallback, useEffect, useMemo, useRef, useState } from 'react'
+import { useCallback, useEffect, useLayoutEffect, useMemo, useRef, useState } from 'react'
 import { notificationApi, type Notification, type UserBrief } from '@/api/notification'
 import NotificationDetailModal from '@/components/notification/NotificationDetailModal'
 import { useConfirm } from '@/composables/useConfirm'
@@ -30,7 +30,7 @@ interface NotificationManagementProps {
 
 interface NotificationForm {
   content: string
-  target_user_id: number
+  target_user_id: number | null
   title: string
   type: string
 }
@@ -50,6 +50,7 @@ const getNotificationTypeName = (type: number) => {
 
 const getFormType = (type: number) => {
   if (type === 2) return 'activity'
+  if (type === 3) return 'private'
   return 'system'
 }
 
@@ -80,6 +81,18 @@ export default function NotificationManagement({ isAdmin = false }: Notification
   const notificationsRequestRef = useRef(0)
   const targetUsersRequestRef = useRef(0)
   const mutationInFlightRef = useRef(false)
+  const mountedRef = useRef(false)
+  const loadNotificationsRef = useRef<(() => Promise<void>) | null>(null)
+  const currentScopeRef = useRef(requestScope)
+
+  useEffect(() => {
+    mountedRef.current = true
+    return () => {
+      mountedRef.current = false
+      notificationsRequestRef.current += 1
+      targetUsersRequestRef.current += 1
+    }
+  }, [])
 
   const unreadNotifications = useMemo(
     () => notifications.filter((notification) => !notification.is_read).length,
@@ -94,6 +107,7 @@ export default function NotificationManagement({ isAdmin = false }: Notification
   }, [notificationCurrentPage, notificationPageSize, notificationTotal])
 
   const loadNotifications = useCallback(async () => {
+    if (!mountedRef.current) return
     const requestId = ++notificationsRequestRef.current
     setNotificationLoading(true)
     setFailedScope(null)
@@ -114,7 +128,13 @@ export default function NotificationManagement({ isAdmin = false }: Notification
     }
   }, [notificationCurrentPage, notificationPageSize, requestScope, toastError])
 
+  useLayoutEffect(() => {
+    loadNotificationsRef.current = loadNotifications
+    currentScopeRef.current = requestScope
+  }, [loadNotifications, requestScope])
+
   const loadTargetUsers = useCallback(async () => {
+    if (!mountedRef.current) return
     const requestId = ++targetUsersRequestRef.current
     setTargetUsersLoading(true)
     try {
@@ -152,43 +172,57 @@ export default function NotificationManagement({ isAdmin = false }: Notification
   }
 
   const handleCreateNotification = async () => {
-    if (mutationInFlightRef.current) return
+    if (!mountedRef.current || mutationInFlightRef.current) return
     if (!newNotification.title || !newNotification.content) {
       toastError('请填写标题和内容')
+      return
+    }
+    if (
+      newNotification.target_user_id === null ||
+      !Number.isSafeInteger(newNotification.target_user_id) ||
+      newNotification.target_user_id < 0
+    ) {
+      toastError('请选择发送对象')
       return
     }
 
     mutationInFlightRef.current = true
     setCreatingNotification(true)
     try {
-      await notificationApi.create(newNotification)
+      await notificationApi.create({
+        ...newNotification,
+        target_user_id: newNotification.target_user_id,
+      })
+      if (!mountedRef.current) return
       toastSuccess('发送成功')
       setShowCreateNotificationModal(false)
       setNewNotification(emptyNotification)
-      await loadNotifications()
+      await loadNotificationsRef.current?.()
     } catch {
-      toastError('发送失败')
+      if (mountedRef.current) toastError('发送失败')
     } finally {
       mutationInFlightRef.current = false
-      setCreatingNotification(false)
+      if (mountedRef.current) setCreatingNotification(false)
     }
   }
 
   const handleDeleteNotification = async (id: number) => {
+    if (!mountedRef.current) return
     const confirmed = await confirm({
       actionLabel: '删除通知',
       actionVariant: 'danger',
       message: '确定要删除这条通知吗？',
       title: '确认删除',
     })
-    if (!confirmed) return
+    if (!confirmed || !mountedRef.current) return
 
     try {
       await notificationApi.delete(id)
+      if (!mountedRef.current) return
       toastSuccess('删除成功')
-      await loadNotifications()
+      await loadNotificationsRef.current?.()
     } catch {
-      toastError('删除失败')
+      if (mountedRef.current) toastError('删除失败')
     }
   }
 
@@ -200,12 +234,14 @@ export default function NotificationManagement({ isAdmin = false }: Notification
     if (!notification.is_read) {
       try {
         await notificationApi.markAsRead(notification.id)
+        if (!mountedRef.current || currentScopeRef.current !== requestScope) return
         notificationsRequestRef.current += 1
+        setNotificationLoading(false)
         setNotifications((current) =>
           current.map((item) => (item.id === notification.id ? { ...item, is_read: true } : item)),
         )
       } catch {
-        toastError('标记已读失败')
+        if (mountedRef.current) toastError('标记已读失败')
       }
     }
   }
@@ -213,7 +249,12 @@ export default function NotificationManagement({ isAdmin = false }: Notification
   const editNotification = (notification: Notification) => {
     setNewNotification({
       content: notification.content,
-      target_user_id: notification.is_global === 1 ? 0 : 0,
+      target_user_id:
+        notification.is_global === 1
+          ? 0
+          : notification.target_user_id && notification.target_user_id > 0
+            ? notification.target_user_id
+            : null,
       title: notification.title,
       type: getFormType(notification.type),
     })
@@ -223,24 +264,36 @@ export default function NotificationManagement({ isAdmin = false }: Notification
   }
 
   const handleUpdateNotification = async () => {
-    if (!selectedNotification || mutationInFlightRef.current) return
+    if (!mountedRef.current || !selectedNotification || mutationInFlightRef.current) return
     if (!newNotification.title || !newNotification.content) {
       toastError('请填写标题和内容')
+      return
+    }
+    if (
+      newNotification.target_user_id === null ||
+      !Number.isSafeInteger(newNotification.target_user_id) ||
+      newNotification.target_user_id < 0
+    ) {
+      toastError('请选择发送对象')
       return
     }
 
     mutationInFlightRef.current = true
     setCreatingNotification(true)
     try {
-      await notificationApi.update(selectedNotification.id, newNotification)
+      await notificationApi.update(selectedNotification.id, {
+        ...newNotification,
+        target_user_id: newNotification.target_user_id,
+      })
+      if (!mountedRef.current) return
       toastSuccess('更新成功')
       setShowCreateNotificationModal(false)
-      await loadNotifications()
+      await loadNotificationsRef.current?.()
     } catch {
-      toastError('更新失败')
+      if (mountedRef.current) toastError('更新失败')
     } finally {
       mutationInFlightRef.current = false
-      setCreatingNotification(false)
+      if (mountedRef.current) setCreatingNotification(false)
     }
   }
 
@@ -435,6 +488,9 @@ export default function NotificationManagement({ isAdmin = false }: Notification
               options={[
                 { label: '系统通知', value: 'system' },
                 { label: '活动通知', value: 'activity' },
+                ...(isEditingNotification && selectedNotification?.type === 3
+                  ? [{ label: '私信', value: 'private' }]
+                  : []),
               ]}
               value={newNotification.type}
             />
@@ -450,20 +506,35 @@ export default function NotificationManagement({ isAdmin = false }: Notification
                 <Select
                   aria-label="发送对象"
                   clearable={false}
-                  onValueChange={(value) =>
+                  onValueChange={(value) => {
+                    const target = Number(value)
                     setNewNotification((current) => ({
                       ...current,
-                      target_user_id: Number(value),
+                      target_user_id:
+                        value !== '' && Number.isSafeInteger(target) && target >= 0 ? target : null,
                     }))
-                  }
+                  }}
                   options={[
                     { label: '全员通知', value: '0' },
                     ...targetUsers.map((targetUser) => ({
                       label: `${targetUser.name} (${targetUser.username})`,
                       value: String(targetUser.id),
                     })),
+                    ...(newNotification.target_user_id &&
+                    !targetUsers.some((user) => user.id === newNotification.target_user_id)
+                      ? [
+                          {
+                            label: `用户 #${newNotification.target_user_id}`,
+                            value: String(newNotification.target_user_id),
+                          },
+                        ]
+                      : []),
                   ]}
-                  value={String(newNotification.target_user_id)}
+                  value={
+                    newNotification.target_user_id === null
+                      ? ''
+                      : String(newNotification.target_user_id)
+                  }
                 />
               )}
             </Field.Root>

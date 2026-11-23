@@ -1,3 +1,4 @@
+// Package database opens configured databases, migrates models and seeds new installations.
 package database
 
 import (
@@ -78,8 +79,7 @@ func initDB() (*gorm.DB, error) {
 				return nil, fmt.Errorf("failed to ensure MySQL database: %w", err)
 			}
 		}
-		dsn := fmt.Sprintf("%s:%s@tcp(%s:%d)/%s?charset=utf8mb4&parseTime=True&loc=Local",
-			cfg.DBUser, cfg.DBPassword, cfg.DBHost, cfg.DBPort, cfg.DBName)
+		dsn := MySQLDSN(cfg.DBHost, cfg.DBPort, cfg.DBUser, cfg.DBPassword, cfg.DBName)
 		dialector = mysql.Open(dsn)
 		slog.Info("Connecting to MySQL database", "host", cfg.DBHost, "port", cfg.DBPort, "database", cfg.DBName)
 
@@ -93,8 +93,7 @@ func initDB() (*gorm.DB, error) {
 				return nil, fmt.Errorf("failed to ensure PostgreSQL database: %w", err)
 			}
 		}
-		dsn := fmt.Sprintf("host=%s port=%d user=%s password=%s dbname=%s sslmode=%s TimeZone=Asia/Shanghai",
-			cfg.DBHost, cfg.DBPort, cfg.DBUser, cfg.DBPassword, cfg.DBName, cfg.DBSSLMode)
+		dsn := PostgresDSN(cfg.DBHost, cfg.DBPort, cfg.DBUser, cfg.DBPassword, cfg.DBName, cfg.DBSSLMode) + " TimeZone=Asia/Shanghai"
 		dialector = postgres.Open(dsn)
 		slog.Info("Connecting to PostgreSQL database", "host", cfg.DBHost, "port", cfg.DBPort, "database", cfg.DBName, "sslmode", cfg.DBSSLMode)
 
@@ -144,14 +143,13 @@ func initDB() (*gorm.DB, error) {
 // ensureMySQLDatabase 确保 MySQL 数据库存在，不存在则自动创建
 func ensureMySQLDatabase(cfg *config.Config) error {
 	// 连接到 MySQL 服务器 (不指定数据库)
-	dsn := fmt.Sprintf("%s:%s@tcp(%s:%d)/?charset=utf8mb4&parseTime=True&loc=Local",
-		cfg.DBUser, cfg.DBPassword, cfg.DBHost, cfg.DBPort)
+	dsn := MySQLDSN(cfg.DBHost, cfg.DBPort, cfg.DBUser, cfg.DBPassword, "")
 
 	db, err := sql.Open("mysql", dsn)
 	if err != nil {
 		return err
 	}
-	defer db.Close()
+	defer closeSQLDatabase(db)
 
 	// 创建数据库 (如果不存在)
 	createSQL := fmt.Sprintf("CREATE DATABASE IF NOT EXISTS `%s` CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci", cfg.DBName)
@@ -167,14 +165,13 @@ func ensureMySQLDatabase(cfg *config.Config) error {
 // ensurePostgresDatabase 确保 PostgreSQL 数据库存在，不存在则自动创建
 func ensurePostgresDatabase(cfg *config.Config) error {
 	// 连接到 postgres 默认数据库
-	dsn := fmt.Sprintf("host=%s port=%d user=%s password=%s dbname=postgres sslmode=%s",
-		cfg.DBHost, cfg.DBPort, cfg.DBUser, cfg.DBPassword, cfg.DBSSLMode)
+	dsn := PostgresDSN(cfg.DBHost, cfg.DBPort, cfg.DBUser, cfg.DBPassword, "postgres", cfg.DBSSLMode)
 
 	db, err := sql.Open("pgx", dsn)
 	if err != nil {
 		return err
 	}
-	defer db.Close()
+	defer closeSQLDatabase(db)
 
 	// 检查数据库是否存在
 	var exists bool
@@ -199,8 +196,6 @@ func ensurePostgresDatabase(cfg *config.Config) error {
 	return nil
 }
 
-// Close 关闭数据库连接
-// 主要是为了释放底层 sql.DB 的连接资源 (通常在应用退出时调用)
 func validateDatabaseName(name string) error {
 	if !safeDatabaseNamePattern.MatchString(name) {
 		return fmt.Errorf("invalid database name: %q", name)
@@ -208,6 +203,7 @@ func validateDatabaseName(name string) error {
 	return nil
 }
 
+// Close releases the application's underlying database connection pool.
 func Close() error {
 	if db != nil {
 		sqlDB, err := db.DB()
@@ -217,4 +213,10 @@ func Close() error {
 		return sqlDB.Close()
 	}
 	return nil
+}
+
+func closeSQLDatabase(db *sql.DB) {
+	if err := db.Close(); err != nil {
+		slog.Debug("Unable to close database connection", "error", err)
+	}
 }

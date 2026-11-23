@@ -1,0 +1,266 @@
+{
+  "scope": "Input completion defaults, admin user immediate state sync, notification recipient persistence/recall",
+  "frontend": {
+    "files": 126,
+    "passed": 849,
+    "failed": 0,
+    "unhandled_errors": 0,
+    "typescript": "passed",
+    "eslint": "passed",
+    "production_build": "passed"
+  },
+  "backend": {
+    "race": true,
+    "top_level_passed": 209,
+    "subtests_passed": 237,
+    "tested_packages": 16,
+    "no_test_packages": 10,
+    "failed": 0,
+    "skipped_tests": 0,
+    "vet": "passed"
+  },
+  "ego": {
+    "user": {
+      "name": "立即回显管理员",
+      "department": "即时更新部门",
+      "profileName": "立即回显管理员",
+      "overflow": false,
+      "inputs": [
+        {
+          "type": "text",
+          "autocomplete": "off",
+          "autocorrect": "off",
+          "spellcheck": false,
+          "writingsuggestions": "false"
+        },
+        {
+          "type": "text",
+          "autocomplete": "off",
+          "autocorrect": "off",
+          "spellcheck": false,
+          "writingsuggestions": "false"
+        },
+        {
+          "type": "text",
+          "autocomplete": "off",
+          "autocorrect": "off",
+          "spellcheck": false,
+          "writingsuggestions": "false"
+        },
+        {
+          "type": "email",
+          "autocomplete": "off",
+          "autocorrect": "off",
+          "spellcheck": false,
+          "writingsuggestions": "false"
+        },
+        {
+          "type": "tel",
+          "autocomplete": "off",
+          "autocorrect": "off",
+          "spellcheck": false,
+          "writingsuggestions": "false"
+        },
+        {
+          "type": "password",
+          "autocomplete": "off",
+          "autocorrect": "off",
+          "spellcheck": false,
+          "writingsuggestions": "false"
+        },
+        {
+          "type": "password",
+          "autocomplete": "off",
+          "autocorrect": "off",
+          "spellcheck": false,
+          "writingsuggestions": "false"
+        },
+        {
+          "type": "password",
+          "autocomplete": "off",
+          "autocorrect": "off",
+          "spellcheck": false,
+          "writingsuggestions": "false"
+        }
+      ]
+    },
+    "notification": {
+      "targetLabel": "立即回显管理员 (admin)",
+      "type": "私信",
+      "completion": [
+        {
+          "autocomplete": "off",
+          "autocorrect": "off",
+          "spellcheck": false,
+          "writingsuggestions": "false"
+        },
+        {
+          "autocomplete": "off",
+          "autocorrect": "off",
+          "spellcheck": false,
+          "writingsuggestions": "false"
+        }
+      ],
+      "allRecall": true
+    }
+  },
+  "webkit": {
+    "engine": "WebKit",
+    "page_errors": [],
+    "other_user_recall": true,
+    "current_identity_preserved": true,
+    "completion": {
+      "autocomplete": "off",
+      "autocorrect": "off",
+      "spellcheck": false,
+      "autocapitalize": "off",
+      "writingsuggestions": "false",
+      "reflection": null
+    },
+    "notification_reopen_all": true,
+    "private_type_preserved": true,
+    "overflow_1280": false,
+    "overflow_760": false
+  },
+  "actual_api": {
+    "notification_id": 1,
+    "directions": [
+      {
+        "direction": "target-to-all",
+        "saved_target": 0,
+        "recipient_membership": {
+          "admin": true,
+          "a": true,
+          "b": true
+        }
+      },
+      {
+        "direction": "all-to-a",
+        "saved_target": 2,
+        "recipient_membership": {
+          "admin": false,
+          "a": true,
+          "b": false
+        }
+      },
+      {
+        "direction": "a-to-b",
+        "saved_target": 3,
+        "recipient_membership": {
+          "admin": false,
+          "a": false,
+          "b": true
+        }
+      },
+      {
+        "direction": "b-to-admin",
+        "saved_target": 1,
+        "recipient_membership": {
+          "admin": true,
+          "a": false,
+          "b": false
+        }
+      }
+    ],
+    "type_preserved": true
+  },
+  "cleanup": {
+    "api": {
+      "pid": 98993,
+      "signal": "SIGTERM",
+      "ownership_verified": true
+    },
+    "frontend": {
+      "pid": 98994,
+      "signal": "SIGTERM",
+      "ownership_verified": true
+    }
+  },
+  "limits": [
+    "Native OS completion bubble was not directly reproduced; standard autocomplete/autocorrect/spellcheck/writingsuggestions attributes verified in rendered browsers.",
+    "WebKit writingSuggestions IDL reflection unavailable in headless test engine, attribute false was verified.",
+    "No user database, credentials, installed app, cloud data or actual outbound messages modified."
+  ],
+  "evidence_directory": "/var/folders/h4/_dnvr_4x4t93j64lvqrndtb40000gn/T/zhusuan-settings-recall-q2hqkpof",
+  "published": false,
+  "visual_review": {
+    "review_type": "read-only static screenshot review",
+    "contact_sheet": "visual-contact-sheet.png",
+    "contact_sheet_size": [
+      1508,
+      1573
+    ],
+    "images_viewed": 1,
+    "source_screenshots": [
+      "user-profile-after.png",
+      "notification-target-after.png",
+      "webkit-user-after.png",
+      "webkit-notification-after.png",
+      "webkit-notification-narrow.png"
+    ],
+    "result": "pass_with_transient_toast_occlusion_limit",
+    "observations": [
+      {
+        "source": "user-profile-after.png",
+        "visible": [
+          "header and name field: 立即回显管理员",
+          "department: 即时更新部门",
+          "account username admin and administrator role remain visible"
+        ],
+        "result": "pass"
+      },
+      {
+        "source": "notification-target-after.png",
+        "visible": [
+          "notification type: 私信",
+          "recipient: 立即回显管理员 (admin)",
+          "title, content, selectors and action buttons contained by modal"
+        ],
+        "result": "pass"
+      },
+      {
+        "source": "webkit-user-after.png",
+        "visible": [
+          "reopened user name: WebKit 用户乙",
+          "username: recipient_b",
+          "role: 普通用户",
+          "status: 正常"
+        ],
+        "result": "pass"
+      },
+      {
+        "source": "webkit-notification-after.png",
+        "visible": [
+          "notification type: 私信",
+          "recipient: 全员通知",
+          "recipient selector and footer buttons contained by modal"
+        ],
+        "result": "pass"
+      },
+      {
+        "source": "webkit-notification-narrow.png",
+        "source_viewport": [
+          760,
+          620
+        ],
+        "visible": [
+          "modal remains within viewport",
+          "notification type: 私信",
+          "recipient: 全员通知",
+          "recipient selector and cancel/update buttons are fully visible",
+          "no visible horizontal overflow or clipped recipient/footer controls"
+        ],
+        "result": "pass_with_transient_occlusion",
+        "caveat": "Two success toasts overlay the upper title/input area; this frame does not establish unobscured upper fields after toast dismissal."
+      }
+    ],
+    "limits": [
+      "Static PNGs confirm the rendered labels and layout only; immediate synchronization timing, saved data persistence and identity isolation are covered by root interaction/API evidence rather than this visual review.",
+      "The WebKit narrow PNG contains transient success-toast overlays, so it is not proof that all upper fields are unobscured after notifications dismiss.",
+      "A PNG cannot prove the absence of an OS-native autocomplete suggestion bubble; input-attribute and UIA measurements are separate root evidence and were not re-run here."
+    ],
+    "mutations": "Only the contact sheet and this review JSON were written to the private QA evidence directory. No source code, tests, services, Git refs, docs or version artifacts were changed."
+  },
+  "current_scope_files_match_tested_copy": true,
+  "unrelated_concurrent_theme_changes_not_part_of_tested_copy": true
+}

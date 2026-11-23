@@ -44,7 +44,7 @@ func NewProjectService() *ProjectService {
 //
 // 参数:
 //   - userID: 当前用户ID，强制数据隔离
-//   - status: 项目状态筛选 (如 "active", "completed", "archived")，为空则查全部
+//   - status: 项目状态筛选，多个状态以逗号分隔 (如 "active,completed")，为空或包含 "all" 则查全部
 //   - keyword: 搜索关键词，支持匹配项目名称、公司名或合同编号
 //   - page: 页码，从1开始
 //   - pageSize: 每页数量
@@ -125,6 +125,9 @@ func (s *ProjectService) Create(input dto.CreateProjectRequest) (*models.Project
 	if err != nil {
 		return nil, pkgerrors.WrapWithCode(err, 400, "结束日期格式错误")
 	}
+	if startDate.After(endDate) {
+		return nil, pkgerrors.New(400, "开始日期不能晚于结束日期")
+	}
 
 	// 合同日期为选填项，需处理空值情况
 	var contractDate *time.Time
@@ -202,6 +205,9 @@ func (s *ProjectService) UpdateForUser(userID, id int64, input dto.CreateProject
 	endDate, err := time.ParseInLocation("2006-01-02", input.EndDate, loc)
 	if err != nil {
 		return nil, pkgerrors.WrapWithCode(err, 400, "结束日期格式错误")
+	}
+	if startDate.After(endDate) {
+		return nil, pkgerrors.New(400, "开始日期不能晚于结束日期")
 	}
 	var contractDate *time.Time
 	if input.ContractDate != "" {
@@ -284,7 +290,10 @@ func updateProjectAndPercentages(project *models.Project, input dto.CreateProjec
 		}
 		amountChanged := current.TotalAmount != input.TotalAmount
 		current.Name, current.Company, current.TotalAmount = input.Name, input.Company, input.TotalAmount
-		current.Status, current.Type, current.ContractNumber = input.Status, input.Type, input.ContractNumber
+		if input.Status != "" {
+			current.Status = input.Status
+		}
+		current.Type, current.ContractNumber = input.Type, input.ContractNumber
 		current.ContractDate, current.PaymentMethod = contractDate, input.PaymentMethod
 		current.StartDate, current.EndDate, current.Description = startDate, endDate, input.Description
 		if err := tx.Save(current).Error; err != nil {
@@ -375,10 +384,6 @@ func (s *ProjectService) GenerateNextContractNumber(userID int64, date string) (
 	suffix := fmt.Sprintf("SUBSTR(contract_number, %d)", len(prefix)+1)
 	numericSuffix := suffix + " NOT GLOB '*[^0-9]*'"
 	normalizedSuffix := "LTRIM(" + suffix + ", '0')"
-	const (
-		postgresDialect = "postgres"
-		mysqlDialect    = "mysql"
-	)
 	switch database.GetDBType() {
 	case postgresDialect:
 		numericSuffix = suffix + " ~ '^[0-9]+$'"

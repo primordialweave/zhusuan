@@ -2,6 +2,7 @@ import userEvent from '@testing-library/user-event'
 import { act } from '@testing-library/react'
 import { beforeEach, describe, expect, it, vi } from 'vitest'
 import { authApi, type User } from '@/api/auth'
+import { useAuthStore } from '@/stores/auth'
 import { fireEvent, render, screen, waitFor, within } from '@/test/render'
 import UserManagement from './UserManagement'
 
@@ -14,6 +15,8 @@ vi.mock('@/api/auth', async (importOriginal) => {
       createUser: vi.fn(),
       getUsers: vi.fn(),
       resetPassword: vi.fn(),
+      updateUser: vi.fn(),
+      getCurrentUser: vi.fn(),
     },
   }
 })
@@ -56,6 +59,18 @@ describe('UserManagement search', () => {
     vi.mocked(authApi.getUsers)
       .mockReset()
       .mockResolvedValue(usersResponse as never)
+    vi.mocked(authApi.updateUser).mockReset()
+    vi.mocked(authApi.getCurrentUser).mockReset()
+    useAuthStore.setState({
+      token: 'managed-session',
+      user: { ...managedUser, role: 'admin' },
+      isLoggedIn: true,
+      isAuthenticated: true,
+      loading: false,
+      error: null,
+    })
+    sessionStorage.setItem('token', 'managed-session')
+    sessionStorage.setItem('user', JSON.stringify({ ...managedUser, role: 'admin' }))
   })
 
   it('shows a table skeleton until the first response arrives instead of an empty user list', async () => {
@@ -258,5 +273,160 @@ describe('UserManagement search', () => {
     expect(resetButton).toHaveAttribute('data-variant', 'secondary')
     expect(deleteButton).toHaveAttribute('data-variant', 'tertiary')
     expect(deleteButton).toHaveAttribute('data-tone', 'danger')
+  })
+
+  it('immediately uses the accepted self edit in the row, profile and stored session before list refresh completes', async () => {
+    const self = { ...managedUser, role: 'admin' }
+    const accepted = {
+      ...self,
+      name: '服务端接受的姓名',
+      department: '新部门',
+      phone: '13900000000',
+    }
+    const refresh = deferred<typeof usersResponse>()
+    const oldProfile = deferred<Awaited<ReturnType<typeof authApi.getCurrentUser>>>()
+    vi.mocked(authApi.getCurrentUser).mockReturnValueOnce(oldProfile.promise)
+    const profileRefresh = useAuthStore.getState().refreshUser()
+    vi.mocked(authApi.getUsers)
+      .mockReset()
+      .mockResolvedValueOnce({ data: { data: { list: [self], total: 1 } } } as never)
+      .mockReturnValueOnce(refresh.promise as never)
+    vi.mocked(authApi.updateUser).mockResolvedValue({ data: { data: accepted } } as never)
+    const user = userEvent.setup()
+    render(<UserManagement />)
+    await user.click(await screen.findByRole('button', { name: '编辑用户' }))
+    const dialog = await screen.findByRole('dialog', { name: '编辑用户' })
+    fireEvent.change(within(dialog).getByLabelText(/姓名/), { target: { value: '提交的姓名' } })
+    await user.click(within(dialog).getByRole('button', { name: '保存' }))
+
+    await waitFor(() => expect(authApi.updateUser).toHaveBeenCalledOnce())
+    expect(screen.getByText(accepted.name)).toBeInTheDocument()
+    expect(useAuthStore.getState().user).toEqual(accepted)
+    expect(JSON.parse(sessionStorage.getItem('user')!)).toEqual(accepted)
+    expect(sessionStorage.getItem('token')).toBe('managed-session')
+    await act(async () => refresh.resolve({ data: { data: { list: [accepted], total: 1 } } }))
+    await act(async () => {
+      oldProfile.resolve({ data: { data: self } } as never)
+      await profileRefresh
+    })
+    expect(useAuthStore.getState().user).toEqual(accepted)
+    expect(JSON.parse(sessionStorage.getItem('user')!)).toEqual(accepted)
+  })
+
+  it('does not replace the current account when editing another user', async () => {
+    const current = { ...managedUser, id: 99, username: 'current-admin', role: 'admin' }
+    useAuthStore.setState({ user: current })
+    sessionStorage.setItem('user', JSON.stringify(current))
+    const accepted = { ...managedUser, name: '另一用户已修改' }
+    vi.mocked(authApi.updateUser).mockResolvedValue({ data: { data: accepted } } as never)
+    const user = userEvent.setup()
+    render(<UserManagement />)
+    await user.click(await screen.findByRole('button', { name: '编辑用户' }))
+    const dialog = await screen.findByRole('dialog', { name: '编辑用户' })
+    fireEvent.change(within(dialog).getByLabelText(/姓名/), { target: { value: accepted.name } })
+    await user.click(within(dialog).getByRole('button', { name: '保存' }))
+    await waitFor(() => expect(authApi.updateUser).toHaveBeenCalledOnce())
+    expect(useAuthStore.getState().user).toEqual(current)
+    expect(JSON.parse(sessionStorage.getItem('user')!)).toEqual(current)
+  })
+
+  it('keeps a newer modal draft when a pending edit response arrives', async () => {
+    const update = deferred<unknown>()
+    vi.mocked(authApi.updateUser).mockReturnValue(update.promise as never)
+    const user = userEvent.setup()
+    render(<UserManagement />)
+    await user.click(await screen.findByRole('button', { name: '编辑用户' }))
+    const dialog = await screen.findByRole('dialog', { name: '编辑用户' })
+    const name = within(dialog).getByLabelText(/姓名/)
+    fireEvent.change(name, { target: { value: '已提交姓名' } })
+    await user.click(within(dialog).getByRole('button', { name: '保存' }))
+    fireEvent.change(name, { target: { value: '正在继续编辑的新姓名' } })
+    await act(async () =>
+      update.resolve({ data: { data: { ...managedUser, name: '已提交姓名' } } }),
+    )
+    expect(screen.getByRole('dialog', { name: '编辑用户' })).toBeInTheDocument()
+    expect(name).toHaveValue('正在继续编辑的新姓名')
+  })
+
+  it('refreshes the current search after an edit and ignores the pre-edit search response', async () => {
+    useAuthStore.setState({ user: { ...managedUser, id: 99, role: 'admin' } })
+    const update = deferred<Awaited<ReturnType<typeof authApi.updateUser>>>()
+    const oldSearch = deferred<typeof usersResponse>()
+    const latestSearch = deferred<typeof usersResponse>()
+    vi.mocked(authApi.updateUser).mockReturnValueOnce(update.promise)
+    vi.mocked(authApi.getUsers)
+      .mockReturnValueOnce(Promise.resolve(usersResponse) as never)
+      .mockReturnValueOnce(oldSearch.promise as never)
+      .mockReturnValueOnce(latestSearch.promise as never)
+    const user = userEvent.setup()
+    render(<UserManagement />)
+    await user.click(await screen.findByRole('button', { name: '编辑用户' }))
+    const dialog = await screen.findByRole('dialog', { name: '编辑用户' })
+    await user.click(within(dialog).getByRole('button', { name: '保存' }))
+
+    const search = screen.getByLabelText('搜索用户')
+    fireEvent.change(search, { target: { value: 'latest' } })
+    fireEvent.keyUp(search, { key: 'Enter' })
+    await waitFor(() => expect(authApi.getUsers).toHaveBeenCalledTimes(2))
+    const accepted = { ...managedUser, name: '最新用户' }
+    await act(async () => update.resolve({ data: { data: accepted } } as never))
+    await waitFor(() => expect(authApi.getUsers).toHaveBeenCalledTimes(3))
+    expect(authApi.getUsers).toHaveBeenLastCalledWith(
+      expect.objectContaining({ keyword: 'latest', page: 1 }),
+    )
+
+    await act(async () => latestSearch.resolve({ data: { data: { list: [accepted], total: 1 } } }))
+    expect(screen.getByText(accepted.name)).toBeInTheDocument()
+    await act(async () => oldSearch.resolve(usersResponse))
+    expect(screen.getByText(accepted.name)).toBeInTheDocument()
+    expect(screen.queryByText(managedUser.name)).not.toBeInTheDocument()
+  })
+
+  it('ignores a pending edit after the account changes without refreshing or replacing the new account', async () => {
+    const update = deferred<Awaited<ReturnType<typeof authApi.updateUser>>>()
+    vi.mocked(authApi.updateUser).mockReturnValueOnce(update.promise)
+    const user = userEvent.setup()
+    render(<UserManagement />)
+    await user.click(await screen.findByRole('button', { name: '编辑用户' }))
+    const dialog = await screen.findByRole('dialog', { name: '编辑用户' })
+    await user.click(within(dialog).getByRole('button', { name: '保存' }))
+    const newAccount = { ...managedUser, id: 99, name: '新账号', role: 'admin' }
+    vi.mocked(authApi.getUsers).mockResolvedValueOnce({
+      data: { data: { list: [newAccount], total: 1 } },
+    } as never)
+    act(() => {
+      useAuthStore.setState({ token: 'new-session', user: newAccount })
+      sessionStorage.setItem('token', 'new-session')
+      sessionStorage.setItem('user', JSON.stringify(newAccount))
+    })
+    await waitFor(() => expect(authApi.getUsers).toHaveBeenCalledTimes(2))
+    await act(async () =>
+      update.resolve({ data: { data: { ...managedUser, name: '旧账号迟到资料' } } } as never),
+    )
+
+    expect(useAuthStore.getState().user).toEqual(newAccount)
+    expect(JSON.parse(sessionStorage.getItem('user')!)).toEqual(newAccount)
+    expect(sessionStorage.getItem('token')).toBe('new-session')
+    expect(authApi.getUsers).toHaveBeenCalledTimes(2)
+    expect(screen.queryByText('旧账号迟到资料')).not.toBeInTheDocument()
+  })
+
+  it('ignores a pending edit after unmount without changing the profile or requesting another list', async () => {
+    const update = deferred<Awaited<ReturnType<typeof authApi.updateUser>>>()
+    vi.mocked(authApi.updateUser).mockReturnValueOnce(update.promise)
+    const currentAccount = useAuthStore.getState().user
+    const user = userEvent.setup()
+    const view = render(<UserManagement />)
+    await user.click(await screen.findByRole('button', { name: '编辑用户' }))
+    const dialog = await screen.findByRole('dialog', { name: '编辑用户' })
+    await user.click(within(dialog).getByRole('button', { name: '保存' }))
+    view.unmount()
+    await act(async () =>
+      update.resolve({ data: { data: { ...managedUser, name: '离开后的迟到资料' } } } as never),
+    )
+
+    expect(useAuthStore.getState().user).toEqual(currentAccount)
+    expect(JSON.parse(sessionStorage.getItem('user')!)).toEqual(currentAccount)
+    expect(authApi.getUsers).toHaveBeenCalledOnce()
   })
 })

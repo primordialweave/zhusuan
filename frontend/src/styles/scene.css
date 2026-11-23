@@ -18,15 +18,35 @@
 }
 
 .jiangnan-scene__still {
-  background-image: url('../assets/jiangnan/scene.webp');
+  background-image: var(--ods-scene-still-url, url('../assets/jiangnan/scene.webp'));
   background-position: 50% 45%;
   background-repeat: no-repeat;
   background-size: cover;
+  transition: opacity var(--ods-duration-fast) var(--ods-ease-standard);
+}
+
+.jiangnan-scene__still[data-loading] {
+  opacity: 0;
 }
 
 /* Business pages keep the scene as a quiet, pre-blurred still so text stays the first read. */
 .jiangnan-scene[data-variant='business'] .jiangnan-scene__still {
-  background-image: url('../assets/jiangnan/scene-business.webp');
+  background-image: var(--ods-scene-business-url, url('../assets/jiangnan/scene-business.webp'));
+}
+
+/* Smooth ink-wash crossfade when switching scenic theme packs. */
+.jiangnan-scene__still--entering {
+  animation: jiangnan-scene-crossfade var(--ods-duration-hero) var(--ods-ease-emphasized) both;
+}
+
+@keyframes jiangnan-scene-crossfade {
+  from {
+    opacity: 0;
+  }
+
+  to {
+    opacity: 1;
+  }
 }
 
 .jiangnan-scene__layer {
@@ -56,6 +76,18 @@
   .jiangnan-scene__layer {
     transition: none;
   }
+
+  .jiangnan-scene__still--entering {
+    animation: none;
+  }
+}
+
+:root[data-motion='reduced'] .jiangnan-scene__layer {
+  transition: none;
+}
+
+:root[data-motion='reduced'] .jiangnan-scene__still--entering {
+  animation: none;
 }
 
 @media print {

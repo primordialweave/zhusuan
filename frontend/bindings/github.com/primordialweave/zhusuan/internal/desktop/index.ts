@@ -4,14 +4,31 @@
 import * as AppIconManager from "./appiconmanager.js";
 import * as AppUpdater from "./appupdater.js";
 import * as CredentialStore from "./credentialstore.js";
+import * as DesktopManager from "./desktopmanager.js";
 import * as FileExporter from "./fileexporter.js";
 export {
     AppIconManager,
     AppUpdater,
     CredentialStore,
+    DesktopManager,
     FileExporter
 };
 
 export {
-    LoginCredentials
+    AutostartState,
+    BackupInfo,
+    DesktopCapabilities,
+    DesktopPreferences,
+    DesktopState,
+    LoginCredentials,
+    MenuBarSnapshot,
+    MenuBarTrendPoint,
+    MenuBarUpcomingItem,
+    PreferencesPatch,
+    WindowBounds
+} from "./models.js";
+
+export type {
+    MenuBarSnapshotProvider,
+    SQLiteVacuumFunc
 } from "./models.js";

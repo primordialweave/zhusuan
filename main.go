@@ -22,10 +22,14 @@ import (
 	"time"
 
 	"github.com/wailsapp/wails/v3/pkg/application"
+	"github.com/wailsapp/wails/v3/pkg/services/notifications"
 
 	"github.com/primordialweave/zhusuan/internal/app"
 	"github.com/primordialweave/zhusuan/internal/config"
+	"github.com/primordialweave/zhusuan/internal/database"
 	"github.com/primordialweave/zhusuan/internal/desktop"
+	"github.com/primordialweave/zhusuan/internal/middleware"
+	"github.com/primordialweave/zhusuan/internal/service"
 	"github.com/primordialweave/zhusuan/internal/updater"
 )
 
@@ -122,8 +126,6 @@ func newPreferenceHandler(loader func() (map[string]string, error)) http.Handler
 	})
 }
 
-// main 是应用程序的入口点。
-// 它负责初始化应用配置、日志、数据库，创建 Wails 应用实例及窗口，并启动主事件循环。
 func newExternalAPIServer(addr string, handler http.Handler) *http.Server {
 	return &http.Server{
 		Addr:              addr,
@@ -155,6 +157,7 @@ func mainWindowOptionsForPlatform(platform string) application.WebviewWindowOpti
 	}
 }
 
+// main initializes the desktop runtime, native services, and application event loop.
 func main() {
 	if handled, err := updater.RunHelper(os.Args[1:]); handled {
 		if err != nil {
@@ -176,6 +179,97 @@ func main() {
 	defer cleanup()
 	ginRouter := runtime.Router
 
+	// 8. 创建组合资源处理器 (API + 前端静态资源)
+	assetHandler := createAssetHandler(ginRouter, func() (map[string]string, error) {
+		home, err := os.UserHomeDir()
+		if err != nil {
+			return nil, err
+		}
+		return desktop.ReadLegacyPreferences(goruntime.GOOS, home)
+	})
+	profileDirectory := filepath.Join(config.AppConfig.DataDir, "WebView2")
+	if err := desktop.PrepareWebviewProfile(profileDirectory); err != nil {
+		log.Fatal(err)
+	}
+
+	lightAppIcon := embeddedAppIcon(nativeAppIcon, "frontend/dist/zhusuan.png")
+	darkAppIcon := embeddedAppIcon(nativeAppIconDark, "frontend/dist/zhusuan-dark.png")
+
+	prefsStore, err := desktop.NewPreferencesStore(config.AppConfig.DataDir)
+	if err != nil {
+		log.Fatal("Failed to load desktop preferences:", err)
+	}
+	dashboardService := service.NewDashboardService()
+	notifService := notifications.New()
+	desktopManager := desktop.NewDesktopManager(
+		prefsStore,
+		desktop.TrayIcons{
+			TemplateIcon: nativeTrayTemplateIcon,
+			LightIcon:    lightAppIcon,
+			DarkIcon:     darkAppIcon,
+		},
+		newDesktopSummaryProvider(dashboardService),
+		middleware.ValidateSessionToken,
+	)
+	desktopManager.SetNotificationService(notifService)
+	desktopManager.SetMenuBarSnapshotProvider(newMenuBarSnapshotProvider(dashboardService))
+	desktopManager.SetInitialLaunchArgs(os.Args[1:])
+	if config.AppConfig.DBType == "sqlite" {
+		desktopManager.SetBackupProvider(config.AppConfig.DataDir, func(destPath string) error {
+			return database.GetDB().Exec("VACUUM INTO ?", destPath).Error
+		})
+	}
+	service.SetOnDashboardDataChanged(desktopManager.NotifyDataChanged)
+	defer service.SetOnDashboardDataChanged(nil)
+
+	startHidden := desktopManager.ShouldStartHidden(os.Args[1:])
+
+	// 7. 创建 Wails 应用程序实例
+	// 配置项说明:
+	// - Name & Description: 应用元数据
+	// - Assets: 配置静态资源服务，Handler 指向我们的组合处理器
+	// - SingleInstance: 后台常驻时避免重复启动冲突，二次打开自动唤起主窗口
+	// - Mac/Windows/Linux: 关闭最后窗口时不自动退出，由 DesktopManager 按用户关闭偏好接管
+	app := application.New(application.Options{
+		Name:        "珠算",
+		Description: "PrimordialWeave 珠算桌面应用",
+		Icon:        nativeAppIcon,
+		// Wails binding Info logs can contain saved credentials; keep native runtime logs private.
+		LogLevel: slog.LevelWarn,
+		SingleInstance: &application.SingleInstanceOptions{
+			UniqueID:               desktop.AutostartIdentifier,
+			OnSecondInstanceLaunch: desktopManager.HandleSecondInstance,
+		},
+		ShouldQuit: func() bool {
+			desktopManager.BeginQuit()
+			return true
+		},
+		Services: []application.Service{
+			application.NewService(desktop.NewCredentialStore()),
+			application.NewService(desktop.NewFileExporter()),
+			application.NewService(desktop.NewAppUpdater(metadata.Version, config.AppConfig.GitHubRepo)),
+			application.NewService(desktop.NewAppIconManager(lightAppIcon, darkAppIcon)),
+			application.NewService(notifService),
+			application.NewService(desktopManager),
+		},
+		Assets: application.AssetOptions{
+			Handler: assetHandler,
+		},
+		Mac: application.MacOptions{
+			ApplicationShouldTerminateAfterLastWindowClosed: false,
+		},
+		Windows: application.WindowsOptions{
+			DisableQuitOnLastWindowClosed: true,
+			WebviewUserDataPath:           profileDirectory,
+		},
+		Linux: application.LinuxOptions{
+			DisableQuitOnLastWindowClosed: true,
+			ApplicationID:                 desktop.AutostartIdentifier,
+		},
+	})
+
+	// Wails New acquires the single-instance lock and forwards secondary launches before
+	// this process opens the public API port.
 	// 7. 启动对外 API 服务 (如果启用)
 	if config.AppConfig.EnableAPIServer {
 		go func() {
@@ -191,74 +285,22 @@ func main() {
 			// 需明确终止进程而非静默退出 goroutine。ErrServerClosed 是正常关闭，忽略。
 			if err := newExternalAPIServer(addr, ginRouter).ListenAndServe(); err != nil && err != http.ErrServerClosed {
 				slog.Error("External API server failed to start", "addr", addr, "error", err)
-				log.Fatalf("FATAL: 对外 API 服务启动失败 (%s): %v", addr, err)
+				log.Fatalf("对外 API 服务启动失败: %q", err.Error()) // #nosec G706 -- %q escapes control characters before logging the error.
 			}
 		}()
 	}
 
-	// 8. 创建组合资源处理器 (API + 前端静态资源)
-	assetHandler := createAssetHandler(ginRouter, func() (map[string]string, error) {
-		home, err := os.UserHomeDir()
-		if err != nil {
-			return nil, err
-		}
-		return desktop.ReadLegacyPreferences(goruntime.GOOS, home)
-	})
-	profileDirectory := filepath.Join(config.AppConfig.DataDir, "WebView2")
-	if err := desktop.PrepareWebviewProfile(profileDirectory); err != nil {
-		log.Fatal(err)
-	}
-
-	lightAppIcon := nativeAppIcon
-	if len(lightAppIcon) == 0 {
-		if data, readErr := fs.ReadFile(assets, "frontend/dist/zhusuan.png"); readErr == nil {
-			lightAppIcon = data
-		} else {
-			slog.Debug("Embedded light app icon unavailable", "error", readErr)
-		}
-	}
-	darkAppIcon := nativeAppIconDark
-	if len(darkAppIcon) == 0 {
-		if data, readErr := fs.ReadFile(assets, "frontend/dist/zhusuan-dark.png"); readErr == nil {
-			darkAppIcon = data
-		} else {
-			slog.Debug("Embedded dark app icon unavailable", "error", readErr)
-		}
-	}
-
-	// 7. 创建 Wails 应用程序实例
-	// 配置项说明:
-	// - Name & Description: 应用元数据
-	// - Assets: 配置静态资源服务，Handler 指向我们的组合处理器
-	// - Mac: macOS 特定配置，如关闭最后一个窗口后是否退出应用
-	app := application.New(application.Options{
-		Name:        "珠算",
-		Description: "PrimordialWeave 珠算桌面应用",
-		Icon:        nativeAppIcon,
-		// Wails binding Info logs can contain saved credentials; keep native runtime logs private.
-		LogLevel: slog.LevelWarn,
-		Services: []application.Service{
-			application.NewService(desktop.NewCredentialStore()),
-			application.NewService(desktop.NewFileExporter()),
-			application.NewService(desktop.NewAppUpdater(metadata.Version, config.AppConfig.GitHubRepo)),
-			application.NewService(desktop.NewAppIconManager(lightAppIcon, darkAppIcon)),
-		},
-		Assets: application.AssetOptions{
-			Handler: assetHandler,
-		},
-		Mac: application.MacOptions{
-			ApplicationShouldTerminateAfterLastWindowClosed: true,
-		},
-		Windows: application.WindowsOptions{WebviewUserDataPath: profileDirectory},
-	})
-
 	// 8. 创建主窗口
 	// 配置项说明:
 	// - Width/Height: 初始窗口大小
+	// - Hidden: 开机静默启动且系统托盘可用时隐藏主窗口，避免首屏闪窗
 	// - Mac: macOS 窗口特定样式 (隐藏标题栏、半透明背景模糊等)
 	// - BackgroundColour: 窗口背景色 (深色模式适配)
 	// - URL: 默认加载的页面路径
-	app.Window.NewWithOptions(mainWindowOptions())
+	windowOptions := mainWindowOptions()
+	windowOptions.Hidden = startHidden
+	mainWindow := app.Window.NewWithOptions(windowOptions)
+	desktopManager.Attach(app, mainWindow, startHidden)
 
 	// 9. 启动应用程序
 	// Run() 会阻塞当前 goroutine 直到应用退出
@@ -267,5 +309,74 @@ func main() {
 	// 如果运行时发生错误，记录日志并退出
 	if err != nil {
 		log.Fatal(err)
+	}
+}
+
+func embeddedAppIcon(preferred []byte, filename string) []byte {
+	if len(preferred) > 0 {
+		return preferred
+	}
+	data, err := fs.ReadFile(assets, filename)
+	if err != nil {
+		slog.Debug("Embedded app icon unavailable", "error", err)
+	}
+	return data
+}
+
+func newDesktopSummaryProvider(dashboardService *service.DashboardService) desktop.SummaryProvider {
+	return func(userID int64) (desktop.TraySummary, error) {
+		summary, summaryErr := dashboardService.GetDesktopSummary(userID)
+		if summaryErr != nil {
+			return desktop.TraySummary{}, summaryErr
+		}
+		return desktop.TraySummary{
+			LoggedIn:      true,
+			MonthReceived: summary.MonthReceived,
+			TotalPending:  summary.TotalPending,
+			OverdueAmount: summary.OverdueAmount,
+			OverdueCount:  summary.OverdueCount,
+			UpcomingCount: summary.UpcomingCount,
+		}, nil
+	}
+}
+
+func newMenuBarSnapshotProvider(dashboardService *service.DashboardService) desktop.MenuBarSnapshotProvider {
+	return func(userID int64, scope string) (desktop.MenuBarSnapshot, error) {
+		data, dataErr := dashboardService.GetMenuBarData(userID, scope)
+		if dataErr != nil {
+			return desktop.MenuBarSnapshot{}, dataErr
+		}
+		trend := make([]desktop.MenuBarTrendPoint, 0, len(data.Trend))
+		for _, bucket := range data.Trend {
+			trend = append(trend, desktop.MenuBarTrendPoint{
+				Label:  bucket.Label,
+				Amount: bucket.Amount,
+			})
+		}
+		items := make([]desktop.MenuBarUpcomingItem, 0, len(data.Items))
+		for _, item := range data.Items {
+			items = append(items, desktop.MenuBarUpcomingItem{
+				PaymentID:   item.PaymentID,
+				ProjectID:   item.ProjectID,
+				ProjectName: item.ProjectName,
+				Stage:       item.Stage,
+				Amount:      item.Amount,
+				PlanDate:    item.PlanDate,
+				Overdue:     item.Overdue,
+			})
+		}
+		return desktop.MenuBarSnapshot{
+			LoggedIn:         true,
+			Scope:            scope,
+			PeriodReceived:   data.PeriodReceived,
+			ContractTotal:    data.ContractTotal,
+			ContractReceived: data.ContractReceived,
+			TotalPending:     data.TotalPending,
+			OverdueAmount:    data.OverdueAmount,
+			OverdueCount:     data.OverdueCount,
+			UpcomingCount:    data.UpcomingCount,
+			Trend:            trend,
+			Items:            items,
+		}, nil
 	}
 }

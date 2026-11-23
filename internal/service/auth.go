@@ -1,3 +1,4 @@
+// Package service applies business rules for accounts, contracts and receipts.
 package service
 
 import (

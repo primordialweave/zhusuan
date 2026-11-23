@@ -4,6 +4,17 @@ import { describe, expect, it, vi } from 'vitest'
 import { SearchField } from './SearchField'
 
 describe('SearchField', () => {
+  it('inherits disabled text completion from the shared input', () => {
+    render(<SearchField onValueChange={() => undefined} value="" />)
+
+    const field = screen.getByRole('searchbox', { name: '搜索' })
+    expect(field).toHaveAttribute('autocomplete', 'off')
+    expect(field).toHaveAttribute('autocorrect', 'off')
+    expect(field).toHaveAttribute('autocapitalize', 'off')
+    expect(field).toHaveAttribute('spellcheck', 'false')
+    expect(field).toHaveAttribute('writingsuggestions', 'false')
+  })
+
   it('is controlled and reports text changes', async () => {
     const onValueChange = vi.fn()
     render(<SearchField onValueChange={onValueChange} placeholder="搜索项目" value="" />)

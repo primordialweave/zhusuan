@@ -147,4 +147,41 @@ describe('DataSyncPanel design-system composition', () => {
     expect(screen.queryByText('用户表')).not.toBeInTheDocument()
     expect(screen.getByText('数据表').nextElementSibling).toHaveTextContent('—')
   })
+
+  it('does not execute a confirmation after the sync panel has been removed', async () => {
+    const user = userEvent.setup()
+    vi.mocked(syncApi.getConfig).mockResolvedValueOnce({
+      data: { data: { host: 'demo.example.com', user: 'demo', db_name: 'demo' } },
+    } as never)
+    const { rerender } = render(<DataSyncPanel />)
+    await screen.findByLabelText(/主机地址/)
+    await user.click(screen.getByRole('button', { name: /测试连接并下一步/ }))
+    await screen.findByRole('table', { name: '数据对比明细' })
+    await user.click(screen.getByRole('button', { name: '开始同步' }))
+    const dialog = screen.getByRole('alertdialog', { name: '确认同步' })
+    rerender(<div>已离开同步设置</div>)
+    await user.click(within(dialog).getByRole('button', { name: '开始同步' }))
+    expect(syncApi.execute).not.toHaveBeenCalled()
+  })
+
+  it('does not launch comparison after an obsolete connection test finishes', async () => {
+    const user = userEvent.setup()
+    let resolveTest!: (value: unknown) => void
+    vi.mocked(syncApi.getConfig).mockResolvedValueOnce({
+      data: { data: { host: 'demo.example.com', user: 'demo', db_name: 'demo' } },
+    } as never)
+    vi.mocked(syncApi.testConnection).mockReturnValueOnce(
+      new Promise((resolve) => {
+        resolveTest = resolve
+      }) as never,
+    )
+    const { rerender } = render(<DataSyncPanel />)
+    await screen.findByLabelText(/主机地址/)
+    await user.click(screen.getByRole('button', { name: /测试连接并下一步/ }))
+    rerender(<div>已离开同步设置</div>)
+    await act(async () => {
+      resolveTest({ data: { data: null } })
+    })
+    expect(syncApi.compare).not.toHaveBeenCalled()
+  })
 })

@@ -1,5 +1,6 @@
 import { Call } from '@wailsio/runtime'
 import api, { type ApiResponse } from '@/api'
+import { isDesktopRuntime } from './desktopManager'
 
 export interface UpdateInfo {
   currentVersion: string
@@ -67,14 +68,7 @@ export const isNewerVersion = (latest: string, current: string) => {
 }
 
 export const appUpdater = {
-  isAvailable() {
-    const runtime = window as Window & {
-      _wails?: { environment?: { OS?: string } }
-      __WAILS__?: { environment?: { OS?: string } }
-    }
-    const os = runtime._wails?.environment?.OS ?? runtime.__WAILS__?.environment?.OS
-    return ['darwin', 'windows', 'linux'].includes(os ?? '')
-  },
+  isAvailable: isDesktopRuntime,
 
   async checkForUpdates(currentVersion: string): Promise<UpdateInfo> {
     if (this.isAvailable()) {

@@ -1,3 +1,4 @@
+// Package dto defines request and response contracts shared by HTTP handlers and services.
 package dto
 
 import "github.com/primordialweave/zhusuan/internal/models"

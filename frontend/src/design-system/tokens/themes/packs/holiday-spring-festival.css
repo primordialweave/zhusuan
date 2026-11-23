@@ -1,0 +1,120 @@
+/* 秦淮灯宵 — Spring Festival Holiday incremental palette over 烟雨 / 夜雨. */
+:root:not([data-theme])[data-theme-pack='holiday-spring-festival'],
+[data-theme='light'][data-theme-pack='holiday-spring-festival'] {
+  --ods-color-bg-canvas: #f4ebe7;
+  --ods-color-bg-canvas-rgb: 244, 235, 231;
+  --ods-color-bg-canvas-subtle: #f6eeea;
+  --ods-color-bg-surface: #f9f3f0;
+  --ods-color-bg-surface-raised: rgba(249, 242, 238, 0.92);
+  --ods-color-bg-surface-glass: rgba(252, 247, 244, 0.35);
+  --ods-color-bg-surface-glass-dense: rgba(252, 247, 244, 0.5);
+  --ods-color-bg-surface-hover: rgba(145, 50, 44, 0.07);
+  --ods-color-bg-surface-pressed: rgba(145, 50, 44, 0.12);
+  --ods-color-fg-default: #331917;
+  --ods-color-fg-default-rgb: 51, 25, 23;
+  --ods-color-fg-relaxed: rgba(51, 25, 23, 0.88);
+  --ods-color-fg-muted: #5d4340;
+  --ods-color-fg-subtle: #6b4f4c;
+  --ods-color-fg-disabled: rgba(51, 25, 23, 0.32);
+  --ods-color-border-default: #e4d2cc;
+  --ods-color-border-strong: #c9afa7;
+  --ods-color-border-control: #9b7e76;
+  --ods-color-accent: #b8564c;
+  --ods-color-accent-text: #8c2f28;
+  --ods-color-accent-rgb: 184, 86, 76;
+  --ods-color-accent-hover: #c6655b;
+  --ods-color-accent-pressed: #9e4239;
+  --ods-color-accent-soft: rgba(184, 86, 76, 0.18);
+  --ods-color-accent-fg: #2f1210;
+  --ods-color-accent-warm: #d49d4b;
+  --ods-color-ambient-glow: rgba(184, 86, 76, 0.06);
+  --ods-color-selection: rgba(184, 86, 76, 0.25);
+  --ods-color-scene-veil: rgba(244, 235, 231, 0);
+  --ods-color-scene-mist: rgba(244, 235, 231, 0.34);
+  --ods-gradient-glow:
+    radial-gradient(ellipse at 28% 0%, rgba(255, 250, 244, 0.5), transparent 65%),
+    linear-gradient(165deg, #f6dbd4 0%, #ecc2b8 52%, #e0ab9e 100%);
+  --ods-gradient-nav-selected: radial-gradient(
+    75% 90% at 38% 25%,
+    #fae5df 0%,
+    #efc9bf 33%,
+    #e8bbb0 65%,
+    #e2b2a6 90%
+  );
+  --ods-gradient-text: linear-gradient(135deg, #8c2f28 0%, #a5433b 58%, #b8564c 100%);
+  --ods-gradient-brand-surface: linear-gradient(135deg, #7d2c26 0%, #923730 54%, #65221d 100%);
+  --ods-material-jade-icon-edge: #a6463d;
+  --ods-material-jade-icon-depth: #611f1a;
+  --ods-material-jade-icon-shadow: rgba(51, 25, 23, 0.22);
+  --ods-material-jade-icon-tint: rgba(184, 86, 76, 0.16);
+  --ods-material-jade-icon-on-accent-edge: #5a1d18;
+  --ods-material-jade-icon-on-accent-depth: #240b09;
+  --ods-material-frost-veil: rgba(245, 236, 232, 0.8);
+  --ods-data-series-actual: #9e4239;
+  --ods-data-series-actual-fill: rgba(184, 86, 76, 0.2);
+  --ods-data-part-paid: #9e4239;
+  --ods-data-grid: rgba(51, 25, 23, 0.1);
+  --ods-data-tooltip-bg: #fcf7f5;
+  --ods-data-tooltip-fg: #331917;
+  --ods-data-tooltip-border: #e4d2cc;
+  --ods-data-point-bg: #fcf7f5;
+}
+
+[data-theme='dark'][data-theme-pack='holiday-spring-festival'] {
+  --ods-color-bg-canvas: #241616;
+  --ods-color-bg-canvas-rgb: 36, 22, 22;
+  --ods-color-bg-canvas-subtle: #2c1b1b;
+  --ods-color-bg-surface: #382322;
+  --ods-color-bg-surface-raised: rgba(46, 29, 28, 0.96);
+  --ods-color-bg-surface-glass: rgba(52, 33, 32, 0.86);
+  --ods-color-bg-surface-glass-dense: var(--ods-color-bg-surface-glass);
+  --ods-color-bg-surface-hover: rgba(235, 165, 148, 0.08);
+  --ods-color-bg-surface-pressed: rgba(235, 165, 148, 0.14);
+  --ods-color-fg-default: #f7ece8;
+  --ods-color-fg-default-rgb: 247, 236, 232;
+  --ods-color-fg-relaxed: rgba(247, 236, 232, 0.9);
+  --ods-color-fg-muted: #cfb9b4;
+  --ods-color-fg-subtle: #b89f99;
+  --ods-color-fg-disabled: rgba(247, 236, 232, 0.3);
+  --ods-color-border-default: #573e3c;
+  --ods-color-border-strong: #735451;
+  --ods-color-border-control: #967370;
+  --ods-color-accent: #e08e7e;
+  --ods-color-accent-text: #f0aba0;
+  --ods-color-accent-rgb: 224, 142, 126;
+  --ods-color-accent-hover: #eba091;
+  --ods-color-accent-pressed: #cb796a;
+  --ods-color-accent-soft: rgba(224, 142, 126, 0.2);
+  --ods-color-accent-fg: #210e0c;
+  --ods-color-accent-warm: #ebc174;
+  --ods-color-ambient-glow: rgba(224, 142, 126, 0.06);
+  --ods-color-selection: rgba(224, 142, 126, 0.3);
+  --ods-color-scene-veil: rgba(24, 13, 13, 0.64);
+  --ods-color-scene-mist: rgba(24, 13, 13, 0);
+  --ods-gradient-glow:
+    radial-gradient(ellipse at 28% 0%, rgba(255, 242, 232, 0.28), transparent 65%),
+    linear-gradient(165deg, #f2bfb3 0%, #e4a395 52%, #d48b7c 100%);
+  --ods-gradient-nav-selected: radial-gradient(
+    75% 90% at 38% 25%,
+    #f6cec4 0%,
+    #e8aba0 40%,
+    #d99386 90%
+  );
+  --ods-gradient-text: linear-gradient(135deg, #f6cec4 0%, #f0aba0 58%, #e08e7e 100%);
+  --ods-gradient-brand-surface: linear-gradient(135deg, #4b2826 0%, #3e201f 54%, #2f1918 100%);
+  --ods-material-jade-icon-edge: #f5cbc1;
+  --ods-material-jade-icon-depth: #cc7b6c;
+  --ods-material-jade-icon-shadow: rgba(18, 7, 7, 0.44);
+  --ods-material-jade-icon-tint: rgba(235, 165, 148, 0.16);
+  --ods-material-jade-icon-on-accent-edge: #401714;
+  --ods-material-jade-icon-on-accent-depth: #180807;
+  --ods-material-frost-veil: rgba(46, 29, 28, 0.9);
+  --ods-data-series-actual: #e08e7e;
+  --ods-data-series-actual-fill: rgba(224, 142, 126, 0.2);
+  --ods-data-part-paid: #e08e7e;
+  --ods-data-grid: rgba(247, 236, 232, 0.09);
+  --ods-data-tooltip-bg: #382322;
+  --ods-data-tooltip-fg: #f7ece8;
+  --ods-data-tooltip-border: #573e3c;
+  --ods-data-point-bg: #382322;
+}

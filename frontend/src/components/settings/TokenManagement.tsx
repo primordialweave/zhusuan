@@ -88,6 +88,7 @@ export default function TokenManagement({ actions }: TokenManagementProps) {
   const showLoadError = !hasLoaded && loadFailed
 
   const fetchTokens = useCallback(async () => {
+    if (!mountedRef.current) return
     const requestId = ++requestIdRef.current
     setLoading(true)
     setLoadFailed(false)
@@ -163,14 +164,15 @@ export default function TokenManagement({ actions }: TokenManagementProps) {
       message: `确定要撤销令牌 "${token.name}" 吗？撤销后该令牌将立即失效，无法恢复使用。`,
       title: '撤销令牌',
     })
-    if (!confirmed) return
+    if (!confirmed || !mountedRef.current) return
 
     try {
       await tokenApi.revoke(token.id)
+      if (!mountedRef.current) return
       toastSuccess('令牌已撤销')
       await fetchTokens()
     } catch {
-      toastError('撤销失败')
+      if (mountedRef.current) toastError('撤销失败')
     }
   }
 
@@ -181,14 +183,15 @@ export default function TokenManagement({ actions }: TokenManagementProps) {
       message: `确定要彻底删除令牌 "${token.name}" 吗？此操作不可恢复，令牌将从系统中永久移除。`,
       title: '删除令牌',
     })
-    if (!confirmed) return
+    if (!confirmed || !mountedRef.current) return
 
     try {
       await tokenApi.delete(token.id)
+      if (!mountedRef.current) return
       toastSuccess('令牌已删除')
       await fetchTokens()
     } catch {
-      toastError('删除失败')
+      if (mountedRef.current) toastError('删除失败')
     }
   }
 

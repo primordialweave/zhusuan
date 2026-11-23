@@ -7,6 +7,7 @@ import CalendarView from '@/views/CalendarView'
 import DashboardView from '@/views/DashboardView'
 import DesignSystemView from '@/views/DesignSystemView'
 import LoginView from '@/views/LoginView'
+import MenuBarPopoverView from '@/views/MenuBarPopoverView'
 import NotFoundView from '@/views/NotFoundView'
 import PaymentCreateView from '@/views/PaymentCreateView'
 import ProjectCreateView from '@/views/ProjectCreateView'
@@ -15,6 +16,11 @@ import ProjectsView from '@/views/ProjectsView'
 import SettingsView from '@/views/SettingsView'
 
 export const router = createBrowserRouter([
+  // Dedicated lightweight macOS MenuBar popover route (isolated from DesktopBridge & SceneBackground).
+  {
+    path: '/menubar',
+    element: <MenuBarPopoverView />,
+  },
   {
     path: '/',
     element: <App />,

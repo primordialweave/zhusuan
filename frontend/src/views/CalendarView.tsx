@@ -14,7 +14,8 @@ import {
   RouterLink,
   Skeleton,
 } from '@/design-system'
-import { formatAmount } from '@/utils/format'
+import { usePrivacyMode } from '@/stores/desktop'
+import { formatAmount, maskAmount } from '@/utils/format'
 import { toDateOnly } from '@/utils/dateOnly'
 import '@/styles/calendar-domain.css'
 
@@ -72,7 +73,7 @@ const formatShortDate = (date: string) => {
   return day.isValid() ? `${day.month() + 1}月${day.date()}日` : '—'
 }
 
-function DayEntries({ summary }: { summary: DaySummary }) {
+function DayEntries({ summary, privacyMode }: { summary: DaySummary; privacyMode: boolean }) {
   const visible = summary.groups.slice(0, CELL_LINE_LIMIT)
   const hiddenCount = summary.groups
     .slice(CELL_LINE_LIMIT)
@@ -84,7 +85,7 @@ function DayEntries({ summary }: { summary: DaySummary }) {
         <span className="calendar-day-entry" data-status={entry.group} key={entry.group}>
           <span aria-hidden="true" className="calendar-day-entry__dot" />
           <span className="calendar-day-entry__text">
-            {GROUP_LABEL[entry.group]} {formatAmount(entry.amount)}
+            {GROUP_LABEL[entry.group]} {maskAmount(formatAmount(entry.amount), privacyMode)}
           </span>
         </span>
       ))}
@@ -93,7 +94,7 @@ function DayEntries({ summary }: { summary: DaySummary }) {
   )
 }
 
-function PaymentEntry({ payment }: { payment: Payment }) {
+function PaymentEntry({ payment, privacyMode }: { payment: Payment; privacyMode: boolean }) {
   return (
     <li className="calendar-entry" data-motion-item>
       <div className="calendar-entry__identity">
@@ -102,13 +103,16 @@ function PaymentEntry({ payment }: { payment: Payment }) {
         </RouterLink>
         <span className="calendar-entry__stage">{formatStage(payment)}</span>
       </div>
-      <span className="calendar-entry__amount">{formatAmount(payment.amount)}</span>
+      <span className="calendar-entry__amount">
+        {maskAmount(formatAmount(payment.amount), privacyMode)}
+      </span>
     </li>
   )
 }
 
 export default function CalendarView() {
   const [searchParams, setSearchParams] = useSearchParams()
+  const privacyMode = usePrivacyMode()
   const toastError = useToastStore((state) => state.error)
   const [payments, setPayments] = useState<Payment[]>([])
   const [loading, setLoading] = useState(true)
@@ -221,10 +225,10 @@ export default function CalendarView() {
       const base = `${day.year()}年${day.month() + 1}月${day.date()}日，星期${WEEKDAY_NAMES[day.day()]}`
       if (!summary) return base
       return `${base}，${summary.groups
-        .map((entry) => `${GROUP_LABEL[entry.group]} ${formatAmount(entry.amount)}`)
+        .map((entry) => `${GROUP_LABEL[entry.group]} ${maskAmount(formatAmount(entry.amount), privacyMode)}`)
         .join('，')}，共 ${summary.count} 笔`
     },
-    [daySummaries],
+    [daySummaries, privacyMode],
   )
 
   const renderDayContent = useCallback(
@@ -233,9 +237,9 @@ export default function CalendarView() {
         return <Skeleton className="calendar-day-loading" height="0.45rem" width="72%" />
       }
       const summary = daySummaries.get(date)
-      return summary ? <DayEntries summary={summary} /> : null
+      return summary ? <DayEntries privacyMode={privacyMode} summary={summary} /> : null
     },
-    [daySummaries, loading, monthKey],
+    [daySummaries, loading, monthKey, privacyMode],
   )
 
   return (
@@ -296,7 +300,7 @@ export default function CalendarView() {
               ) : (
                 <ul className="calendar-entries" key={selectedDate}>
                   {selectedDatePayments.map((payment) => (
-                    <PaymentEntry key={payment.id} payment={payment} />
+                    <PaymentEntry key={payment.id} payment={payment} privacyMode={privacyMode} />
                   ))}
                 </ul>
               )}

@@ -1,4 +1,12 @@
-import { useCallback, useEffect, useMemo, useRef, useState, type MouseEvent } from 'react'
+import {
+  useCallback,
+  useEffect,
+  useLayoutEffect,
+  useMemo,
+  useRef,
+  useState,
+  type MouseEvent,
+} from 'react'
 import { dictionaryApi, type Dictionary, type DictionaryItem } from '@/api/dictionary'
 import { useConfirm } from '@/composables/useConfirm'
 import { useToastStore } from '@/composables/useToast'
@@ -58,6 +66,11 @@ export default function DictionaryManagement() {
   const returnFocusRef = useRef<HTMLButtonElement | null>(null)
   const nameInputRef = useRef<HTMLInputElement | null>(null)
   const loadedItemsCodeRef = useRef<string | null>(null)
+  const activeDictCodeRef = useRef(activeDictId)
+
+  useLayoutEffect(() => {
+    activeDictCodeRef.current = activeDictId
+  }, [activeDictId])
 
   const activeDictName = useMemo(() => {
     const dictionary = dictionaries.find((item) => item.code === activeDictId)
@@ -66,7 +79,7 @@ export default function DictionaryManagement() {
 
   const fetchDictItems = useCallback(
     async (code: string) => {
-      if (!code) return
+      if (!mountedRef.current || !code || activeDictCodeRef.current !== code) return
       const requestId = ++itemsRequestRef.current
       setItemsLoading(true)
       setFailedItemsScope((current) => (current === code ? null : current))
@@ -94,6 +107,7 @@ export default function DictionaryManagement() {
   )
 
   const fetchDictionaries = useCallback(async () => {
+    if (!mountedRef.current) return
     const requestId = ++dictionariesRequestRef.current
     setDictionariesLoading(true)
     setDictionariesFailed(false)
@@ -160,7 +174,7 @@ export default function DictionaryManagement() {
   }
 
   const handleModalSubmit = async () => {
-    if (!activeDictId || submitInFlightRef.current) return
+    if (!mountedRef.current || !activeDictId || submitInFlightRef.current) return
 
     const label = modalForm.label.trim()
     const value = modalForm.value.trim()
@@ -185,20 +199,21 @@ export default function DictionaryManagement() {
           value,
         })
       }
-
+      if (!mountedRef.current || activeDictCodeRef.current !== activeDictId) return
       toastSuccess(isEditing ? '修改成功' : '添加成功')
       setShowModal(false)
       await fetchDictItems(activeDictId)
     } catch {
-      toastError(isEditing ? '修改失败' : '添加失败')
+      if (mountedRef.current && activeDictCodeRef.current === activeDictId)
+        toastError(isEditing ? '修改失败' : '添加失败')
     } finally {
       submitInFlightRef.current = false
-      setSubmitting(false)
+      if (mountedRef.current) setSubmitting(false)
     }
   }
 
   const deleteDictItem = async (id: number) => {
-    if (!activeDictId) return
+    if (!mountedRef.current || !activeDictId) return
 
     const confirmed = await confirm({
       actionLabel: '删除选项',
@@ -206,14 +221,15 @@ export default function DictionaryManagement() {
       message: '确定要删除这个选项吗？',
       title: '删除字典项？',
     })
-    if (!confirmed) return
+    if (!confirmed || !mountedRef.current || activeDictCodeRef.current !== activeDictId) return
 
     try {
       await dictionaryApi.deleteItem(activeDictId, id)
-      await fetchDictItems(activeDictId)
+      if (!mountedRef.current) return
+      if (activeDictCodeRef.current === activeDictId) await fetchDictItems(activeDictId)
       toastSuccess('删除成功')
     } catch {
-      toastError('删除失败')
+      if (mountedRef.current) toastError('删除失败')
     }
   }
 

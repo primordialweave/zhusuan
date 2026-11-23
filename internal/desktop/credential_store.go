@@ -111,7 +111,7 @@ func (s *CredentialStore) Save(scope string, credentials LoginCredentials) error
 	if strings.TrimSpace(scope) == "" || credentials.Username == "" || credentials.Password == "" {
 		return errors.New("登录服务标识、用户名和密码不能为空")
 	}
-	secret, err := json.Marshal(credentials)
+	secret, err := json.Marshal(credentials) // #nosec G117 -- Explicitly remembered credentials go only to the OS keyring, never logs or HTTP responses.
 	if err != nil {
 		return errors.New("保存登录信息失败")
 	}

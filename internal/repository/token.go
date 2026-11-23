@@ -1,15 +1,18 @@
 package repository
 
 import (
+	"gorm.io/gorm"
+
 	"github.com/primordialweave/zhusuan/internal/database"
 	"github.com/primordialweave/zhusuan/internal/models"
-	"gorm.io/gorm"
 )
 
+// TokenRepository stores token hashes and scopes mutation to each token owner.
 type TokenRepository struct {
 	db *gorm.DB
 }
 
+// NewTokenRepository creates a repository using the application database.
 func NewTokenRepository() *TokenRepository {
 	return &TokenRepository{db: database.GetDB()}
 }

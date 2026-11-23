@@ -1,0 +1,475 @@
+/* Native macOS MenuBar Popover (360 x 492) — aligned with Zhusuan's 6 scenic jade themes. */
+
+.menubar-popover {
+  position: relative;
+  display: flex;
+  flex-direction: column;
+  width: 100%;
+  height: 100vh;
+  min-height: 100%;
+  padding: 12px 14px 10px;
+  gap: 10px;
+  overflow: hidden;
+  isolation: isolate;
+  color: var(--ods-color-fg-default);
+  background: var(--ods-color-bg-canvas);
+  font-family: var(--ods-font-sans);
+  user-select: none;
+  box-sizing: border-box;
+}
+
+/* Pre-blurred active theme pack artwork veiled by the theme's frost tint (zero live blur GPU cost). */
+.menubar-popover__backdrop {
+  position: absolute;
+  z-index: -2;
+  inset: 0;
+  background-position: 54% 38%;
+  background-size: cover;
+  background-repeat: no-repeat;
+  opacity: 0.92;
+  pointer-events: none;
+}
+
+.menubar-popover__veil {
+  position: absolute;
+  z-index: -1;
+  inset: 0;
+  background:
+    var(--ods-material-glass-sheen),
+    linear-gradient(180deg, var(--ods-material-frost-veil) 0%, var(--ods-color-bg-surface-raised) 100%);
+  pointer-events: none;
+}
+
+.menubar-popover__header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 6px;
+}
+
+.menubar-popover__brandmark {
+  display: inline-flex;
+  align-items: center;
+  flex-shrink: 0;
+  padding: 2px 4px;
+  border-radius: 8px;
+}
+
+[data-theme='dark'] .menubar-popover__brandmark {
+  padding: 3px 7px;
+  background: var(--ods-color-fg-brand-surface);
+}
+
+.menubar-popover__wordmark {
+  width: 56px;
+  height: 26px;
+  flex-shrink: 0;
+}
+
+.menubar-popover__header-actions {
+  display: flex;
+  align-items: center;
+  gap: 2px;
+}
+
+/* Signature Zhusuan frosted jade glass card */
+.menubar-card {
+  display: flex;
+  flex-direction: column;
+  padding: 12px 13px;
+  border-radius: 14px;
+  background: var(--ods-material-jade-sheen), var(--ods-color-bg-surface-raised);
+  border: var(--ods-material-glass-border-subtle);
+  box-shadow: var(--ods-material-jade-control-shadow);
+}
+
+/* Hero metric + Jade Bangle Ring */
+.menubar-hero {
+  flex-direction: row;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+}
+
+.menubar-hero__copy {
+  display: flex;
+  flex-direction: column;
+  gap: 3px;
+  min-width: 0;
+}
+
+.menubar-hero__label {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  font-size: 11px;
+  color: var(--ods-color-fg-muted);
+  letter-spacing: 0.02em;
+}
+
+.menubar-hero__amount {
+  font-size: 24px;
+  font-weight: var(--ods-font-weight-semibold, 600);
+  line-height: 1.15;
+  font-variant-numeric: tabular-nums;
+  color: var(--ods-color-fg-default);
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.menubar-hero__meta {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 6px;
+  margin-top: 3px;
+  font-size: 11px;
+  font-variant-numeric: tabular-nums;
+  color: var(--ods-color-fg-muted);
+}
+
+.menubar-hero__pending {
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+}
+
+/* Luminous jade beads matching PaymentSummary & AnalyticsView */
+.menubar-bead {
+  display: inline-block;
+  width: 8px;
+  height: 8px;
+  border-radius: 999px;
+  flex-shrink: 0;
+  background-image: var(--ods-material-jade-bead-background);
+  box-shadow: var(--ods-material-jade-bead-shadow);
+}
+
+.menubar-bead--paid {
+  background-color: var(--ods-data-part-paid);
+}
+
+.menubar-bead--pending {
+  background-color: var(--ods-data-part-pending);
+}
+
+/* Two-tone translucent jade bangle ring */
+.menubar-ring {
+  position: relative;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 68px;
+  height: 68px;
+  flex-shrink: 0;
+}
+
+.menubar-ring__svg {
+  width: 68px;
+  height: 68px;
+  overflow: visible;
+}
+
+.menubar-ring__stop--paid-light {
+  stop-color: var(--ods-color-accent-hover);
+}
+
+.menubar-ring__stop--paid-base {
+  stop-color: var(--ods-data-part-paid);
+}
+
+.menubar-ring__stop--pending {
+  stop-color: var(--ods-data-part-pending);
+}
+
+.menubar-ring__stop--crest {
+  stop-color: var(--ods-color-fg-brand-surface);
+}
+
+.menubar-ring__stop--shadow {
+  stop-color: var(--ods-material-jade-icon-depth);
+}
+
+.menubar-ring__track {
+  fill: none;
+  stroke-width: 11;
+}
+
+.menubar-ring__progress {
+  fill: none;
+  stroke-width: 11;
+  stroke-linecap: round;
+  transition: stroke-dashoffset 280ms ease;
+}
+
+.menubar-ring__glaze {
+  pointer-events: none;
+}
+
+.menubar-ring__center {
+  position: absolute;
+  inset: 0;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  pointer-events: none;
+}
+
+.menubar-ring__pct {
+  font-size: 13px;
+  font-weight: var(--ods-font-weight-semibold, 600);
+  font-variant-numeric: tabular-nums;
+  line-height: 1.1;
+  color: var(--ods-color-fg-default);
+}
+
+.menubar-ring__sub {
+  font-size: 9px;
+  color: var(--ods-color-fg-muted);
+  margin-top: 1px;
+}
+
+/* Theme-colored mini area sparkline card */
+.menubar-chart {
+  gap: 6px;
+  padding-bottom: 10px;
+}
+
+.menubar-chart__header {
+  display: flex;
+  align-items: baseline;
+  justify-content: space-between;
+  gap: 8px;
+}
+
+.menubar-chart__title {
+  font-size: 11px;
+  font-weight: var(--ods-font-weight-medium, 500);
+  color: var(--ods-color-fg-muted);
+}
+
+.menubar-chart__readout {
+  font-size: 11px;
+  font-weight: var(--ods-font-weight-semibold, 600);
+  font-variant-numeric: tabular-nums;
+  color: var(--ods-color-accent-text);
+}
+
+.menubar-chart__svg {
+  width: 100%;
+  height: 80px;
+  display: block;
+  overflow: visible;
+}
+
+.menubar-chart__area-stop {
+  stop-color: var(--ods-data-series-actual);
+}
+
+.menubar-chart__grid {
+  stroke: var(--ods-data-grid);
+  stroke-width: 1;
+  stroke-dasharray: 2 3;
+}
+
+.menubar-chart__bar {
+  fill: var(--ods-data-series-actual);
+  opacity: 0.14;
+  transition: opacity 120ms ease;
+}
+
+.menubar-chart__bar[data-active='true'] {
+  opacity: 0.32;
+}
+
+.menubar-chart__line {
+  fill: none;
+  stroke: var(--ods-data-series-actual);
+  stroke-width: 2;
+  stroke-linecap: round;
+  stroke-linejoin: round;
+}
+
+.menubar-chart__crosshair {
+  stroke: var(--ods-data-series-actual);
+  stroke-width: 1;
+  stroke-dasharray: 2 2;
+  opacity: 0.45;
+}
+
+.menubar-chart__dot-halo {
+  fill: var(--ods-data-series-actual);
+  opacity: 0.22;
+}
+
+.menubar-chart__dot {
+  fill: var(--ods-data-point-bg);
+  stroke: var(--ods-data-series-actual);
+  stroke-width: 2;
+}
+
+.menubar-chart__axis {
+  display: flex;
+  justify-content: space-between;
+  font-size: 10px;
+  font-variant-numeric: tabular-nums;
+  color: var(--ods-color-fg-muted);
+  margin-top: -2px;
+}
+
+.menubar-chart__empty {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  height: 74px;
+  font-size: 11.5px;
+  color: var(--ods-color-fg-muted);
+}
+
+/* Urgent / Upcoming Compact List */
+.menubar-feed {
+  padding: 5px;
+  gap: 2px;
+}
+
+.menubar-feed__row {
+  justify-content: stretch;
+  padding-inline: 8px;
+}
+
+.menubar-feed__inner {
+  display: flex;
+  width: 100%;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px;
+  min-width: 0;
+}
+
+.menubar-feed__left {
+  display: flex;
+  align-items: center;
+  gap: 7px;
+  min-width: 0;
+}
+
+.menubar-feed__dot {
+  width: 6px;
+  height: 6px;
+  border-radius: 999px;
+  flex-shrink: 0;
+  background: var(--ods-data-part-paid);
+}
+
+.menubar-feed__dot[data-overdue='true'] {
+  background: var(--ods-color-status-danger);
+}
+
+.menubar-feed__name {
+  font-size: 12px;
+  color: var(--ods-color-fg-default);
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.menubar-feed__right {
+  display: flex;
+  align-items: baseline;
+  gap: 7px;
+  flex-shrink: 0;
+  font-variant-numeric: tabular-nums;
+}
+
+.menubar-feed__date {
+  font-size: 10.5px;
+  color: var(--ods-color-fg-muted);
+}
+
+.menubar-feed__date[data-overdue='true'] {
+  color: var(--ods-color-status-danger);
+}
+
+.menubar-feed__amount {
+  font-size: 12px;
+  font-weight: var(--ods-font-weight-medium, 500);
+  color: var(--ods-color-fg-default);
+}
+
+.menubar-feed__calm {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 6px;
+  padding: 8px;
+  font-size: 11.5px;
+  color: var(--ods-color-fg-muted);
+}
+
+/* Quick Actions & Footer */
+.menubar-actions {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 8px;
+  margin-top: auto;
+}
+
+.menubar-footer {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding-top: 6px;
+  border-top: 1px solid var(--ods-color-border-default);
+}
+
+.menubar-footer__links {
+  display: flex;
+  align-items: center;
+  gap: 4px;
+}
+
+/* Logged-out state */
+.menubar-guest {
+  display: flex;
+  flex: 1;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 12px;
+  text-align: center;
+  padding: 24px 16px;
+}
+
+.menubar-guest__brandmark {
+  display: inline-flex;
+  align-items: center;
+  padding: 6px 12px;
+  border-radius: 10px;
+  border: 1px solid var(--ods-color-border-default);
+  background: var(--ods-color-bg-canvas-subtle);
+}
+
+[data-theme='dark'] .menubar-guest__brandmark {
+  background: var(--ods-color-fg-brand-surface);
+}
+
+.menubar-guest__wordmark {
+  width: 96px;
+  height: 46px;
+}
+
+.menubar-guest__title {
+  margin: 0;
+  font-size: 14px;
+  font-weight: var(--ods-font-weight-semibold, 600);
+  color: var(--ods-color-fg-default);
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .menubar-ring__progress,
+  .menubar-chart__bar {
+    transition: none;
+  }
+}

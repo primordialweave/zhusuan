@@ -1,10 +1,126 @@
 # HANDOFF
 
-## 1. 当前任务：珠算 1.3.1 补丁发布（2026-11-22）
+## 1. 已完成：全局代码审查、精简与安全/逻辑修复（2026-11-23，本地修改）
 
-- 用户明确要求“提交所有代码 发布小版本”，覆盖本聊天前两轮仅本地修改、不提交/不发布的限制；本轮采用当前公开1.3.0后的补丁1.3.1，纳入首页默认全部/范围标签/自定义提示、分析指标竖线和玉手镯环图优化，以及工作区9个tracked本地Claude技能删除。删除包无应用/打包引用；不恢复已删除文件，不提交真实.env、凭据或生成缓存。
-- 版本通过现有release.py同步，CHANGELOG与README同步当前下载版本。沿用现有PR/CI/tag/草稿验证后公开的GitHub Actions流程，不添加生产QA hook或新发行旁路；已公开1.3.0标签/附件保持不变。GitHub连接器被组织令牌有效期策略拒绝，使用现有gh OAuth操作，不更改凭据。
-- 发布准备与验收证据 `/tmp/zhusuan-release-1.3.1.bcwqkM`，前两轮真实浏览器证据仍见2.28/2.29。本段在发行完成后补确切commit/run/附件结果；准备状态不代表已公开。
+- 覆盖前端业务/ODS/状态、后端权限/账款/同步/缓存、原生桌面、构建/发布、SQL参考和监控配置；报告 `docs/global-code-review-2026-11-23.md`，机器记录同名JSON。基线/最终源码、RED与通过日志、隔离API/Ego记录在 `/tmp/zhusuan-global-review.nTR8Fp`，最终自有源码哈希与验证副本匹配；保留已有其他聊天改动。
+- 修复原生ID信任、旧登录/快照/偏好/列表响应和卸载后提交竞态；JWT限定HS256/有效期/正数身份，原生SetSessionUser现在附带JWT并校验当前启用用户，前端和生成绑定同步。修复跨用户导入关联统计、超收抵消待收、同步回滚误报、DSN转义/IPv6、初始密码随机失败、正数ID/分页溢出/反向日期/可选状态，以及Field禁用和非法深链。
+- 桌面备份使用唯一私有暂存目录与严格轮转命名，保护手工文件并检查删除失败；偏好与OS效果串行，通知授权失败不启用，副作用保存失败回滚并记录恢复错误；每日提醒/备份并发防重。窗口恢复必须同时有可见拖动区域和主体。三个原子文件写入流程共享helper；六套同步循环合并，删除两份无引用iOS钩子和Puppertino任务。
+- 完善env/SQLite日志/凭据忽略，监控默认loopback/只读挂载和位置持久化，错误率改为真实比例/P99按实例聚合；移动SDK检查显式授权，发布元数据先完整验证。修正React/Vitest/随机凭据、导入和监控注释；前端状态类型补overdue，历史types路径保留重导出。未改变真实账本、全局凭据或开发服务。
+- 最终：前端133文件973测试全部通过，Go race20测试包270顶层/266子测试全部通过，Python44测试、Promtool6行为组通过；失败/测试跳过0。前端lint0、TypeScript/生产构建、Go vet及Windows/Linux交叉vet、全仓diff check通过；npm audit0，govulncheck无当前代码可达finding。Go lint136→45，剩32重复常量/5复杂度/4兼容拼写/4公开类型前缀，未声称lint清零。
+- 避坑：凭据文件必须在成功写入用户/字典的事务内发布，不能让竞争失败的播种覆盖赢家密码；文件发布与DB COMMIT不属于跨资源原子事务。单纯窗口主体可见不保证标题可拖动；保留最大化边框偏移案例。Go `./...`会发现真实node_modules内Go源码，lint/formatter需排除第三方，隔离验证使用固定私有依赖。新例先RED；旧无父项目夹具按真实归属补齐，不改变金额/日期断言。生成events末尾空行已清理。
+- 验收边界：真实驱动DSN解析、原生注入钩子及交叉静态检查通过，不冒称云库连接、原生目标机、实际Docker栈/部署、完整读屏或CPU/GPU实测验收。Ego123及自有3504/9384进程按所有权核对后关闭；未提交、推送或发版。
+
+## 1. 已完成：MultiSelect 设计系统展厅示例（2026-11-23，本地修改）
+
+- `DesignSystemView` 的原选择区加入受控 `MultiSelect`，放在 Select 与 Dropdown 之间，默认进行中/已完成两项；使用独立 `projectStatuses` 状态和模块级选项常量，保留现有换行布局。组件目录同步 API、清除和键盘交互说明。
+- 既有展厅/组件/文档测试3文件21例通过，类型检查、私有生产构建、单文件ESLint和限定diff check通过。Ego独立测试库验证勾选/取消保持展开、清空恢复placeholder、Tab到操作菜单，1280×800浅色与760×620深色实际截图无横溢并人工复核。证据沿用 `/tmp/zhusuan-multistatus-qa.Dz2GRU/showcase-*`；此展示修改未新增测试、依赖或CSS。
+- 展厅同时存在收件箱Listbox和MultiSelect，验证选中项必须限定到 `.ods-multi-select__popover`，全局 `[role="option"][aria-selected="true"]` 会混入另一个示例。首轮浏览器断言因此误报，限定组件后复核真实选择正确，未修改组件业务逻辑。
+- 自有3502/9382验收进程按PID/命令核对后关闭，Ego117关闭；用户真实账本及开发服务未改，未提交或发版。
+
+## 1. 已完成：项目状态多选与通用 MultiSelect（2026-11-23，本地修改）
+
+- 项目管理状态筛选改为 `string[]`，未选显示「全部状态」；勾选/取消保持菜单展开，收起显示首个状态和 `+N`。变更筛选重置第一页，保留已提交搜索和每页数量，查询 scope/代际保护继续隔离旧响应。新增 ODS `MultiSelect` 并从设计系统导出，复用 Select 玉质样式、Popover 和 Listbox，支持 Field/ref、清除、禁用、方向键/Home/End、Space/Enter、typeahead、Escape 与 Tab。
+- 后端保留 `status` 字符串兼容，多个状态用逗号分隔，trim/去重后参数化 `IN`，列表和总数共用条件；空值/all 查全部。项目 overdue 是已存状态，不擅自按日期推导。未知/历史状态保留精确匹配。无依赖或数据库迁移。
+- 验证：组件/Select/Listbox 22 例及项目页 15 例通过；前端独立副本 131 文件、934 例中初次 926 过/8 失败（副本缺 docs/design-system），补齐真实文档后仅复测该文件 8/8 过；ESLint 0 警告、TypeScript/私有 outDir 生产构建、相关 Go race 与 vet、限定 diff check 通过。全量 Go race 初次 16 包、197 顶层/256 子例通过，desktop 因另一项并行改动缺 manager 字段编译失败；字段完成后该包单独复测 32 顶层全部通过。原始失败日志保留，不将初次运行泛称全部通过。
+- Ego 独立 30 项目测试库/3502 API/9382 静态代理验证双状态并集12条、取消6条、清除30条、搜索+三状态9条、5条/页与翻页后变更回第一页；Escape/清除返回触发器、Tab 到新建项目；浅深主题与760px窄窗无页面横溢，截图稳定后人工复核。证据 `/tmp/zhusuan-multistatus-qa.Dz2GRU`。只验证 Chromium Web 页面，原生 Wails/屏幕阅读器实际播报未验收。
+- 避坑：共享 node_modules 可能被其他开发流程瞬时移除，本轮曾报 vitest/globals 与 TypeScript lib.dom 缺失；使用匹配 package-lock 的既有私有依赖副本完成验证，不重装共享目录。Tab 必须跳过隐藏祖先/disabled fieldset 并保持 dialog 边界；主题截图要等待有限动画稳定，并逐文件核对视口尺寸。
+- 本轮自有3502/9382进程按PID与命令所有权核对后关闭，Ego116关闭；用户3456/9245服务及真实账本未改。未提交、推送或发版，保留其他聊天在制品。
+
+## 1. 已交付：30 秒宣传片修订版与续会话复核（2026-11-23）
+
+- 用户后续要求已替代此前 60 秒规格：缩至 30 秒、业务/主题字幕改为 44px 直接叠字且无底板；仅 15.7–16.7 秒首次展示外观设置，随后六套主题与深色工作台直接切换；原创音乐改为 116 BPM 拨弦/马林巴、低音和沙锤；片尾删除开发预览提示。README 和 12 张无打码截图沿用前轮已完成结果，本轮未再改业务源码或账本。
+- 已复用原 OpenMotion 工程 v7 和已完成导出任务 `13590465-5b2d-4ba1-9f86-b76112bee6da`，没有再次制作/导出。成片 `/Users/willxue/Movies/Zhusuan-Promo-20261123/zhusuan-promo-30s-v7.mp4`，18,547,018 B，SHA-256 `aa101ebe1532b122061a9642e20c7af4d9788c264c134484f511a6eab52fc9f9`；1920×1080、30fps、30.000秒、900帧、H.264/AAC，技术检查与完整解码通过。
+- 独立复核 17 张成片关键帧及主题段每 0.5 秒采样，无重复返回设置、文字底板或尾部预览提示。QuickTime 实际文件完整播放、重放、首/中/近尾跳转和继续播放已复核；本轮完整播放观测 0、4.989、15.098、25.142、30 秒，末尾自动暂停。音乐存在、编码及音轨技术检查通过；可靠主观审听能力不足，音乐听感与感知同步保留 `not_run`，不声称完整声画验收。
+- 原可编辑工程已在当前聊天右侧 IAB 打开并确认可见。最新内容 23.6 秒为秦淮灯宵，播放推进到 25.299 秒三潭印月；交付状态为暂停且稳定 0 秒/30 秒，原生 providerTabId `f02682b1-a0f2-40e6-9125-ca1c375ac8bd`，display receipt 为 confirmed。记录在视频目录 `VERIFY.md` 的 30 秒修订节及 `revision30/resumed-verification.json`；旧 60 秒成片/证据保留。
+- **续会话与 UI 工具避坑**：读取旧聊天时先在工具端解析，只输出用户指令、进展和尾部关键项；整段历史工具输出会很大，不能直接全量回灌。CUA 单调用超过约 10 个底层往返会触发 MRTR 并丢失绑定，本轮恢复后每次约 2–5 调用；失败可能已执行部分操作，先重新绑定并观察状态。Studio seek 成功后即时截图可能仍是前一帧，必须以随后稳定的实际画面确认内容，不能仅靠 playhead 数值。
+- 本轮未提交、推送、上传或发布，也未改用户开发服务及真实账本；可编辑工程和版本专属成片保留供用户继续使用。
+
+## 1. 已完成：跨平台桌面常驻、开机启动与菜单栏/托盘快捷操作（2026-11-23，本地修改）
+
+- **功能概览**：基于 Wails v3.1.0 原生能力落地 Phase 1 桌面常驻闭环（跨 macOS / Windows / Linux 差异化适配），包含：
+  - **独立偏好持久化**：`internal/desktop/preferences.go` 将桌面设置原子写入 `UserConfigDir/primordialweave/zhusuan/desktop-preferences.json`（`0600` 权限），确保创建主窗口前即可决策静默启动与关闭策略。
+  - **三端开机启动与静默启动**：`internal/desktop/autostart*.go` 统一使用 `org.primordialweave.zhusuan` 标识；macOS 标准启动优先 `SMAppService` 并在受限时回退 `LaunchAgent`，静默启动自动写入带 `--autostart` 的 `LaunchAgent` plist 并清理 `SMAppService` 防双启；Windows 写 `HKCU\...\Run` 并在 `build/windows/nsis/project.nsi` 卸载段清理；Linux 检测 `$APPIMAGE` 写入持久路径避免临时 FUSE 挂载路径失效。
+  - **关闭行为与退出状态机**：默认关闭策略为 `ask`（每次询问，支持勾选“记住我的选择”切换为隐藏到菜单栏/托盘或直接退出）；`quitting atomic.Bool` + `Options.ShouldQuit` 保证 `Cmd+Q`、托盘「退出珠算」、应用内 `AppUpdater` 重启与系统关机均无阻塞退出；启用 `SingleInstanceOptions` 防止二次启动端口/数据库冲突。
+  - **macOS 顶部 MenuBar 与 Windows/Linux 系统托盘**：新增 44×44 @2x 单色玉算盘模板图标 `build/darwin/tray-template.png`（`SetTemplateIcon` 自动适配浅/深状态栏），支持 `仅图标 / 待办逾期笔数(默认) / 本月实收 / 累计待收` 实时数据标签与隐私脱敏；Windows 托盘支持单击切换窗口/打开菜单与多行 Tooltip 摘要；Linux 通过 D-Bus 探测 `org.kde.StatusNotifierWatcher`，无托盘宿主时自动禁用隐藏到托盘避免幽灵进程；右键/下拉菜单提供本月实收/待收/待处理摘要、显示/隐藏、记一笔收款、新建项目、收款日历、数据分析、隐私模式与开机启动开关、检查更新、偏好设置及退出。
+  - **零轮询数据刷新与后台零渲染能耗**：在 `internal/service/dashboard.go` 的 `invalidateDashboardCache` 增加变更回调，结合 250ms 防抖自动刷新菜单栏/托盘；前端 `DesktopBridge.tsx` 同步登录态（登出即清空金额）并在主窗口隐藏时通过 `zhusuan:window-visibility` 立即暂停 `sceneRuntime.ts` 的 WebGL/2D 动画循环；支持窗口尺寸/位置记忆与多屏可见区校验、macOS 可选隐藏窗口时同步隐藏 Dock 图标（`dock_darwin.go` + `ApplicationShouldHandleReopen` 唤起）。
+  - **桌面设置 UI**：`SettingsView.tsx` 在桌面端新增「桌面设置」Tab（`DesktopSettingsPanel.tsx`，Web 模式自动隐藏，按当前 OS 仅展示该平台支持的选项），支持 `?tab=desktop` 与 `?tab=about&checkUpdate=1` 快捷直达。
+  - **Phase 2 原生增强**：
+    - **本地到期 / 逾期系统通知与跨日刷新**：`internal/desktop/scheduler.go` 接入 Wails v3 `pkg/services/notifications`，采用 15 分钟粗粒度后台检查（兼顾休眠/跨午夜唤醒与极低能耗）；每日设定时间（默认 `09:30`）至多发送一次本地聚合提醒（`lastReminderDate` 持久化防重启重复），遵循隐私模式自动隐藏金额，点击系统通知直达 `/calendar`，并提供「测试提醒」按钮；跨日自动刷新菜单栏统计并广播 `desktop:day-changed`。
+    - **跨平台全局快捷键**：`DesktopManager` 集成 `app.GlobalShortcut`，支持「唤起/隐藏主窗口」「极速记一笔收款」「一键切换隐私模式」三个可选全局热键（默认关闭防抢占，按 macOS/Win-Linux 展示对应键符），带重复冲突校验、注册失败自动回滚、退出统一释放及托盘菜单快捷键标注。
+    - **主界面金额隐私脱敏联动**：`frontend/src/utils/format.ts` 新增 `maskAmount` 并通过 `usePrivacyMode()` 联动工作台（`PaymentSummary`）、项目列表、项目详情、收款日历与数据分析 5 个展示页（编辑表单与 CSV 导出保持真实数值不受影响）。
+  - **Phase 3 深度系统集成**：
+    - **本地 SQLite 安全快照自动备份与轮转**：`internal/desktop/backup.go` 通过 SQLite `VACUUM INTO ?` 生成原子、包含 WAL 已提交事务的一致性快照，写入 `DataDir/backups/auto/zhusuan-auto-YYYYMMDD-HHMMSS.db`（目录 `0700`、文件 `0600`），按保留份数（默认 7 份，支持 3/7/14/30）仅清理自动快照不碰手工文件；复用 15 分钟后台循环每日至多执行一次，在「桌面设置 → 本地账本备份」（仅 SQLite 模式展示）提供「立即备份」与「打开目录」入口。
+    - **Windows 任务栏 JumpList & Linux `.desktop` Actions + 冷/热启动路由**：新增 `internal/desktop/launch_action.go` 解析 `--action=quick-receipt|new-project|calendar|analytics|settings`；`internal/desktop/jumplist_windows.go` 通过 COM `ICustomDestinationList` 为 Windows 任务栏右键注册「记一笔收款」「新建项目」「收款日历」快捷任务；`build/linux/desktop` 同步添加 Freedesktop `Desktop Action` 条目；单实例热启动（`HandleSecondInstance`）与冷启动（`ConsumePendingRoute`）均自动唤起主窗口并直达目标路由。
+  - **macOS 顶部 MenuBar 玉质磨砂图表浮窗重设计**：
+    - `internal/desktop/menubar.go`、`internal/service/dashboard.go`（`GetMenuBarData`）与 `internal/repository/payment.go`（`ListUrgent`）：新增 `360×492` 原生 macOS 透明毛玻璃 `NSPanel` 浮窗（`MacWindowClassPanel`、`MacBackdropTranslucent`、`CornerRadius: 16`、`MacWindowLevelPopUpMenu`、跨 Space / 全屏空间可见、失焦与 `Esc` 自动收起）；左键菜单栏图标弹出浮窗，右键仍保留原生快捷菜单。
+    - `frontend/src/views/MenuBarPopoverView.tsx` + `frontend/src/styles/menubar-popover.css` + `frontend/src/router/routes.tsx`（独立顶层 `/menubar` 路由，不挂载 `DesktopBridge`/`SceneBackground`，避免次窗口覆盖主窗口会话或起 WebGL 上下文）：深度对齐珠算 6 套四季/节庆风物主题与浅/深模式——复用当前主题包预模糊 `frostUrl` 风景底纹与 `--ods-material-frost-veil` / `--ods-material-jade-sheen` 玉质玻璃卡片、顶部与未登录态统一使用关于页玉雕文字 Logo `/zhusuan-wordmark.png`（深色模式配浅青 `--ods-color-fg-brand-surface` 衬底保证辨识）、双色翡翠玉镯圆环（两段精确 180° 半圆弧 + 玉质高光釉面）、发光玉珠圆点、主题联动平滑三次贝塞尔收款趋势微图表（含柱状底纹、悬停十字准星与即时读数）、逾期/临期款项速览及快捷入口；顶部菜单栏图标 `build/darwin/tray-template.png` 已重绘为 44×44 @2x（17pt 视觉框、精细圆角方框 + 阶梯四珠剪影，呼应主图标 `build/appicon.png`）；`stores/theme.ts` 新增跨窗口 `storage` 与 `zhusuan:day-changed` 监听，主窗口切换风物主题或明暗时菜单栏浮窗即时联动；全量使用 ODS 原语零迁移债。
+- **本次提前规避的坑**：
+  1. Wails v3.1.0 `autostartSlug("珠算")` 会过滤中文字符并退化为 `"wails-app"`，必须显式传 ASCII `Identifier: "org.primordialweave.zhusuan"`。
+  2. macOS `SMAppService.mainAppService` 无法传递 `--autostart` 等 CLI 参数，且 ad-hoc 签名可能进入未批准态；静默启动需改写用户 `LaunchAgent` 并提供登录项授权入口。
+  3. Linux AppImage 下 `os.Executable()` 指向临时 `/tmp/.mount_*`，开机启动必须优先读取 `os.Getenv("APPIMAGE")`；无 AppIndicator 的 GNOME 桌面隐藏到托盘会失去入口，需先探测 `org.kde.StatusNotifierWatcher`。
+  4. `window.Hide()` 在 WKWebView/WebView2 中不一定立刻触发 `document.visibilitychange`，需通过 Wails `WindowHide/WindowShow` 广播自定义事件显式停启场景动画循环。
+  5. 交叉 `go vet` 检查 Linux Wails 包在 `CGO_ENABLED=0` 时需附加 `-tags purego`；引入 `wails/v3/pkg/services/notifications` 后 Windows 构建会额外依赖 `git.sr.ht/~jackmordaunt/go-toast/v2`，macOS 本地测试不会触发该平台依赖校验，必须执行 `go mod tidy` + `GOOS=windows go vet` 提前补齐 `go.sum`。
+  6. SQLite `VACUUM INTO ?` 要求目标路径尚不存在，需先构造唯一临时路径执行快照、`Chmod(0600)` 后再原子 `Rename`，且直接文件拷贝不可替代 WAL 安全快照。
+  7. macOS 次级 WebView（`/menubar`）的 `sessionStorage` 与主窗口隔离，绝不能挂载 `DesktopBridge`（否则会把主窗口登录态覆写为 `0`），应作为独立顶层路由并通过 Go IPC `GetMenuBarSnapshot` 读取主窗口会话数据；同时须遵守 ODS 零迁移债与样式归属契约（使用 `Button`/`IconButton`/`SegmentedControl`/`Image`/`Chip`，且不要在消费侧 CSS 覆写 `<Image>` 的 `border-radius`）。
+  8. `SettingsView` 静态契约测试要求不使用 `.ods-` 覆盖与非 `--ods-` token，新增设置面板复用 `.settings-row` / `.settings-row__value` 与 ODS `Switch`/`Select`。
+- **验证结果**：前端 `eslint --max-warnings=0` 0 警告、`vitest` **132/132 文件、939/939 用例全通过**（含 ODS 迁移/样式归属契约、`MenuBarPopoverView` 跨窗口主题同步测试）、`npm run build` 成功；`go mod verify`、全量 `go test -race . ./internal/... ./cmd/...`（含 `menubar_test.go`、真实 SQLite WAL `VACUUM INTO` 完整性与轮转测试）、`go vet`、Windows/Linux 交叉 `go vet`（含 Windows COM JumpList 编译校验）与 macOS `go build` 均通过。仅本地修改，未提交/发版，真实账本与既有开发进程未触碰（注：跨平台实机交互如 Windows 注册表/Toast/JumpList/NSIS、Linux AppIndicator/Wayland Portal 与 macOS 真实重启登录后拉起及实机 NSPanel 毛玻璃效果仍需对应目标机实测）。
+
+## 1. 已完成：珠算宣传片与自定义主题演示（2026-11-23）
+
+- 用户指定OpenMotion并确认60秒横版、中文文案＋轻音乐，无旁白。完成真实合同范围切换、Enter搜索/项目详情、独立库1000元到账保存（进度25%→50%）、同笔日历、周期分析、六套主题选择/工作台、深色及自动开关。未打码，片尾注明主题为开发预览，不冒称已在v1.3.1发布。
+- OpenMotion官方源固定a44c714d，独立本地安装；17个有效素材、16个原生HTML文件与可编辑v4工程已保存，原生IAB面板可见、暂停0秒且保留。唯一成片导出任务13523899-f97c-4583-9c5c-87503dc23eb9技术全通过：1920×1080/30fps/60秒/1800帧/H264/AAC。实际QuickTime完整播放、跳转、重放和全部镜头导出帧/360px片尾复核通过；主观审听能力不足，声音听感/感知同步未验收，记录pending，不伪造全声画验收。
+- 成片 `/Users/willxue/Movies/Zhusuan-Promo-20261123/zhusuan-promo-60s-v4.mp4`，32,245,032B，SHA d8bbd62c4b20b96eb146faf6d3d48104325fbdbc7eeb817a93160fb13eb2191d。该目录VERIFY.md、导出报告、原创音乐/文案与源码保留；托管工程位于OpenMotion data/projects/b841a09f-81c4-45f1-8009-dc457813115d。3498/9372自有服务按PID/argv核对停止，真实77项目/148收款与项目79 received_amount1000保持；3456/9245保留。未提交/推送/发布。
+
+### 宣传片采集与导出避坑
+
+- 项目搜索输入是草稿，必须Enter才提交筛选；不能把未提交搜索当故障或先改产品。Ego Page.screencastFrameAck把协议必须的sessionId误判为路由参数并拒绝，本次使用专用ChromeDevtools录屏；后者filePath受工具根目录限制，使用其默认临时输出，再复制已完成文件。
+- macOS窗口resize的高度包含外框，1600×900请求实际内高722，仿真视口900会让screencast裁掉底部。采用真实1280×720视口并逐文件ffprobe；部分帧宽1276仅以两侧各2px补到1280，保留比例，不拉伸。
+- VFR录屏的容器时长不保证第一PTS为0、也不保证最后静态画面有足够帧。规范化必须setpts=PTS-STARTPTS、fps=30，按需要克隆已稳定末帧，再以ffprobe核对每个clip实际时长/帧数；不能仅凭-t参数假定7秒。
+- 排练复位不能只删payments：项目received_amount是服务维护的计数，会残留。优先完整重建私有副本或走实际删除API；本次只在私有库复位自有排练款及受影响项目计数，并复核原库。不得改真实账本来方便录制。
+- OpenMotion托管工程只用版本保护工具编辑/导入。CLI直接snapshot还需在该进程PATH提供已安装缓存ffmpeg/ffprobe，不能因此全局brew安装或把未完成截图当通过。Cua单调用过多WebMCP调用触发MRTR限制，长间隔也会重置内核；缩小批次并重新绑定原生providerTabId。打开预览后URL会添加view/time hash，按原生Tab库存匹配项目，不只精确比原URL；queued本身不代表已展示。
+
+## 1. 已完成：README 与无打码主题截图（2026-11-23，本地文档修改）
+
+- 用户要求更新 README、重新截图且本次不打码，并加入新增自定义主题。中英文 README 已补六套风物、浅/深/跟随系统、季节与节庆自动切换、本地保存及动态偏好；明确当前主题是开发代码功能，现有 v1.3.1 下载链接不变。
+- ego lite 使用当前源码的独立生产构建与 SQLite 账本副本重新采集九张常规页面，新增完整外观设置及浅/深两张六主题画廊，共12张文档图片。无页面打码或数据替换；已有 Mock 项目名/customer will 来自此前用户授权的账本内容。详情1440×1200、外观1440×1560，其余原图1440×960、DPR1，画廊1500×1670。
+- 生产构建（含TypeScript）通过，52个本地文档引用无缺失，12组主题实际页面无横溢；项目77条/收款148条与源库逐条一致，未修改真实账本或用户3456/9245服务。仅验证文档与浏览器展示，不扩大为原生功能或发布验收。记录 `docs/readme-screenshots-verification.json`，采集范围见 `docs/screenshots/README.md`。
+- 新截图替换顶层README用图，旧子目录验收截图保留。未提交、推送或发布；保留其他聊天业务与主题在制品。
+
+
+## 1. 已完成：输入补全、用户资料即时回显及通知对象修复（本地新改动）
+
+- 用户要求移除输入框完成提示、修复用户资料保存后需重新登录才回显、通知编辑对象保存/回显错误。当前三项修改未提交/未重新发版，不混入另一聊天已冻结的1.3.1源码/标签/附件。
+- Input/TextArea/NumberInput/SearchField/OTP共享默认autocompleteoff/autocorrectoff/spellcheckfalse/autocapitalizeoff/writingsuggestionsfalse。保留显式username/current-password/new-password/one-time-code功能token，同时禁止系统写作预测；不用私有WK API或全局OS设置。原9个新case先RED，最终相关23例通过；头lessWebKit验证属性，不把缺少writingSuggestions IDL reflection当nativeOS完成泡泡已验收。
+- 管理员PUT用户现在事务更新并返回真实已保存用户（密码不序列化），列表立即使用规范返回值；仅捕获会话中的同一用户同步authstore和sessionStorage。保存代际、会话、表单及列表请求保护避免迟到refresh/旧账号覆盖。Self禁用清除自身会话，他人编辑不污染当前用户；当前既有空字段忽略语义保留。
+- 通知编辑原先target初始化总为0，后台又只更新is_global而没改收件箱。新增只读target_user_id响应（无DB列/迁移），由当前页私信关系一次批量聚合；多旧关联显示未知而不默认为全员，必须明确选择。更新与接收关系变更同事务，保留仍在范围用户已读状态，新目标未读，排除旧收件人；MarkAsRead共享行锁避免迟到请求恢复被移除关系。私信type3不被误改成system，权限仍是现有用户收件箱/admin写入。
+- 本地完整前端126文件/849用例无失败/未处理异常，TypeScript/非修改ESLint/私有outDir构建通过；Go全量race209顶层/237子例、16测试包通过，10包无测试，失败/跳过0，vet通过。先前RED及依赖瞬态失败日志保留，不能将先前运行泛称全过。
+- 实际独立SQLite/3496API验证全员↔单人、甲→乙→admin四向保存、响应target和实际收件箱匹配，原private类型保持。Ego同一登录会话从用户管理保存姓名/部门后列表、sessionStorage与个人页立即更新；通知单人↔全员保存并再次打开正确。WebKit修改其他用户立即列表/重开回显且当前身份不变，通知全员回显/私信保持，1280与760无横溢/页面错误0。原生已安装Wails完成泡泡、屏幕阅读器和跨设备实时推送不在验收范围。
+- 验证在独立源码/依赖副本，避免用户dev的npmci瞬态移除模块；npmci要在副本frontend cwd执行（prefix在该环境误判frontend缺于lock），不改真实lock或共享node_modules。用户真实账本/3456与9245未停。自有3496/9370按PID98993/98994+argv/PGID校验终止，Ego space112已关闭。证据 `/var/folders/h4/_dnvr_4x4t93j64lvqrndtb40000gn/T/zhusuan-settings-recall-q2hqkpof`，机器记录docs/settings-edit-recall-verification.json。现有生成events/index.ts末尾空行与本功能无关，diffcheck排除此已存在generated改动。
+
+## 1. 已完成：四季风物与节假日限定自定义主题系统（2026-11-23，本地修改）
+
+- **功能概览**：在保留原有 `data-theme="light" | "dark"` 的基础上，新增正交维度 `data-theme-pack="<packId>"` 与本地离线节气/农历日期解析（`frontend/src/utils/themeCalendar.ts`，内置 2025–2035 农历春节/中秋窗口，零网络请求），支持：
+  - **四季风物**：`spring-jiangnan`（春 · 烟雨江南，默认零回归）、`summer-westlake`（夏 · 曲院风荷）、`autumn-forbidden`（秋 · 紫禁秋杏）、`winter-harbin`（冬 · 哈尔滨雾凇），以及「随季节自动切换」（按立春/立夏/立秋/立冬自动切换）。
+  - **节假日限定**：`holiday-spring-festival`（春节 · 秦淮灯宵，含 B 通道花灯呼吸暖光与孔明灯粒子）、`holiday-mid-autumn`（中秋 · 三潭印月，含 B 通道月华/塔灯暖光与桂花粒子）；支持全年在设置页预览/手动选用，且在节日期间自动生效（若用户手动改选其他主题，仅跳过当年该节日实例）。
+- **核心改动**：
+  - 资产：`frontend/src/assets/themes/<packId>/{scene,scene-business,scene-frost,scene-masks,thumb}.webp`，全部 5 套新增主题（含原画级「秦淮灯宵」「三潭印月」与 R 水波/G 枝叶灯笼摇曳/B 暖光呼吸三通道遮罩）总计仅 **1.27 MB**，非激活主题通过 Vite 动态 `import()` 懒加载，不影响首屏；仅 `spring-jiangnan` 保留 `hasGreeter: true`。
+  - 令牌：`frontend/src/design-system/tokens/themes/packs/*.css` 增量色板覆盖（纯 `#rrggbb`/`rgba` 兼容 macOS WebKit 及静态对比度校验）；`contrast.test.ts` 已扩展验证全部 **6×2 = 12 组浅/深组合**（60 项 WCAG AA 断言全通过）。
+  - 动态场景引擎：`renderSceneGL.ts` 扩展可配置波纹/摇曳/薄雾与 B 通道暖光呼吸，`renderAtmosphere2D.ts` 提供 6 种零 GC 预分配粒子池（细雨/萤火/银杏叶/慢雪/孔明灯/桂花）。
+  - 设置界面：`SettingsView.tsx` 外观设置新增 3×2 对称「主题风物」缩略图卡片墙、标题栏「随季节自动切换」开关及「节假日自动切换限定主题」开关；`AnalyticsView.tsx` 图表配色联动 `effectiveThemePack`；`internal/desktop/legacy_preferences.go` 已纳入 `zhusuan.themePack.v1`。
+- **已踩坑与避坑提示**：
+  1. **生图策略与限流**：优先使用内置 `image-generator`（严格单张顺序生成，避免并发 429）；若内置生图触发配额上限，可改用项目 `.env` 中配置的 `base_url`（OpenAI 兼容生图接口，切勿输出或提交 `.env` 密钥）。
+  2. **ODS 样式与静态契约**：`contrast.test.ts` 仅解析 `#rrggbb` 与 `rgba(...)`，新增主题令牌不要写 `color-mix()`；`styles.contract.test.ts` 严格校验 `styles.css` 中 `@import` 顺序；`settings.test.ts` 校验 `settings.css` 不含 `.ods-`、`!important` 及非 `--ods-` 自定义属性，并校验 `variant="card"` 数量；`scene-page.test.ts` 校验 `.scene-page__still` 与 `.scene-page__card` 的 `background` 裁剪公式完全一致。
+  3. **React 19 ESLint (`react-hooks/set-state-in-effect`)**：懒加载资源 hook（`useThemePackAssets.ts`）若命中同步缓存直接在渲染期返回，不要在 `useEffect` 体内同步调用 `setState`。
+  4. **Go `gosec G202`**：`internal/desktop/legacy_preferences.go` 中 SQL `IN (...)` 必须保持常量字面量占位符，不可用 `strings.Join` 拼接 SQL 字符串。
+- **验证结果**：`tsc --build` 0 错误、`eslint --max-warnings=0` 0 警告、`vitest` **127/127 文件、905/905 用例全通过**、`vite build` 成功、`go vet` + `go test -race ./internal/desktop/...` + `golangci-lint` 0 问题；Playwright WebKit 实渲染复核了外观设置页及全部 12 组浅/深主题效果。本地修改未提交/未发版，工作区原有其他业务改动未触碰。
+
+## 1. 已完成：珠算 1.3.1 补丁发布（2026-11-22）
+
+- 用户明确要求“提交所有代码 发布小版本”，已提交本聊天UI改动、13处版本字段、中英文下载说明和9个tracked本地Claude技能删除；PR37合并main `4013b83a68bcc8c458ab93c52e480ef7633229ed`。v1.3.1固定该应用源码，后续并行会话的工作区代码保留，不回写已公开版本。
+- 上海2026-11-22 22:00:30公开v1.3.1/latest；最终PR CI45024032041、main CI45024816883四job与Release45028276272五job均成功。十附件完整，匿名实际下载400,440,080字节，8应用SUMS/9清单映射/notes/URL/大小/SHA与API一致，latest/direct字节相同；全部旧tag及1.3.0发行/附件固定字段不变。
+- 前端126文件818例、Go race194顶层226子测试（16测试包，10无测试包）和另docs2顶层2子测试、Python43例通过，失败/用例跳过0；lint/TS/build/vet/模块校验/增量lint通过。全量Go lint77项为历史问题，对应33文件未改。同依赖生产JS/CSS gzip比1.3.0减少28/74B，字体不变，无新增常驻工作；不宣称目标设备CPU/GPU验收。
+- 两架构Mac ZIP/DMG的路径/CRC/权限/版本/id/minOS/单架构/deep strict ad-hoc与对应资源哈希一致；DMG只读完整性与Applications链接通过，自有mount全detach。Windows安装/升级/窗口均由正式runner验证。本轮未安装/启动用户已安装app或操作真实账本。
+- 证据docs/release-readiness-1.3.1.md、docs/release-verification-1.3.1.json与私有 `/tmp/zhusuan-release-1.3.1.bcwqkM`。首轮RPM网络握手失败及Mac夹具路径比较失败保留；只补失败下载并用realpath完成验收，不绕过TLS、不改包。补充验收记录通过独立工作树提交，保留主工作区后续在制品。
 
 ## 1. 已完成：珠算 1.3.0 合并、公开发布与分支整理（2026-11-22）
 
@@ -758,3 +874,18 @@
 - 保留两条数据圆环与 r38.6/宽22.8/内孔27.2/外径100，柔化圆管明暗和内外缘，删掉三道窄亮弧与深孔壁。局部宽反射和上左非零面积椭圆高光均裁切到 evenodd 圆环，孔洞透出背景；使用现有纯 token、useId 引用，无新依赖、请求、滤镜或常驻动画。金额/签约范围/空态/错误处理保持原样。
 - Ego/9364 用原文件私有 load override 先真实复现第三指标竖线和纯色 stroke，再对照当前源码；1280×800 深浅、760×620、全部/本年/本月金额/比例/渐变引用和无横溢均通过，无页面 JS 错误。系统 reduce 的 transform 为 none、过渡0.00001秒；切换 CDP media 后要等待 matchMedia 和 computed transform 稳定，不能同 tick 读取旧动画值。0%/100%仅用真实 SVG 克隆做绘制探针，检查完整圆环和孔洞，不声称实际 API 端点数据验收。
 - 全量前端126文件818例通过，失败/跳过/todo0；ESLint非autofix、Prettier、app TypeScript、私有 outDir 生产构建和 diff check通过。保留既有超过500kB构建提示；独立静态复审无阻塞问题。证据 `/tmp/zhusuan-bangle-checks.202rejey/`（baseline/after JSON、深浅/窄窗/绘制探针截图、测试与构建日志）。复用上轮 cmd/server 私有 binary，仅备份匿名验收库到 `/tmp/zhusuan-bangle-qa-b7ueqyud`，未改业务数据或真实账本；未操作已安装原生桌面。Ego104关闭，本轮不提交/推送/发布，保留此前首页修复与其他在制品，用户3456/9245服务不动。
+
+### 2.30 本机项目名称与客户 mock 替换（2026-11-22，用户授权）
+
+- **数据库定位坑**：旧工作区 `/Users/willxue/will/FruitsAI/Orange` 已是珠算目录的符号链接，旧 `FruitsAI/Orange/orange.db` 是保留的迁移源。修改本机数据前先结合配置和最近的 `Opening SQLite database` 日志确认当前库，不根据旧路径批量修改迁移源、QA 副本或云库。本轮实际库为 `/Users/willxue/Library/Application Support/primordialweave/zhusuan/zhusuan.db`。
+- 用户要求全部项目名称改为 mock 数据、客户统一 `will`。已按原 ID 升序将 77 个项目命名为 `Mock 项目 001` 至 `Mock 项目 077`，仅修改 `projects.name` 和 `projects.company`。无独立客户表；款项通过 `project_id` 关联，不重写用户姓名或款项。
+- 修改前使用 SQLite backup API 完整备份，覆盖 WAL 中已提交内容；备份目录权限 0700、文件 0600。备份 `/Users/willxue/Library/Application Support/primordialweave/zhusuan/backups/mock-projects-20261122-fgchv40w/zhusuan-before-mock.db`，同目录 `verification.json` 记录结果。写入前在 `BEGIN IMMEDIATE` 中逐表确认仍与备份一致，避免检查与修改间并发写入；单事务更新、提交后重新只读核验全部 77 条名称/客户、项目其他列和所有其他表逐条不变，完整性为 ok、外键检查结果不变。148 条收款、金额、日期、合同编号、状态和审计时间均保留。
+- 项目列表/详情及首页最近项目直接读库；当前已加载页面需重新进入或刷新获取新值，无需重启服务。此次不启动应用或同步云库，不改旧迁移源。备份仍包含原数据，仅保存在本机私有目录，不放入 Git。
+
+
+### 2.31 README 截图完整性与主题切换（2026-11-23）
+
+- 固定1440×960会截断详情底部项目档案和外观第二排主题；先检查滚动面板的clientHeight/scrollHeight与实际原图，必要时增高视口。不要用“文字存在于DOM”替代完整可见截图。本轮详情1440×1200、外观1440×1560完整采集，不改产品CSS。
+- 主题图片懒加载、交叉淡入及入场动画需分别等待；先确认实际data-theme-pack、场景URL、data-loading消失，再等有限动画结束。Ego视口在脚本间不保证保留，每次采集脚本重新设置并记录innerWidth/innerHeight。
+- accessibility快照里的group可能是原生fieldset，DOM没有role=group；CSS直接搜[role=group]会找不到。按实际DOM的fieldset/aria-label和label/input关系选择，不猜选择器。已登录访问/login会自动返回工作台；登录截图通过本任务私有会话的退出按钮取得，账号/密码保持空，不清全局浏览器存储。
+- 本轮用户明确要求不打码，覆盖旧截图说明的默认脱敏要求。隔离源数据与预览服务仍需保留；不能复用旧脱敏/夹具截图当作本次原样账本，也不能误把当前开发主题说成已公开v1.3.1功能。

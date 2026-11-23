@@ -48,53 +48,7 @@ func JWTAuth() gin.HandlerFunc {
 
 		// 3.1 检查是否为 Personal Access Token (以 pat_ 开头)
 		if strings.HasPrefix(tokenString, "pat_") {
-			// 计算 Hash
-			hash := sha256.Sum256([]byte(tokenString))
-			tokenHash := hex.EncodeToString(hash[:])
-
-			// 查找 Token
-			repo := repository.NewTokenRepository()
-			token, err := repo.FindByHash(tokenHash)
-			if err != nil {
-				response.Unauthorized(c, "无效的访问令牌")
-				return
-			}
-
-			// 检查过期时间
-			if token.ExpiresAt != nil && token.ExpiresAt.Before(time.Now()) {
-				response.Unauthorized(c, "访问令牌已过期")
-				return
-			}
-
-			// 降低更新频率：只有超过5分钟未更新才异步更新
-			if token.LastUsedAt == nil || time.Since(*token.LastUsedAt) > 5*time.Minute {
-				go func(id int64) {
-					ctx, cancel := context.WithTimeout(context.Background(), 3*time.Second)
-					defer cancel()
-
-					db := database.GetDB().WithContext(ctx)
-					if err := db.Model(&models.PersonalAccessToken{}).
-						Where("id = ?", id).
-						Update("last_used_at", time.Now()).Error; err != nil {
-						// 记录更新失败，便于监控告警
-						log.Printf("Failed to update last_used_at for token %d: %v", id, err)
-					}
-				}(token.ID)
-			}
-
-			// 验证关联用户
-			if token.User == nil || token.User.Status != 1 {
-				response.Unauthorized(c, "关联用户无效")
-				return
-			}
-
-			// 4. 将用户信息注入上下文 (Context)
-			c.Set("user_id", token.User.ID)
-			c.Set("username", token.User.Username)
-			c.Set("role", token.User.Role)
-			c.Set("access_token_id", token.ID) // 标记来源
-
-			c.Next()
+			authenticatePersonalAccessToken(c, tokenString)
 			return
 		}
 
@@ -127,9 +81,77 @@ func JWTAuth() gin.HandlerFunc {
 	}
 }
 
+// authenticatePersonalAccessToken verifies the stored token and its current owner.
+func authenticatePersonalAccessToken(c *gin.Context, tokenString string) {
+	// 计算 Hash
+	hash := sha256.Sum256([]byte(tokenString))
+	tokenHash := hex.EncodeToString(hash[:])
+
+	// 查找 Token
+	repo := repository.NewTokenRepository()
+	token, err := repo.FindByHash(tokenHash)
+	if err != nil {
+		response.Unauthorized(c, "无效的访问令牌")
+		return
+	}
+
+	// 检查过期时间
+	if token.ExpiresAt != nil && token.ExpiresAt.Before(time.Now()) {
+		response.Unauthorized(c, "访问令牌已过期")
+		return
+	}
+
+	// 降低更新频率：只有超过5分钟未更新才异步更新
+	if token.LastUsedAt == nil || time.Since(*token.LastUsedAt) > 5*time.Minute {
+		go func(id int64) {
+			ctx, cancel := context.WithTimeout(context.Background(), 3*time.Second)
+			defer cancel()
+
+			db := database.GetDB().WithContext(ctx)
+			if err := db.Model(&models.PersonalAccessToken{}).
+				Where("id = ?", id).
+				Update("last_used_at", time.Now()).Error; err != nil {
+				// 记录更新失败，便于监控告警
+				log.Printf("Failed to update last_used_at for token %d: %v", id, err)
+			}
+		}(token.ID)
+	}
+
+	// 验证关联用户
+	if token.User == nil || token.User.Status != 1 {
+		response.Unauthorized(c, "关联用户无效")
+		return
+	}
+
+	// 4. 将用户信息注入上下文 (Context)
+	c.Set("user_id", token.User.ID)
+	c.Set("username", token.User.Username)
+	c.Set("role", token.User.Role)
+	c.Set("access_token_id", token.ID) // 标记来源
+
+	c.Next()
+}
+
 // userAuthCacheTTL 用户鉴权状态（启用+角色）的缓存时长，
 // 同时是禁用账号/角色变更后存量 JWT 生效的最大延迟
 const userAuthCacheTTL = time.Minute
+
+// ValidateSessionToken verifies a login JWT and the account's current enabled state.
+// Native consumers must compare the returned identity before exposing account data.
+func ValidateSessionToken(tokenString string) (int64, error) {
+	claims, err := jwt.ParseToken(tokenString)
+	if err != nil {
+		return 0, err
+	}
+	active, _, err := currentUserAuthState(claims.UserID)
+	if err != nil {
+		return 0, err
+	}
+	if !active {
+		return 0, errors.New("账号已被禁用")
+	}
+	return claims.UserID, nil
+}
 
 // currentUserAuthState 查询用户当前是否启用及其角色（结果缓存 userAuthCacheTTL）
 // 缓存值格式: "0" 表示禁用或已删除；"1:<role>" 表示启用及当前角色。
@@ -178,24 +200,15 @@ func cacheUserAuthState(key string, value []byte) {
 
 // GetUserID returns the authenticated user ID from the request context.
 func GetUserID(c *gin.Context) int64 {
-	if userID, exists := c.Get("user_id"); exists {
-		return userID.(int64)
-	}
-	return 0
+	return c.GetInt64("user_id")
 }
 
 // GetUsername 从上下文获取用户名
 func GetUsername(c *gin.Context) string {
-	if username, exists := c.Get("username"); exists {
-		return username.(string)
-	}
-	return ""
+	return c.GetString("username")
 }
 
 // GetRole 从上下文获取角色
 func GetRole(c *gin.Context) string {
-	if role, exists := c.Get("role"); exists {
-		return role.(string)
-	}
-	return ""
+	return c.GetString("role")
 }

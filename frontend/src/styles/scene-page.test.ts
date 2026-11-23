@@ -21,8 +21,10 @@ describe('scene page contract (sign-in and not-found)', () => {
     const frost = declaration('.scene-page__card', '--cloud-panel-backdrop')
     const crop = '56% 40% / max(120%, calc(100vh * 1.4055)) auto no-repeat'
 
-    expect(still).toBe(`url('../assets/jiangnan/scene.webp') ${crop}`)
-    expect(frost).toBe(`url('../assets/jiangnan/scene-frost.webp') ${crop} fixed`)
+    expect(still).toBe(`var(--ods-scene-still-url, url('../assets/jiangnan/scene.webp')) ${crop}`)
+    expect(frost).toBe(
+      `var(--ods-scene-frost-url, url('../assets/jiangnan/scene-frost.webp')) ${crop} fixed`,
+    )
   })
 
   it('never transforms the card, which would detach its fixed backdrop from the viewport', () => {

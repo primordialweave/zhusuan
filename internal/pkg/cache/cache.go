@@ -5,13 +5,26 @@ import (
 	"log"
 	"log/slog"
 	"os"
+	"sync"
 	"time"
 )
 
-var globalCache Cache
+var (
+	globalCache   Cache
+	globalCacheMu sync.RWMutex
+)
 
 // Init 初始化缓存
 func Init() error {
+	globalCacheMu.Lock()
+	defer globalCacheMu.Unlock()
+	previous := globalCache
+	globalCache = newConfiguredCache()
+	closeCache(previous)
+	return nil
+}
+
+func newConfiguredCache() Cache {
 	// 检查是否配置了Redis
 	redisAddr := os.Getenv("REDIS_ADDR")
 	if redisAddr != "" {
@@ -22,30 +35,49 @@ func Init() error {
 		// 测试连接
 		if err := redisCache.Set("_health_check", []byte("ok"), 10*time.Second); err != nil {
 			log.Printf("Redis连接失败，降级到内存缓存: %v", err)
-			globalCache = NewMemoryCache()
-		} else {
-			if err := redisCache.Delete("_health_check"); err != nil {
-				slog.Debug("Unable to remove Redis health check entry", "error", err)
-			}
-			globalCache = redisCache
+			closeCache(redisCache)
+			return NewMemoryCache()
 		}
-	} else {
-		// 使用内存缓存
-		globalCache = NewMemoryCache()
+		if err := redisCache.Delete("_health_check"); err != nil {
+			slog.Debug("Unable to remove Redis health check entry", "error", err)
+		}
+		return redisCache
 	}
-	return nil
+	return NewMemoryCache()
 }
 
 // GetCache 获取全局缓存实例
 func GetCache() Cache {
+	globalCacheMu.RLock()
+	current := globalCache
+	globalCacheMu.RUnlock()
+	if current != nil {
+		return current
+	}
+	globalCacheMu.Lock()
+	defer globalCacheMu.Unlock()
 	if globalCache == nil {
-		if err := Init(); err != nil {
-			// 初始化失败时降级到内存缓存
-			log.Printf("缓存初始化失败，使用内存缓存: %v", err)
-			globalCache = NewMemoryCache()
-		}
+		globalCache = newConfiguredCache()
 	}
 	return globalCache
+}
+
+// Close releases the current cache without creating one during shutdown.
+func Close() {
+	globalCacheMu.Lock()
+	defer globalCacheMu.Unlock()
+	closeCache(globalCache)
+	globalCache = nil
+}
+
+func closeCache(current Cache) {
+	if memory, ok := current.(*MemoryCache); ok {
+		memory.Stop()
+	} else if redis, ok := current.(*RedisCache); ok {
+		if err := redis.Close(); err != nil {
+			slog.Debug("Unable to close Redis cache", "error", err)
+		}
+	}
 }
 
 // Get 获取缓存（便捷方法）

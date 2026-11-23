@@ -24,6 +24,7 @@ import {
   Skeleton,
 } from '@/design-system'
 import { useToastStore } from '@/composables/useToast'
+import { parseRouteId } from '@/utils/routeId'
 import '@/styles/project-domain.css'
 
 export default function PaymentCreateView() {
@@ -31,7 +32,9 @@ export default function PaymentCreateView() {
   const navigate = useNavigate()
   const toastError = useToastStore((state) => state.error)
   const toastSuccess = useToastStore((state) => state.success)
-  const routeProjectId = Number(params.id) || 0
+  const parsedProjectId = parseRouteId(params.id)
+  const invalidProjectId = params.id !== undefined && parsedProjectId === null
+  const routeProjectId = parsedProjectId ?? 0
   const [selectedProject, setSelectedProject] = useState<Project | undefined>()
   const selectedProjectId = selectedProject?.id || routeProjectId
   const [paymentItems, setPaymentItems] = useState<PaymentPlanItem[]>([createPaymentPlanItem()])
@@ -69,6 +72,7 @@ export default function PaymentCreateView() {
     routeProjectId && routeProjectId !== selectedProject?.id ? undefined : selectedProject
 
   const loadProjects = useCallback(async () => {
+    if (invalidProjectId) return
     const generation = ++loadGenerationRef.current
     setSaving(false)
     setLoadingProject(true)
@@ -105,7 +109,7 @@ export default function PaymentCreateView() {
       )
         setLoadingProject(false)
     }
-  }, [routeProjectId, toastError])
+  }, [invalidProjectId, routeProjectId, toastError])
 
   useEffect(() => {
     const timer = window.setTimeout(loadProjects, 0)
@@ -176,6 +180,19 @@ export default function PaymentCreateView() {
         setSaving(false)
       }
     }
+  }
+
+  if (invalidProjectId) {
+    return (
+      <Card.Root>
+        <EmptyState
+          action={<Button onClick={() => navigate('/projects')}>返回项目列表</Button>}
+          icon={<JadeIcon name="warning" size="1em" />}
+          role="alert"
+          title="项目地址无效"
+        />
+      </Card.Root>
+    )
   }
 
   return (

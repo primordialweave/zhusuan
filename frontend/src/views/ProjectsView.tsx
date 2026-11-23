@@ -11,6 +11,7 @@ import {
   EmptyState,
   IconButton,
   JadeIcon,
+  MultiSelect,
   PaginationBar,
   PageHeader,
   ProgressBar,
@@ -22,13 +23,13 @@ import {
   Table,
 } from '@/design-system'
 import { useToastStore } from '@/composables/useToast'
-import { formatAmount, formatDate } from '@/utils/format'
+import { usePrivacyMode } from '@/stores/desktop'
+import { formatAmount, formatDate, maskAmount } from '@/utils/format'
 import { useProjectExport } from '@/components/project/useProjectExport'
 import '@/styles/project-domain.css'
 import '@/styles/main-page-loading.css'
 
 const statusOptions = [
-  { label: '全部状态', value: 'all' },
   { label: '进行中', value: 'active' },
   { label: '已完成', value: 'completed' },
   { label: '未开始', value: 'notstarted' },
@@ -55,6 +56,8 @@ interface ConfirmationState {
 
 export default function ProjectsView() {
   const navigate = useNavigate()
+  const privacyMode = usePrivacyMode()
+  const showAmount = (value: number) => maskAmount(formatAmount(value), privacyMode)
   const toastError = useToastStore((state) => state.error)
   const toastSuccess = useToastStore((state) => state.success)
 
@@ -68,7 +71,7 @@ export default function ProjectsView() {
   const [pageSize, setPageSize] = useState(10)
   const [keyword, setKeyword] = useState('')
   const [searchKeyword, setSearchKeyword] = useState('')
-  const [activeFilter, setActiveFilter] = useState('all')
+  const [activeFilters, setActiveFilters] = useState<string[]>([])
   const [activeDropdownId, setActiveDropdownId] = useState<number | null>(null)
   const [confirmation, setConfirmation] = useState<ConfirmationState | null>(null)
   const [confirming, setConfirming] = useState(false)
@@ -76,7 +79,8 @@ export default function ProjectsView() {
   const mountedRef = useRef(false)
   const requestIdRef = useRef(0)
 
-  const queryScope = JSON.stringify([currentPage, pageSize, activeFilter, searchKeyword])
+  const statusFilter = activeFilters.join(',')
+  const queryScope = JSON.stringify([currentPage, pageSize, statusFilter, searchKeyword])
   const dataIsCurrent = hasLoaded && loadedQueryScope === queryScope
   const loadError = failedQueryScope === queryScope
   const showingSkeleton = !dataIsCurrent && !loadError
@@ -102,7 +106,7 @@ export default function ProjectsView() {
         keyword: searchKeyword || undefined,
         page: currentPage,
         page_size: pageSize,
-        status: activeFilter !== 'all' ? activeFilter : undefined,
+        status: statusFilter || undefined,
       })
       if (!mountedRef.current || requestId !== requestIdRef.current) return
       setProjects(response.data.data.list)
@@ -116,7 +120,7 @@ export default function ProjectsView() {
     } finally {
       if (mountedRef.current && requestId === requestIdRef.current) setLoading(false)
     }
-  }, [activeFilter, currentPage, pageSize, queryScope, searchKeyword, toastError])
+  }, [currentPage, pageSize, queryScope, searchKeyword, statusFilter, toastError])
 
   useEffect(() => {
     mountedRef.current = true
@@ -133,8 +137,10 @@ export default function ProjectsView() {
     setSearchKeyword(keyword)
   }
 
-  const handleFilterChange = (filter: string) => {
-    setActiveFilter(filter || 'all')
+  const handleFilterChange = (filters: string[]) => {
+    setActiveFilters(
+      statusOptions.map((option) => option.value).filter((value) => filters.includes(value)),
+    )
     setCurrentPage(1)
   }
 
@@ -172,10 +178,10 @@ export default function ProjectsView() {
     setCurrentPage(1)
   }
 
-  const isFiltered = searchKeyword !== '' || activeFilter !== 'all'
+  const isFiltered = searchKeyword !== '' || activeFilters.length > 0
 
   const clearFilters = () => {
-    setActiveFilter('all')
+    setActiveFilters([])
     clearSearch()
   }
 
@@ -196,13 +202,13 @@ export default function ProjectsView() {
               placeholder="搜索项目"
               value={keyword}
             />
-            <Select
+            <MultiSelect
               aria-label="项目状态筛选"
               className="project-status-filter"
-              clearable={activeFilter !== 'all'}
               onValueChange={handleFilterChange}
               options={statusOptions}
-              value={activeFilter}
+              placeholder="全部状态"
+              value={activeFilters}
             />
             <RouterButton to="/projects/create">
               <JadeIcon name="add" size="1em" />
@@ -297,10 +303,10 @@ export default function ProjectsView() {
                     {formatDate(project.end_date)}
                   </Table.Cell>
                   <Table.Cell align="end" className="project-amount-cell">
-                    {formatAmount(project.total_amount)}
+                    {showAmount(project.total_amount)}
                   </Table.Cell>
                   <Table.Cell align="end" className="project-amount-cell">
-                    {formatAmount(project.received_amount || 0)}
+                    {showAmount(project.received_amount || 0)}
                   </Table.Cell>
                   <Table.Cell className="project-progress-column">
                     <div className="project-progress-cell">
@@ -312,8 +318,8 @@ export default function ProjectsView() {
                       />
                       <div className="project-progress-caption">
                         <span>
-                          {formatAmount(project.received_amount || 0)} /{' '}
-                          {formatAmount(project.total_amount)}
+                          {showAmount(project.received_amount || 0)} /{' '}
+                          {showAmount(project.total_amount)}
                         </span>
                         <span>{progressLabel}</span>
                       </div>

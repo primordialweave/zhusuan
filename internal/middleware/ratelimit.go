@@ -17,6 +17,7 @@ type RateLimiter struct {
 	limit    int           // 最大请求次数
 	window   time.Duration // 时间窗口
 	stopChan chan struct{} // 停止信号
+	stopOnce sync.Once
 }
 
 // Visitor 访问者信息
@@ -43,10 +44,10 @@ func NewRateLimiter(limit int, window time.Duration) *RateLimiter {
 
 // Stop 停止速率限制器的后台清理 goroutine
 func (rl *RateLimiter) Stop() {
-	close(rl.stopChan)
+	rl.stopOnce.Do(func() { close(rl.stopChan) })
 }
 
-// loginLimiter 全局单例登录限流器，登录与注册共用同一配额。
+// loginLimiter 全局单例登录限流器。
 // 参数取自 constants，避免魔法数字散落。
 var loginLimiter = NewRateLimiter(constants.LoginRateLimit, time.Duration(constants.LoginRateWindow)*time.Second)
 

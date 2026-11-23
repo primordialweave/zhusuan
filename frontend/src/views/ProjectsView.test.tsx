@@ -67,6 +67,131 @@ function LocationProbe() {
 }
 
 describe('ProjectsView design system migration', () => {
+  it('toggles multiple statuses in one open list and clears back to all statuses', async () => {
+    const user = userEvent.setup()
+    render(<ProjectsView />, { initialEntries: ['/projects'] })
+    await screen.findByText('星轨项目')
+    const trigger = screen.getByRole('button', { name: '项目状态筛选' })
+
+    await user.click(trigger)
+    expect(screen.getByRole('listbox')).toHaveAttribute('aria-multiselectable', 'true')
+    await user.click(screen.getByRole('option', { name: '已完成' }))
+    await user.click(screen.getByRole('option', { name: '进行中' }))
+    await waitFor(() =>
+      expect(projectApi.list).toHaveBeenLastCalledWith(
+        expect.objectContaining({ page: 1, status: 'active,completed' }),
+      ),
+    )
+    expect(trigger).toHaveAttribute('aria-expanded', 'true')
+    expect(screen.getByRole('option', { name: '进行中' })).toHaveAttribute('aria-selected', 'true')
+    expect(screen.getByRole('option', { name: '已完成' })).toHaveAttribute('aria-selected', 'true')
+
+    await user.click(screen.getByRole('option', { name: '进行中' }))
+    await waitFor(() =>
+      expect(projectApi.list).toHaveBeenLastCalledWith(
+        expect.objectContaining({ status: 'completed' }),
+      ),
+    )
+    expect(screen.getByRole('option', { name: '进行中' })).toHaveAttribute('aria-selected', 'false')
+    await user.keyboard('{Escape}')
+    await user.click(screen.getByRole('button', { name: '清除项目状态筛选' }))
+    await waitFor(() =>
+      expect(projectApi.list).toHaveBeenLastCalledWith(
+        expect.objectContaining({ page: 1, status: undefined }),
+      ),
+    )
+    expect(trigger).toHaveTextContent('全部状态')
+    expect(trigger).toHaveFocus()
+  })
+
+  it('preserves the submitted keyword and page size while status changes reset pagination', async () => {
+    const user = userEvent.setup()
+    vi.mocked(projectApi.list).mockResolvedValue({
+      data: { data: { ...listResponse.data.data, total: 21 } },
+    } as never)
+    render(<ProjectsView />, { initialEntries: ['/projects'] })
+    await screen.findByText('星轨项目')
+
+    const search = screen.getByRole('searchbox', { name: '搜索项目' })
+    await user.type(search, '星轨{Enter}')
+    await waitFor(() =>
+      expect(projectApi.list).toHaveBeenLastCalledWith(
+        expect.objectContaining({ keyword: '星轨' }),
+      ),
+    )
+    await screen.findByText('星轨项目')
+    await user.click(screen.getByRole('button', { name: '每页条数' }))
+    await user.click(screen.getByRole('option', { name: '5 条 / 页' }))
+    await screen.findByText('显示 1-5 条，共 21 条')
+    await user.click(screen.getByRole('button', { name: '下一页' }))
+    await screen.findByText('显示 6-10 条，共 21 条')
+
+    await user.click(screen.getByRole('button', { name: '项目状态筛选' }))
+    await user.click(screen.getByRole('option', { name: '进行中' }))
+    await user.click(screen.getByRole('option', { name: '已完成' }))
+    await waitFor(() =>
+      expect(projectApi.list).toHaveBeenLastCalledWith({
+        keyword: '星轨',
+        page: 1,
+        page_size: 5,
+        status: 'active,completed',
+      }),
+    )
+    await user.keyboard('{Escape}')
+    await screen.findByText('显示 1-5 条，共 21 条')
+    await user.click(screen.getByRole('button', { name: '下一页' }))
+    await waitFor(() =>
+      expect(projectApi.list).toHaveBeenLastCalledWith({
+        keyword: '星轨',
+        page: 2,
+        page_size: 5,
+        status: 'active,completed',
+      }),
+    )
+  })
+
+  it('ignores an older single-status response after the multi-status result has loaded', async () => {
+    const user = userEvent.setup()
+    const older = createDeferred<typeof listResponse>()
+    const latest = createDeferred<typeof listResponse>()
+    vi.mocked(projectApi.list).mockImplementation((params) => {
+      if (params?.status === 'active') return older.promise as never
+      if (params?.status === 'active,completed') return latest.promise as never
+      return Promise.resolve(listResponse) as never
+    })
+    render(<ProjectsView />, { initialEntries: ['/projects'] })
+    await screen.findByText('星轨项目')
+    await user.click(screen.getByRole('button', { name: '项目状态筛选' }))
+    await user.click(screen.getByRole('option', { name: '进行中' }))
+    await waitFor(() =>
+      expect(projectApi.list).toHaveBeenLastCalledWith(
+        expect.objectContaining({ status: 'active' }),
+      ),
+    )
+    await user.click(screen.getByRole('option', { name: '已完成' }))
+    await waitFor(() =>
+      expect(projectApi.list).toHaveBeenLastCalledWith(
+        expect.objectContaining({ status: 'active,completed' }),
+      ),
+    )
+
+    await act(async () => {
+      latest.resolve({
+        data: { data: { ...listResponse.data.data, list: [{ ...project, name: '最新组合结果' }] } },
+      })
+      await latest.promise
+    })
+    expect(await screen.findByText('最新组合结果')).toBeInTheDocument()
+    await act(async () => {
+      older.resolve({
+        data: { data: { ...listResponse.data.data, list: [{ ...project, name: '迟到单选结果' }] } },
+      })
+      await older.promise
+    })
+    expect(screen.getByText('最新组合结果')).toBeInTheDocument()
+    expect(screen.queryByText('迟到单选结果')).not.toBeInTheDocument()
+  })
+
   it('hides old rows and pagination counts while a new filter is waiting', async () => {
     const user = userEvent.setup()
     const next = createDeferred<typeof listResponse>()

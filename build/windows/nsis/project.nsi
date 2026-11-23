@@ -512,5 +512,6 @@ Section "uninstall"
     Delete "$INSTDIR\uninstall.exe"
     SetRegView 64
     DeleteRegKey SHCTX "${UNINST_KEY}"
+    DeleteRegValue HKCU "Software\Microsoft\Windows\CurrentVersion\Run" "org.primordialweave.zhusuan"
     RMDir "$INSTDIR"
 SectionEnd

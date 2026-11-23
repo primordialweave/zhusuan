@@ -5,6 +5,38 @@ import { Input, InputGroup, NativeSelect, TextArea } from './Input'
 import inputCss from './input.css?raw'
 
 describe('input primitives', () => {
+  it.each([Input, TextArea])('disables automatic text completion by default', (Control) => {
+    render(<Control aria-label="文本输入" />)
+
+    const control = screen.getByRole('textbox', { name: '文本输入' })
+    expect(control).toHaveAttribute('autocomplete', 'off')
+    expect(control).toHaveAttribute('autocorrect', 'off')
+    expect(control).toHaveAttribute('autocapitalize', 'off')
+    expect(control).toHaveAttribute('spellcheck', 'false')
+    expect(control).toHaveAttribute('writingsuggestions', 'false')
+  })
+
+  it('keeps completion disabled when an optional native setting is undefined', () => {
+    render(<Input aria-label="文本输入" autoComplete={undefined} spellCheck={undefined} />)
+
+    const control = screen.getByRole('textbox', { name: '文本输入' })
+    expect(control).toHaveAttribute('autocomplete', 'off')
+    expect(control).toHaveAttribute('spellcheck', 'false')
+  })
+
+  it.each(['username', 'current-password', 'new-password'])(
+    'preserves the explicit credential token %s without writing suggestions',
+    (autoComplete) => {
+      render(<Input aria-label="凭据" autoComplete={autoComplete} />)
+
+      const control = screen.getByRole('textbox', { name: '凭据' })
+      expect(control).toHaveAttribute('autocomplete', autoComplete)
+      expect(control).toHaveAttribute('autocorrect', 'off')
+      expect(control).toHaveAttribute('spellcheck', 'false')
+      expect(control).toHaveAttribute('writingsuggestions', 'false')
+    },
+  )
+
   it('keeps autofill colors stable without a long-running pseudo-animation', () => {
     const autofillRule = inputCss.match(
       /\.ods-input:-webkit-autofill,\s*\.ods-input:-webkit-autofill:hover,\s*\.ods-input:-webkit-autofill:focus,\s*\.ods-input:-webkit-autofill:active\s*\{([^}]+)\}/,

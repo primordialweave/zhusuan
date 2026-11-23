@@ -71,9 +71,10 @@ func detectLinuxTarget(executable string) (installTarget, error) {
 	// A package update must target a package that actually owns this executable.
 	ctx, cancel := context.WithTimeout(context.Background(), 2*time.Second)
 	defer cancel()
+	// #nosec G204 -- Fixed package-query executable; the absolute running executable is one argument, never shell text.
 	if output, err := exec.CommandContext(ctx, "dpkg-query", "-S", executable).Output(); err == nil && (strings.Contains(strings.ToLower(string(output)), executableName+":") || strings.Contains(strings.ToLower(string(output)), strings.ToLower(legacyExecutableName)+":")) {
 		target.kind, target.path = kindDeb, executable
-	} else if output, err := exec.CommandContext(ctx, kindRPM, "-qf", "--qf", "%{NAME}", executable).Output(); err == nil && (strings.EqualFold(strings.TrimSpace(string(output)), executableName) || strings.EqualFold(strings.TrimSpace(string(output)), legacyExecutableName)) {
+	} else if output, err := exec.CommandContext(ctx, kindRPM, "-qf", "--qf", "%{NAME}", executable).Output(); err == nil && (strings.EqualFold(strings.TrimSpace(string(output)), executableName) || strings.EqualFold(strings.TrimSpace(string(output)), legacyExecutableName)) { // #nosec G204 -- Fixed RPM query with the running executable passed as a single argument.
 		target.kind, target.path = kindRPM, executable
 	} else {
 		return target, errors.New("此安装方式暂不支持自动更新，请使用 AppImage 或系统安装包")

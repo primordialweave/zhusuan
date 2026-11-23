@@ -1,5 +1,5 @@
 // Package errors defines typed business errors and their HTTP status mappings.
-package errors //nolint:revive // Preserve the existing business-error API; callers alias it when also importing standard errors.
+package errors
 
 import (
 	"errors"

@@ -1,9 +1,11 @@
+// Package repository implements scoped database queries and transactional persistence.
 package repository
 
 import (
+	"gorm.io/gorm"
+
 	"github.com/primordialweave/zhusuan/internal/database"
 	"github.com/primordialweave/zhusuan/internal/models"
-	"gorm.io/gorm"
 )
 
 // DictionaryRepository 字典数据仓库

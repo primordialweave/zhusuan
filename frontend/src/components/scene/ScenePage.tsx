@@ -1,11 +1,14 @@
-import { useId, type ReactNode } from 'react'
+import { useId, type CSSProperties, type ReactNode } from 'react'
 import { handleWindowDragRegionDoubleClick } from '@/components/layout/windowDrag'
+import { getThemePackMeta } from '@/config/themes'
 import { CloudPanel } from '@/design-system'
 import { useReducedMotion } from '@/hooks/useReducedMotion'
 import { getScenePageCrop } from '@/scene/sceneFrame'
 import { useAppearanceStore } from '@/stores/appearance'
+import { useThemeStore } from '@/stores/theme'
 import SceneGreeter from './SceneGreeter'
-import { useSceneRuntime } from './useSceneRuntime'
+import { useSceneAnimationEnabled, useSceneRuntime } from './useSceneRuntime'
+import { useThemePackAssets } from './useThemePackAssets'
 import '@/styles/scene-page.css'
 
 export interface ScenePageProps {
@@ -17,18 +20,32 @@ export interface ScenePageProps {
 }
 
 /**
- * A page outside the app shell: the scene with one frosted card in the right column and no
- * Dock. The scene moves as it does on the workbench, and the girl on the bridge waves.
+ * A page outside the app shell: the active scenic still with one frosted card in the right column
+ * and no Dock. The scene moves as it does on the workbench, and the greeter waves on bridge scenes.
  */
 export default function ScenePage({ align = 'start', children, labelledBy }: ScenePageProps) {
   const sceneMotion = useAppearanceStore((state) => state.sceneMotion)
+  const effectiveThemePack = useThemeStore((state) => state.effectiveThemePack)
   const reducedMotion = useReducedMotion()
-  const animate = sceneMotion && !reducedMotion
-  const { glCanvasRef, layers, rainCanvasRef } = useSceneRuntime(animate, getScenePageCrop)
+  const animate = useSceneAnimationEnabled(sceneMotion && !reducedMotion)
+  const pack = getThemePackMeta(effectiveThemePack)
+  const { assets, ready } = useThemePackAssets(effectiveThemePack)
+  const { glCanvasRef, layers, rainCanvasRef } = useSceneRuntime(
+    animate,
+    getScenePageCrop,
+    effectiveThemePack,
+  )
+
+  const sceneStyle = ready
+    ? ({
+        '--ods-scene-frost-url': `url("${assets.frostUrl}")`,
+        '--ods-scene-still-url': `url("${assets.sceneUrl}")`,
+      } as CSSProperties)
+    : undefined
 
   return (
-    <main className="scene-page">
-      <div aria-hidden="true" className="scene-page__still">
+    <main className="scene-page" data-theme-pack={effectiveThemePack} style={sceneStyle}>
+      <div aria-hidden="true" className="scene-page__still" data-loading={!ready || undefined}>
         {animate ? (
           <>
             <canvas
@@ -43,7 +60,7 @@ export default function ScenePage({ align = 'start', children, labelledBy }: Sce
             />
           </>
         ) : null}
-        <SceneGreeter crop="page" waving={animate} />
+        {pack.hasGreeter ? <SceneGreeter crop="page" waving={animate} /> : null}
       </div>
       <div className="app-titlebar-drag-region" onDoubleClick={handleWindowDragRegionDoubleClick} />
       <CloudPanel
