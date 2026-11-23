@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest'
-import { formatAmount, formatCurrency, formatDate } from './format'
+import { formatAmount, formatCurrency, formatDate, maskAmount } from './format'
 
 describe('formatAmount', () => {
   it('shows whole amounts without decimals', () => {
@@ -43,5 +43,13 @@ describe('formatDate', () => {
     expect(formatDate('2026-11-15', 'MM-DD')).toBe('11-15')
     expect(formatDate(null)).toBe('-')
     expect(formatDate('not a date')).toBe('-')
+  })
+})
+
+describe('maskAmount', () => {
+  it('redacts non-empty formatted currency when privacy mode is enabled while preserving missing placeholders', () => {
+    expect(maskAmount('¥12,800', false)).toBe('¥12,800')
+    expect(maskAmount('¥12,800', true)).toBe('¥****')
+    expect(maskAmount('—', true)).toBe('—')
   })
 })

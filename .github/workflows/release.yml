@@ -243,13 +243,17 @@ jobs:
             release/update.json
       - name: Verify uploaded assets before publishing
         run: |
-          gh release view "$RELEASE_TAG" --json isDraft,assets > uploaded-release.json
+          gh api "repos/$GITHUB_REPOSITORY/releases/tags/$RELEASE_TAG" > uploaded-release.json
           python3 - <<'PY'
+          import hashlib
           import json
           from pathlib import Path
           data = json.loads(Path('uploaded-release.json').read_text())
-          expected = {p.name: p.stat().st_size for p in Path('release').iterdir() if p.name.startswith('zhusuan-') or p.name in {'SHA256SUMS', 'update.json'}}
-          actual = {asset['name']: asset['size'] for asset in data['assets']}
-          assert data['isDraft'] and actual == expected, 'Uploaded draft assets do not match the verified release'
+          def identity(path):
+              with path.open('rb') as source:
+                  return path.stat().st_size, 'sha256:' + hashlib.file_digest(source, 'sha256').hexdigest()
+          expected = {p.name: identity(p) for p in Path('release').iterdir() if p.name.startswith('zhusuan-') or p.name in {'SHA256SUMS', 'update.json'}}
+          actual = {asset['name']: (asset['size'], asset.get('digest')) for asset in data['assets']}
+          assert data['draft'] and actual == expected, 'Uploaded draft names, sizes, or digests do not match the verified release'
           PY
           gh release edit "$RELEASE_TAG" --draft=false --latest

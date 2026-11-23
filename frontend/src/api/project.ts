@@ -13,7 +13,7 @@ export interface Project {
   company: string // 所属公司
   total_amount: number // 合同总金额
   received_amount: number // 已收款金额
-  status: 'active' | 'completed' | 'pending' | 'notstarted' | 'archived' // 项目状态
+  status: 'active' | 'completed' | 'pending' | 'notstarted' | 'overdue' | 'archived' // 项目状态
   type: string // 项目类型
   contract_number: string // 合同编号
   contract_date: string // 签约日期
@@ -45,7 +45,7 @@ export interface Payment {
 export interface ProjectListParams {
   page?: number
   page_size?: number
-  status?: string
+  status?: string // 单个状态或逗号分隔的多个状态；省略时查询全部
   keyword?: string // 搜索关键词 (名称/公司)
 }
 

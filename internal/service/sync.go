@@ -5,11 +5,11 @@ import (
 	"database/sql"
 	"fmt"
 	"log"
+	"log/slog"
 	"strings"
 	"time"
 
-	_ "github.com/go-sql-driver/mysql"
-	_ "github.com/jackc/pgx/v5/stdlib"
+	_ "github.com/jackc/pgx/v5/stdlib" // Register the pgx driver for database/sql synchronization.
 	"gorm.io/gorm"
 
 	"github.com/primordialweave/zhusuan/internal/database"
@@ -18,14 +18,14 @@ import (
 
 // 允许同步的固定表结构白名单
 var syncTableColumns = map[string][]string{
-	"users":                  {"id", "username", "password", "name", "email", "phone", "avatar", "role", "department", "position", "status", "create_time", "update_time"},
-	"projects":               {"id", "name", "company", "total_amount", "received_amount", "status", "type", "contract_number", "contract_date", "payment_method", "start_date", "end_date", "description", "user_id", "create_time", "update_time"},
-	"payments":               {"id", "project_id", "stage", "amount", "percentage", "plan_date", "status", "actual_date", "method", "remark", "user_id", "create_time", "update_time"},
-	"dictionaries":           {"id", "code", "name", "status", "remark", "create_time", "update_time"},
-	"dictionary_item":        {"id", "dictionary_id", "label", "value", "sort", "status", "remark", "create_time", "update_time"},
-	"notifications":          {"id", "title", "content", "type", "sender_id", "is_global", "create_time", "update_time"},
-	"user_notifications":     {"id", "user_id", "notification_id", "is_read", "read_time"},
-	"personal_access_tokens": {"id", "user_id", "name", "token_hash", "scopes", "status", "last_used_at", "expires_at", "create_time", "update_time"},
+	syncTableUsers:                {"id", "username", columnPassword, columnName, "email", "phone", "avatar", "role", "department", "position", columnStatus, columnCreateTime, columnUpdateTime},
+	syncTableProjects:             {"id", columnName, "company", "total_amount", "received_amount", columnStatus, "type", "contract_number", "contract_date", "payment_method", "start_date", "end_date", "description", columnUserID, columnCreateTime, columnUpdateTime},
+	syncTablePayments:             {"id", "project_id", "stage", "amount", "percentage", "plan_date", columnStatus, "actual_date", "method", columnRemark, columnUserID, columnCreateTime, columnUpdateTime},
+	syncTableDictionaries:         {"id", "code", columnName, columnStatus, columnRemark, columnCreateTime, columnUpdateTime},
+	syncTableDictionaryItems:      {"id", "dictionary_id", "label", "value", "sort", columnStatus, columnRemark, columnCreateTime, columnUpdateTime},
+	syncTableNotifications:        {"id", "title", "content", "type", "sender_id", "is_global", columnCreateTime, columnUpdateTime},
+	syncTableUserNotifications:    {"id", columnUserID, "notification_id", "is_read", "read_time"},
+	syncTablePersonalAccessTokens: {"id", columnUserID, columnName, "token_hash", "scopes", columnStatus, "last_used_at", "expires_at", columnCreateTime, columnUpdateTime},
 }
 
 // SyncConfig 云端数据库连接配置
@@ -61,6 +61,25 @@ type syncExecutor interface {
 	ExecContext(ctx context.Context, query string, args ...interface{}) (sql.Result, error)
 }
 
+type syncTransaction interface {
+	syncExecutor
+	Commit() error
+	Rollback() error
+}
+
+type syncTableWriter func(*SyncService, context.Context, *gorm.DB, syncExecutor, string) (int64, string)
+
+var syncTableWriters = map[string]syncTableWriter{
+	syncTableUsers:                (*SyncService).syncUsers,
+	syncTableProjects:             (*SyncService).syncProjects,
+	syncTablePayments:             (*SyncService).syncPayments,
+	syncTableDictionaries:         (*SyncService).syncDictionaries,
+	syncTableDictionaryItems:      (*SyncService).syncDictionaryItems,
+	syncTableNotifications:        (*SyncService).syncNotifications,
+	syncTableUserNotifications:    (*SyncService).syncUserNotifications,
+	syncTablePersonalAccessTokens: (*SyncService).syncPersonalAccessTokens,
+}
+
 const syncOperationTimeout = 60 * time.Second
 
 // NewSyncService 创建同步服务实例
@@ -79,16 +98,14 @@ func (s *SyncService) validateTableName(table string) error {
 // buildDSN 根据配置构建数据库连接字符串
 func (s *SyncService) buildDSN(cfg SyncConfig) string {
 	switch cfg.DBType {
-	case "mysql":
-		return fmt.Sprintf("%s:%s@tcp(%s:%d)/%s?charset=utf8mb4&parseTime=True&loc=Local",
-			cfg.User, cfg.Password, cfg.Host, cfg.Port, cfg.DBName)
-	case "postgres":
+	case mysqlDialect:
+		return database.MySQLDSN(cfg.Host, cfg.Port, cfg.User, cfg.Password, cfg.DBName)
+	case postgresDialect:
 		sslMode := cfg.SSLMode
 		if sslMode == "" {
 			sslMode = "require" // 云端默认开启 SSL
 		}
-		return fmt.Sprintf("host=%s port=%d user=%s password=%s dbname=%s sslmode=%s",
-			cfg.Host, cfg.Port, cfg.User, cfg.Password, cfg.DBName, sslMode)
+		return database.PostgresDSN(cfg.Host, cfg.Port, cfg.User, cfg.Password, cfg.DBName, sslMode)
 	default:
 		return ""
 	}
@@ -97,9 +114,9 @@ func (s *SyncService) buildDSN(cfg SyncConfig) string {
 // getDriverName 获取对应的驱动名称
 func (s *SyncService) getDriverName(dbType string) string {
 	switch dbType {
-	case "mysql":
-		return "mysql"
-	case "postgres":
+	case mysqlDialect:
+		return mysqlDialect
+	case postgresDialect:
 		return "pgx"
 	default:
 		return ""
@@ -118,7 +135,7 @@ func (s *SyncService) TestConnection(cfg SyncConfig) error {
 	if err != nil {
 		return fmt.Errorf("连接失败: %w", err)
 	}
-	defer db.Close()
+	defer closeSyncDatabase(db)
 
 	// 验证连接
 	ctx, cancel := context.WithTimeout(context.Background(), 10*time.Second)
@@ -143,7 +160,7 @@ func (s *SyncService) CompareData(cfg SyncConfig) ([]TableCompareResult, error) 
 	if err != nil {
 		return nil, fmt.Errorf("连接云端数据库失败: %w", err)
 	}
-	defer remoteDB.Close()
+	defer closeSyncDatabase(remoteDB)
 	ctx, cancel := context.WithTimeout(context.Background(), syncOperationTimeout)
 	defer cancel()
 	if err := remoteDB.PingContext(ctx); err != nil {
@@ -154,7 +171,7 @@ func (s *SyncService) CompareData(cfg SyncConfig) ([]TableCompareResult, error) 
 	localDB := database.GetDB()
 
 	// 要对比的表
-	tables := []string{"users", "projects", "payments", "dictionaries", "dictionary_item", "notifications", "user_notifications", "personal_access_tokens"}
+	tables := []string{syncTableUsers, syncTableProjects, syncTablePayments, syncTableDictionaries, syncTableDictionaryItems, syncTableNotifications, syncTableUserNotifications, syncTablePersonalAccessTokens}
 	results := make([]TableCompareResult, 0, len(tables))
 
 	for _, table := range tables {
@@ -167,7 +184,9 @@ func (s *SyncService) CompareData(cfg SyncConfig) ([]TableCompareResult, error) 
 
 		// 本地计数
 		var localCount int64
-		localDB.Table(table).Count(&localCount)
+		if err := localDB.WithContext(ctx).Table(table).Count(&localCount).Error; err != nil {
+			return nil, fmt.Errorf("读取本地表 %s 失败: %w", table, err)
+		}
 		result.LocalCount = localCount
 
 		quotedTable, err := s.quoteSyncIdentifier(table, cfg.DBType)
@@ -202,7 +221,7 @@ func (s *SyncService) SyncTables(cfg SyncConfig, tables []string) ([]SyncResult,
 	if err != nil {
 		return nil, fmt.Errorf("连接云端数据库失败: %w", err)
 	}
-	defer remoteDB.Close()
+	defer closeSyncDatabase(remoteDB)
 
 	ctx, cancel := context.WithTimeout(context.Background(), syncOperationTimeout)
 	defer cancel()
@@ -210,16 +229,18 @@ func (s *SyncService) SyncTables(cfg SyncConfig, tables []string) ([]SyncResult,
 		return nil, fmt.Errorf("云端数据库连接失败: %w", err)
 	}
 
-	localDB := database.GetDB()
-	results := make([]SyncResult, 0, len(tables))
-
 	tx, err := remoteDB.BeginTx(ctx, nil)
 	if err != nil {
 		return nil, fmt.Errorf("开启云端事务失败: %w", err)
 	}
-	committed := false
+	return s.syncTablesInTransaction(ctx, database.GetDB(), tx, cfg.DBType, tables)
+}
+
+func (s *SyncService) syncTablesInTransaction(ctx context.Context, localDB *gorm.DB, tx syncTransaction, dbType string, tables []string) ([]SyncResult, error) {
+	results := make([]SyncResult, 0, len(tables))
+	finalized := false
 	defer func() {
-		if !committed {
+		if !finalized {
 			if rollbackErr := tx.Rollback(); rollbackErr != nil {
 				// 记录回滚失败，但不影响主错误返回
 				log.Printf("事务回滚失败: %v", rollbackErr)
@@ -241,24 +262,8 @@ func (s *SyncService) SyncTables(cfg SyncConfig, tables []string) ([]SyncResult,
 
 		result := SyncResult{TableName: table, Success: true}
 
-		switch table {
-		case "users":
-			result.SyncedCount, result.ErrorMessage = s.syncUsers(ctx, localDB, tx, cfg.DBType)
-		case "projects":
-			result.SyncedCount, result.ErrorMessage = s.syncProjects(ctx, localDB, tx, cfg.DBType)
-		case "payments":
-			result.SyncedCount, result.ErrorMessage = s.syncPayments(ctx, localDB, tx, cfg.DBType)
-		case "dictionaries":
-			result.SyncedCount, result.ErrorMessage = s.syncDictionaries(ctx, localDB, tx, cfg.DBType)
-		case "dictionary_item":
-			result.SyncedCount, result.ErrorMessage = s.syncDictionaryItems(ctx, localDB, tx, cfg.DBType)
-		case "notifications":
-			result.SyncedCount, result.ErrorMessage = s.syncNotifications(ctx, localDB, tx, cfg.DBType)
-		case "user_notifications":
-			result.SyncedCount, result.ErrorMessage = s.syncUserNotifications(ctx, localDB, tx, cfg.DBType)
-		case "personal_access_tokens":
-			result.SyncedCount, result.ErrorMessage = s.syncPersonalAccessTokens(ctx, localDB, tx, cfg.DBType)
-		}
+		writer := syncTableWriters[table]
+		result.SyncedCount, result.ErrorMessage = writer(s, ctx, localDB, tx, dbType)
 
 		if result.ErrorMessage != "" {
 			result.Success = false
@@ -271,14 +276,40 @@ func (s *SyncService) SyncTables(cfg SyncConfig, tables []string) ([]SyncResult,
 	}
 
 	if failed {
+		for i := range results {
+			if results[i].ErrorMessage != "" {
+				slog.Error("Sync table failed", "table", results[i].TableName, "error", results[i].ErrorMessage)
+			}
+		}
+		rollbackErr := tx.Rollback()
+		finalized = true
+		if rollbackErr != nil {
+			markSyncResultsUncommitted(results, "同步失败，本次更改未提交")
+			return results, fmt.Errorf("回滚云端事务失败: %w", rollbackErr)
+		}
+		markSyncResultsUncommitted(results, "同步失败，本次事务已回滚")
 		return results, nil
 	}
 	if err := tx.Commit(); err != nil {
+		markSyncResultsUncommitted(results, "同步失败，本次更改未确认提交")
 		return results, fmt.Errorf("提交云端事务失败: %w", err)
 	}
-	committed = true
+	finalized = true
 
 	return results, nil
+}
+
+func markSyncResultsUncommitted(results []SyncResult, message string) {
+	for i := range results {
+		results[i].Success, results[i].SyncedCount = false, 0
+		results[i].ErrorMessage = message
+	}
+}
+
+func closeSyncDatabase(db *sql.DB) {
+	if err := db.Close(); err != nil {
+		slog.Debug("Unable to close sync database", "error", err)
+	}
 }
 
 // deleteExtras 删除云端多余的数据
@@ -300,7 +331,7 @@ func (s *SyncService) deleteExtras(ctx context.Context, remoteDB syncExecutor, t
 		if i > 0 {
 			query += ","
 		}
-		if dbType == "postgres" {
+		if dbType == postgresDialect {
 			query += fmt.Sprintf("$%d", i+1)
 		} else {
 			query += "?"
@@ -314,7 +345,7 @@ func (s *SyncService) deleteExtras(ctx context.Context, remoteDB syncExecutor, t
 
 // syncUsers 同步用户表
 func (s *SyncService) syncUsers(ctx context.Context, localDB *gorm.DB, remoteDB syncExecutor, dbType string) (int64, string) {
-	return syncRecords(ctx, s, localDB, remoteDB, "users", dbType, userSyncValues)
+	return syncRecords(ctx, s, localDB, remoteDB, syncTableUsers, dbType, userSyncValues)
 }
 
 func userSyncValues(u models.User) (int64, []interface{}) {
@@ -323,34 +354,16 @@ func userSyncValues(u models.User) (int64, []interface{}) {
 
 // syncProjects 同步项目表
 func (s *SyncService) syncProjects(ctx context.Context, localDB *gorm.DB, remoteDB syncExecutor, dbType string) (int64, string) {
-	var projects []models.Project
-	if err := localDB.Find(&projects).Error; err != nil {
-		return 0, fmt.Sprintf("读取本地数据失败: %v", err)
-	}
+	return syncRecords(ctx, s, localDB, remoteDB, syncTableProjects, dbType, projectSyncValues)
+}
 
-	var ids []interface{}
-	for _, p := range projects {
-		ids = append(ids, p.ID)
-		query, err := s.buildUpsertQuery("projects", dbType)
-		if err != nil {
-			return 0, err.Error()
-		}
-		_, err = remoteDB.ExecContext(ctx, query, p.ID, p.Name, p.Company, p.TotalAmount, p.ReceivedAmount, p.Status, p.Type, p.ContractNumber, p.ContractDate, p.PaymentMethod, p.StartDate, p.EndDate, p.Description, p.UserID, p.CreateTime, p.UpdateTime)
-		if err != nil {
-			return 0, fmt.Sprintf("同步失败: %v", err)
-		}
-	}
-
-	if err := s.deleteExtras(ctx, remoteDB, "projects", ids, dbType); err != nil {
-		return 0, fmt.Sprintf("清理 projects 多余数据失败: %v", err)
-	}
-
-	return int64(len(projects)), ""
+func projectSyncValues(p models.Project) (int64, []interface{}) {
+	return p.ID, []interface{}{p.ID, p.Name, p.Company, p.TotalAmount, p.ReceivedAmount, p.Status, p.Type, p.ContractNumber, p.ContractDate, p.PaymentMethod, p.StartDate, p.EndDate, p.Description, p.UserID, p.CreateTime, p.UpdateTime}
 }
 
 // syncPayments 同步收款表
 func (s *SyncService) syncPayments(ctx context.Context, localDB *gorm.DB, remoteDB syncExecutor, dbType string) (int64, string) {
-	return syncRecords(ctx, s, localDB, remoteDB, "payments", dbType, paymentSyncValues)
+	return syncRecords(ctx, s, localDB, remoteDB, syncTablePayments, dbType, paymentSyncValues)
 }
 
 func paymentSyncValues(p models.Payment) (int64, []interface{}) {
@@ -359,17 +372,17 @@ func paymentSyncValues(p models.Payment) (int64, []interface{}) {
 
 func syncRecords[T any](ctx context.Context, service *SyncService, localDB *gorm.DB, remoteDB syncExecutor, table, dbType string, row func(T) (int64, []interface{})) (int64, string) {
 	var records []T
-	if err := localDB.Find(&records).Error; err != nil {
+	if err := localDB.WithContext(ctx).Find(&records).Error; err != nil {
 		return 0, fmt.Sprintf("读取本地数据失败: %v", err)
+	}
+	query, err := service.buildUpsertQuery(table, dbType)
+	if err != nil {
+		return 0, err.Error()
 	}
 	ids := make([]interface{}, 0, len(records))
 	for _, record := range records {
 		id, args := row(record)
 		ids = append(ids, id)
-		query, err := service.buildUpsertQuery(table, dbType)
-		if err != nil {
-			return 0, err.Error()
-		}
 		if _, err := remoteDB.ExecContext(ctx, query, args...); err != nil {
 			return 0, fmt.Sprintf("同步失败: %v", err)
 		}
@@ -382,137 +395,47 @@ func syncRecords[T any](ctx context.Context, service *SyncService, localDB *gorm
 
 // syncDictionaries 同步字典表
 func (s *SyncService) syncDictionaries(ctx context.Context, localDB *gorm.DB, remoteDB syncExecutor, dbType string) (int64, string) {
-	var dicts []models.Dictionary
-	if err := localDB.Find(&dicts).Error; err != nil {
-		return 0, fmt.Sprintf("读取本地数据失败: %v", err)
-	}
+	return syncRecords(ctx, s, localDB, remoteDB, syncTableDictionaries, dbType, dictionarySyncValues)
+}
 
-	var ids []interface{}
-	for _, d := range dicts {
-		ids = append(ids, d.ID)
-		query, err := s.buildUpsertQuery("dictionaries", dbType)
-		if err != nil {
-			return 0, err.Error()
-		}
-		_, err = remoteDB.ExecContext(ctx, query, d.ID, d.Code, d.Name, d.Status, d.Remark, d.CreateTime, d.UpdateTime)
-		if err != nil {
-			return 0, fmt.Sprintf("同步失败: %v", err)
-		}
-	}
-
-	if err := s.deleteExtras(ctx, remoteDB, "dictionaries", ids, dbType); err != nil {
-		return 0, fmt.Sprintf("清理 dictionaries 多余数据失败: %v", err)
-	}
-
-	return int64(len(dicts)), ""
+func dictionarySyncValues(d models.Dictionary) (int64, []interface{}) {
+	return d.ID, []interface{}{d.ID, d.Code, d.Name, d.Status, d.Remark, d.CreateTime, d.UpdateTime}
 }
 
 // syncDictionaryItems 同步字典项表
 func (s *SyncService) syncDictionaryItems(ctx context.Context, localDB *gorm.DB, remoteDB syncExecutor, dbType string) (int64, string) {
-	var items []models.DictionaryItem
-	if err := localDB.Find(&items).Error; err != nil {
-		return 0, fmt.Sprintf("读取本地数据失败: %v", err)
-	}
+	return syncRecords(ctx, s, localDB, remoteDB, syncTableDictionaryItems, dbType, dictionaryItemSyncValues)
+}
 
-	var ids []interface{}
-	for _, item := range items {
-		ids = append(ids, item.ID)
-		query, err := s.buildUpsertQuery("dictionary_item", dbType)
-		if err != nil {
-			return 0, err.Error()
-		}
-		_, err = remoteDB.ExecContext(ctx, query, item.ID, item.DictionaryID, item.Label, item.Value, item.Sort, item.Status, item.Remark, item.CreateTime, item.UpdateTime)
-		if err != nil {
-			return 0, fmt.Sprintf("同步失败: %v", err)
-		}
-	}
-
-	if err := s.deleteExtras(ctx, remoteDB, "dictionary_item", ids, dbType); err != nil {
-		return 0, fmt.Sprintf("清理 dictionary_item 多余数据失败: %v", err)
-	}
-
-	return int64(len(items)), ""
+func dictionaryItemSyncValues(item models.DictionaryItem) (int64, []interface{}) {
+	return item.ID, []interface{}{item.ID, item.DictionaryID, item.Label, item.Value, item.Sort, item.Status, item.Remark, item.CreateTime, item.UpdateTime}
 }
 
 // syncNotifications 同步通知表
 func (s *SyncService) syncNotifications(ctx context.Context, localDB *gorm.DB, remoteDB syncExecutor, dbType string) (int64, string) {
-	var notifications []models.Notification
-	if err := localDB.Find(&notifications).Error; err != nil {
-		return 0, fmt.Sprintf("读取本地数据失败: %v", err)
-	}
+	return syncRecords(ctx, s, localDB, remoteDB, syncTableNotifications, dbType, notificationSyncValues)
+}
 
-	var ids []interface{}
-	for _, n := range notifications {
-		ids = append(ids, n.ID)
-		query, err := s.buildUpsertQuery("notifications", dbType)
-		if err != nil {
-			return 0, err.Error()
-		}
-		_, err = remoteDB.ExecContext(ctx, query, n.ID, n.Title, n.Content, n.Type, n.SenderID, n.IsGlobal, n.CreateTime, n.UpdateTime)
-		if err != nil {
-			return 0, fmt.Sprintf("同步失败: %v", err)
-		}
-	}
-
-	if err := s.deleteExtras(ctx, remoteDB, "notifications", ids, dbType); err != nil {
-		return 0, fmt.Sprintf("清理 notifications 多余数据失败: %v", err)
-	}
-
-	return int64(len(notifications)), ""
+func notificationSyncValues(n models.Notification) (int64, []interface{}) {
+	return n.ID, []interface{}{n.ID, n.Title, n.Content, n.Type, n.SenderID, n.IsGlobal, n.CreateTime, n.UpdateTime}
 }
 
 // syncUserNotifications 同步用户通知关联表
 func (s *SyncService) syncUserNotifications(ctx context.Context, localDB *gorm.DB, remoteDB syncExecutor, dbType string) (int64, string) {
-	var userNotifications []models.UserNotification
-	if err := localDB.Find(&userNotifications).Error; err != nil {
-		return 0, fmt.Sprintf("读取本地数据失败: %v", err)
-	}
+	return syncRecords(ctx, s, localDB, remoteDB, syncTableUserNotifications, dbType, userNotificationSyncValues)
+}
 
-	var ids []interface{}
-	for _, un := range userNotifications {
-		ids = append(ids, un.ID)
-		query, err := s.buildUpsertQuery("user_notifications", dbType)
-		if err != nil {
-			return 0, err.Error()
-		}
-		_, err = remoteDB.ExecContext(ctx, query, un.ID, un.UserID, un.NotificationID, un.IsRead, un.ReadTime)
-		if err != nil {
-			return 0, fmt.Sprintf("同步失败: %v", err)
-		}
-	}
-
-	if err := s.deleteExtras(ctx, remoteDB, "user_notifications", ids, dbType); err != nil {
-		return 0, fmt.Sprintf("清理 user_notifications 多余数据失败: %v", err)
-	}
-
-	return int64(len(userNotifications)), ""
+func userNotificationSyncValues(un models.UserNotification) (int64, []interface{}) {
+	return un.ID, []interface{}{un.ID, un.UserID, un.NotificationID, un.IsRead, un.ReadTime}
 }
 
 // syncPersonalAccessTokens 同步个人访问令牌表
 func (s *SyncService) syncPersonalAccessTokens(ctx context.Context, localDB *gorm.DB, remoteDB syncExecutor, dbType string) (int64, string) {
-	var tokens []models.PersonalAccessToken
-	if err := localDB.Find(&tokens).Error; err != nil {
-		return 0, fmt.Sprintf("读取本地数据失败: %v", err)
-	}
+	return syncRecords(ctx, s, localDB, remoteDB, syncTablePersonalAccessTokens, dbType, tokenSyncValues)
+}
 
-	var ids []interface{}
-	for _, t := range tokens {
-		ids = append(ids, t.ID)
-		query, err := s.buildUpsertQuery("personal_access_tokens", dbType)
-		if err != nil {
-			return 0, err.Error()
-		}
-		_, err = remoteDB.ExecContext(ctx, query, t.ID, t.UserID, t.Name, t.TokenHash, t.Scopes, t.Status, t.LastUsedAt, t.ExpiresAt, t.CreateTime, t.UpdateTime)
-		if err != nil {
-			return 0, fmt.Sprintf("同步失败: %v", err)
-		}
-	}
-
-	if err := s.deleteExtras(ctx, remoteDB, "personal_access_tokens", ids, dbType); err != nil {
-		return 0, fmt.Sprintf("清理 personal_access_tokens 多余数据失败: %v", err)
-	}
-
-	return int64(len(tokens)), ""
+func tokenSyncValues(t models.PersonalAccessToken) (int64, []interface{}) {
+	return t.ID, []interface{}{t.ID, t.UserID, t.Name, t.TokenHash, t.Scopes, t.Status, t.LastUsedAt, t.ExpiresAt, t.CreateTime, t.UpdateTime}
 }
 
 // buildUpsertQuery 构建 UPSERT 语句 (支持 PostgreSQL 和 MySQL)
@@ -531,7 +454,7 @@ func (s *SyncService) buildUpsertQuery(table string, dbType string) (string, err
 		quotedCol := s.quoteColumn(col, dbType)
 		quotedColumns = append(quotedColumns, quotedCol)
 
-		if dbType == "postgres" {
+		if dbType == postgresDialect {
 			placeholders = append(placeholders, fmt.Sprintf("$%d", i+1))
 			if col != "id" {
 				updateSet = append(updateSet, fmt.Sprintf("%s = EXCLUDED.%s", quotedCol, quotedCol))
@@ -545,7 +468,7 @@ func (s *SyncService) buildUpsertQuery(table string, dbType string) (string, err
 		}
 	}
 
-	if dbType == "postgres" {
+	if dbType == postgresDialect {
 		return fmt.Sprintf("INSERT INTO %s (%s) VALUES (%s) ON CONFLICT (%s) DO UPDATE SET %s",
 			quotedTable,
 			strings.Join(quotedColumns, ", "),
@@ -569,7 +492,7 @@ func (s *SyncService) quoteSyncIdentifier(identifier string, dbType string) (str
 }
 
 func (s *SyncService) quoteColumn(identifier string, dbType string) string {
-	if dbType == "postgres" {
+	if dbType == postgresDialect {
 		return `"` + identifier + `"`
 	}
 	return "`" + identifier + "`"

@@ -1,3 +1,4 @@
+// Package logger configures structured logs with bounded file rotation.
 package logger
 
 import (
@@ -93,6 +94,8 @@ func slogLevel(level string) slog.Level {
 // 通常在 main 函数退出前调用: defer logger.Sync()
 func Sync() {
 	if Log != nil {
-		_ = Log.Sync()
+		if err := Log.Sync(); err != nil {
+			slog.Debug("Unable to flush application log", "error", err)
+		}
 	}
 }

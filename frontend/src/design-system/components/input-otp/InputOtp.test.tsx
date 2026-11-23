@@ -10,6 +10,19 @@ function Controlled() {
 }
 
 describe('InputOtp', () => {
+  it('disables text suggestions while retaining the first-slot verification-code token', () => {
+    render(<Controlled />)
+
+    const slots = screen.getAllByRole('textbox')
+    for (const [index, slot] of slots.entries()) {
+      expect(slot).toHaveAttribute('autocomplete', index === 0 ? 'one-time-code' : 'off')
+      expect(slot).toHaveAttribute('autocorrect', 'off')
+      expect(slot).toHaveAttribute('autocapitalize', 'off')
+      expect(slot).toHaveAttribute('spellcheck', 'false')
+      expect(slot).toHaveAttribute('writingsuggestions', 'false')
+    }
+  })
+
   it('accepts digits and advances focus, rejecting non-numeric input', async () => {
     render(<Controlled />)
     const slots = screen.getAllByRole('textbox')

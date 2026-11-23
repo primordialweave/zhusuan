@@ -1,5 +1,6 @@
-import { createRainRenderer, type RainRenderer } from './renderRain2D'
-import { createSceneGLRenderer, type SceneGLRenderer } from './renderSceneGL'
+import { createAtmosphereRenderer, type SceneParticlePreset } from './renderAtmosphere2D'
+import type { RainRenderer } from './renderRain2D'
+import { createSceneGLRenderer, type SceneGLOptions, type SceneGLRenderer } from './renderSceneGL'
 import {
   getRenderScale,
   getSceneCrop,
@@ -13,6 +14,10 @@ export interface SceneRuntimeOptions {
   rainCanvas: HTMLCanvasElement
   masksUrl: string
   sceneUrl: string
+  /** Optional WebGL motion/glow tuning per theme pack. */
+  glOptions?: SceneGLOptions
+  /** Atmospheric 2D particle preset; defaults to classic rain. */
+  particlePreset?: SceneParticlePreset
   /** How the still is cropped into the stage; defaults to the app shell's cover crop. */
   crop?: SceneCropFn
   /** Called once the first animated frame is on screen, and again when a layer is lost or back. */
@@ -56,10 +61,21 @@ const loadImage = (url: string) =>
  * than a 60Hz one, and the loop stops while the document is hidden.
  */
 export async function startSceneRuntime(options: SceneRuntimeOptions): Promise<SceneRuntime> {
-  const { glCanvas, masksUrl, onActiveChange, rainCanvas, sceneUrl, signal } = options
+  const {
+    glCanvas,
+    glOptions,
+    masksUrl,
+    onActiveChange,
+    particlePreset = 'rain',
+    rainCanvas,
+    sceneUrl,
+    signal,
+  } = options
   const cropFor = options.crop ?? getSceneCrop
   const stage = glCanvas.parentElement
   let disposed = false
+  let nativeWindowHidden = document.documentElement.dataset.nativeWindowVisibility === 'hidden'
+  let startupFinished = false
   let quality: SceneQuality = 'standard'
   let appliedQuality: SceneQuality | null = null
   let gl: SceneGLRenderer | null = null
@@ -72,20 +88,47 @@ export async function startSceneRuntime(options: SceneRuntimeOptions): Promise<S
   let sinceRain = 0
   let announced = false
 
-  const [sceneImage, masksImage] = await Promise.all([loadImage(sceneUrl), loadImage(masksUrl)])
-  // One canvas owns one context, so a cancelled start must not touch it.
+  const handleNativeWindowVisibility = (event: Event) => {
+    nativeWindowHidden = Boolean((event as CustomEvent<{ hidden?: boolean }>).detail?.hidden)
+    if (!startupFinished || disposed) return
+    if (nativeWindowHidden) stop()
+    else start()
+  }
+  const cancelStartup = () => {
+    window.removeEventListener('zhusuan:window-visibility', handleNativeWindowVisibility)
+  }
+  const releaseStartupListeners = () => {
+    cancelStartup()
+    signal.removeEventListener('abort', cancelStartup)
+  }
+
   if (signal.aborted) return idleRuntime
+  window.addEventListener('zhusuan:window-visibility', handleNativeWindowVisibility)
+  signal.addEventListener('abort', cancelStartup, { once: true })
+  let images: [HTMLImageElement, HTMLImageElement]
+  try {
+    images = await Promise.all([loadImage(sceneUrl), loadImage(masksUrl)])
+  } catch (error) {
+    releaseStartupListeners()
+    throw error
+  }
+  // One canvas owns one context, so a cancelled start must not touch it.
+  if (signal.aborted) {
+    releaseStartupListeners()
+    return idleRuntime
+  }
+  const [sceneImage, masksImage] = images
 
   const buildGL = (): SceneGLRenderer | null => {
     try {
-      return createSceneGLRenderer(glCanvas, sceneImage, masksImage)
+      return createSceneGLRenderer(glCanvas, sceneImage, masksImage, glOptions)
     } catch {
       return null
     }
   }
   gl = buildGL()
   try {
-    rain = createRainRenderer(rainCanvas)
+    rain = createAtmosphereRenderer(rainCanvas, particlePreset)
   } catch {
     rain = null
   }
@@ -137,7 +180,7 @@ export async function startSceneRuntime(options: SceneRuntimeOptions): Promise<S
   }
 
   const start = () => {
-    if (disposed || frame !== 0 || document.hidden || (!gl && !rain)) return
+    if (disposed || frame !== 0 || document.hidden || nativeWindowHidden || (!gl && !rain)) return
     // Restart the clock so time spent hidden is not replayed as one long step.
     lastTime = 0
     sinceGL = 0
@@ -146,7 +189,7 @@ export async function startSceneRuntime(options: SceneRuntimeOptions): Promise<S
   }
 
   const handleVisibility = () => {
-    if (document.hidden) stop()
+    if (document.hidden || nativeWindowHidden) stop()
     else start()
   }
 
@@ -172,30 +215,42 @@ export async function startSceneRuntime(options: SceneRuntimeOptions): Promise<S
   glCanvas.addEventListener('webglcontextlost', handleContextLost)
   glCanvas.addEventListener('webglcontextrestored', handleContextRestored)
 
-  layout()
-  if (gl && gl.measureFrameMs() > SLOW_FRAME_MS) {
-    quality = 'low'
-    layout()
-    if (gl.measureFrameMs() > STALLED_FRAME_MS) {
-      // Too slow even at the low profile: keep the rain over the still and drop WebGL for good.
-      gl.dispose()
-      gl = null
-      glAllowed = false
-    }
+  const dispose = () => {
+    disposed = true
+    stop()
+    observer?.disconnect()
+    document.removeEventListener('visibilitychange', handleVisibility)
+    releaseStartupListeners()
+    glCanvas.removeEventListener('webglcontextlost', handleContextLost)
+    glCanvas.removeEventListener('webglcontextrestored', handleContextRestored)
+    gl?.dispose()
+    gl = null
+    rain = null
   }
-  start()
 
-  return {
-    dispose() {
-      disposed = true
-      stop()
-      observer?.disconnect()
-      document.removeEventListener('visibilitychange', handleVisibility)
-      glCanvas.removeEventListener('webglcontextlost', handleContextLost)
-      glCanvas.removeEventListener('webglcontextrestored', handleContextRestored)
-      gl?.dispose()
-      gl = null
-      rain = null
-    },
+  try {
+    layout()
+    if (gl && gl.measureFrameMs() > SLOW_FRAME_MS) {
+      quality = 'low'
+      layout()
+      if (gl.measureFrameMs() > STALLED_FRAME_MS) {
+        // Too slow even at the low profile: keep the rain over the still and drop WebGL for good.
+        gl.dispose()
+        gl = null
+        glAllowed = false
+      }
+    }
+    if (signal.aborted) {
+      dispose()
+      return idleRuntime
+    }
+    startupFinished = true
+    signal.removeEventListener('abort', cancelStartup)
+    start()
+  } catch (error) {
+    dispose()
+    throw error
   }
+
+  return { dispose }
 }

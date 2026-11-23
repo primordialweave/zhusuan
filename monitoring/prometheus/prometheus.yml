@@ -23,7 +23,7 @@ scrape_configs:
   # 珠算 API 应用监控
   - job_name: 'zhusuan-api'
     static_configs:
-      - targets: ['host.docker.internal:3456']  # Windows Docker使用host.docker.internal
+      - targets: ['host.docker.internal:3456']  # Compose 为 Linux 配置 host-gateway；桌面 Docker 也支持此名称
     metrics_path: '/metrics'
     scrape_interval: 10s
 

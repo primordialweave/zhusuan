@@ -56,7 +56,7 @@ func (s *ProfileService) UpdateProfile(userID int64, name, email, phone, departm
 	updates := map[string]interface{}{}
 
 	if name != "" {
-		updates["name"] = name
+		updates[columnName] = name
 	}
 	if email != "" {
 		if s.userRepo.ExistsByEmailExceptID(email, userID) {
@@ -124,7 +124,7 @@ func (s *ProfileService) ChangePassword(userID int64, oldPassword, newPassword s
 
 	// 4. 更新数据库
 	if err := s.userRepo.UpdateFields(userID, map[string]interface{}{
-		"password": hashedPassword,
+		columnPassword: hashedPassword,
 	}); err != nil {
 		return pkgerrors.Wrap(err, "更新密码失败")
 	}

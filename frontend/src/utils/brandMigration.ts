@@ -7,6 +7,7 @@ const preferenceKeys = [
   'rememberMe',
   'workbenchSummaryScope',
   'zhusuan.appearance.v1',
+  'zhusuan.themePack.v1',
 ] as const
 
 export const applyLegacyPreferences = (values: Record<string, unknown>, storage: Storage) => {

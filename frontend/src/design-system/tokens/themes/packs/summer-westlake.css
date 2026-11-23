@@ -1,0 +1,120 @@
+/* 曲院风荷 — Summer West Lake incremental palette over 烟雨 / 夜雨. */
+:root:not([data-theme])[data-theme-pack='summer-westlake'],
+[data-theme='light'][data-theme-pack='summer-westlake'] {
+  --ods-color-bg-canvas: #e5f1ef;
+  --ods-color-bg-canvas-rgb: 229, 241, 239;
+  --ods-color-bg-canvas-subtle: #e7f3f1;
+  --ods-color-bg-surface: #edf6f4;
+  --ods-color-bg-surface-raised: rgba(232, 244, 242, 0.92);
+  --ods-color-bg-surface-glass: rgba(242, 250, 249, 0.31);
+  --ods-color-bg-surface-glass-dense: rgba(242, 250, 249, 0.46);
+  --ods-color-bg-surface-hover: rgba(34, 102, 94, 0.07);
+  --ods-color-bg-surface-pressed: rgba(34, 102, 94, 0.12);
+  --ods-color-fg-default: #0e3230;
+  --ods-color-fg-default-rgb: 14, 50, 48;
+  --ods-color-fg-relaxed: rgba(14, 50, 48, 0.88);
+  --ods-color-fg-muted: #385452;
+  --ods-color-fg-subtle: #46615f;
+  --ods-color-fg-disabled: rgba(14, 50, 48, 0.32);
+  --ods-color-border-default: #c8dedb;
+  --ods-color-border-strong: #9fc0bc;
+  --ods-color-border-control: #688e8a;
+  --ods-color-accent: #4c9a8d;
+  --ods-color-accent-text: #1f645b;
+  --ods-color-accent-rgb: 76, 154, 141;
+  --ods-color-accent-hover: #5ca89b;
+  --ods-color-accent-pressed: #398377;
+  --ods-color-accent-soft: rgba(76, 154, 141, 0.24);
+  --ods-color-accent-fg: #0c2e2c;
+  --ods-color-accent-warm: #db9a9a;
+  --ods-color-ambient-glow: rgba(76, 154, 141, 0.06);
+  --ods-color-selection: rgba(76, 154, 141, 0.28);
+  --ods-color-scene-veil: rgba(229, 241, 239, 0);
+  --ods-color-scene-mist: rgba(229, 241, 239, 0.3);
+  --ods-gradient-glow:
+    radial-gradient(ellipse at 28% 0%, rgba(255, 255, 255, 0.48), transparent 65%),
+    linear-gradient(165deg, #d3efe9 0%, #b7e2da 52%, #9ed3ca 100%);
+  --ods-gradient-nav-selected: radial-gradient(
+    75% 90% at 38% 25%,
+    #e2f6f2 0%,
+    #c3e8e1 33%,
+    #b6e0d8 65%,
+    #aedbd3 90%
+  );
+  --ods-gradient-text: linear-gradient(135deg, #1f645b 0%, #388277 58%, #4c9a8d 100%);
+  --ods-gradient-brand-surface: linear-gradient(135deg, #1f645b 0%, #2a786e 54%, #18514a 100%);
+  --ods-material-jade-icon-edge: #388076;
+  --ods-material-jade-icon-depth: #144943;
+  --ods-material-jade-icon-shadow: rgba(14, 50, 48, 0.24);
+  --ods-material-jade-icon-tint: rgba(76, 154, 141, 0.18);
+  --ods-material-jade-icon-on-accent-edge: #1b514a;
+  --ods-material-jade-icon-on-accent-depth: #08201e;
+  --ods-material-frost-veil: rgba(224, 239, 237, 0.78);
+  --ods-data-series-actual: #398377;
+  --ods-data-series-actual-fill: rgba(76, 154, 141, 0.2);
+  --ods-data-part-paid: #398377;
+  --ods-data-grid: rgba(14, 50, 48, 0.1);
+  --ods-data-tooltip-bg: #f4fbfa;
+  --ods-data-tooltip-fg: #0e3230;
+  --ods-data-tooltip-border: #c8dedb;
+  --ods-data-point-bg: #f4fbfa;
+}
+
+[data-theme='dark'][data-theme-pack='summer-westlake'] {
+  --ods-color-bg-canvas: #102323;
+  --ods-color-bg-canvas-rgb: 16, 35, 35;
+  --ods-color-bg-canvas-subtle: #142a2a;
+  --ods-color-bg-surface: #1d3636;
+  --ods-color-bg-surface-raised: rgba(23, 44, 44, 0.96);
+  --ods-color-bg-surface-glass: rgba(25, 51, 51, 0.86);
+  --ods-color-bg-surface-glass-dense: var(--ods-color-bg-surface-glass);
+  --ods-color-bg-surface-hover: rgba(126, 212, 198, 0.08);
+  --ods-color-bg-surface-pressed: rgba(126, 212, 198, 0.14);
+  --ods-color-fg-default: #e4f4f2;
+  --ods-color-fg-default-rgb: 228, 244, 242;
+  --ods-color-fg-relaxed: rgba(228, 244, 242, 0.9);
+  --ods-color-fg-muted: #a6c4c0;
+  --ods-color-fg-subtle: #8caea9;
+  --ods-color-fg-disabled: rgba(228, 244, 242, 0.3);
+  --ods-color-border-default: #365656;
+  --ods-color-border-strong: #4e7372;
+  --ods-color-border-control: #6f9796;
+  --ods-color-accent: #6ec4b2;
+  --ods-color-accent-text: #8cd8c8;
+  --ods-color-accent-rgb: 110, 196, 178;
+  --ods-color-accent-hover: #82d1c1;
+  --ods-color-accent-pressed: #59ae9d;
+  --ods-color-accent-soft: rgba(110, 196, 178, 0.2);
+  --ods-color-accent-fg: #0b1b1b;
+  --ods-color-accent-warm: #e4a9a8;
+  --ods-color-ambient-glow: rgba(110, 196, 178, 0.06);
+  --ods-color-selection: rgba(110, 196, 178, 0.3);
+  --ods-color-scene-veil: rgba(10, 24, 25, 0.66);
+  --ods-color-scene-mist: rgba(10, 24, 25, 0);
+  --ods-gradient-glow:
+    radial-gradient(ellipse at 28% 0%, rgba(228, 255, 249, 0.28), transparent 65%),
+    linear-gradient(165deg, #9ed9cc 0%, #7bc3b4 52%, #63afa0 100%);
+  --ods-gradient-nav-selected: radial-gradient(
+    75% 90% at 38% 25%,
+    #b6e5da 0%,
+    #86cbbd 40%,
+    #6db8a8 90%
+  );
+  --ods-gradient-text: linear-gradient(135deg, #b6e5da 0%, #8cd8c8 58%, #6ec4b2 100%);
+  --ods-gradient-brand-surface: linear-gradient(135deg, #1f4444 0%, #1a3a3a 54%, #152c2c 100%);
+  --ods-material-jade-icon-edge: #bfe9e0;
+  --ods-material-jade-icon-depth: #5ca99b;
+  --ods-material-jade-icon-shadow: rgba(5, 18, 18, 0.44);
+  --ods-material-jade-icon-tint: rgba(126, 212, 198, 0.16);
+  --ods-material-jade-icon-on-accent-edge: #113432;
+  --ods-material-jade-icon-on-accent-depth: #051313;
+  --ods-material-frost-veil: rgba(23, 44, 44, 0.9);
+  --ods-data-series-actual: #6ec4b2;
+  --ods-data-series-actual-fill: rgba(110, 196, 178, 0.2);
+  --ods-data-part-paid: #6ec4b2;
+  --ods-data-grid: rgba(228, 244, 242, 0.09);
+  --ods-data-tooltip-bg: #1d3636;
+  --ods-data-tooltip-fg: #e4f4f2;
+  --ods-data-tooltip-border: #365656;
+  --ods-data-point-bg: #1d3636;
+}

@@ -65,6 +65,21 @@ async function fillPayment(
 }
 
 describe('PaymentCreateView design system migration', () => {
+  it.each(['abc', '0', '-1', '9007199254740993'])(
+    'rejects invalid project address %s instead of defaulting receipts to another project',
+    async (id) => {
+      render(
+        <Routes>
+          <Route element={<PaymentCreateView />} path="/projects/:id/payment/create" />
+        </Routes>,
+        { initialEntries: [`/projects/${id}/payment/create`] },
+      )
+      expect(await screen.findByRole('alert')).toHaveTextContent('项目地址无效')
+      expect(projectApi.get).not.toHaveBeenCalled()
+      expect(projectApi.list).not.toHaveBeenCalled()
+      expect(screen.queryByRole('button', { name: '录入收款' })).not.toBeInTheDocument()
+    },
+  )
   afterEach(() => vi.restoreAllMocks())
 
   beforeEach(() => {

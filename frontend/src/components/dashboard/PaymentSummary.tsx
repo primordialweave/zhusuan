@@ -1,6 +1,7 @@
 import { useId } from 'react'
 import { Button, Skeleton, Surface, Tooltip } from '@/design-system'
-import { formatAmount } from '@/utils/format'
+import { usePrivacyMode } from '@/stores/desktop'
+import { formatAmount, maskAmount } from '@/utils/format'
 import { PAYMENT_SUMMARY_SCOPES, type PaymentSummaryScope } from './paymentSummaryScope'
 
 export type PaymentSummaryStatus = 'loading' | 'data' | 'error'
@@ -150,6 +151,8 @@ export default function PaymentSummary({
   scope = 'all',
   status,
 }: PaymentSummaryProps) {
+  const privacyMode = usePrivacyMode()
+  const showAmount = (value: number) => maskAmount(formatAmount(value), privacyMode)
   const loading = status === 'loading'
   const empty = status === 'data' && paid === 0 && pending === 0
   const nextScope =
@@ -218,7 +221,7 @@ export default function PaymentSummary({
                     width="5.5rem"
                   />
                 ) : (
-                  formatAmount(paid)
+                  showAmount(paid)
                 )}
               </dd>
             </div>
@@ -233,14 +236,14 @@ export default function PaymentSummary({
                     width="5.5rem"
                   />
                 ) : (
-                  formatAmount(pending)
+                  showAmount(pending)
                 )}
               </dd>
             </div>
           </dl>
         )}
         {status === 'data' && overpaid > 0 ? (
-          <span className="payment-summary__overpaid">超收 {formatAmount(overpaid)}</span>
+          <span className="payment-summary__overpaid">超收 {showAmount(overpaid)}</span>
         ) : null}
       </div>
       {refreshing && !loading ? <Skeleton className="payment-summary__refresh-skeleton" /> : null}

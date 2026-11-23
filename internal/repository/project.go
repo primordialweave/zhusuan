@@ -1,6 +1,8 @@
 package repository
 
 import (
+	"strings"
+
 	"gorm.io/gorm"
 
 	"github.com/primordialweave/zhusuan/internal/database"
@@ -39,7 +41,7 @@ func (r *ProjectRepository) FindByIDForUser(id, userID int64) (*models.Project, 
 func (r *ProjectRepository) FindByIDWithPaymentsForUser(id, userID int64) (*models.Project, error) {
 	var project models.Project
 	if err := r.db.Preload("Payments", func(db *gorm.DB) *gorm.DB {
-		return db.Order("plan_date DESC")
+		return db.Where("user_id = ?", userID).Order("plan_date DESC")
 	}).Where("id = ? AND user_id = ?", id, userID).First(&project).Error; err != nil {
 		return nil, err
 	}
@@ -47,7 +49,7 @@ func (r *ProjectRepository) FindByIDWithPaymentsForUser(id, userID int64) (*mode
 }
 
 // List 分页查询项目列表
-// 支持按用户ID(数据隔离)、状态、关键词(名称或公司名)进行筛选。
+// 支持按用户ID(数据隔离)、逗号分隔的状态、关键词(名称或公司名)进行筛选。
 // Preload("User"): 预加载关联的用户信息。
 func (r *ProjectRepository) List(userID int64, status, keyword string, page, pageSize int) ([]models.Project, int64, error) {
 	var projects []models.Project
@@ -57,8 +59,23 @@ func (r *ProjectRepository) List(userID int64, status, keyword string, page, pag
 	query := r.db.Model(&models.Project{}).Scopes(UserScope(userID)).Preload("User")
 
 	// 动态条件筛选
-	if status != "" && status != "all" {
-		query = query.Where("status = ?", status)
+	statuses := make([]string, 0)
+	seen := make(map[string]struct{})
+	for _, value := range strings.Split(status, ",") {
+		value = strings.TrimSpace(value)
+		if value == "all" {
+			// "all" preserves the unrestricted legacy query, even with other values.
+			statuses = nil
+			break
+		}
+		if _, duplicate := seen[value]; value == "" || duplicate {
+			continue
+		}
+		seen[value] = struct{}{}
+		statuses = append(statuses, value)
+	}
+	if len(statuses) > 0 {
+		query = query.Where("status IN ?", statuses)
 	}
 	if keyword != "" {
 		query = query.Where("(name LIKE ? OR company LIKE ?)", "%"+keyword+"%", "%"+keyword+"%")
@@ -120,7 +137,7 @@ func (r *ProjectRepository) GetStats(userID int64) (totalAmount, paidAmount, pen
 	// 2. 统计已收金额 (关联查询 payment 表中 status='confirmed' 的记录)
 	if err = r.db.Model(&models.Payment{}).
 		Joins("JOIN projects ON payments.project_id = projects.id").
-		Where("projects.user_id = ? AND payments.status = ?", userID, "confirmed").
+		Where("projects.user_id = ? AND payments.user_id = projects.user_id AND payments.status = ?", userID, "confirmed").
 		Select("COALESCE(SUM(payments.amount), 0)").Scan(&paidAmount).Error; err != nil {
 		return
 	}

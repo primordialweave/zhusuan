@@ -4,6 +4,7 @@ import (
 	"errors"
 
 	"github.com/primordialweave/zhusuan/internal/models"
+	bizerrors "github.com/primordialweave/zhusuan/internal/pkg/errors"
 	"github.com/primordialweave/zhusuan/internal/repository"
 )
 
@@ -67,15 +68,19 @@ func (s *NotificationService) Create(senderID int64, title, content, notificatio
 
 	// 4. 构建实体
 	notification := &models.Notification{
-		Title:    title,
-		Content:  content,
-		Type:     typeInt,
-		SenderID: senderID,
-		IsGlobal: isGlobal,
+		Title:        title,
+		Content:      content,
+		Type:         typeInt,
+		SenderID:     senderID,
+		IsGlobal:     isGlobal,
+		TargetUserID: targetUserID,
 	}
 
 	// 5. 写入数据库 (Repo层在处理非Global通知时可能会同时插入关联表)
 	if err := s.notificationRepo.Create(notification, targetUserID); err != nil {
+		if bizerrors.GetBizError(err) != nil {
+			return nil, err
+		}
 		return nil, errors.New("创建通知失败")
 	}
 
@@ -83,8 +88,7 @@ func (s *NotificationService) Create(senderID int64, title, content, notificatio
 }
 
 // Update 更新通知内容（仅管理员）
-// 注意：目前支持修改标题、内容、类型和范围标记。
-// 如果涉及到接收关系的变更（如从全员改为私信），需要在Repo层有相应的处理逻辑。
+// 通知内容与收件箱关系在同一事务中更新。
 //
 // 参数:
 //   - id: 通知ID
@@ -132,13 +136,14 @@ func (s *NotificationService) Update(id int64, title, content, notificationType 
 	notification.Type = typeInt
 	notification.IsGlobal = isGlobal
 
-	// 注意：Update 目前只更新通知表基本信息，未涉及 user_notifications 关系的调整
-	// 如果需要支持从 私信改全员 或 全员改私信 的复杂逻辑，需要repo层配合修改
-
 	// 5. 执行更新
-	if err := s.notificationRepo.Update(notification); err != nil {
+	if err := s.notificationRepo.Update(notification, targetUserID); err != nil {
+		if bizerrors.GetBizError(err) != nil {
+			return nil, err
+		}
 		return nil, errors.New("更新通知失败")
 	}
+	notification.TargetUserID = targetUserID
 
 	return notification, nil
 }

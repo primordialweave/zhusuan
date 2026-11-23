@@ -28,9 +28,11 @@ import {
 } from '@/design-system'
 import { useProjectExport } from '@/components/project/useProjectExport'
 import { useToastStore } from '@/composables/useToast'
-import { formatCurrency, formatDate } from '@/utils/format'
+import { usePrivacyMode } from '@/stores/desktop'
+import { formatCurrency, formatDate, maskAmount } from '@/utils/format'
 import { toDateOnly } from '@/utils/dateOnly'
 import { sortPaymentsByReceiptDate } from '@/utils/receiptOrder'
+import { parseRouteId } from '@/utils/routeId'
 import '@/styles/project-domain.css'
 import '@/styles/main-page-loading.css'
 
@@ -74,6 +76,8 @@ export default function ProjectDetailView() {
   const [searchParams, setSearchParams] = useSearchParams()
   const requestedTab = searchParams.get('tab')
   const requestedPayment = searchParams.get('payment')
+  const privacyMode = usePrivacyMode()
+  const showCurrency = (value: number) => maskAmount(formatCurrency(value), privacyMode)
   const toastError = useToastStore((state) => state.error)
   const { exportProject, lastSavedExport } = useProjectExport()
   const [project, setProject] = useState<Project | null>(null)
@@ -85,7 +89,7 @@ export default function ProjectDetailView() {
   const positionedPaymentRef = useRef<string | null>(null)
   const isMountedRef = useRef(false)
   const loadGenerationRef = useRef(0)
-  const projectId = id ? Number(id) : null
+  const projectId = parseRouteId(id)
   const activeProjectIdRef = useRef<number | null>(projectId)
 
   const activeTab = requestedTab === 'payments' ? 'payments' : 'overview'
@@ -202,7 +206,20 @@ export default function ProjectDetailView() {
     target.focus?.({ preventScroll: true })
   }, [activeTab, id, payments, requestedPayment])
 
-  if (projectId !== null && loadErrorProjectId === projectId) {
+  if (projectId === null) {
+    return (
+      <Card.Root>
+        <EmptyState
+          action={<RouterButton to="/projects">返回项目列表</RouterButton>}
+          icon={<JadeIcon name="warning" size="1em" />}
+          role="alert"
+          title="项目地址无效"
+        />
+      </Card.Root>
+    )
+  }
+
+  if (loadErrorProjectId === projectId) {
     return (
       <Card.Root>
         <EmptyState
@@ -419,7 +436,7 @@ export default function ProjectDetailView() {
                   <div className="project-settlement-board__headline">
                     <span className="project-settlement-board__label">合同未收</span>
                     <strong className="project-settlement-board__amount">
-                      {formatCurrency(remainingAmount)}
+                      {showCurrency(remainingAmount)}
                     </strong>
                   </div>
 
@@ -441,12 +458,12 @@ export default function ProjectDetailView() {
                   <dl className="project-settlement-stats">
                     <div>
                       <dt>合同总额</dt>
-                      <dd>{formatCurrency(project.total_amount)}</dd>
+                      <dd>{showCurrency(project.total_amount)}</dd>
                     </div>
                     <div>
                       <dt>已收款</dt>
                       <dd className="project-settlement-stats__success">
-                        {formatCurrency(paidAmount)}
+                        {showCurrency(paidAmount)}
                       </dd>
                     </div>
                     <div>
@@ -555,7 +572,7 @@ export default function ProjectDetailView() {
                         <div className="project-next-payment">
                           <div>
                             <span>{getPaymentStageLabel(latestReceipt.stage)}</span>
-                            <strong>{formatCurrency(latestReceipt.amount)}</strong>
+                            <strong>{showCurrency(latestReceipt.amount)}</strong>
                           </div>
                           <time dateTime={toDateOnly(latestReceipt.actual_date) || undefined}>
                             {latestReceipt.actual_date
@@ -686,7 +703,7 @@ export default function ProjectDetailView() {
                         </div>
                       </div>
                       <div className="payment-right">
-                        <div className="amount-text">{formatCurrency(payment.amount)}</div>
+                        <div className="amount-text">{showCurrency(payment.amount)}</div>
                         {!isPaymentSettled(payment) ? (
                           <RouterButton
                             aria-label={`${getPaymentStageLabel(payment.stage)}：登记到账`}

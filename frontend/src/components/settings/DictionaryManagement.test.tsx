@@ -52,6 +52,39 @@ describe('DictionaryManagement request integrity', () => {
     vi.mocked(dictionaryApi.getItems).mockResolvedValue(response([]) as never)
   })
 
+  it('does not reload the old dictionary when a deletion finishes after switching categories', async () => {
+    const user = userEvent.setup()
+    const deletion = deferred<unknown>()
+    vi.mocked(dictionaryApi.getItems).mockImplementation(
+      (code) =>
+        Promise.resolve(
+          response([
+            dictionaryItem(
+              code === 'project_type' ? 11 : 21,
+              code === 'project_type' ? 1 : 2,
+              code === 'project_type' ? '旧分类条目' : '当前分类条目',
+            ),
+          ]),
+        ) as never,
+    )
+    vi.mocked(dictionaryApi.deleteItem).mockReturnValueOnce(deletion.promise as never)
+    render(<DictionaryManagement />)
+    const row = await screen.findByRole('row', { name: /旧分类条目/ })
+    await user.click(row.querySelector('button[aria-label="删除字典条目"]') as HTMLButtonElement)
+    await user.click(screen.getByRole('button', { name: '删除选项' }))
+    await waitFor(() => expect(dictionaryApi.deleteItem).toHaveBeenCalledOnce())
+    await user.click(screen.getByRole('tab', { name: '收款阶段' }))
+    await screen.findByRole('row', { name: /当前分类条目/ })
+    await act(async () => {
+      deletion.resolve(response(null))
+    })
+    expect(screen.getByRole('row', { name: /当前分类条目/ })).toBeInTheDocument()
+    expect(vi.mocked(dictionaryApi.getItems).mock.calls.map(([code]) => code)).toEqual([
+      'project_type',
+      'payment_stage',
+    ])
+  })
+
   it('shows dictionary and item skeletons until their independent requests resolve', async () => {
     const listRequest = deferred<ReturnType<typeof response<Dictionary[]>>>()
     const itemsRequest = deferred<ReturnType<typeof response<DictionaryItem[]>>>()

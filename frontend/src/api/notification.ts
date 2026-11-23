@@ -13,9 +13,11 @@ export interface Notification {
   type: number // 通知类型: 1:System(系统), 2:Activity(活动), 3:Private(私信)
   sender_id: number
   is_global: number // 是否全员通知: 0:否, 1:是
-  is_read: boolean  // 当前用户是否已读
+  target_user_id?: number // 当前收件人；全员为 0，旧的非全员通知可能无法确定
+  is_read: boolean // 当前用户是否已读
   create_time: string
-  sender?: {        // 发送者信息
+  sender?: {
+    // 发送者信息
     id: number
     name: string
     username: string
@@ -64,12 +66,10 @@ export const notificationApi = {
   },
 
   // 标记通知为已读
-  markAsRead: (id: number) =>
-    api.put<ApiResponse<null>>(`/notifications/${id}/read`),
+  markAsRead: (id: number) => api.put<ApiResponse<null>>(`/notifications/${id}/read`),
 
   // 删除通知 (管理员权限)
-  delete: (id: number) =>
-    api.delete<ApiResponse<null>>(`/notifications/${id}`),
+  delete: (id: number) => api.delete<ApiResponse<null>>(`/notifications/${id}`),
 
   // 获取当前用户的未读通知数量
   getUnreadCount: () =>

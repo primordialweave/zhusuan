@@ -25,6 +25,32 @@ describe('TokenManagement modal', () => {
     vi.mocked(tokenApi.list).mockResolvedValue(emptyTokenResponse as never)
   })
 
+  it('does not revoke a token after its confirmation outlives the panel', async () => {
+    const user = userEvent.setup()
+    const revoke = vi.spyOn(tokenApi, 'revoke').mockResolvedValue({ data: { data: null } } as never)
+    vi.mocked(tokenApi.list).mockResolvedValueOnce({
+      data: {
+        data: [
+          {
+            id: 4,
+            name: '旧令牌',
+            scopes: '',
+            status: 1,
+            last_used_at: null,
+            expires_at: null,
+            create_time: '2026-11-01',
+          },
+        ],
+      },
+    } as never)
+    const { rerender } = render(<TokenManagement />)
+    await user.click(await screen.findByRole('button', { name: '撤销令牌：旧令牌' }))
+    const dialog = screen.getByRole('alertdialog', { name: '撤销令牌' })
+    rerender(<div>已离开令牌设置</div>)
+    await user.click(within(dialog).getByRole('button', { name: '撤销令牌' }))
+    expect(revoke).not.toHaveBeenCalled()
+  })
+
   it('keeps an initial token request as a skeleton until it resolves empty', async () => {
     let resolveRequest!: (value: typeof emptyTokenResponse) => void
     vi.mocked(tokenApi.list).mockReturnValueOnce(

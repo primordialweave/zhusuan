@@ -25,8 +25,13 @@
   position: fixed;
   z-index: -1;
   inset: 0;
-  background: url('../assets/jiangnan/scene.webp') 56% 40% / max(120%, calc(100vh * 1.4055)) auto
-    no-repeat;
+  background: var(--ods-scene-still-url, url('../assets/jiangnan/scene.webp')) 56% 40% /
+    max(120%, calc(100vh * 1.4055)) auto no-repeat;
+  transition: opacity var(--ods-duration-fast) var(--ods-ease-standard);
+}
+
+.scene-page__still[data-loading] {
+  opacity: 0;
 }
 
 .scene-page__layer {
@@ -53,8 +58,8 @@
 
 /* No transform here or on any ancestor: it would detach the fixed backdrop from the viewport. */
 .scene-page__card {
-  --cloud-panel-backdrop: url('../assets/jiangnan/scene-frost.webp') 56% 40% /
-    max(120%, calc(100vh * 1.4055)) auto no-repeat fixed;
+  --cloud-panel-backdrop: var(--ods-scene-frost-url, url('../assets/jiangnan/scene-frost.webp')) 56%
+    40% / max(120%, calc(100vh * 1.4055)) auto no-repeat fixed;
 
   grid-column: 2;
 }

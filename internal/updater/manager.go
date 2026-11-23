@@ -98,7 +98,7 @@ func (m *Manager) importLegacyResult(legacyPath string) {
 	if err = os.MkdirAll(m.cacheRoot, 0o700); err != nil {
 		return
 	}
-	if err = os.WriteFile(filepath.Join(m.cacheRoot, "result.json"), data, 0o600); err != nil {
+	if err = os.WriteFile(filepath.Join(m.cacheRoot, "result.json"), data, 0o600); err != nil { // #nosec G703 -- Destination uses the OS cache root and fixed components; legacy result content supplies no path.
 		return
 	}
 	m.markLegacyResultImported(marker)
@@ -240,19 +240,15 @@ func (m *Manager) runUpdate(ctx context.Context, release Release, asset Asset, d
 		err = m.download(ctx, asset, digest, filepath.Join(work, asset.Name))
 	}
 	if err != nil {
-		if errors.Is(ctx.Err(), context.Canceled) || errors.Is(err, context.Canceled) {
-			m.mu.Lock()
-			m.status = Status{State: stateAvailable, Message: "已取消下载"}
-			m.mu.Unlock()
+		if updateWasCanceled(ctx, err) {
+			m.restoreAvailableAfterCancellation()
 		} else {
 			m.fail(err)
 		}
 		return
 	}
 	if err = ctx.Err(); err != nil {
-		m.mu.Lock()
-		m.status = Status{State: stateAvailable, Message: "已取消下载"}
-		m.mu.Unlock()
+		m.restoreAvailableAfterCancellation()
 		return
 	}
 	plan := installPlan{Kind: m.target.kind, Target: m.target.path, Executable: m.target.executable,
@@ -260,10 +256,8 @@ func (m *Manager) runUpdate(ctx context.Context, release Release, asset Asset, d
 		WorkDir: work, ResultPath: filepath.Join(m.cacheRoot, "result.json")}
 	plan.Staged, stagedRoot, err = prepareReplacement(ctx, plan)
 	if err != nil {
-		if ctx.Err() != nil || errors.Is(err, context.Canceled) {
-			m.mu.Lock()
-			m.status = Status{State: stateAvailable, Message: "已取消下载"}
-			m.mu.Unlock()
+		if updateWasCanceled(ctx, err) {
+			m.restoreAvailableAfterCancellation()
 		} else {
 			m.fail(err)
 		}
@@ -411,4 +405,14 @@ func (m *Manager) readPreviousResult() {
 		m.status = Status{State: stateError, Message: result.Message}
 	}
 	removeUpdateFile(filepath.Join(m.cacheRoot, "result.json"))
+}
+
+func (m *Manager) restoreAvailableAfterCancellation() {
+	m.mu.Lock()
+	defer m.mu.Unlock()
+	m.status = Status{State: stateAvailable, Message: "已取消下载"}
+}
+
+func updateWasCanceled(ctx context.Context, err error) bool {
+	return errors.Is(ctx.Err(), context.Canceled) || errors.Is(err, context.Canceled)
 }

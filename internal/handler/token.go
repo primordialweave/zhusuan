@@ -7,28 +7,31 @@ import (
 	"strconv"
 	"time"
 
+	"github.com/gin-gonic/gin"
+
 	"github.com/primordialweave/zhusuan/internal/middleware"
 	"github.com/primordialweave/zhusuan/internal/models"
 	"github.com/primordialweave/zhusuan/internal/pkg/response"
 	"github.com/primordialweave/zhusuan/internal/repository"
-	"github.com/gin-gonic/gin"
 )
 
+// TokenHandler manages the authenticated user's personal access tokens.
 type TokenHandler struct {
 	repo *repository.TokenRepository
 }
 
+// NewTokenHandler creates a handler backed by the application token repository.
 func NewTokenHandler() *TokenHandler {
 	return &TokenHandler{repo: repository.NewTokenRepository()}
 }
 
-// CreateRequest 创建令牌请求参数
+// CreateTokenRequest describes a token's name and optional lifetime.
 type CreateTokenRequest struct {
 	Name      string `json:"name" binding:"required"`
 	ExpiresIn int    `json:"expires_in"` // 过期时间 (天)，0 表示永不过期
 }
 
-// CreateResponse 创建令牌响应 (包含原始 Token)
+// CreateTokenResponse includes the raw secret once, after token creation.
 type CreateTokenResponse struct {
 	Token string                      `json:"token"`
 	Data  *models.PersonalAccessToken `json:"data"`

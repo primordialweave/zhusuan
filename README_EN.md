@@ -8,8 +8,8 @@
   <p><strong>A clean, cross-platform desktop application for project ledgers and payment tracking</strong></p>
 
   <p>
-    <a href="https://github.com/primordialweave/zhusuan/releases/tag/v1.3.1">
-      <img src="https://img.shields.io/badge/release-v1.3.1-2f6d4f?style=flat-square" alt="Release v1.3.1" />
+    <a href="https://github.com/primordialweave/zhusuan/releases/tag/v1.4.0">
+      <img src="https://img.shields.io/badge/release-v1.4.0-2f6d4f?style=flat-square" alt="Release v1.4.0" />
     </a>
     <img src="https://img.shields.io/badge/platform-macOS%20%7C%20Windows%20%7C%20Linux-4a7c59?style=flat-square" alt="Platforms" />
     <img src="https://img.shields.io/badge/Wails-v3-528c68?style=flat-square" alt="Wails v3" />
@@ -21,7 +21,7 @@
 
   <p>
     <a href="README.md">简体中文</a> ·
-    <a href="https://github.com/primordialweave/zhusuan/releases/tag/v1.3.1">Downloads</a> ·
+    <a href="https://github.com/primordialweave/zhusuan/releases/tag/v1.4.0">Downloads</a> ·
     <a href="CHANGELOG.md">Changelog</a> ·
     <a href="docs/migration.md">Migration</a> ·
     <a href="docs/release.md">Release Notes</a>
@@ -37,30 +37,60 @@
 - **Receipts & Calendar**: Create a project before receiving payment, then record each receipt with its actual date; the calendar displays actual receipts and retains historical plan data.
 - **Analytics & Export**: Contract balances by signing date for natural periods or custom months/years, independent cash receipt trends, and CSV export via native save dialogs.
 - **Administration**: Profile, dictionaries, users, notifications, cloud data sync, and appearance preferences.
-- **Native Desktop Experience**: Light/dark themes, live light/dark/system macOS icon selection, OS keychain credential storage, and verified in-app updates.
+- **Custom Themes**: Six seasonal and festival scenes with light, dark, or system appearance, automatic seasonal selection, and holiday themes. Scene, interface, and chart colors update together.
+- **Native Desktop Experience**: Menu bar / system tray residency, autostart, global shortcuts, payment reminders, and local ledger backups. A macOS overview panel and Windows / Linux quick actions complement OS keychain storage, native saving, and verified in-app updates.
 
 ## Screenshots
 
 | Workbench | Projects |
 | --- | --- |
-| ![Workbench](docs/screenshots/contracts/home-month-light.png) | ![Projects](docs/screenshots/projects.png) |
+| ![Workbench](docs/screenshots/dashboard.png) | ![Projects](docs/screenshots/projects.png) |
 | **Calendar** | **Analytics** |
-| ![Calendar](docs/screenshots/calendar.png) | ![Analytics](docs/screenshots/contracts/analytics-year-light.png) |
+| ![Calendar](docs/screenshots/calendar.png) | ![Analytics](docs/screenshots/analytics.png) |
 | **Dictionaries** | **About** |
 | ![Dictionaries](docs/screenshots/dictionary.png) | ![About](docs/screenshots/about.png) |
 
 More views: [Project detail](docs/screenshots/project-detail.png) · [Create project](docs/screenshots/project-create.png) · [Login](docs/screenshots/login.png)
 
+## Custom Themes
+
+Choose a scene in **Settings → Appearance (外观设置) → Theme Scenes (主题风物)**. The scene, interface, and chart colors update immediately without restarting. Every scene supports light, dark, or system appearance.
+
+| Theme | Scene | Motion |
+| --- | --- | --- |
+| Spring · Misty Jiangnan (烟雨江南) | Jiangnan water town | Fine rain, ripples, and willows |
+| Summer · Lotus Breeze (曲院风荷) | West Lake, Hangzhou | Fireflies, lotus leaves, and lake water |
+| Autumn · Palace Ginkgo (紫禁秋杏) | Forbidden City corner tower, Beijing | Falling ginkgo leaves and ripples |
+| Winter · Harbin Rime (哈尔滨雾凇) | Songhua River embankment | Snow and mist |
+| Spring Festival · Qinhuai Lantern Night (秦淮灯宵) | Qinhuai River, Nanjing | Sky lanterns and warm lantern light |
+| Mid-Autumn · Three Pools Mirroring the Moon (三潭印月) | West Lake, Hangzhou | Osmanthus petals and moonlit lanterns |
+
+- **Automatic seasonal selection** switches between spring, summer, autumn, and winter scenes using the local date. You can also choose a scene manually.
+- **Holiday themes** automatically apply during Spring Festival and Mid-Autumn when enabled. Both remain available for manual preview and selection all year. Choosing a seasonal scene during a festival skips that year's current festival override.
+- **Local preferences** are saved on the device, and seasonal and holiday dates are resolved offline. Scene motion, reduced motion, and liquid glass can be configured separately.
+
+![Appearance settings with six theme scenes](docs/screenshots/appearance.png)
+
+<picture>
+  <source media="(prefers-color-scheme: dark)" srcset="docs/screenshots/themes-dark.jpg" />
+  <source media="(prefers-color-scheme: light)" srcset="docs/screenshots/themes-light.jpg" />
+  <img src="docs/screenshots/themes-light.jpg" alt="Workbench preview of all six custom themes" width="100%" />
+</picture>
+
+[Light theme gallery](docs/screenshots/themes-light.jpg) · [Dark theme gallery](docs/screenshots/themes-dark.jpg)
+
+See [screenshot capture notes](docs/screenshots/README.md).
+
 ## Downloads
 
-Download the latest **v1.3.1** packages from [GitHub Releases](https://github.com/primordialweave/zhusuan/releases/tag/v1.3.1):
+Download the latest **v1.4.0** packages from [GitHub Releases](https://github.com/primordialweave/zhusuan/releases/tag/v1.4.0):
 
 | Platform | Package | Notes |
 | --- | --- | --- |
-| macOS (Apple Silicon) | [zhusuan-v1.3.1-macOS-arm64.dmg](https://github.com/primordialweave/zhusuan/releases/download/v1.3.1/zhusuan-v1.3.1-macOS-arm64.dmg) | Apple Silicon, macOS 12+ |
-| macOS (Intel) | [zhusuan-v1.3.1-macOS-amd64.dmg](https://github.com/primordialweave/zhusuan/releases/download/v1.3.1/zhusuan-v1.3.1-macOS-amd64.dmg) | Intel, macOS 12+ |
-| Windows (x64) | [zhusuan-v1.3.1-windows-amd64-installer.exe](https://github.com/primordialweave/zhusuan/releases/download/v1.3.1/zhusuan-v1.3.1-windows-amd64-installer.exe) | Per-user installer & upgrade |
-| Linux (x64) | [AppImage](https://github.com/primordialweave/zhusuan/releases/download/v1.3.1/zhusuan-v1.3.1-linux-x86_64.AppImage) · [.deb](https://github.com/primordialweave/zhusuan/releases/download/v1.3.1/zhusuan-v1.3.1-linux-amd64.deb) · [.rpm](https://github.com/primordialweave/zhusuan/releases/download/v1.3.1/zhusuan-v1.3.1-linux-amd64.rpm) | Portable & native packages |
+| macOS (Apple Silicon) | [zhusuan-v1.4.0-macOS-arm64.dmg](https://github.com/primordialweave/zhusuan/releases/download/v1.4.0/zhusuan-v1.4.0-macOS-arm64.dmg) | Apple Silicon, macOS 12+ |
+| macOS (Intel) | [zhusuan-v1.4.0-macOS-amd64.dmg](https://github.com/primordialweave/zhusuan/releases/download/v1.4.0/zhusuan-v1.4.0-macOS-amd64.dmg) | Intel, macOS 12+ |
+| Windows (x64) | [zhusuan-v1.4.0-windows-amd64-installer.exe](https://github.com/primordialweave/zhusuan/releases/download/v1.4.0/zhusuan-v1.4.0-windows-amd64-installer.exe) | Per-user installer & upgrade |
+| Linux (x64) | [AppImage](https://github.com/primordialweave/zhusuan/releases/download/v1.4.0/zhusuan-v1.4.0-linux-x86_64.AppImage) · [.deb](https://github.com/primordialweave/zhusuan/releases/download/v1.4.0/zhusuan-v1.4.0-linux-amd64.deb) · [.rpm](https://github.com/primordialweave/zhusuan/releases/download/v1.4.0/zhusuan-v1.4.0-linux-amd64.rpm) | Portable & native packages |
 
 > On macOS, open the DMG, drag Zhusuan into `Applications`, and launch it from there.
 

@@ -1,7 +1,6 @@
 package handler
 
 import (
-	"net/http"
 	"strings"
 	"time"
 
@@ -17,9 +16,7 @@ import (
 // 负责处理如版本检查、系统状态检测等全局性请求。
 type SystemHandler struct{}
 
-var updateHTTPClient = &http.Client{
-	Timeout: 10 * time.Second,
-}
+var updateHTTPClient = updater.NewHTTPClient(10 * time.Second)
 
 // NewSystemHandler 创建系统处理器实例
 func NewSystemHandler() *SystemHandler {

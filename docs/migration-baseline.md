@@ -2,6 +2,8 @@
 
 Date: 2026-07-07
 
+This records the pre-migration baseline on that date. Its Vue tooling and runtime notes are historical; the current frontend uses React, and current commands are listed in the repository README.
+
 ## Backend
 
 - Command: `go test ./...`

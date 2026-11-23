@@ -37,6 +37,14 @@ export function formatAmount(amount: number | null | undefined): string {
 }
 
 /**
+ * 隐私模式下隐藏展示金额，保留空值占位符 "—"，不影响编辑表单和 CSV 导出。
+ */
+export function maskAmount(formatted: string, privacyMode: boolean): string {
+  if (!privacyMode || formatted === '—' || formatted === '') return formatted
+  return '¥****'
+}
+
+/**
  * 格式化日期
  * @param date 日期字符串或Date对象
  * @param format 格式化模板，默认 'YYYY-MM-DD'

@@ -22,7 +22,9 @@ func TestPaymentCalendarStatsPreserveStoredDatesAcrossTimezones(t *testing.T) {
 	sqlDB, err := db.DB()
 	require.NoError(t, err)
 	t.Cleanup(func() { require.NoError(t, sqlDB.Close()) })
-	require.NoError(t, db.AutoMigrate(&models.Payment{}))
+	require.NoError(t, db.AutoMigrate(&models.User{}, &models.Project{}, &models.Payment{}))
+	require.NoError(t, db.Create(&[]models.User{{ID: 42, Username: "calendar-owner", Password: "fixture"}, {ID: 43, Username: "calendar-other", Password: "fixture"}}).Error)
+	require.NoError(t, db.Create(&[]models.Project{{ID: 1, UserID: 42, Name: "calendar", ContractNumber: "CAL-1"}, {ID: 2, UserID: 43, Name: "other", ContractNumber: "CAL-2"}}).Error)
 
 	shanghai := time.FixedZone("Shanghai", 8*60*60)
 	date := func(day string, zone *time.Location) time.Time {

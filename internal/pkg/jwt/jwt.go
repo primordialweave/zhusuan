@@ -1,3 +1,4 @@
+// Package jwt issues and validates bounded HS256 login tokens.
 package jwt
 
 import (
@@ -61,18 +62,18 @@ func ParseToken(tokenString string) (*Claims, error) {
 	token, err := jwt.ParseWithClaims(tokenString, &Claims{}, func(token *jwt.Token) (interface{}, error) {
 		// 安全检查: 验证签名算法是否为预期的 HMAC (HS256)
 		// 防止算法降级攻击 (如攻击者将 header 中的 alg 改为 None)
-		if _, ok := token.Method.(*jwt.SigningMethodHMAC); !ok {
+		if token.Method != jwt.SigningMethodHS256 {
 			return nil, errors.New("invalid signing method")
 		}
 		return SecretKey, nil
-	})
+	}, jwt.WithValidMethods([]string{jwt.SigningMethodHS256.Alg()}), jwt.WithExpirationRequired())
 
 	if err != nil {
 		return nil, err
 	}
 
 	// 验证 Token 有效性并提取 Claims
-	if claims, ok := token.Claims.(*Claims); ok && token.Valid {
+	if claims, ok := token.Claims.(*Claims); ok && token.Valid && claims.UserID > 0 {
 		return claims, nil
 	}
 

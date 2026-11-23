@@ -105,6 +105,16 @@ function renderProjectDetail(initialEntry: string) {
 }
 
 describe('ProjectDetailView payment deep links', () => {
+  it.each(['abc', '0', '-1', '9007199254740993'])(
+    'ends invalid deep-link loading without requesting project %s',
+    async (id) => {
+      renderProjectDetail(`/projects/${id}`)
+      expect(await screen.findByRole('alert')).toHaveTextContent('项目地址无效')
+      expect(projectApi.get).not.toHaveBeenCalled()
+      expect(projectApi.getPayments).not.toHaveBeenCalled()
+      expect(screen.queryByRole('status', { name: '正在加载项目详情' })).not.toBeInTheDocument()
+    },
+  )
   it('keeps the page in a skeleton state until both the project and payment plan arrive', async () => {
     const pending = createDeferred<Awaited<ReturnType<typeof projectApi.get>>>()
     vi.mocked(projectApi.get).mockReturnValue(pending.promise)

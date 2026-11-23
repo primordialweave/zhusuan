@@ -6,6 +6,283 @@
 import { Create as $Create } from "@wailsio/runtime";
 
 /**
+ * AutostartState describes the OS-level login launch status.
+ */
+export class AutostartState {
+    "enabled": boolean;
+    "supported": boolean;
+    "requiresApproval": boolean;
+    "strategy": string;
+    "path"?: string;
+    "error"?: string;
+
+    /** Creates a new AutostartState instance. */
+    constructor($$source: Partial<AutostartState> = {}) {
+        if (!("enabled" in $$source)) {
+            this["enabled"] = false;
+        }
+        if (!("supported" in $$source)) {
+            this["supported"] = false;
+        }
+        if (!("requiresApproval" in $$source)) {
+            this["requiresApproval"] = false;
+        }
+        if (!("strategy" in $$source)) {
+            this["strategy"] = "";
+        }
+
+        Object.assign(this, $$source);
+    }
+
+    /**
+     * Creates a new AutostartState instance from a string or object.
+     */
+    static createFrom($$source: any = {}): AutostartState {
+        let $$parsedSource = typeof $$source === 'string' ? JSON.parse($$source) : $$source;
+        return new AutostartState($$parsedSource as Partial<AutostartState>);
+    }
+}
+
+/**
+ * BackupInfo describes a completed snapshot and current local backup folder state.
+ */
+export class BackupInfo {
+    "fileName": string;
+    "path": string;
+    "sizeBytes": number;
+    "createdAt": string;
+    "count": number;
+    "backupDir": string;
+
+    /** Creates a new BackupInfo instance. */
+    constructor($$source: Partial<BackupInfo> = {}) {
+        if (!("fileName" in $$source)) {
+            this["fileName"] = "";
+        }
+        if (!("path" in $$source)) {
+            this["path"] = "";
+        }
+        if (!("sizeBytes" in $$source)) {
+            this["sizeBytes"] = 0;
+        }
+        if (!("createdAt" in $$source)) {
+            this["createdAt"] = "";
+        }
+        if (!("count" in $$source)) {
+            this["count"] = 0;
+        }
+        if (!("backupDir" in $$source)) {
+            this["backupDir"] = "";
+        }
+
+        Object.assign(this, $$source);
+    }
+
+    /**
+     * Creates a new BackupInfo instance from a string or object.
+     */
+    static createFrom($$source: any = {}): BackupInfo {
+        let $$parsedSource = typeof $$source === 'string' ? JSON.parse($$source) : $$source;
+        return new BackupInfo($$parsedSource as Partial<BackupInfo>);
+    }
+}
+
+/**
+ * DesktopCapabilities describes OS-specific features supported in the current runtime.
+ */
+export class DesktopCapabilities {
+    "platform": string;
+    "autostartSupported": boolean;
+    "traySupported": boolean;
+    "menuBarLabelSupported": boolean;
+    "hideDockSupported": boolean;
+    "trayClickActionSupported": boolean;
+    "notificationsSupported": boolean;
+    "globalShortcutsSupported": boolean;
+    "autoBackupSupported": boolean;
+
+    /** Creates a new DesktopCapabilities instance. */
+    constructor($$source: Partial<DesktopCapabilities> = {}) {
+        if (!("platform" in $$source)) {
+            this["platform"] = "";
+        }
+        if (!("autostartSupported" in $$source)) {
+            this["autostartSupported"] = false;
+        }
+        if (!("traySupported" in $$source)) {
+            this["traySupported"] = false;
+        }
+        if (!("menuBarLabelSupported" in $$source)) {
+            this["menuBarLabelSupported"] = false;
+        }
+        if (!("hideDockSupported" in $$source)) {
+            this["hideDockSupported"] = false;
+        }
+        if (!("trayClickActionSupported" in $$source)) {
+            this["trayClickActionSupported"] = false;
+        }
+        if (!("notificationsSupported" in $$source)) {
+            this["notificationsSupported"] = false;
+        }
+        if (!("globalShortcutsSupported" in $$source)) {
+            this["globalShortcutsSupported"] = false;
+        }
+        if (!("autoBackupSupported" in $$source)) {
+            this["autoBackupSupported"] = false;
+        }
+
+        Object.assign(this, $$source);
+    }
+
+    /**
+     * Creates a new DesktopCapabilities instance from a string or object.
+     */
+    static createFrom($$source: any = {}): DesktopCapabilities {
+        let $$parsedSource = typeof $$source === 'string' ? JSON.parse($$source) : $$source;
+        return new DesktopCapabilities($$parsedSource as Partial<DesktopCapabilities>);
+    }
+}
+
+/**
+ * DesktopPreferences stores OS-level desktop behavior persisted outside WebView storage so Go
+ * can inspect it before creating or showing the main window.
+ */
+export class DesktopPreferences {
+    "autostart": boolean;
+    "startHidden": boolean;
+    "closeAction": string;
+    "menuBarDisplay": string;
+    "privacyMode": boolean;
+    "hideDockWhenMinimized": boolean;
+    "rememberWindowBounds": boolean;
+    "trayClickAction": string;
+    "reminderEnabled": boolean;
+    "reminderTime": string;
+    "lastReminderDate"?: string;
+    "toggleWindowShortcut": string;
+    "quickReceiptShortcut": string;
+    "privacyModeShortcut": string;
+    "autoBackupEnabled": boolean;
+    "autoBackupRetention": number;
+    "lastBackupDate"?: string;
+    "windowBounds": WindowBounds;
+
+    /** Creates a new DesktopPreferences instance. */
+    constructor($$source: Partial<DesktopPreferences> = {}) {
+        if (!("autostart" in $$source)) {
+            this["autostart"] = false;
+        }
+        if (!("startHidden" in $$source)) {
+            this["startHidden"] = false;
+        }
+        if (!("closeAction" in $$source)) {
+            this["closeAction"] = "";
+        }
+        if (!("menuBarDisplay" in $$source)) {
+            this["menuBarDisplay"] = "";
+        }
+        if (!("privacyMode" in $$source)) {
+            this["privacyMode"] = false;
+        }
+        if (!("hideDockWhenMinimized" in $$source)) {
+            this["hideDockWhenMinimized"] = false;
+        }
+        if (!("rememberWindowBounds" in $$source)) {
+            this["rememberWindowBounds"] = false;
+        }
+        if (!("trayClickAction" in $$source)) {
+            this["trayClickAction"] = "";
+        }
+        if (!("reminderEnabled" in $$source)) {
+            this["reminderEnabled"] = false;
+        }
+        if (!("reminderTime" in $$source)) {
+            this["reminderTime"] = "";
+        }
+        if (!("toggleWindowShortcut" in $$source)) {
+            this["toggleWindowShortcut"] = "";
+        }
+        if (!("quickReceiptShortcut" in $$source)) {
+            this["quickReceiptShortcut"] = "";
+        }
+        if (!("privacyModeShortcut" in $$source)) {
+            this["privacyModeShortcut"] = "";
+        }
+        if (!("autoBackupEnabled" in $$source)) {
+            this["autoBackupEnabled"] = false;
+        }
+        if (!("autoBackupRetention" in $$source)) {
+            this["autoBackupRetention"] = 0;
+        }
+        if (!("windowBounds" in $$source)) {
+            this["windowBounds"] = (new WindowBounds());
+        }
+
+        Object.assign(this, $$source);
+    }
+
+    /**
+     * Creates a new DesktopPreferences instance from a string or object.
+     */
+    static createFrom($$source: any = {}): DesktopPreferences {
+        const $$createField17_0 = $$createType0;
+        let $$parsedSource = typeof $$source === 'string' ? JSON.parse($$source) : $$source;
+        if ("windowBounds" in $$parsedSource) {
+            $$parsedSource["windowBounds"] = $$createField17_0($$parsedSource["windowBounds"]);
+        }
+        return new DesktopPreferences($$parsedSource as Partial<DesktopPreferences>);
+    }
+}
+
+/**
+ * DesktopState is the full snapshot returned to the frontend Settings view and state listeners.
+ */
+export class DesktopState {
+    "preferences": DesktopPreferences;
+    "autostart": AutostartState;
+    "capabilities": DesktopCapabilities;
+    "windowHidden": boolean;
+
+    /** Creates a new DesktopState instance. */
+    constructor($$source: Partial<DesktopState> = {}) {
+        if (!("preferences" in $$source)) {
+            this["preferences"] = (new DesktopPreferences());
+        }
+        if (!("autostart" in $$source)) {
+            this["autostart"] = (new AutostartState());
+        }
+        if (!("capabilities" in $$source)) {
+            this["capabilities"] = (new DesktopCapabilities());
+        }
+        if (!("windowHidden" in $$source)) {
+            this["windowHidden"] = false;
+        }
+
+        Object.assign(this, $$source);
+    }
+
+    /**
+     * Creates a new DesktopState instance from a string or object.
+     */
+    static createFrom($$source: any = {}): DesktopState {
+        const $$createField0_0 = $$createType1;
+        const $$createField1_0 = $$createType2;
+        const $$createField2_0 = $$createType3;
+        let $$parsedSource = typeof $$source === 'string' ? JSON.parse($$source) : $$source;
+        if ("preferences" in $$parsedSource) {
+            $$parsedSource["preferences"] = $$createField0_0($$parsedSource["preferences"]);
+        }
+        if ("autostart" in $$parsedSource) {
+            $$parsedSource["autostart"] = $$createField1_0($$parsedSource["autostart"]);
+        }
+        if ("capabilities" in $$parsedSource) {
+            $$parsedSource["capabilities"] = $$createField2_0($$parsedSource["capabilities"]);
+        }
+        return new DesktopState($$parsedSource as Partial<DesktopState>);
+    }
+}
+
+/**
  * LoginCredentials contains the login details explicitly remembered on this device.
  */
 export class LoginCredentials {
@@ -32,3 +309,255 @@ export class LoginCredentials {
         return new LoginCredentials($$parsedSource as Partial<LoginCredentials>);
     }
 }
+
+/**
+ * MenuBarSnapshot holds the complete chart and metric payload for the macOS menu bar popover.
+ */
+export class MenuBarSnapshot {
+    "loggedIn": boolean;
+    "scope": string;
+    "periodReceived": number;
+    "contractTotal": number;
+    "contractReceived": number;
+    "totalPending": number;
+    "overdueAmount": number;
+    "overdueCount": number;
+    "upcomingCount": number;
+    "privacyMode": boolean;
+    "trend": MenuBarTrendPoint[];
+    "items": MenuBarUpcomingItem[];
+
+    /** Creates a new MenuBarSnapshot instance. */
+    constructor($$source: Partial<MenuBarSnapshot> = {}) {
+        if (!("loggedIn" in $$source)) {
+            this["loggedIn"] = false;
+        }
+        if (!("scope" in $$source)) {
+            this["scope"] = "";
+        }
+        if (!("periodReceived" in $$source)) {
+            this["periodReceived"] = 0;
+        }
+        if (!("contractTotal" in $$source)) {
+            this["contractTotal"] = 0;
+        }
+        if (!("contractReceived" in $$source)) {
+            this["contractReceived"] = 0;
+        }
+        if (!("totalPending" in $$source)) {
+            this["totalPending"] = 0;
+        }
+        if (!("overdueAmount" in $$source)) {
+            this["overdueAmount"] = 0;
+        }
+        if (!("overdueCount" in $$source)) {
+            this["overdueCount"] = 0;
+        }
+        if (!("upcomingCount" in $$source)) {
+            this["upcomingCount"] = 0;
+        }
+        if (!("privacyMode" in $$source)) {
+            this["privacyMode"] = false;
+        }
+        if (!("trend" in $$source)) {
+            this["trend"] = [];
+        }
+        if (!("items" in $$source)) {
+            this["items"] = [];
+        }
+
+        Object.assign(this, $$source);
+    }
+
+    /**
+     * Creates a new MenuBarSnapshot instance from a string or object.
+     */
+    static createFrom($$source: any = {}): MenuBarSnapshot {
+        const $$createField10_0 = $$createType5;
+        const $$createField11_0 = $$createType7;
+        let $$parsedSource = typeof $$source === 'string' ? JSON.parse($$source) : $$source;
+        if ("trend" in $$parsedSource) {
+            $$parsedSource["trend"] = $$createField10_0($$parsedSource["trend"]);
+        }
+        if ("items" in $$parsedSource) {
+            $$parsedSource["items"] = $$createField11_0($$parsedSource["items"]);
+        }
+        return new MenuBarSnapshot($$parsedSource as Partial<MenuBarSnapshot>);
+    }
+}
+
+/**
+ * MenuBarSnapshotProvider computes chart and alert data for the signed-in desktop user.
+ */
+export type MenuBarSnapshotProvider = any;
+
+/**
+ * MenuBarTrendPoint represents a single bucket in the menu bar popover sparkline chart.
+ */
+export class MenuBarTrendPoint {
+    "label": string;
+    "amount": number;
+
+    /** Creates a new MenuBarTrendPoint instance. */
+    constructor($$source: Partial<MenuBarTrendPoint> = {}) {
+        if (!("label" in $$source)) {
+            this["label"] = "";
+        }
+        if (!("amount" in $$source)) {
+            this["amount"] = 0;
+        }
+
+        Object.assign(this, $$source);
+    }
+
+    /**
+     * Creates a new MenuBarTrendPoint instance from a string or object.
+     */
+    static createFrom($$source: any = {}): MenuBarTrendPoint {
+        let $$parsedSource = typeof $$source === 'string' ? JSON.parse($$source) : $$source;
+        return new MenuBarTrendPoint($$parsedSource as Partial<MenuBarTrendPoint>);
+    }
+}
+
+/**
+ * MenuBarUpcomingItem represents a compact overdue or upcoming payment row in the popover.
+ */
+export class MenuBarUpcomingItem {
+    "paymentId": number;
+    "projectId": number;
+    "projectName": string;
+    "stage": string;
+    "amount": number;
+    "planDate": string;
+    "overdue": boolean;
+
+    /** Creates a new MenuBarUpcomingItem instance. */
+    constructor($$source: Partial<MenuBarUpcomingItem> = {}) {
+        if (!("paymentId" in $$source)) {
+            this["paymentId"] = 0;
+        }
+        if (!("projectId" in $$source)) {
+            this["projectId"] = 0;
+        }
+        if (!("projectName" in $$source)) {
+            this["projectName"] = "";
+        }
+        if (!("stage" in $$source)) {
+            this["stage"] = "";
+        }
+        if (!("amount" in $$source)) {
+            this["amount"] = 0;
+        }
+        if (!("planDate" in $$source)) {
+            this["planDate"] = "";
+        }
+        if (!("overdue" in $$source)) {
+            this["overdue"] = false;
+        }
+
+        Object.assign(this, $$source);
+    }
+
+    /**
+     * Creates a new MenuBarUpcomingItem instance from a string or object.
+     */
+    static createFrom($$source: any = {}): MenuBarUpcomingItem {
+        let $$parsedSource = typeof $$source === 'string' ? JSON.parse($$source) : $$source;
+        return new MenuBarUpcomingItem($$parsedSource as Partial<MenuBarUpcomingItem>);
+    }
+}
+
+/**
+ * PreferencesPatch applies a partial update to DesktopPreferences.
+ */
+export class PreferencesPatch {
+    "autostart"?: boolean | null;
+    "startHidden"?: boolean | null;
+    "closeAction"?: string | null;
+    "menuBarDisplay"?: string | null;
+    "privacyMode"?: boolean | null;
+    "hideDockWhenMinimized"?: boolean | null;
+    "rememberWindowBounds"?: boolean | null;
+    "trayClickAction"?: string | null;
+    "reminderEnabled"?: boolean | null;
+    "reminderTime"?: string | null;
+    "toggleWindowShortcut"?: string | null;
+    "quickReceiptShortcut"?: string | null;
+    "privacyModeShortcut"?: string | null;
+    "autoBackupEnabled"?: boolean | null;
+    "autoBackupRetention"?: number | null;
+
+    /** Creates a new PreferencesPatch instance. */
+    constructor($$source: Partial<PreferencesPatch> = {}) {
+
+        Object.assign(this, $$source);
+    }
+
+    /**
+     * Creates a new PreferencesPatch instance from a string or object.
+     */
+    static createFrom($$source: any = {}): PreferencesPatch {
+        let $$parsedSource = typeof $$source === 'string' ? JSON.parse($$source) : $$source;
+        return new PreferencesPatch($$parsedSource as Partial<PreferencesPatch>);
+    }
+}
+
+/**
+ * SQLiteVacuumFunc executes `VACUUM INTO ?` against the active SQLite connection so backups are
+ * transactionally consistent and include all committed WAL frames.
+ */
+export type SQLiteVacuumFunc = any;
+
+/**
+ * WindowBounds stores the persisted main window geometry for safe restoration across sessions.
+ */
+export class WindowBounds {
+    "x": number;
+    "y": number;
+    "width": number;
+    "height": number;
+    "maximised": boolean;
+    "valid": boolean;
+
+    /** Creates a new WindowBounds instance. */
+    constructor($$source: Partial<WindowBounds> = {}) {
+        if (!("x" in $$source)) {
+            this["x"] = 0;
+        }
+        if (!("y" in $$source)) {
+            this["y"] = 0;
+        }
+        if (!("width" in $$source)) {
+            this["width"] = 0;
+        }
+        if (!("height" in $$source)) {
+            this["height"] = 0;
+        }
+        if (!("maximised" in $$source)) {
+            this["maximised"] = false;
+        }
+        if (!("valid" in $$source)) {
+            this["valid"] = false;
+        }
+
+        Object.assign(this, $$source);
+    }
+
+    /**
+     * Creates a new WindowBounds instance from a string or object.
+     */
+    static createFrom($$source: any = {}): WindowBounds {
+        let $$parsedSource = typeof $$source === 'string' ? JSON.parse($$source) : $$source;
+        return new WindowBounds($$parsedSource as Partial<WindowBounds>);
+    }
+}
+
+// Private type creation functions
+const $$createType0 = WindowBounds.createFrom;
+const $$createType1 = DesktopPreferences.createFrom;
+const $$createType2 = AutostartState.createFrom;
+const $$createType3 = DesktopCapabilities.createFrom;
+const $$createType4 = MenuBarTrendPoint.createFrom;
+const $$createType5 = $Create.Array($$createType4);
+const $$createType6 = MenuBarUpcomingItem.createFrom;
+const $$createType7 = $Create.Array($$createType6);

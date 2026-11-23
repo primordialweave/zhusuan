@@ -71,6 +71,18 @@ func (r *UserRepository) UpdateFields(id int64, fields map[string]interface{}) e
 	return r.db.Model(&models.User{}).Where("id = ?", id).Updates(fields).Error
 }
 
+// UpdateFieldsAndGet returns the persisted user in the same transaction as the update.
+func (r *UserRepository) UpdateFieldsAndGet(id int64, fields map[string]interface{}) (*models.User, error) {
+	var user models.User
+	err := r.db.Transaction(func(tx *gorm.DB) error {
+		if err := tx.Model(&models.User{}).Where("id = ?", id).Updates(fields).Error; err != nil {
+			return err
+		}
+		return tx.First(&user, id).Error
+	})
+	return &user, err
+}
+
 // List 获取用户列表 (支持分页和搜索)
 func (r *UserRepository) List(page, pageSize int, keyword string) ([]models.User, int64, error) {
 	var users []models.User

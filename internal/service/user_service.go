@@ -4,6 +4,8 @@ import (
 	"errors"
 	"log/slog"
 
+	"gorm.io/gorm"
+
 	"github.com/primordialweave/zhusuan/internal/constants"
 	"github.com/primordialweave/zhusuan/internal/dto"
 	"github.com/primordialweave/zhusuan/internal/models"
@@ -95,13 +97,19 @@ func (s *UserService) CreateUser(input dto.CreateUserRequest) error {
 
 // UpdateUser 更新用户 (管理员)
 func (s *UserService) UpdateUser(id int64, input dto.UpdateUserRequest) error {
+	_, err := s.UpdateUserAndGet(id, input)
+	return err
+}
+
+// UpdateUserAndGet updates the account and returns its canonical public-profile source.
+func (s *UserService) UpdateUserAndGet(id int64, input dto.UpdateUserRequest) (*models.User, error) {
 	updates := map[string]interface{}{}
 	if input.Name != "" {
-		updates["name"] = input.Name
+		updates[columnName] = input.Name
 	}
 	if input.Email != "" {
 		if s.userRepo.ExistsByEmailExceptID(input.Email, id) {
-			return pkgerrors.ErrEmailExists
+			return nil, pkgerrors.ErrEmailExists
 		}
 		updates["email"] = input.Email
 	}
@@ -116,22 +124,26 @@ func (s *UserService) UpdateUser(id int64, input dto.UpdateUserRequest) error {
 	}
 	if input.Role != "" {
 		if err := validateUserRole(input.Role); err != nil {
-			return pkgerrors.WrapWithCode(err, 400, err.Error())
+			return nil, pkgerrors.WrapWithCode(err, 400, err.Error())
 		}
 		updates["role"] = input.Role
 	}
 	if input.Status != nil {
-		updates["status"] = *input.Status
+		updates[columnStatus] = *input.Status
 	}
 
-	if err := s.userRepo.UpdateFields(id, updates); err != nil {
-		return pkgerrors.Wrap(err, "更新用户失败")
+	user, err := s.userRepo.UpdateFieldsAndGet(id, updates)
+	if err != nil {
+		if errors.Is(err, gorm.ErrRecordNotFound) {
+			return nil, pkgerrors.ErrUserNotFound
+		}
+		return nil, pkgerrors.Wrap(err, "更新用户失败")
 	}
 
 	// 任何用户资料变更后都清除鉴权状态缓存（JWT 中间件缓存了状态+角色），
 	// 使禁用/降级尽快生效（并发下最迟一个缓存 TTL）
 	invalidateUserAuthCache(id)
-	return nil
+	return user, nil
 }
 
 // DeleteUser 删除用户 (管理员)
@@ -161,7 +173,7 @@ func (s *UserService) ResetPassword(id int64, newPassword string) error {
 		return pkgerrors.Wrap(err, "密码加密失败")
 	}
 	if err := s.userRepo.UpdateFields(id, map[string]interface{}{
-		"password": hashedPassword,
+		columnPassword: hashedPassword,
 	}); err != nil {
 		return pkgerrors.Wrap(err, "重置密码失败")
 	}

@@ -81,6 +81,23 @@ class ReleaseTests(unittest.TestCase):
         self.assertEqual(target.read_bytes(), before)
         self.assertFalse((self.directory/'frontend/package.json').exists())
 
+    def test_missing_native_version_field_does_not_partially_update_metadata(self):
+        files = ['frontend/package.json', 'frontend/package-lock.json', 'build/config.yml',
+                 'build/linux/nfpm/nfpm.yaml', 'build/darwin/Info.plist',
+                 'build/darwin/Info.dev.plist', 'build/windows/info.json']
+        for filename in files:
+            target = self.directory/filename
+            target.parent.mkdir(parents=True, exist_ok=True)
+            shutil.copy2(REPO/filename, target)
+        (self.directory/'build/windows/info.json').write_text('{}\n')
+        before = {filename: (self.directory/filename).read_bytes() for filename in files}
+        with self.assertRaisesRegex(ValueError, 'Version field not found'):
+            release.sync_metadata(self.directory, self.tag)
+        self.assertEqual(
+            {filename: (self.directory/filename).read_bytes() for filename in files}, before,
+            'invalid native metadata must not leave the frontend or other platforms bumped',
+        )
+
     def test_verifies_all_platforms_and_produces_one_manifest(self):
         self.populate_assets()
         self.assertEqual(len(release.verify_assets(self.directory, self.tag)), 8)

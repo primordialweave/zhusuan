@@ -1,10 +1,11 @@
 package handler
 
 import (
+	"github.com/gin-gonic/gin"
+
 	"github.com/primordialweave/zhusuan/internal/models"
 	"github.com/primordialweave/zhusuan/internal/pkg/response"
 	"github.com/primordialweave/zhusuan/internal/service"
-	"github.com/gin-gonic/gin"
 )
 
 // NotificationHandler 通知消息模块处理器
@@ -20,7 +21,7 @@ func NewNotificationHandler() *NotificationHandler {
 	}
 }
 
-// CreateRequest 创建通知请求参数
+// CreateNotificationRequest describes notification content and its recipient.
 type CreateNotificationRequest struct {
 	Title        string `json:"title" binding:"required"`   // 标题
 	Content      string `json:"content" binding:"required"` // 内容

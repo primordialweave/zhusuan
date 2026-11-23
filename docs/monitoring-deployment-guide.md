@@ -1,7 +1,7 @@
 # 珠算监控与告警配置指南
 
-**版本**: 1.0
-**日期**: 2026-11-20
+**版本**: 1.1
+**日期**: 2026-11-23
 **状态**: 配置模板，按实际环境配置后验收
 
 ---
@@ -18,6 +18,10 @@
 通过 Docker Compose 启动前需设置监控专用凭据，并确认抓取目标、指标认证和通知接收器。配置文件存在不代表已经完成生产部署验收。默认 API 端口为3456。
 
 Prometheus 中的 Redis、node 目标默认注释，需要自行提供 exporter 后启用；Redis 的6379端口不是HTTP metrics端点。AlertManager 默认接收器不发送通知；接入实际通知服务后再启用 webhook 或邮件配置，珠算后端目前不提供 `/api/v1/alerts/webhook`。
+
+监控界面及 Redis 的主机端口默认只绑定 `127.0.0.1`，容器之间仍使用 Compose 网络。远程查看可通过 SSH 隧道或有认证的代理；公开访问地址需单独配置。配置文件与应用日志以只读方式挂载，Promtail 的读取位置保存在独立数据卷中，重启不会从头重复采集。
+
+Compose 提供 `host.docker.internal:host-gateway` 映射。Linux 上应用必须监听容器可达的主机地址才能被抓取；只监听主机 `127.0.0.1` 的 API 不能直接经网桥访问，应按实际环境配置抓取目标和防火墙。不要为采集而关闭已有的 `/metrics` 认证。
 
 ---
 
@@ -84,6 +88,8 @@ task server:dev
 
 **告警规则**: `monitoring/prometheus/alerts.yml`
 
+规则按 `job` 和 `instance` 聚合。错误告警计算 5xx 请求数占全部请求数的比例，请求量告警合并各路径/方法/状态，P99 合并同实例的直方图桶。可用 `promtool test rules monitoring/prometheus/alerts.test.yml` 执行包含边界、低流量、路径聚合和服务离线的夹具；CI 在隔离、无网络的 Prometheus 工具容器中运行同样检查。
+
 ### Grafana (端口 3000)
 
 **功能**: 可视化仪表板
@@ -94,7 +100,7 @@ task server:dev
 
 **数据源**: 自动配置 Prometheus 和 Loki
 
-**仪表板**: 需手动导入或配置
+**仪表板**: 已通过 provisioning 自动加载 `monitoring/grafana/provisioning/dashboards/json/api-dashboard.json`；可在 Grafana 调整查询与展示。
 
 ### Redis (端口 6379)
 
@@ -127,6 +133,8 @@ REDIS_PASSWORD=replace-with-your-configured-redis-password
 
 **配置文件**: `monitoring/promtail/promtail-config.yml`
 
+**读取位置**: `/var/lib/promtail/positions.yaml`，由 `promtail-data` 卷保存。
+
 ### AlertManager (端口 9093)
 
 **功能**: 告警管理和通知
@@ -144,34 +152,26 @@ REDIS_PASSWORD=replace-with-your-configured-redis-password
 1. **HighErrorRate** (严重)
    - 条件: 5xx错误率 > 5%
    - 持续: 2分钟
-   - 动作: 立即通知
+   - 动作: 将告警交给 AlertManager；通知取决于接收器配置
 
 2. **SlowAPIResponse** (警告)
    - 条件: P99响应时间 > 1秒
    - 持续: 5分钟
-   - 动作: 发送警告
+   - 动作: 将告警交给 AlertManager；通知取决于接收器配置
 
 3. **ServiceDown** (严重)
    - 条件: 服务不可用
    - 持续: 1分钟
-   - 动作: 立即通知
+   - 动作: 将告警交给 AlertManager；通知取决于接收器配置
 
 4. **HighRequestRate** (警告)
    - 条件: 请求量 > 100 req/s
    - 持续: 5分钟
-   - 动作: 发送警告
+   - 动作: 将告警交给 AlertManager；通知取决于接收器配置
 
-### 缓存告警
+### 数据库与缓存告警
 
-1. **RedisDown** (严重)
-   - 条件: Redis不可用
-   - 持续: 1分钟
-   - 动作: 立即通知
-
-2. **LowCacheHitRate** (警告)
-   - 条件: 缓存命中率 < 50%
-   - 持续: 10分钟
-   - 动作: 发送警告
+应用当前没有导出 `database_connections` 或 `cache_hit_rate`，默认 Redis exporter 抓取任务也未启用，因此模板只启用四项 API 告警。需要数据库或缓存告警时，先接入实际指标，再增加对应规则，避免把没有时间序列误当作健康。
 
 ---
 
@@ -198,16 +198,16 @@ data, err := cache.Get("key")
 cache.Delete("key")
 
 // JSON 缓存
-cache.GetCache().SetJSON("user:1", user, 10*time.Minute)
+cache.SetJSON("user:1", user, 10*time.Minute)
 var user User
-cache.GetCache().GetJSON("user:1", &user)
+cache.GetJSON("user:1", &user)
 ```
 
 ### Dashboard 缓存
 
 已在 `DashboardService.GetStats` 中实现缓存：
 - 缓存时间: 1分钟
-- 缓存键: `dashboard:stats:{userID}:{period}`
+- 缓存键: `dashboard:stats:v2:{userID}:{period}`
 - 自动失效和更新
 
 ---
@@ -266,6 +266,7 @@ docker compose -f docker-compose.monitoring.yml up -d
 - `grafana-data`: Grafana 配置和仪表板
 - `redis-data`: Redis 缓存数据
 - `loki-data`: Loki 日志数据
+- `promtail-data`: 日志读取位置
 - `alertmanager-data`: AlertManager 配置
 
 ---
@@ -284,7 +285,8 @@ docker compose -f docker-compose.monitoring.yml up -d
 
 ### Loki
 
-- 日志保留期: 7天
+- 日志存储默认未启用自动删除保留策略；应按磁盘容量和实际留存要求配置 compactor/retention
+- 超过7天的旧时间戳样本会被拒绝摄入，这不等于已存日志会在7天后删除
 - 摄入速率: 10MB/s
 - 修改: 在 `loki-config.yml` 中调整
 

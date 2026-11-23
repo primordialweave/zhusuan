@@ -7,6 +7,7 @@ import {
   type TextareaHTMLAttributes,
 } from 'react'
 import { useFieldControlProps } from '../field/fieldContext'
+import { textEntryAttributes } from './textEntryDefaults'
 
 export type ControlSize = 'sm' | 'md' | 'lg'
 
@@ -22,6 +23,7 @@ export const Input = forwardRef<HTMLInputElement, InputProps>(function Input(
   return (
     <input
       {...controlProps}
+      {...textEntryAttributes(props)}
       className={['ods-input', className].filter(Boolean).join(' ')}
       data-size={size}
       data-slot="input"
@@ -42,6 +44,7 @@ export const TextArea = forwardRef<HTMLTextAreaElement, TextAreaProps>(function 
   return (
     <textarea
       {...controlProps}
+      {...textEntryAttributes(props)}
       className={['ods-textarea', className].filter(Boolean).join(' ')}
       data-size={size}
       data-slot="textarea"

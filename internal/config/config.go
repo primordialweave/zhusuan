@@ -1,3 +1,4 @@
+// Package config loads application settings and preserves private legacy data.
 package config
 
 import (

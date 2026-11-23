@@ -3,10 +3,11 @@ package handler
 import (
 	"strconv"
 
+	"github.com/gin-gonic/gin"
+
 	"github.com/primordialweave/zhusuan/internal/dto"
 	"github.com/primordialweave/zhusuan/internal/pkg/response"
 	"github.com/primordialweave/zhusuan/internal/service"
-	"github.com/gin-gonic/gin"
 )
 
 // ProjectHandler 项目管理模块接口处理器
@@ -29,7 +30,7 @@ func NewProjectHandler() *ProjectHandler {
 // @Security Bearer
 // @Param page query int false "页码" default(1)
 // @Param page_size query int false "每页数量" default(10)
-// @Param status query string false "项目状态: pending, processing, completed, archived"
+// @Param status query string false "项目状态，多个以逗号分隔: active, completed, notstarted, overdue, archived；空或all查全部"
 // @Param keyword query string false "搜索关键词: 项目名称或合同编号"
 // @Success 200 {object} response.PageResult
 // @Router /api/v1/projects [get]

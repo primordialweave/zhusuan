@@ -22,6 +22,8 @@ interface AuthState {
   login: (credentials: LoginRequest) => Promise<boolean>
   logout: () => Promise<void>
   refreshUser: () => Promise<void>
+  captureSession: () => AuthSessionSnapshot
+  syncCurrentUser: (user: User, session: AuthSessionSnapshot) => boolean
   updateProfile: (data: {
     name?: string
     phone?: string
@@ -29,6 +31,12 @@ interface AuthState {
     position?: string
   }) => Promise<boolean>
   changePassword: (oldPassword: string, newPassword: string) => Promise<boolean>
+}
+
+export interface AuthSessionSnapshot {
+  token: string | null
+  userId: number | null
+  generation: number
 }
 
 const storedToken = getStoredToken()
@@ -40,96 +48,155 @@ const setAuthSession = (token: string | null, user: User | null) => ({
   isAuthenticated: Boolean(token),
 })
 
-export const useAuthStore = create<AuthState>((set, get) => ({
-  ...setAuthSession(storedToken, getStoredUser<User>()),
-  loading: false,
-  error: null,
-
-  async login(credentials) {
-    set({ loading: true, error: null })
-
-    try {
-      const response = await authApi.login(credentials)
-      const { token, user } = response.data.data
-
-      saveAuthState(token, user)
-      set({ ...setAuthSession(token, user), loading: false })
-      return true
-    } catch (err: unknown) {
-      set({
-        error: err instanceof Error ? err.message : '登录失败',
-        loading: false,
-      })
+export const useAuthStore = create<AuthState>((set, get) => {
+  let sessionGeneration = 0
+  let profileRevision = 0
+  let refreshRequest = 0
+  let profileRequest = 0
+  let loginRequest = 0
+  const captureSession = (): AuthSessionSnapshot => ({
+    token: get().token,
+    userId: get().user?.id ?? null,
+    generation: sessionGeneration,
+  })
+  const sessionMatches = (session: AuthSessionSnapshot) => {
+    const current = captureSession()
+    return (
+      current.token === session.token &&
+      current.userId === session.userId &&
+      current.generation === session.generation
+    )
+  }
+  const syncCurrentUser = (user: User, session: AuthSessionSnapshot) => {
+    if (
+      !session.token ||
+      !sessionMatches(session) ||
+      (session.userId !== null && user.id !== session.userId)
+    )
       return false
+    profileRevision += 1
+    refreshRequest += 1
+    if (user.status === 0) {
+      sessionGeneration += 1
+      clearAuthStorage()
+      set({ ...setAuthSession(null, null), loading: false, error: null })
+    } else {
+      saveStoredUser(user)
+      set({ user, loading: false })
     }
-  },
+    return true
+  }
+  return {
+    ...setAuthSession(storedToken, getStoredUser<User>()),
+    loading: false,
+    error: null,
+    captureSession,
+    syncCurrentUser,
 
-  async logout() {
-    const sessionToken = get().token
-    try {
-      await authApi.logout()
-    } catch {
-      // Local cleanup must still happen when the server session has already expired.
-    }
+    async login(credentials) {
+      const request = ++loginRequest
+      const generation = sessionGeneration
+      const isCurrentLogin = () => request === loginRequest && generation === sessionGeneration
+      set({ loading: true, error: null })
 
-    if (get().token !== sessionToken) return
-    clearAuthStorage()
-    set({ ...setAuthSession(null, null), error: null, loading: false })
-  },
+      try {
+        const response = await authApi.login(credentials)
+        if (!isCurrentLogin()) return false
+        const { token, user } = response.data.data
 
-  async refreshUser() {
-    const sessionToken = get().token
-    if (!sessionToken) return
+        sessionGeneration += 1
+        profileRevision += 1
+        refreshRequest += 1
+        saveAuthState(token, user)
+        set({ ...setAuthSession(token, user), loading: false })
+        return true
+      } catch (err: unknown) {
+        if (!isCurrentLogin()) return false
+        set({
+          error: err instanceof Error ? err.message : '登录失败',
+          loading: false,
+        })
+        return false
+      }
+    },
 
-    try {
-      const response = await authApi.getCurrentUser()
-      if (get().token !== sessionToken) return
-      saveStoredUser(response.data.data)
-      set({ user: response.data.data })
-    } catch {
-      // Auth failures are handled centrally; transient errors keep the last valid profile.
-    }
-  },
+    async logout() {
+      loginRequest += 1
+      const session = captureSession()
+      try {
+        await authApi.logout()
+      } catch {
+        // Local cleanup must still happen when the server session has already expired.
+      }
 
-  async updateProfile(data) {
-    const sessionToken = get().token
-    set({ loading: true, error: null })
+      if (!sessionMatches(session)) return
+      sessionGeneration += 1
+      profileRevision += 1
+      refreshRequest += 1
+      clearAuthStorage()
+      set({ ...setAuthSession(null, null), error: null, loading: false })
+    },
 
-    try {
-      const response = await authApi.updateProfile(data)
-      if (get().token !== sessionToken) return false
-      saveStoredUser(response.data.data)
-      set({ user: response.data.data, loading: false })
-      return true
-    } catch (err: unknown) {
-      if (get().token !== sessionToken) return false
-      set({
-        error: err instanceof Error ? err.message : '更新失败',
-        loading: false,
-      })
-      return false
-    }
-  },
+    async refreshUser() {
+      const session = captureSession()
+      if (!session.token) return
+      const request = ++refreshRequest
+      const revision = profileRevision
 
-  async changePassword(oldPassword, newPassword) {
-    const sessionToken = get().token
-    set({ loading: true, error: null })
+      try {
+        const response = await authApi.getCurrentUser()
+        if (!sessionMatches(session) || request !== refreshRequest || revision !== profileRevision)
+          return
+        if (session.userId !== null && response.data.data.id !== session.userId) return
+        saveStoredUser(response.data.data)
+        set({ user: response.data.data })
+      } catch {
+        // Auth failures are handled centrally; transient errors keep the last valid profile.
+      }
+    },
 
-    try {
-      await authApi.changePassword({
-        old_password: oldPassword,
-        new_password: newPassword,
-      })
-      if (get().token !== sessionToken) return false
-      set({ loading: false })
-      return true
-    } catch (err: unknown) {
-      if (get().token !== sessionToken) return false
-      set({
-        error: err instanceof Error ? err.message : '修改失败',
-        loading: false,
-      })
-      return false
-    }
-  },
-}))
+    async updateProfile(data) {
+      const session = captureSession()
+      const request = ++profileRequest
+      const revision = profileRevision
+      set({ loading: true, error: null })
+
+      try {
+        const response = await authApi.updateProfile(data)
+        if (!sessionMatches(session) || request !== profileRequest || revision !== profileRevision)
+          return false
+        return syncCurrentUser(response.data.data, session)
+      } catch (err: unknown) {
+        if (!sessionMatches(session) || request !== profileRequest || revision !== profileRevision)
+          return false
+        set({
+          error: err instanceof Error ? err.message : '更新失败',
+          loading: false,
+        })
+        return false
+      }
+    },
+
+    async changePassword(oldPassword, newPassword) {
+      const session = captureSession()
+      set({ loading: true, error: null })
+
+      try {
+        await authApi.changePassword({
+          old_password: oldPassword,
+          new_password: newPassword,
+        })
+        if (!sessionMatches(session)) return false
+        set({ loading: false })
+        return true
+      } catch (err: unknown) {
+        if (!sessionMatches(session)) return false
+        set({
+          error: err instanceof Error ? err.message : '修改失败',
+          loading: false,
+        })
+        return false
+      }
+    },
+  }
+})

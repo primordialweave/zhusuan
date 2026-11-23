@@ -107,9 +107,32 @@ describe('scene runtime', () => {
     stage.remove()
     vi.unstubAllGlobals()
     vi.restoreAllMocks()
+    delete document.documentElement.dataset.nativeWindowVisibility
+  })
+
+  it('stays stopped when native hide arrives while the scene images are still loading', async () => {
+    const { promise } = start()
+    window.dispatchEvent(new CustomEvent('zhusuan:window-visibility', { detail: { hidden: true } }))
+    runtime = await promise
+    expect(frames.size).toBe(0)
+    window.dispatchEvent(
+      new CustomEvent('zhusuan:window-visibility', { detail: { hidden: false } }),
+    )
+    expect(frames.size).toBe(1)
+  })
+
+  it('starts from the latched native hidden state even when document.hidden is false', async () => {
+    document.documentElement.dataset.nativeWindowVisibility = 'hidden'
+    runtime = await start().promise
+    expect(frames.size).toBe(0)
+    window.dispatchEvent(
+      new CustomEvent('zhusuan:window-visibility', { detail: { hidden: false } }),
+    )
+    expect(frames.size).toBe(1)
   })
 
   it('creates nothing when the start is cancelled while the images load', async () => {
+    const removeListener = vi.spyOn(window, 'removeEventListener')
     const controller = new AbortController()
     const { onActiveChange, promise } = start({ signal: controller.signal })
     controller.abort()
@@ -120,13 +143,16 @@ describe('scene runtime', () => {
     expect(frames.size).toBe(0)
     expect(onActiveChange).not.toHaveBeenCalled()
     expect(() => runtime!.dispose()).not.toThrow()
+    expect(removeListener).toHaveBeenCalledWith('zhusuan:window-visibility', expect.any(Function))
   })
 
   it('rejects when the scene cannot be loaded so the still simply stays', async () => {
+    const removeListener = vi.spyOn(window, 'removeEventListener')
     failImages = true
 
     await expect(start().promise).rejects.toThrow('Unable to load')
     expect(createSceneGLRenderer).not.toHaveBeenCalled()
+    expect(removeListener).toHaveBeenCalledWith('zhusuan:window-visibility', expect.any(Function))
   })
 
   it('draws both layers on the first frame, then reports them once', async () => {

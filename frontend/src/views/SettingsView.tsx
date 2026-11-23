@@ -1,9 +1,10 @@
-import { useCallback, useEffect, useId, useMemo, useRef, useState } from 'react'
+import { useCallback, useEffect, useId, useMemo, useRef, useState, type CSSProperties } from 'react'
 import { useNavigate, useSearchParams } from 'react-router-dom'
 import { Browser } from '@wailsio/runtime'
 import type { User } from '@/api/auth'
 import { DEFAULT_APP_SLOGAN, DEFAULT_WECHAT_PUBLIC_ACCOUNT, systemApi } from '@/api/system'
 import DataSyncPanel from '@/components/settings/DataSyncPanel'
+import DesktopSettingsPanel from '@/components/settings/DesktopSettingsPanel'
 import DictionaryManagement from '@/components/settings/DictionaryManagement'
 import NotificationManagement from '@/components/settings/NotificationManagement'
 import SettingsGroup from '@/components/settings/SettingsGroup'
@@ -41,18 +42,32 @@ import {
   type AppearanceToggleKey,
 } from '@/stores/appearance'
 import { useAuthStore } from '@/stores/auth'
-import { THEME_OPTIONS, useThemeStore, type ThemeMode } from '@/stores/theme'
+import {
+  getThemePackMeta,
+  HOLIDAY_THEME_PACKS,
+  SEASON_THEME_PACKS,
+  type ConcreteThemePackId,
+  type ThemePackMeta,
+} from '@/config/themes'
+import { resolveSeasonThemePack } from '@/utils/themeCalendar'
+import { THEME_OPTIONS, useThemeStore, type EffectiveTheme, type ThemeMode } from '@/stores/theme'
 import { getAppIconSrc } from '@/utils/appIcon'
 import { appUpdater, type UpdateStatus } from '@/utils/appUpdater'
+import { desktopManager } from '@/utils/desktopManager'
 import '@/styles/settings.css'
 import pkg from '../../package.json'
 
 const techStack = ['Wails v3', 'React', 'TypeScript', 'Go']
 
 const appearanceSwitches: ReadonlyArray<{ key: AppearanceToggleKey; title: string }> = [
-  { key: 'sceneMotion', title: '江南动态场景' },
+  { key: 'sceneMotion', title: '动态场景效果' },
   { key: 'reduceMotion', title: '减少动态效果' },
   { key: 'liquidGlass', title: '液态玻璃效果' },
+]
+
+const scenicThemePacks: ReadonlyArray<ThemePackMeta> = [
+  ...SEASON_THEME_PACKS,
+  ...HOLIDAY_THEME_PACKS,
 ]
 
 interface ProfileFields {
@@ -96,25 +111,82 @@ const createProfileFormState = (user: User | null): ProfileFormState => {
 }
 
 /**
- * A miniature of the window in one theme. Each layer carries `data-theme`, so the theme's own
- * tokens paint it whatever theme the app is in; 跟随系统 shows half of each.
+ * A miniature of the window in one theme. Each layer carries `data-theme` and `data-theme-pack`,
+ * so the active scenic theme's tokens paint it whatever theme the app is in; 跟随系统 shows half of each.
  */
-function ThemeThumbnail({ mode }: { mode: ThemeMode }) {
+function ThemeThumbnail({
+  mode,
+  packId,
+  thumbUrl,
+}: {
+  mode: ThemeMode
+  packId: ConcreteThemePackId
+  thumbUrl: string
+}) {
   const themes = mode === 'auto' ? (['light', 'dark'] as const) : [mode]
+  const previewStyle = {
+    '--ods-theme-preview-url': `url("${thumbUrl}")`,
+  } as CSSProperties
 
   return (
-    <span aria-hidden="true" className="settings-theme">
+    <span aria-hidden="true" className="settings-theme" style={previewStyle}>
       {themes.map((theme, index) => (
         <span
           className="settings-theme__layer"
           data-half={index === 1 || undefined}
           data-theme={theme}
+          data-theme-pack={packId}
           key={theme}
         >
           <span className="settings-theme__panel" />
           <span className="settings-theme__dock" />
         </span>
       ))}
+    </span>
+  )
+}
+
+function ThemePackThumbnail({
+  activeHolidayMatch,
+  autoSeasonMatch,
+  effectiveTheme,
+  pack,
+}: {
+  activeHolidayMatch: boolean
+  autoSeasonMatch: boolean
+  effectiveTheme: EffectiveTheme
+  pack: ThemePackMeta
+}) {
+  const previewStyle = {
+    '--ods-pack-thumb-url': `url("${pack.thumbUrl}")`,
+  } as CSSProperties
+
+  const badgeLabel =
+    pack.category === 'holiday'
+      ? activeHolidayMatch
+        ? '节庆中'
+        : '限定'
+      : autoSeasonMatch
+        ? '当季'
+        : null
+
+  return (
+    <span
+      aria-hidden="true"
+      className="settings-pack__preview"
+      data-theme={effectiveTheme}
+      data-theme-pack={pack.id}
+      style={previewStyle}
+    >
+      <span className="settings-pack__still" />
+      {badgeLabel ? (
+        <span
+          className="settings-pack__badge"
+          data-active={activeHolidayMatch || autoSeasonMatch || undefined}
+        >
+          {badgeLabel}
+        </span>
+      ) : null}
     </span>
   )
 }
@@ -161,7 +233,15 @@ export default function SettingsView() {
   const changePassword = useAuthStore((state) => state.changePassword)
   const logout = useAuthStore((state) => state.logout)
   const theme = useThemeStore((state) => state.theme)
+  const effectiveTheme = useThemeStore((state) => state.effectiveTheme)
+  const themePack = useThemeStore((state) => state.themePack)
+  const effectiveThemePack = useThemeStore((state) => state.effectiveThemePack)
+  const autoHolidayTheme = useThemeStore((state) => state.autoHolidayTheme)
+  const activeHoliday = useThemeStore((state) => state.activeHoliday)
   const setTheme = useThemeStore((state) => state.setTheme)
+  const setThemePack = useThemeStore((state) => state.setThemePack)
+  const setAutoHolidayTheme = useThemeStore((state) => state.setAutoHolidayTheme)
+  const activePackMeta = getThemePackMeta(effectiveThemePack)
   const appearance = useAppearanceStore()
   const isAdmin = user?.role === 'admin'
   const stacked = useMediaQuery('(max-width: 56rem)')
@@ -336,10 +416,15 @@ export default function SettingsView() {
     return () => window.clearTimeout(timer)
   }, [user])
 
+  const desktopAvailable = desktopManager.isAvailable()
+
   const settingsNav = useMemo(
     (): ReadonlyArray<{ icon: JadeIconName; key: string; label: string }> => [
       { icon: 'user', key: 'profile', label: '个人信息' },
       { icon: 'palette', key: 'appearance', label: '外观设置' },
+      ...(desktopAvailable
+        ? [{ icon: 'layout-grid' as const, key: 'desktop', label: '桌面设置' }]
+        : []),
       { icon: 'bell', key: 'notification', label: '通知设置' },
       { icon: 'cloud', key: 'data-sync', label: '数据同步' },
       ...(isAdmin
@@ -351,7 +436,7 @@ export default function SettingsView() {
       { icon: 'code', key: 'developer', label: '开发设置' },
       { icon: 'info', key: 'about', label: '关于' },
     ],
-    [isAdmin],
+    [desktopAvailable, isAdmin],
   )
 
   // 安全设置 moved onto the profile page; old links to it still land in the right place.
@@ -441,8 +526,17 @@ export default function SettingsView() {
   }
 
   const openExternalUrl = (url: string) => {
-    void Browser.OpenURL(url).catch(() => {
-      window.open(url, '_blank', 'noopener,noreferrer')
+    let target: URL
+    try {
+      target = new URL(url)
+    } catch {
+      throw new Error('发布链接无效，请稍后重试')
+    }
+    if (target.protocol !== 'https:' || target.username || target.password) {
+      throw new Error('发布链接无效，请稍后重试')
+    }
+    void Browser.OpenURL(target.href).catch(() => {
+      window.open(target.href, '_blank', 'noopener,noreferrer')
     })
   }
 
@@ -505,6 +599,22 @@ export default function SettingsView() {
       if (mountedRef.current) setCheckingUpdate(false)
     }
   }
+
+  const checkUpdateRef = useRef(checkUpdate)
+  useEffect(() => {
+    checkUpdateRef.current = checkUpdate
+  })
+
+  useEffect(() => {
+    if (activeTab !== 'about' || searchParams.get('checkUpdate') !== '1') return
+    const nextSearchParams = new URLSearchParams(searchParams)
+    nextSearchParams.delete('checkUpdate')
+    setSearchParams(nextSearchParams, { replace: true })
+    const timer = window.setTimeout(() => {
+      void checkUpdateRef.current()
+    }, 0)
+    return () => window.clearTimeout(timer)
+  }, [activeTab, searchParams, setSearchParams])
 
   const cancelUpdate = async () => {
     if (cancellingUpdate || !updating || updateStatus?.state !== 'downloading') return
@@ -616,8 +726,61 @@ export default function SettingsView() {
             >
               {THEME_OPTIONS.map((option) => (
                 <Radio key={option.value} value={option.value} variant="card">
-                  <ThemeThumbnail mode={option.value} />
+                  <ThemeThumbnail
+                    mode={option.value}
+                    packId={effectiveThemePack}
+                    thumbUrl={activePackMeta.thumbUrl}
+                  />
                   <span className="settings-theme__name">{option.label}</span>
+                </Radio>
+              ))}
+            </RadioGroup>
+          </SettingsGroup>
+
+          <SettingsGroup
+            actions={
+              <span className="settings-pack-auto">
+                <span className="settings-pack-auto__label" id={`${rowId}-auto-season-title`}>
+                  随季节自动切换
+                </span>
+                <Switch
+                  aria-labelledby={`${rowId}-auto-season-title`}
+                  checked={themePack === 'auto-season'}
+                  onChange={(event) =>
+                    setThemePack(event.target.checked ? 'auto-season' : resolveSeasonThemePack())
+                  }
+                  size="sm"
+                />
+              </span>
+            }
+            title="主题风物"
+          >
+            <RadioGroup
+              aria-label="主题风物"
+              className="settings-packs"
+              columns={3}
+              onValueChange={(value) => setThemePack(value as ConcreteThemePackId)}
+              value={effectiveThemePack}
+            >
+              {scenicThemePacks.map((pack) => (
+                <Radio key={pack.id} value={pack.id} variant="card">
+                  <ThemePackThumbnail
+                    activeHolidayMatch={activeHoliday?.packId === pack.id}
+                    autoSeasonMatch={themePack === 'auto-season' && effectiveThemePack === pack.id}
+                    effectiveTheme={effectiveTheme}
+                    pack={pack}
+                  />
+                  <span className="settings-pack__caption">
+                    <span
+                      aria-hidden="true"
+                      className="settings-pack__dot"
+                      data-theme={effectiveTheme}
+                      data-theme-pack={pack.id}
+                    />
+                    <span className="settings-pack__name">
+                      {pack.seasonLabel} · {pack.label}
+                    </span>
+                  </span>
                 </Radio>
               ))}
             </RadioGroup>
@@ -644,6 +807,16 @@ export default function SettingsView() {
 
           <SettingsGroup flush title="动态与材质">
             <ul className="settings-list">
+              <li className="settings-row">
+                <span className="settings-row__title" id={`${rowId}-auto-holiday-title`}>
+                  节假日自动切换限定主题
+                </span>
+                <Switch
+                  aria-labelledby={`${rowId}-auto-holiday-title`}
+                  checked={autoHolidayTheme}
+                  onChange={(event) => setAutoHolidayTheme(event.target.checked)}
+                />
+              </li>
               {appearanceSwitches.map((item) => (
                 <li className="settings-row" key={item.key}>
                   <span className="settings-row__title" id={`${rowId}-${item.key}-title`}>
@@ -660,6 +833,10 @@ export default function SettingsView() {
           </SettingsGroup>
         </div>
       )
+    }
+
+    if (activeTab === 'desktop' && desktopAvailable) {
+      return <DesktopSettingsPanel />
     }
 
     if (activeTab === 'about') {

@@ -8,8 +8,8 @@
   <p><strong>轻量、雅致的跨平台项目台账与收款管理桌面应用</strong></p>
 
   <p>
-    <a href="https://github.com/primordialweave/zhusuan/releases/tag/v1.3.1">
-      <img src="https://img.shields.io/badge/release-v1.3.1-2f6d4f?style=flat-square" alt="Release v1.3.1" />
+    <a href="https://github.com/primordialweave/zhusuan/releases/tag/v1.4.0">
+      <img src="https://img.shields.io/badge/release-v1.4.0-2f6d4f?style=flat-square" alt="Release v1.4.0" />
     </a>
     <img src="https://img.shields.io/badge/platform-macOS%20%7C%20Windows%20%7C%20Linux-4a7c59?style=flat-square" alt="Platforms" />
     <img src="https://img.shields.io/badge/Wails-v3-528c68?style=flat-square" alt="Wails v3" />
@@ -21,7 +21,7 @@
 
   <p>
     <a href="README_EN.md">English</a> ·
-    <a href="https://github.com/primordialweave/zhusuan/releases/tag/v1.3.1">下载安装包</a> ·
+    <a href="https://github.com/primordialweave/zhusuan/releases/tag/v1.4.0">下载安装包</a> ·
     <a href="CHANGELOG.md">更新日志</a> ·
     <a href="docs/migration.md">迁移指南</a> ·
     <a href="docs/release.md">发布说明</a>
@@ -37,30 +37,60 @@
 - **逐笔收款与日历**：项目可先创建，收到款后逐笔录入金额和实际到账日期，日历按到账日展示收款；保留历史计划记录。
 - **数据分析**：按自然周 / 月 / 季 / 年及自选年月展示签约合同回款，实际到账金额与趋势独立统计，支持 CSV 导出。
 - **系统管理**：内置个人资料、字典管理、用户权限、通知设置、云端数据同步与个性化外观偏好。
-- **原生桌面体验**：支持烟雨 / 夜雨双主题、macOS 图标浅色 / 深色 / 跟随系统实时切换，提供原生文件保存、系统凭据存储与应用内校验更新。
+- **自定义主题**：六套四季与节庆风物，支持浅色 / 深色 / 跟随系统、随季节切换与节假日限定主题，场景和界面配色即时联动。
+- **原生桌面体验**：支持菜单栏 / 系统托盘常驻、开机启动、全局快捷键、收款提醒与本地账本备份；macOS 提供速览浮窗，Windows / Linux 提供快捷操作入口。保留原生文件保存、系统凭据存储与应用内校验更新。
 
 ## 界面预览
 
 | 工作台 | 项目管理 |
 | --- | --- |
-| ![工作台](docs/screenshots/contracts/home-month-light.png) | ![项目管理](docs/screenshots/projects.png) |
+| ![工作台](docs/screenshots/dashboard.png) | ![项目管理](docs/screenshots/projects.png) |
 | **收款日历** | **数据分析** |
-| ![收款日历](docs/screenshots/calendar.png) | ![数据分析](docs/screenshots/contracts/analytics-year-light.png) |
+| ![收款日历](docs/screenshots/calendar.png) | ![数据分析](docs/screenshots/analytics.png) |
 | **字典管理** | **关于** |
 | ![字典管理](docs/screenshots/dictionary.png) | ![关于](docs/screenshots/about.png) |
 
 更多页面：[项目详情](docs/screenshots/project-detail.png) · [新建项目](docs/screenshots/project-create.png) · [登录页](docs/screenshots/login.png)
 
+## 自定义主题
+
+在 **设置 → 外观设置 → 主题风物** 中选择喜欢的风景，场景、界面与图表配色即时更新，无需重启。每套风物都可搭配浅色、深色或跟随系统模式。
+
+| 风物 | 场景 | 动态效果 |
+| --- | --- | --- |
+| 春 · 烟雨江南 | 江南水乡 | 细雨、水波与柳枝 |
+| 夏 · 曲院风荷 | 杭州西湖 | 萤火、荷叶与湖面 |
+| 秋 · 紫禁秋杏 | 北京故宫角楼 | 银杏落叶与水波 |
+| 冬 · 哈尔滨雾凇 | 松花江雾凇长堤 | 飘雪与薄雾 |
+| 春节 · 秦淮灯宵 | 南京秦淮河 | 孔明灯与花灯暖光 |
+| 中秋 · 三潭印月 | 杭州西湖 | 桂花与月华灯影 |
+
+- **随季节自动切换**：根据本地日期切换春、夏、秋、冬风物，也可随时手动选择。
+- **节假日限定主题**：开启后，春节与中秋期间自动应用对应风物；全年均可手动预览和选用。节庆期间手动选用四季风物，会跳过当年这一次节庆自动切换。
+- **本地保存**：主题偏好保存在设备上，季节与节庆日期离线判断；动态场景、减少动态效果和液态玻璃可分别设置。
+
+![外观设置与六套主题风物](docs/screenshots/appearance.png)
+
+<picture>
+  <source media="(prefers-color-scheme: dark)" srcset="docs/screenshots/themes-dark.jpg" />
+  <source media="(prefers-color-scheme: light)" srcset="docs/screenshots/themes-light.jpg" />
+  <img src="docs/screenshots/themes-light.jpg" alt="六套自定义主题的工作台效果" width="100%" />
+</picture>
+
+[浅色主题一览](docs/screenshots/themes-light.jpg) · [深色主题一览](docs/screenshots/themes-dark.jpg)
+
+截图采集说明见[界面截图](docs/screenshots/README.md)。
+
 ## 下载安装
 
-前往 [GitHub Releases](https://github.com/primordialweave/zhusuan/releases/tag/v1.3.1) 获取最新版 **v1.3.1** 安装包：
+前往 [GitHub Releases](https://github.com/primordialweave/zhusuan/releases/tag/v1.4.0) 获取最新版 **v1.4.0** 安装包：
 
 | 平台 | 安装包 | 说明 |
 | --- | --- | --- |
-| macOS (Apple Silicon) | [zhusuan-v1.3.1-macOS-arm64.dmg](https://github.com/primordialweave/zhusuan/releases/download/v1.3.1/zhusuan-v1.3.1-macOS-arm64.dmg) | 适用于 M 系列芯片，macOS 12+ |
-| macOS (Intel) | [zhusuan-v1.3.1-macOS-amd64.dmg](https://github.com/primordialweave/zhusuan/releases/download/v1.3.1/zhusuan-v1.3.1-macOS-amd64.dmg) | 适用于 Intel 芯片，macOS 12+ |
-| Windows (x64) | [zhusuan-v1.3.1-windows-amd64-installer.exe](https://github.com/primordialweave/zhusuan/releases/download/v1.3.1/zhusuan-v1.3.1-windows-amd64-installer.exe) | 安装向导（支持用户目录安装与升级） |
-| Linux (x64) | [AppImage](https://github.com/primordialweave/zhusuan/releases/download/v1.3.1/zhusuan-v1.3.1-linux-x86_64.AppImage) · [.deb](https://github.com/primordialweave/zhusuan/releases/download/v1.3.1/zhusuan-v1.3.1-linux-amd64.deb) · [.rpm](https://github.com/primordialweave/zhusuan/releases/download/v1.3.1/zhusuan-v1.3.1-linux-amd64.rpm) | 桌面便携包与发行版安装包 |
+| macOS (Apple Silicon) | [zhusuan-v1.4.0-macOS-arm64.dmg](https://github.com/primordialweave/zhusuan/releases/download/v1.4.0/zhusuan-v1.4.0-macOS-arm64.dmg) | 适用于 M 系列芯片，macOS 12+ |
+| macOS (Intel) | [zhusuan-v1.4.0-macOS-amd64.dmg](https://github.com/primordialweave/zhusuan/releases/download/v1.4.0/zhusuan-v1.4.0-macOS-amd64.dmg) | 适用于 Intel 芯片，macOS 12+ |
+| Windows (x64) | [zhusuan-v1.4.0-windows-amd64-installer.exe](https://github.com/primordialweave/zhusuan/releases/download/v1.4.0/zhusuan-v1.4.0-windows-amd64-installer.exe) | 安装向导（支持用户目录安装与升级） |
+| Linux (x64) | [AppImage](https://github.com/primordialweave/zhusuan/releases/download/v1.4.0/zhusuan-v1.4.0-linux-x86_64.AppImage) · [.deb](https://github.com/primordialweave/zhusuan/releases/download/v1.4.0/zhusuan-v1.4.0-linux-amd64.deb) · [.rpm](https://github.com/primordialweave/zhusuan/releases/download/v1.4.0/zhusuan-v1.4.0-linux-amd64.rpm) | 桌面便携包与发行版安装包 |
 
 > macOS 用户打开 DMG 后将「珠算」拖入 `Applications`，从应用程序文件夹启动即可。
 

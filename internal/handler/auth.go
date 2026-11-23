@@ -1,10 +1,12 @@
+// Package handler translates authenticated HTTP requests into service operations.
 package handler
 
 import (
+	"github.com/gin-gonic/gin"
+
 	"github.com/primordialweave/zhusuan/internal/dto"
 	"github.com/primordialweave/zhusuan/internal/pkg/response"
 	"github.com/primordialweave/zhusuan/internal/service"
-	"github.com/gin-gonic/gin"
 )
 
 // AuthHandler 认证模块接口处理器

@@ -12,3 +12,6 @@ var nativeAppIcon []byte
 
 //go:embed build/appicon-dark.png
 var nativeAppIconDark []byte
+
+//go:embed build/darwin/tray-template.png
+var nativeTrayTemplateIcon []byte

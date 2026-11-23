@@ -3,6 +3,7 @@ package service
 import (
 	"fmt"
 	"log/slog"
+	"sync"
 	"time"
 
 	"github.com/primordialweave/zhusuan/internal/dto"
@@ -41,17 +42,30 @@ const (
 	calendarUnitMonth = "month"
 )
 
-var dashboardPeriods = []string{"all", "week", calendarUnitMonth, "quarter", "year"}
+var dashboardPeriods = []string{receiptPeriodAll, receiptPeriodWeek, calendarUnitMonth, receiptPeriodQuarter, receiptPeriodYear}
 
 // normalizeDashboardPeriod 归一化客户端传入的统计周期
-// 空值与未知值一律归为 "all"，保证缓存键有界且失效列表完全覆盖
+// 空值与未知值一律归为 receiptPeriodAll，保证缓存键有界且失效列表完全覆盖
 func normalizeDashboardPeriod(period string) string {
 	for _, p := range dashboardPeriods {
 		if period == p {
 			return period
 		}
 	}
-	return "all"
+	return receiptPeriodAll
+}
+
+var (
+	dashboardDataChangedMu sync.RWMutex
+	onDashboardDataChanged func(userID int64)
+)
+
+// SetOnDashboardDataChanged registers an optional callback invoked whenever project or payment
+// mutations invalidate dashboard aggregates (used by the desktop tray/menu bar for zero-polling updates).
+func SetOnDashboardDataChanged(fn func(userID int64)) {
+	dashboardDataChangedMu.Lock()
+	onDashboardDataChanged = fn
+	dashboardDataChangedMu.Unlock()
 }
 
 // invalidateDashboardCache 清除指定用户所有周期的 Dashboard 统计缓存
@@ -62,6 +76,12 @@ func invalidateDashboardCache(userID int64) {
 			slog.Debug("Unable to invalidate dashboard statistics", "error", err)
 		}
 	}
+	dashboardDataChangedMu.RLock()
+	callback := onDashboardDataChanged
+	dashboardDataChangedMu.RUnlock()
+	if callback != nil {
+		callback(userID)
+	}
 }
 
 // GetStats 获取仪表盘核心统计数据
@@ -69,17 +89,17 @@ func invalidateDashboardCache(userID int64) {
 //
 // 参数:
 //   - userID: 当前登录用户的ID
-//   - period: 统计周期，可选值: "week"(本周), "month"(本月), "quarter"(本季度), "year"(本年), "all"(全部/全局)
+//   - period: 统计周期，可选值: receiptPeriodWeek(本周), "month"(本月), receiptPeriodQuarter(本季度), receiptPeriodYear(本年), receiptPeriodAll(全部/全局)
 //
 // 返回:
 //   - *dto.Stats: 包含各项统计数值和趋势百分比的结构体
 //   - error: 数据库查询或其他错误
 //
 // 说明:
-//   - 当 period 为 "all" 或空字符串时，返回全局统计数据（基于项目合同总额），此时不计算趋势（趋势值为0）。
+//   - 当 period 为 receiptPeriodAll 或空字符串时，返回全局统计数据（基于项目合同总额），此时不计算趋势（趋势值为0）。
 //   - 其他周期模式下，统计数据基于实际产生的款项（Payment）计算，并会计算与上一周期的环比趋势。
 func (s *DashboardService) GetStats(userID int64, period string) (*dto.Stats, error) {
-	// 归一化周期，未知/空值 → "all"，防止任意字符串撑爆缓存键空间
+	// 归一化周期，未知/空值 → receiptPeriodAll，防止任意字符串撑爆缓存键空间
 	period = normalizeDashboardPeriod(period)
 
 	// v2 adds plan-date cohort receipts; do not reuse older responses without this field.
@@ -93,7 +113,7 @@ func (s *DashboardService) GetStats(userID int64, period string) (*dto.Stats, er
 
 	// 缓存未命中，从数据库查询
 	// 模式 1: 全局统计模式（通常用于工作台概览）
-	if period == "all" {
+	if period == receiptPeriodAll {
 		// 核心逻辑: 从 Project 表获取基于合同金额的宏观统计
 		// 也就是所有项目的总合同额、已收和待收
 		totalAmount, paidAmount, pendingAmount, err := s.projectRepo.GetStats(userID)
@@ -295,13 +315,13 @@ func (s *DashboardService) GetIncomeTrendForCalendar(userID int64, year, month i
 //
 // 参数:
 //   - userID: 用户ID
-//   - period: 时间维度，"week"和"month"按天聚合，"quarter"和"year"按月聚合
+//   - period: 时间维度，receiptPeriodWeek和"month"按天聚合，receiptPeriodQuarter和receiptPeriodYear按月聚合
 //
 // 返回:
 //   - *dto.IncomeTrend: 包含 Labels (X轴), ActualValues (实际收入), ExpectedValues (预计收入)
 //   - error: 错误信息
 func (s *DashboardService) GetIncomeTrend(userID int64, period string) (*dto.IncomeTrend, error) {
-	periodDays := map[string]int{"week": 7, calendarUnitMonth: 30, "quarter": 90, "year": 365}
+	periodDays := map[string]int{receiptPeriodWeek: 7, calendarUnitMonth: 30, receiptPeriodQuarter: 90, receiptPeriodYear: 365}
 	days, valid := periodDays[period]
 	if !valid {
 		period, days = calendarUnitMonth, 30
@@ -318,7 +338,7 @@ func (s *DashboardService) GetIncomeTrend(userID int64, period string) (*dto.Inc
 		return nil, fmt.Errorf("parse income trend end: %w", err)
 	}
 	interval, months := calendarUnitDay, 0
-	if period == "quarter" || period == "year" {
+	if period == receiptPeriodQuarter || period == receiptPeriodYear {
 		interval = calendarUnitMonth
 		months = (loopEnd.Year()-loopStart.Year())*12 + int(loopEnd.Month()-loopStart.Month()) + 1
 		loopStart = time.Date(loopStart.Year(), loopStart.Month(), 1, 0, 0, 0, 0, loopStart.Location())
@@ -391,4 +411,153 @@ func (s *DashboardService) GetRecentProjects(userID int64) ([]models.Project, er
 //   - error: 错误信息
 func (s *DashboardService) GetUpcomingPayments(userID int64) ([]models.Payment, error) {
 	return s.paymentRepo.ListUpcoming(userID, 7, 20)
+}
+
+// DesktopSummary holds lightweight metrics for the native desktop tray and macOS menu bar.
+type DesktopSummary struct {
+	MonthReceived float64
+	TotalPending  float64
+	OverdueAmount float64
+	OverdueCount  int
+	UpcomingCount int
+}
+
+// GetDesktopSummary returns actual current-month receipts, total pending contract balance,
+// and overdue/upcoming payment counts for the given user.
+func (s *DashboardService) GetDesktopSummary(userID int64) (DesktopSummary, error) {
+	overview, err := s.GetReceiptOverview(userID, calendarUnitMonth, 0, 0)
+	if err != nil {
+		return DesktopSummary{}, err
+	}
+	balances, err := repository.NewReceiptRepository().OverviewTotals(userID)
+	if err != nil {
+		return DesktopSummary{}, err
+	}
+	overdueAmount, err := s.paymentRepo.SumOverdue(userID)
+	if err != nil {
+		return DesktopSummary{}, err
+	}
+	overdueCount, upcomingCount, err := s.paymentRepo.CountOverdueAndUpcoming(userID, 7)
+	if err != nil {
+		return DesktopSummary{}, err
+	}
+	return DesktopSummary{
+		MonthReceived: overview.PeriodReceived,
+		TotalPending:  balances.OutstandingTotal,
+		OverdueAmount: overdueAmount,
+		OverdueCount:  overdueCount,
+		UpcomingCount: upcomingCount,
+	}, nil
+}
+
+// MenuBarTrendBucket represents one point in the menu bar popover chart.
+type MenuBarTrendBucket struct {
+	Label  string
+	Amount float64
+}
+
+// MenuBarUrgentItem represents a compact overdue/upcoming payment item in the menu bar popover.
+type MenuBarUrgentItem struct {
+	PaymentID   int64
+	ProjectID   int64
+	ProjectName string
+	Stage       string
+	Amount      float64
+	PlanDate    string
+	Overdue     bool
+}
+
+// MenuBarData aggregates scoped metrics, trend chart series, and top urgent items for the popover.
+type MenuBarData struct {
+	PeriodReceived   float64
+	ContractTotal    float64
+	ContractReceived float64
+	TotalPending     float64
+	OverdueAmount    float64
+	OverdueCount     int
+	UpcomingCount    int
+	Trend            []MenuBarTrendBucket
+	Items            []MenuBarUrgentItem
+}
+
+// GetMenuBarData returns scoped receipt overview, actual receipt trend buckets, and top 3 urgent items.
+func (s *DashboardService) GetMenuBarData(userID int64, scope string) (MenuBarData, error) {
+	period := calendarUnitMonth
+	switch scope {
+	case receiptPeriodYear, receiptPeriodAll:
+		period = scope
+	}
+
+	overview, err := s.GetReceiptOverview(userID, period, 0, 0)
+	if err != nil {
+		return MenuBarData{}, err
+	}
+	trendResp, err := s.GetReceiptTrend(userID, period, 0, 0)
+	if err != nil {
+		return MenuBarData{}, err
+	}
+	overdueAmount, err := s.paymentRepo.SumOverdue(userID)
+	if err != nil {
+		return MenuBarData{}, err
+	}
+	overdueCount, upcomingCount, err := s.paymentRepo.CountOverdueAndUpcoming(userID, 7)
+	if err != nil {
+		return MenuBarData{}, err
+	}
+	urgent, err := s.paymentRepo.ListUrgent(userID, 7, 3)
+	if err != nil {
+		return MenuBarData{}, err
+	}
+
+	trend := make([]MenuBarTrendBucket, 0, len(trendResp.Labels))
+	for i, label := range trendResp.Labels {
+		var amount float64
+		if i < len(trendResp.ActualValues) {
+			amount = trendResp.ActualValues[i]
+		}
+		trend = append(trend, MenuBarTrendBucket{Label: label, Amount: amount})
+	}
+	// Keep the chart crisp in the 360px popover: cap to the latest 12 buckets for dense ranges.
+	if len(trend) > 12 {
+		trend = trend[len(trend)-12:]
+	}
+
+	today := time.Now().Format(time.DateOnly)
+	items := make([]MenuBarUrgentItem, 0, len(urgent))
+	for _, p := range urgent {
+		items = append(items, menuBarUrgentItem(p, today))
+	}
+
+	return MenuBarData{
+		PeriodReceived:   overview.PeriodReceived,
+		ContractTotal:    overview.ContractTotal,
+		ContractReceived: overview.ContractReceived,
+		TotalPending:     overview.OutstandingTotal,
+		OverdueAmount:    overdueAmount,
+		OverdueCount:     overdueCount,
+		UpcomingCount:    upcomingCount,
+		Trend:            trend,
+		Items:            items,
+	}, nil
+}
+
+func menuBarUrgentItem(p models.Payment, today string) MenuBarUrgentItem {
+	planDate := ""
+	if !p.PlanDate.IsZero() {
+		planDate = p.PlanDate.Format(time.DateOnly)
+	}
+	projectName := "未命名项目"
+	if p.Project != nil && p.Project.Name != "" {
+		projectName = p.Project.Name
+	}
+	isOverdue := p.Status == "overdue" || (planDate != "" && planDate < today)
+	return MenuBarUrgentItem{
+		PaymentID:   p.ID,
+		ProjectID:   p.ProjectID,
+		ProjectName: projectName,
+		Stage:       p.Stage,
+		Amount:      p.Amount,
+		PlanDate:    planDate,
+		Overdue:     isOverdue,
+	}
 }

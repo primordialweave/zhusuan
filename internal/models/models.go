@@ -1,3 +1,4 @@
+// Package models defines persisted records and safe JSON projections.
 package models
 
 import (
@@ -37,7 +38,7 @@ type Project struct {
 	Company        string     `json:"company" gorm:"size:100;not null"`                                        // 建设单位/客户
 	TotalAmount    float64    `json:"total_amount" gorm:"type:real;not null"`                                  // 合同总金额
 	ReceivedAmount float64    `json:"received_amount" gorm:"type:real;default:0"`                              // 已回款金额
-	Status         string     `json:"status" gorm:"size:20;not null"`                                          // 状态: pending, processing, completed, archived
+	Status         string     `json:"status" gorm:"size:20;not null"`                                          // 当前状态；保留历史自定义值
 	Type           string     `json:"type" gorm:"size:50;not null"`                                            // 项目类型 (字典项)
 	ContractNumber string     `json:"contract_number" gorm:"size:50;uniqueIndex:idx_user_contract,priority:2"` // 合同编号
 	ContractDate   *time.Time `json:"contract_date" gorm:"type:date"`                                          // 签订日期
@@ -68,7 +69,7 @@ type Payment struct {
 	Amount     float64    `json:"amount" gorm:"type:real;not null"`                                // 金额
 	Percentage float64    `json:"percentage" gorm:"type:real"`                                     // 占总金额百分比
 	PlanDate   time.Time  `json:"plan_date" gorm:"type:date;not null;index"`                       // 计划收款日期
-	Status     string     `json:"status" gorm:"size:20;not null;index:idx_user_status,priority:2"` // 状态: uncollected, collected
+	Status     string     `json:"status" gorm:"size:20;not null;index:idx_user_status,priority:2"` // 状态: pending, confirmed, overdue
 	ActualDate *time.Time `json:"actual_date" gorm:"type:date;index"`                              // 实际收款日期
 	Method     string     `json:"method" gorm:"size:30"`                                           // 收款方式 (如: 银行转账)
 	Remark     string     `json:"remark" gorm:"size:255"`                                          // 备注
@@ -137,8 +138,9 @@ type Notification struct {
 	UpdateTime time.Time `json:"update_time" gorm:"autoUpdateTime"` // 更新时间
 
 	// 非数据库字段，用于前端展示
-	IsRead bool  `json:"is_read" gorm:"->"`                           // 当前用户是否已读
-	Sender *User `json:"sender,omitempty" gorm:"foreignKey:SenderID"` // 发送者详情
+	IsRead       bool  `json:"is_read" gorm:"->"`                           // 当前用户是否已读
+	Sender       *User `json:"sender,omitempty" gorm:"foreignKey:SenderID"` // 发送者详情
+	TargetUserID int64 `json:"target_user_id" gorm:"-"`                     // 收件人投影；0 表示全员或旧关系不明确
 }
 
 // TableName 指定表名

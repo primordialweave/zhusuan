@@ -47,6 +47,7 @@ import { useToastStore } from '@/composables/useToast'
 import { formatCurrency } from '@/utils/format'
 import { toDateOnly } from '@/utils/dateOnly'
 import { sortPaymentsByReceiptDate, sortReceiptItems } from '@/utils/receiptOrder'
+import { parseRouteId } from '@/utils/routeId'
 import '@/styles/project-domain.css'
 
 const emptyForm: ProjectRequest = {
@@ -125,7 +126,7 @@ export default function ProjectCreateView() {
   const [loadErrorProjectId, setLoadErrorProjectId] = useState<number | null>(null)
   const isMountedRef = useRef(false)
   const loadGenerationRef = useRef(0)
-  const projectId = id ? Number(id) : null
+  const projectId = parseRouteId(id)
   const activeProjectIdRef = useRef<number | null>(projectId)
   const isEdit = projectId !== null
   const projectTypeOptions =
@@ -417,6 +418,19 @@ export default function ProjectCreateView() {
         setSaving(false)
       }
     }
+  }
+
+  if (id !== undefined && projectId === null) {
+    return (
+      <Card.Root>
+        <EmptyState
+          action={<Button onClick={() => navigate('/projects')}>返回项目列表</Button>}
+          icon={<JadeIcon name="warning" size="1em" />}
+          role="alert"
+          title="项目地址无效"
+        />
+      </Card.Root>
+    )
   }
 
   return (

@@ -4,6 +4,7 @@ import (
 	"crypto/rand"
 	"errors"
 	"fmt"
+	"io"
 	"log/slog"
 	"math/big"
 	"os"
@@ -31,22 +32,15 @@ func Seed(db *gorm.DB) error {
 
 	slog.Info("Seeding database...")
 
-	// 生成随机强密码并写入本地凭据文件（密码绝不进日志，避免被日志采集泄露）
-	adminPassword := generateStrongPassword(16)
-	userPassword := generateStrongPassword(16)
-	credentialsPath := writeInitialCredentials(adminPassword, userPassword)
-	if credentialsPath == "" {
-		// 凭据无处可查时中止播种（用户表保持为空），下次启动会自动重试，
-		// 避免创建出密码永远无人知晓的账号
-		return errors.New("无法写入初始凭据文件，已跳过初始用户创建；请检查应用配置目录权限后重启")
+	// Generate secrets before acquiring the transaction; only its winning writer may publish them.
+	adminPassword, err := generateStrongPassword(16)
+	if err != nil {
+		return fmt.Errorf("生成初始管理员密码失败: %w", err)
 	}
-
-	slog.Warn("============================================")
-	slog.Warn("首次启动检测到空数据库，已创建默认用户")
-	slog.Warn("管理员账号: admin，普通用户账号: xu")
-	slog.Warn("初始密码已写入凭据文件，请立即登录并修改", "path", credentialsPath)
-	slog.Warn("============================================")
-
+	userPassword, err := generateStrongPassword(16)
+	if err != nil {
+		return fmt.Errorf("生成初始用户密码失败: %w", err)
+	}
 	// 对密码进行 bcrypt 加密
 	adminPasswordHash, err := bcrypt.GenerateFromPassword([]byte(adminPassword), bcrypt.DefaultCost)
 	if err != nil {
@@ -57,7 +51,18 @@ func Seed(db *gorm.DB) error {
 		return err
 	}
 
-	return db.Transaction(func(tx *gorm.DB) error {
+	var credentialsPath string
+	created := false
+	err = db.Transaction(func(tx *gorm.DB) error {
+		// Another startup may have seeded while these passwords were generated.
+		// The username unique index also prevents concurrent cloud transactions from
+		// reaching publication when both snapshots observed an empty users table.
+		if err := tx.Model(&models.User{}).Count(&count).Error; err != nil {
+			return err
+		}
+		if count > 0 {
+			return nil
+		}
 		// 1. 初始化用户数据 (Users)
 		// 使用 GORM 模型创建，不显式指定自增主键 id，
 		// 以保证在 PostgreSQL/MySQL 下自增序列正确前进，避免后续注册主键冲突。
@@ -100,8 +105,30 @@ func Seed(db *gorm.DB) error {
 				{Label: "其他", Value: "other", Sort: 5, Status: 1},
 			}},
 		}
-		return tx.Create(&dictionaries).Error
+		if err := tx.Create(&dictionaries).Error; err != nil {
+			return err
+		}
+		// Publishing before either insert succeeds can leave committed accounts with
+		// a losing startup's passwords. Publication failure must roll back all inserts.
+		credentialsPath = writeInitialCredentials(adminPassword, userPassword)
+		if credentialsPath == "" {
+			return errors.New("无法写入初始凭据文件，初始账户创建已取消；请检查应用配置目录权限后重试")
+		}
+		created = true
+		return nil
 	})
+	if err != nil {
+		return err
+	}
+	if !created {
+		return nil
+	}
+	slog.Warn("============================================")
+	slog.Warn("首次启动检测到空数据库，已创建默认用户")
+	slog.Warn("管理员账号: admin，普通用户账号: xu")
+	slog.Warn("初始密码已写入凭据文件，请立即登录并修改", "path", credentialsPath)
+	slog.Warn("============================================")
+	return nil
 }
 
 // writeInitialCredentials 将首次启动生成的初始密码写入用户配置目录下的凭据文件 (0600)
@@ -118,12 +145,29 @@ func writeInitialCredentials(adminPassword, userPassword string) string {
 	}
 	path := filepath.Join(appDir, "initial-credentials.txt")
 	content := fmt.Sprintf("admin: %s\nxu: %s\n", adminPassword, userPassword)
-	if err := os.WriteFile(path, []byte(content), 0600); err != nil {
-		slog.Error("failed to write initial credentials file", "error", err)
-		// 清理可能的半写文件，避免残留不完整/过期的凭据误导使用者
-		if cleanupErr := os.Remove(path); cleanupErr != nil {
-			slog.Debug("failed to remove incomplete initial credentials", "error", cleanupErr)
+	file, err := os.CreateTemp(appDir, ".initial-credentials-")
+	if err != nil {
+		slog.Error("failed to stage initial credentials file", "error", err)
+		return ""
+	}
+	stage := file.Name()
+	defer func() {
+		if err := os.Remove(stage); err != nil && !errors.Is(err, os.ErrNotExist) {
+			slog.Debug("Unable to remove staged initial credentials", "error", err)
 		}
+	}()
+	_, writeErr := file.WriteString(content)
+	if writeErr == nil {
+		writeErr = file.Sync()
+	}
+	if closeErr := file.Close(); writeErr == nil {
+		writeErr = closeErr
+	}
+	if writeErr == nil {
+		writeErr = os.Rename(stage, path)
+	}
+	if writeErr != nil {
+		slog.Error("failed to write initial credentials file", "error", writeErr)
 		return ""
 	}
 	return path
@@ -131,7 +175,11 @@ func writeInitialCredentials(adminPassword, userPassword string) string {
 
 // generateStrongPassword 生成随机强密码
 // 密码包含大小写字母、数字和特殊字符，满足强密码要求
-func generateStrongPassword(length int) string {
+func generateStrongPassword(length int) (string, error) {
+	return generateStrongPasswordFrom(rand.Reader, length)
+}
+
+func generateStrongPasswordFrom(reader io.Reader, length int) (string, error) {
 	const (
 		upperChars   = "ABCDEFGHIJKLMNOPQRSTUVWXYZ"
 		lowerChars   = "abcdefghijklmnopqrstuvwxyz"
@@ -139,35 +187,41 @@ func generateStrongPassword(length int) string {
 		specialChars = "!@#$%^&*()-_=+[]{}|;:,.<>?"
 	)
 
+	if length < 4 {
+		return "", errors.New("密码长度至少4位")
+	}
 	allChars := upperChars + lowerChars + digitChars + specialChars
-
-	// 确保至少包含每种类型的字符
 	password := make([]byte, length)
-	password[0] = upperChars[randomInt(len(upperChars))]
-	password[1] = lowerChars[randomInt(len(lowerChars))]
-	password[2] = digitChars[randomInt(len(digitChars))]
-	password[3] = specialChars[randomInt(len(specialChars))]
-
-	// 填充剩余字符
-	for i := 4; i < length; i++ {
-		password[i] = allChars[randomInt(len(allChars))]
+	groups := []string{upperChars, lowerChars, digitChars, specialChars}
+	for i := range password {
+		chars := allChars
+		if i < len(groups) {
+			chars = groups[i]
+		}
+		index, err := randomInt(reader, len(chars))
+		if err != nil {
+			return "", err
+		}
+		password[i] = chars[index]
 	}
 
 	// 打乱顺序
 	for i := length - 1; i > 0; i-- {
-		j := randomInt(i + 1)
+		j, err := randomInt(reader, i+1)
+		if err != nil {
+			return "", err
+		}
 		password[i], password[j] = password[j], password[i]
 	}
 
-	return string(password)
+	return string(password), nil
 }
 
 // randomInt 生成 [0, upperBound) 范围内的随机整数
-func randomInt(upperBound int) int {
-	n, err := rand.Int(rand.Reader, big.NewInt(int64(upperBound)))
+func randomInt(reader io.Reader, upperBound int) (int, error) {
+	n, err := rand.Int(reader, big.NewInt(int64(upperBound)))
 	if err != nil {
-		// 如果随机数生成失败，使用备用方案
-		return 0
+		return 0, fmt.Errorf("安全随机数不可用: %w", err)
 	}
-	return int(n.Int64())
+	return int(n.Int64()), nil
 }

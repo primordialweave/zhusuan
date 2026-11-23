@@ -1,3 +1,4 @@
+// Package router registers HTTP endpoints with authentication and authorization middleware.
 package router
 
 import (

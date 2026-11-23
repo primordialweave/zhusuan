@@ -20,6 +20,7 @@ import (
 var legacyPreferenceKeys = []string{
 	"theme", "lastUsername", "rememberPassword", "rememberMe",
 	"workbenchSummaryScope", "orange.appearance.v1", "zhusuan.appearance.v1",
+	"zhusuan.themePack.v1",
 }
 
 // ReadLegacyPreferences reads only application preferences, never passwords or sessions.
@@ -28,9 +29,9 @@ func ReadLegacyPreferences(platform, home string) (map[string]string, error) {
 	result := make(map[string]string)
 	var roots []string
 	switch platform {
-	case "darwin":
+	case platformDarwin:
 		roots = []string{filepath.Join(home, "Library", "WebKit", "ai.fruits.orange")}
-	case "linux":
+	case platformLinux:
 		roots = []string{filepath.Join(home, ".local", "share", "Orange"), filepath.Join(home, ".config", "Orange")}
 	default:
 		return result, nil
@@ -83,7 +84,7 @@ func readPreferenceDatabase(path string) (map[string]string, error) {
 	for index, key := range legacyPreferenceKeys {
 		args[index] = key
 	}
-	rows, err := db.QueryContext(ctx, "SELECT key, value FROM ItemTable WHERE key IN (?,?,?,?,?,?,?)", args...)
+	rows, err := db.QueryContext(ctx, "SELECT key, value FROM ItemTable WHERE key IN (?,?,?,?,?,?,?,?)", args...)
 	if err != nil {
 		return nil, err
 	}

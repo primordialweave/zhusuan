@@ -1,0 +1,133 @@
+rule_files:
+  - alerts.yml
+
+evaluation_interval: 1m
+
+tests:
+  - name: Error ratios use total traffic per instance instead of errors per second
+    interval: 1m
+    input_series:
+      - series: 'http_requests_total{job="zhusuan-api",instance="busy",method="GET",path="/projects",status="200"}'
+        values: '0+5940x10'
+      - series: 'http_requests_total{job="zhusuan-api",instance="busy",method="GET",path="/projects",status="500"}'
+        values: '0+60x10'
+      - series: 'http_requests_total{job="zhusuan-api",instance="quiet",method="GET",path="/projects",status="200"}'
+        values: '0+0.54x10'
+      - series: 'http_requests_total{job="zhusuan-api",instance="quiet",method="GET",path="/projects",status="500"}'
+        values: '0+0.06x10'
+      - series: 'http_requests_total{job="zhusuan-api",instance="boundary",method="GET",path="/projects",status="200"}'
+        values: '0+57x10'
+      - series: 'http_requests_total{job="zhusuan-api",instance="boundary",method="GET",path="/projects",status="500"}'
+        values: '0+3x10'
+      - series: 'http_requests_total{job="another-app",instance="other",method="GET",path="/projects",status="500"}'
+        values: '0+60x10'
+    alert_rule_test:
+      - eval_time: 7m
+        alertname: HighErrorRate
+        exp_alerts:
+          - exp_labels:
+              job: zhusuan-api
+              instance: quiet
+              severity: critical
+            exp_annotations:
+              summary: API错误率过高
+              description: 'quiet 的5xx错误比例超过5% (当前比例: 10%)'
+
+  - name: Request rate is aggregated across methods paths and statuses
+    interval: 1m
+    input_series:
+      - series: 'http_requests_total{job="zhusuan-api",instance="combined",method="GET",path="/projects",status="200"}'
+        values: '0+3600x10'
+      - series: 'http_requests_total{job="zhusuan-api",instance="combined",method="POST",path="/payments",status="201"}'
+        values: '0+3600x10'
+    alert_rule_test:
+      - eval_time: 10m
+        alertname: HighRequestRate
+        exp_alerts:
+          - exp_labels:
+              job: zhusuan-api
+              instance: combined
+              severity: warning
+            exp_annotations:
+              summary: 请求量过高
+              description: 'combined 的请求量超过100 req/s (当前值: 120)'
+
+  - name: An isolated low-volume slow path does not replace the instance P99
+    interval: 1m
+    input_series:
+      - series: 'http_request_duration_seconds_bucket{job="zhusuan-api",instance="latency",method="GET",path="/fast",le="0.5"}'
+        values: '0+1000x10'
+      - series: 'http_request_duration_seconds_bucket{job="zhusuan-api",instance="latency",method="GET",path="/fast",le="1"}'
+        values: '0+1000x10'
+      - series: 'http_request_duration_seconds_bucket{job="zhusuan-api",instance="latency",method="GET",path="/fast",le="2"}'
+        values: '0+1000x10'
+      - series: 'http_request_duration_seconds_bucket{job="zhusuan-api",instance="latency",method="GET",path="/fast",le="+Inf"}'
+        values: '0+1000x10'
+      - series: 'http_request_duration_seconds_bucket{job="zhusuan-api",instance="latency",method="GET",path="/slow",le="0.5"}'
+        values: '0+0x10'
+      - series: 'http_request_duration_seconds_bucket{job="zhusuan-api",instance="latency",method="GET",path="/slow",le="1"}'
+        values: '0+0x10'
+      - series: 'http_request_duration_seconds_bucket{job="zhusuan-api",instance="latency",method="GET",path="/slow",le="2"}'
+        values: '0+1x10'
+      - series: 'http_request_duration_seconds_bucket{job="zhusuan-api",instance="latency",method="GET",path="/slow",le="+Inf"}'
+        values: '0+1x10'
+    alert_rule_test:
+      - eval_time: 7m
+        alertname: SlowAPIResponse
+        exp_alerts: []
+
+  - name: Slow aggregate latency still fires
+    interval: 1m
+    input_series:
+      - series: 'http_request_duration_seconds_bucket{job="zhusuan-api",instance="slow",method="GET",path="/projects",le="1"}'
+        values: '0+0x10'
+      - series: 'http_request_duration_seconds_bucket{job="zhusuan-api",instance="slow",method="GET",path="/projects",le="2"}'
+        values: '0+100x10'
+      - series: 'http_request_duration_seconds_bucket{job="zhusuan-api",instance="slow",method="GET",path="/projects",le="+Inf"}'
+        values: '0+100x10'
+    alert_rule_test:
+      - eval_time: 10m
+        alertname: SlowAPIResponse
+        exp_alerts:
+          - exp_labels:
+              job: zhusuan-api
+              instance: slow
+              severity: warning
+            exp_annotations:
+              summary: API响应时间过慢
+              description: 'slow 的P99响应时间超过1秒 (当前值: 1.99s)'
+
+  - name: Zero traffic and traffic without errors stay quiet
+    interval: 1m
+    input_series:
+      - series: 'http_requests_total{job="zhusuan-api",instance="idle",method="GET",path="/projects",status="200"}'
+        values: '0+0x10'
+      - series: 'http_requests_total{job="zhusuan-api",instance="idle",method="GET",path="/projects",status="500"}'
+        values: '0+0x10'
+      - series: 'http_requests_total{job="zhusuan-api",instance="healthy",method="GET",path="/projects",status="200"}'
+        values: '0+600x10'
+    alert_rule_test:
+      - eval_time: 10m
+        alertname: HighErrorRate
+        exp_alerts: []
+
+  - name: A failed API scrape fires the service availability alert
+    interval: 1m
+    input_series:
+      - series: 'up{job="zhusuan-api",instance="offline"}'
+        values: '0+0x10'
+      - series: 'up{job="zhusuan-api",instance="online"}'
+        values: '1+0x10'
+      - series: 'up{job="another-app",instance="other"}'
+        values: '0+0x10'
+    alert_rule_test:
+      - eval_time: 2m
+        alertname: ServiceDown
+        exp_alerts:
+          - exp_labels:
+              job: zhusuan-api
+              instance: offline
+              severity: critical
+            exp_annotations:
+              summary: 服务不可用
+              description: offline 无法访问

@@ -1,0 +1,239 @@
+{
+  "captured_at": "2026-11-23",
+  "source": "current development checkout, custom themes not released in v1.3.1",
+  "browser": "ego lite",
+  "frontend_build": "npm run build passed in isolated frontend copy",
+  "masking": false,
+  "database": {
+    "projects": {
+      "count": 77,
+      "copy_matches_current_source": true
+    },
+    "payments": {
+      "count": 148,
+      "copy_matches_current_source": true
+    }
+  },
+  "local_links": {
+    "checked": 52,
+    "missing": []
+  },
+  "screenshots": [
+    {
+      "file": "docs/screenshots/dashboard.png",
+      "dimensions": [
+        1440,
+        960
+      ],
+      "bytes": 1400056,
+      "sha256": "acb532ba1193b3feea0fbd3c9b662788c72a5f64a4c7e1c4ec020fa09a2e19da"
+    },
+    {
+      "file": "docs/screenshots/projects.png",
+      "dimensions": [
+        1440,
+        960
+      ],
+      "bytes": 689002,
+      "sha256": "5f6d87f0db04291bd568cd055661d83c3e73fdba95413ca416bfebac75e5a062"
+    },
+    {
+      "file": "docs/screenshots/calendar.png",
+      "dimensions": [
+        1440,
+        960
+      ],
+      "bytes": 648409,
+      "sha256": "3f4b5c89b367802ba07a991941407c324047f0911869e40401fc819921e5dfa7"
+    },
+    {
+      "file": "docs/screenshots/analytics.png",
+      "dimensions": [
+        1440,
+        960
+      ],
+      "bytes": 686341,
+      "sha256": "5d1a68bce64f7dde8afc4174456e5c7bff81936c8eef370c8cfec0d20f5670e6"
+    },
+    {
+      "file": "docs/screenshots/dictionary.png",
+      "dimensions": [
+        1440,
+        960
+      ],
+      "bytes": 573544,
+      "sha256": "f4eb8562aed4eb3e93b727c19af52b34ca87d9ed8853344a4beef63678ae5a4a"
+    },
+    {
+      "file": "docs/screenshots/about.png",
+      "dimensions": [
+        1440,
+        960
+      ],
+      "bytes": 551868,
+      "sha256": "a6db456668c69fe1d4c2970b5c88af46a9e1b7175398c673ebc4d87decbcc1ef"
+    },
+    {
+      "file": "docs/screenshots/project-detail.png",
+      "dimensions": [
+        1440,
+        1200
+      ],
+      "bytes": 657180,
+      "sha256": "0c6bd39ac2e0c1a7fa8f8baee1d46a7494bd3ba494588c749d62efede3e8a1db"
+    },
+    {
+      "file": "docs/screenshots/project-create.png",
+      "dimensions": [
+        1440,
+        960
+      ],
+      "bytes": 610766,
+      "sha256": "0d71740ad1d950aca7cd374076a78b4971be062f69abd977f1f46c1f49f89afe"
+    },
+    {
+      "file": "docs/screenshots/login.png",
+      "dimensions": [
+        1440,
+        960
+      ],
+      "bytes": 1260540,
+      "sha256": "c4d120e10bffa2235442773e67cbfdbb9adadb8004845503cd3d6123098789b2"
+    },
+    {
+      "file": "docs/screenshots/appearance.png",
+      "dimensions": [
+        1440,
+        1560
+      ],
+      "bytes": 1185541,
+      "sha256": "fd8f10ffafd0e2d5fc6daece40eb71b53b9c7faaed63b3d9c561f0b524938ddc"
+    },
+    {
+      "file": "docs/screenshots/themes-light.jpg",
+      "dimensions": [
+        1500,
+        1670
+      ],
+      "bytes": 691535,
+      "sha256": "f22c1608859dd838a9d9089f0df31e5bef56f6d9b04620140b31aff4fa9aebaa"
+    },
+    {
+      "file": "docs/screenshots/themes-dark.jpg",
+      "dimensions": [
+        1500,
+        1670
+      ],
+      "bytes": 431434,
+      "sha256": "66ff5772840620315ee9e6a596915bb0e56aef022214fefa020a48e45f95b8ce"
+    }
+  ],
+  "theme_views": [
+    {
+      "theme": "light",
+      "pack": "spring-jiangnan",
+      "w": 1440,
+      "h": 960,
+      "overflow": 0,
+      "scene": "--ods-scene-business-url: url(\"/assets/scene-IkMLfxJi.webp\"); --ods-scene-still-url: url(\"/assets/scene-IkMLfxJi.webp\");"
+    },
+    {
+      "theme": "light",
+      "pack": "summer-westlake",
+      "w": 1440,
+      "h": 960,
+      "overflow": 0,
+      "scene": "/assets/scene-CadyeN8i.webp"
+    },
+    {
+      "theme": "light",
+      "pack": "autumn-forbidden",
+      "w": 1440,
+      "h": 960,
+      "overflow": 0,
+      "scene": "--ods-scene-business-url: url(\"/assets/scene-fVZkj02D.webp\"); --ods-scene-still-url: url(\"/assets/scene-fVZkj02D.webp\");"
+    },
+    {
+      "theme": "light",
+      "pack": "winter-harbin",
+      "w": 1440,
+      "h": 960,
+      "overflow": 0,
+      "scene": "--ods-scene-business-url: url(\"/assets/scene-BPvX_vB9.webp\"); --ods-scene-still-url: url(\"/assets/scene-BPvX_vB9.webp\");"
+    },
+    {
+      "theme": "light",
+      "pack": "holiday-spring-festival",
+      "w": 1440,
+      "h": 960,
+      "overflow": 0,
+      "scene": "--ods-scene-business-url: url(\"/assets/scene-xUSgpnGO.webp\"); --ods-scene-still-url: url(\"/assets/scene-xUSgpnGO.webp\");"
+    },
+    {
+      "theme": "light",
+      "pack": "holiday-mid-autumn",
+      "w": 1440,
+      "h": 960,
+      "overflow": 0,
+      "scene": "--ods-scene-business-url: url(\"/assets/scene-BNk3TEDQ.webp\"); --ods-scene-still-url: url(\"/assets/scene-BNk3TEDQ.webp\");"
+    },
+    {
+      "theme": "dark",
+      "pack": "spring-jiangnan",
+      "w": 1440,
+      "h": 960,
+      "overflow": 0,
+      "scene": "--ods-scene-business-url: url(\"/assets/scene-IkMLfxJi.webp\"); --ods-scene-still-url: url(\"/assets/scene-IkMLfxJi.webp\");"
+    },
+    {
+      "theme": "dark",
+      "pack": "summer-westlake",
+      "w": 1440,
+      "h": 960,
+      "overflow": 0,
+      "scene": "--ods-scene-business-url: url(\"/assets/scene-CadyeN8i.webp\"); --ods-scene-still-url: url(\"/assets/scene-CadyeN8i.webp\");"
+    },
+    {
+      "theme": "dark",
+      "pack": "autumn-forbidden",
+      "w": 1440,
+      "h": 960,
+      "overflow": 0,
+      "scene": "--ods-scene-business-url: url(\"/assets/scene-fVZkj02D.webp\"); --ods-scene-still-url: url(\"/assets/scene-fVZkj02D.webp\");"
+    },
+    {
+      "theme": "dark",
+      "pack": "winter-harbin",
+      "w": 1440,
+      "h": 960,
+      "overflow": 0,
+      "scene": "--ods-scene-business-url: url(\"/assets/scene-BPvX_vB9.webp\"); --ods-scene-still-url: url(\"/assets/scene-BPvX_vB9.webp\");"
+    },
+    {
+      "theme": "dark",
+      "pack": "holiday-spring-festival",
+      "w": 1440,
+      "h": 960,
+      "overflow": 0,
+      "scene": "--ods-scene-business-url: url(\"/assets/scene-xUSgpnGO.webp\"); --ods-scene-still-url: url(\"/assets/scene-xUSgpnGO.webp\");"
+    },
+    {
+      "theme": "dark",
+      "pack": "holiday-mid-autumn",
+      "w": 1440,
+      "h": 960,
+      "overflow": 0,
+      "scene": "--ods-scene-business-url: url(\"/assets/scene-BNk3TEDQ.webp\"); --ods-scene-still-url: url(\"/assets/scene-BNk3TEDQ.webp\");"
+    }
+  ],
+  "image_review": {
+    "scope": "12 README images, including all six light and dark scenic theme combinations",
+    "result": "passed; project detail and appearance recaptured with taller viewports for complete content"
+  },
+  "cleanup": {
+    "browser_task_space": "closed",
+    "owned_api_port": 3497,
+    "owned_preview_port": 9371,
+    "owned_services": "exited; ports 3497 and 9371 closed"
+  }
+}

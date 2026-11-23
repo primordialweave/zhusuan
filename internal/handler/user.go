@@ -1,17 +1,20 @@
 package handler
 
 import (
+	"github.com/gin-gonic/gin"
+
 	"github.com/primordialweave/zhusuan/internal/dto"
 	"github.com/primordialweave/zhusuan/internal/middleware"
 	"github.com/primordialweave/zhusuan/internal/pkg/response"
 	"github.com/primordialweave/zhusuan/internal/service"
-	"github.com/gin-gonic/gin"
 )
 
+// UserHandler manages user accounts behind the router's administrator guard.
 type UserHandler struct {
 	userService *service.UserService
 }
 
+// NewUserHandler creates the administrative account handler.
 func NewUserHandler() *UserHandler {
 	return &UserHandler{
 		userService: service.NewUserService(),
@@ -27,7 +30,7 @@ func (h *UserHandler) List(c *gin.Context) {
 
 	result, err := h.userService.ListUsers(page, pageSize, keyword)
 	if err != nil {
-		response.InternalError(c, err.Error())
+		response.HandleServiceError(c, err, "获取用户列表失败")
 		return
 	}
 
@@ -68,12 +71,14 @@ func (h *UserHandler) Update(c *gin.Context) {
 		return
 	}
 
-	if err := h.userService.UpdateUser(id, req); err != nil {
+	user, err := h.userService.UpdateUserAndGet(id, req)
+	if err != nil {
 		response.HandleServiceError(c, err, "更新用户失败")
 		return
 	}
 
-	response.SuccessWithMessage(c, "更新成功", nil)
+	// models.User omits the password from JSON, as the existing profile/list endpoints do.
+	response.SuccessWithMessage(c, "更新成功", user)
 }
 
 // Delete 删除用户

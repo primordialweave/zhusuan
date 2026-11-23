@@ -5,9 +5,10 @@ import (
 	"os"
 	"strconv"
 
+	"github.com/gin-gonic/gin"
+
 	"github.com/primordialweave/zhusuan/internal/pkg/response"
 	"github.com/primordialweave/zhusuan/internal/service"
-	"github.com/gin-gonic/gin"
 )
 
 // SyncHandler 数据同步 HTTP Handler
@@ -27,11 +28,10 @@ func (h *SyncHandler) GetConfig(c *gin.Context) {
 	// 安全考虑：不返回密码字段，避免敏感信息泄露
 	// 前端应单独输入密码，而非从服务器读取
 	config := gin.H{
-		"db_type": os.Getenv("SYNC_DB_TYPE"),
-		"host":    os.Getenv("SYNC_DB_HOST"),
-		"port":    port,
-		"user":    os.Getenv("SYNC_DB_USER"),
-		// "password": os.Getenv("SYNC_DB_PASSWORD"), // 已移除：不返回密码
+		"db_type":  os.Getenv("SYNC_DB_TYPE"),
+		"host":     os.Getenv("SYNC_DB_HOST"),
+		"port":     port,
+		"user":     os.Getenv("SYNC_DB_USER"),
 		"db_name":  os.Getenv("SYNC_DB_NAME"),
 		"ssl_mode": os.Getenv("SYNC_SSL_MODE"),
 	}
@@ -160,5 +160,12 @@ func (h *SyncHandler) Execute(c *gin.Context) {
 		return
 	}
 
-	response.SuccessWithMessage(c, "同步完成", results)
+	message := "同步完成"
+	for _, result := range results {
+		if !result.Success {
+			message = "同步失败，已回滚"
+			break
+		}
+	}
+	response.SuccessWithMessage(c, message, results)
 }
