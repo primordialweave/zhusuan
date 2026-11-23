@@ -1,0 +1,296 @@
+{
+  "tag": "v1.4.0",
+  "branch": "codex/release-1-4-0",
+  "sourceCommit": "21aff47b7dfae6231ce6d9b441244a0b2e8ef685",
+  "pr": 39,
+  "ciRun": 45151523971,
+  "frontend": {
+    "files": 134,
+    "passed": 980,
+    "failed": 0
+  },
+  "go": {
+    "packages": 17,
+    "top": 259,
+    "sub": 264,
+    "failures": 0
+  },
+  "python": 49,
+  "goLintIssues": 0,
+  "stagedScan": {
+    "stagedFiles": 299,
+    "textFiles": 260,
+    "binaryFiles": 39,
+    "highConfidenceSecretPaths": [],
+    "forbiddenPaths": []
+  },
+  "mergeCommit": "cd788862244cfab6f2279329037a85d0ddb88945",
+  "mainCIRun": 45161653952,
+  "finalPRHead": "c8288c8a871738c1e3a9f216d5f1f81fee17b852",
+  "finalPRCI": 45159801389,
+  "windowsCandidateRun": 45160081901,
+  "windowsCandidatePassed": true,
+  "macCandidateRun": 45160087707,
+  "mainCIPassed": true,
+  "macCandidatePassed": true,
+  "tagCommit": "cd788862244cfab6f2279329037a85d0ddb88945",
+  "packagingPR": 40,
+  "packagingCommit": "f3f79dec4cbb0fb3a4e4414d40d5edcdc868f2bd",
+  "packagingMainCIRun": 45170031227,
+  "packagingMainCIPassed": true,
+  "initialReleaseRun": 45163766010,
+  "initialReleaseFailedPlatform": "linux",
+  "fixedApplicationTagUnchanged": true,
+  "recoveryReleaseRun": 45172313200,
+  "recoveryPlatformBuildsPassed": true,
+  "draftReleaseId": 455412186,
+  "publishGateFailure": "draft tag lookup HTTP404 before digestcomparison",
+  "publication": {
+    "id": 455412186,
+    "url": "https://github.com/primordialweave/zhusuan/releases/tag/v1.4.0",
+    "publishedAtUTC": "2026-11-23T13:30:36Z",
+    "publishedAtShanghai": "2026-11-23T21:30:36+08:00",
+    "latest": true,
+    "draft": false,
+    "method": "authorized manual equivalent byte/name/size/SHA256/SUMS/manifest gate after automatic draft-tag lookup HTTP404"
+  },
+  "publicationFixPR": 41,
+  "publicationFixCommit": "38c6188d1e0c819e9347b1bd18f9db09832f3bd5",
+  "publicationFixMainCI": 45182434344,
+  "publicationFixMainCIPassed": true,
+  "downloads": {
+    "assets": [
+      {
+        "name": "SHA256SUMS",
+        "bytes": 794,
+        "sha256": "d40731ac66a5797dfdfe1deb8a5537940ffabad3a75118c52484b90aa5649851"
+      },
+      {
+        "name": "update.json",
+        "bytes": 5340,
+        "sha256": "06e962c896f4867c8ad713981258f762f88d7e1d39843cc65313b2cc2d3fac95"
+      },
+      {
+        "name": "zhusuan-v1.4.0-linux-amd64.deb",
+        "bytes": 38128628,
+        "sha256": "77eb8a20da8171b8185712fd0fa639b77a8d614344377b453d4ac7d2fdcf7a08"
+      },
+      {
+        "name": "zhusuan-v1.4.0-linux-amd64.rpm",
+        "bytes": 39075359,
+        "sha256": "50424e5f04ada774498fe35f5521d7967afd45887719ca9579d5c629599dda94"
+      },
+      {
+        "name": "zhusuan-v1.4.0-linux-x86_64.AppImage",
+        "bytes": 109509112,
+        "sha256": "db42c6ebb942264283e26540ab775bb9cda4c46b59db5a0f7cca66f72f677f99"
+      },
+      {
+        "name": "zhusuan-v1.4.0-macOS-amd64.dmg",
+        "bytes": 49375103,
+        "sha256": "dd34554642ed3d57bb1f02bebe747e2e3de4f64915effa51e382121fa142ae3b"
+      },
+      {
+        "name": "zhusuan-v1.4.0-macOS-amd64.zip",
+        "bytes": 45240714,
+        "sha256": "fb281da4e21069e12d454e3a4f29a1c28b33b301df617fe04beaeb7261136ce0"
+      },
+      {
+        "name": "zhusuan-v1.4.0-macOS-arm64.dmg",
+        "bytes": 48210273,
+        "sha256": "09ec92bcd8725c3979ecc5c38161ed49bc617402ffdfe674a88a6778bebb7f85"
+      },
+      {
+        "name": "zhusuan-v1.4.0-macOS-arm64.zip",
+        "bytes": 43415119,
+        "sha256": "5778d5c7599b405c9f862c794882dc3e66e1c9b4b4ae76d93833b93781dac114"
+      },
+      {
+        "name": "zhusuan-v1.4.0-windows-amd64-installer.exe",
+        "bytes": 39623046,
+        "sha256": "24bdbc0295ba7070e0a8de97902383ff1510cb76e4ba83b9331024ac527bc13a"
+      }
+    ],
+    "count": 10,
+    "applicationCount": 8,
+    "totalBytes": 412583488,
+    "manifestAndChecksumsMatch": true
+  },
+  "draftValidation": {
+    "draftId": 455412186,
+    "files": {
+      "zhusuan-v1.4.0-linux-amd64.deb": {
+        "sha256": "77eb8a20da8171b8185712fd0fa639b77a8d614344377b453d4ac7d2fdcf7a08",
+        "size": 38128628
+      },
+      "zhusuan-v1.4.0-macOS-amd64.dmg": {
+        "sha256": "dd34554642ed3d57bb1f02bebe747e2e3de4f64915effa51e382121fa142ae3b",
+        "size": 49375103
+      },
+      "zhusuan-v1.4.0-macOS-arm64.zip": {
+        "sha256": "5778d5c7599b405c9f862c794882dc3e66e1c9b4b4ae76d93833b93781dac114",
+        "size": 43415119
+      },
+      "zhusuan-v1.4.0-macOS-amd64.zip": {
+        "sha256": "fb281da4e21069e12d454e3a4f29a1c28b33b301df617fe04beaeb7261136ce0",
+        "size": 45240714
+      },
+      "zhusuan-v1.4.0-macOS-arm64.dmg": {
+        "sha256": "09ec92bcd8725c3979ecc5c38161ed49bc617402ffdfe674a88a6778bebb7f85",
+        "size": 48210273
+      },
+      "zhusuan-v1.4.0-linux-amd64.rpm": {
+        "sha256": "50424e5f04ada774498fe35f5521d7967afd45887719ca9579d5c629599dda94",
+        "size": 39075359
+      },
+      "zhusuan-v1.4.0-linux-x86_64.AppImage": {
+        "sha256": "db42c6ebb942264283e26540ab775bb9cda4c46b59db5a0f7cca66f72f677f99",
+        "size": 109509112
+      },
+      "zhusuan-v1.4.0-windows-amd64-installer.exe": {
+        "sha256": "24bdbc0295ba7070e0a8de97902383ff1510cb76e4ba83b9331024ac527bc13a",
+        "size": 39623046
+      },
+      "update.json": {
+        "sha256": "06e962c896f4867c8ad713981258f762f88d7e1d39843cc65313b2cc2d3fac95",
+        "size": 5340
+      },
+      "SHA256SUMS": {
+        "sha256": "d40731ac66a5797dfdfe1deb8a5537940ffabad3a75118c52484b90aa5649851",
+        "size": 794
+      }
+    },
+    "namesSizesDigestsMatch": true,
+    "sumAndManifestMatch": true,
+    "buildRecipeRecorded": true
+  },
+  "linuxPackageValidation": {
+    "passed": true,
+    "assetCount": 8,
+    "entries": [
+      {
+        "asset": "zhusuan-v1.4.0-linux-amd64.deb",
+        "path": "/private/tmp/zhusuan-release-1.4.0.4obvAc/draft-assets/zhusuan-v1.4.0-linux-amd64.deb",
+        "sizeBytes": 38128628,
+        "sha256": "77eb8a20da8171b8185712fd0fa639b77a8d614344377b453d4ac7d2fdcf7a08",
+        "desktopEntries": [
+          {
+            "path": "./usr/share/applications/zhusuan.desktop",
+            "sha256": "f707b471b18af535905981797f26826f5b3bf933dcce658268f0c03eb9b05609",
+            "name": "珠算",
+            "exec": "/usr/local/bin/zhusuan %u",
+            "actions": {
+              "quick-receipt": {
+                "Name": "记一笔收款",
+                "Exec": "/usr/local/bin/zhusuan --action=quick-receipt"
+              },
+              "new-project": {
+                "Name": "新建项目",
+                "Exec": "/usr/local/bin/zhusuan --action=new-project"
+              },
+              "calendar": {
+                "Name": "收款日历",
+                "Exec": "/usr/local/bin/zhusuan --action=calendar"
+              }
+            },
+            "content": "[Desktop Entry]\nVersion=1.0\nName=珠算\nComment=PrimordialWeave zhusuan Desktop App\n# The Exec line includes %u to pass the URL to the application\nExec=/usr/local/bin/zhusuan %u\nTerminal=false\nType=Application\nIcon=zhusuan\nCategories=Utility;\nStartupWMClass=zhusuan\nActions=quick-receipt;new-project;calendar;\n\n[Desktop Action quick-receipt]\nName=记一笔收款\nExec=/usr/local/bin/zhusuan --action=quick-receipt\n\n[Desktop Action new-project]\nName=新建项目\nExec=/usr/local/bin/zhusuan --action=new-project\n\n[Desktop Action calendar]\nName=收款日历\nExec=/usr/local/bin/zhusuan --action=calendar\n\n\n"
+          }
+        ],
+        "status": "passed"
+      },
+      {
+        "asset": "zhusuan-v1.4.0-linux-amd64.rpm",
+        "path": "/private/tmp/zhusuan-release-1.4.0.4obvAc/draft-assets/zhusuan-v1.4.0-linux-amd64.rpm",
+        "sizeBytes": 39075359,
+        "sha256": "50424e5f04ada774498fe35f5521d7967afd45887719ca9579d5c629599dda94",
+        "desktopEntries": [
+          {
+            "path": "/usr/share/applications/zhusuan.desktop",
+            "sha256": "f707b471b18af535905981797f26826f5b3bf933dcce658268f0c03eb9b05609",
+            "name": "珠算",
+            "exec": "/usr/local/bin/zhusuan %u",
+            "actions": {
+              "quick-receipt": {
+                "Name": "记一笔收款",
+                "Exec": "/usr/local/bin/zhusuan --action=quick-receipt"
+              },
+              "new-project": {
+                "Name": "新建项目",
+                "Exec": "/usr/local/bin/zhusuan --action=new-project"
+              },
+              "calendar": {
+                "Name": "收款日历",
+                "Exec": "/usr/local/bin/zhusuan --action=calendar"
+              }
+            },
+            "content": "[Desktop Entry]\nVersion=1.0\nName=珠算\nComment=PrimordialWeave zhusuan Desktop App\n# The Exec line includes %u to pass the URL to the application\nExec=/usr/local/bin/zhusuan %u\nTerminal=false\nType=Application\nIcon=zhusuan\nCategories=Utility;\nStartupWMClass=zhusuan\nActions=quick-receipt;new-project;calendar;\n\n[Desktop Action quick-receipt]\nName=记一笔收款\nExec=/usr/local/bin/zhusuan --action=quick-receipt\n\n[Desktop Action new-project]\nName=新建项目\nExec=/usr/local/bin/zhusuan --action=new-project\n\n[Desktop Action calendar]\nName=收款日历\nExec=/usr/local/bin/zhusuan --action=calendar\n\n\n"
+          }
+        ],
+        "status": "passed"
+      },
+      {
+        "asset": "zhusuan-v1.4.0-linux-x86_64.AppImage",
+        "path": "/private/tmp/zhusuan-release-1.4.0.4obvAc/draft-assets/zhusuan-v1.4.0-linux-x86_64.AppImage",
+        "sizeBytes": 109509112,
+        "sha256": "db42c6ebb942264283e26540ab775bb9cda4c46b59db5a0f7cca66f72f677f99",
+        "superblock": {
+          "offset": 944632,
+          "bytesUsed": 108561192,
+          "compression": 6
+        },
+        "desktopEntries": [
+          {
+            "path": "/zhusuan.desktop",
+            "sha256": "265ac647c1ccbf4a8c5d53807def9798a6a66acbe4705622e7713cbf97af1d0c",
+            "name": "珠算",
+            "exec": "zhusuan %u",
+            "actions": {
+              "quick-receipt": {
+                "Name": "记一笔收款",
+                "Exec": "zhusuan --action=quick-receipt"
+              },
+              "new-project": {
+                "Name": "新建项目",
+                "Exec": "zhusuan --action=new-project"
+              },
+              "calendar": {
+                "Name": "收款日历",
+                "Exec": "zhusuan --action=calendar"
+              }
+            },
+            "content": "[Desktop Entry]\nVersion=1.0\nName=珠算\nComment=PrimordialWeave zhusuan Desktop App\n# The Exec line includes %u to pass the URL to the application\nExec=zhusuan %u\nTerminal=false\nType=Application\nIcon=zhusuan\nCategories=Utility;\nStartupWMClass=zhusuan\nActions=quick-receipt;new-project;calendar;\n\n[Desktop Action quick-receipt]\nName=记一笔收款\nExec=zhusuan --action=quick-receipt\n\n[Desktop Action new-project]\nName=新建项目\nExec=zhusuan --action=new-project\n\n[Desktop Action calendar]\nName=收款日历\nExec=zhusuan --action=calendar\n\n\n"
+          }
+        ],
+        "status": "passed"
+      }
+    ]
+  },
+  "macPackageValidation": [
+    {
+      "arch": "arm64",
+      "zipCRC": true,
+      "safeZipPaths": true,
+      "bundleMetadata": true,
+      "codesignDeepStrict": true,
+      "dmgReadOnlyValidatedAndDetached": true,
+      "executableSHA256": "cbeb6e14915f19211a203dadf175df5981c40a73bb6f95bd3c01283eddc6927f"
+    },
+    {
+      "arch": "amd64",
+      "zipCRC": true,
+      "safeZipPaths": true,
+      "bundleMetadata": true,
+      "codesignDeepStrict": true,
+      "dmgReadOnlyValidatedAndDetached": true,
+      "executableSHA256": "f05597d0fe78385de59875f4e9fcc41e6d7db9c81ff28aac381a5720c3bb3556"
+    }
+  ],
+  "latestFeed": {
+    "status": 200,
+    "tag": "v1.4.0",
+    "sha256": "sha256:06e962c896f4867c8ad713981258f762f88d7e1d39843cc65313b2cc2d3fac95",
+    "matchedDirect": true,
+    "finalURL": "https://release-assets.githubusercontent.com/github-production-release-asset/1107498836/421474e4-2f06-4cf6-810b-0244539e4cf3?sp=r&sv=2018-11-09&sr=b&spr=https&se=2026-11-23T14%3A38%3A05Z&rscd=attachment%3B+filename%3Dupdate.json&rsct=application%2Foctet-stream&skoid=96c2d410-5711-43a1-aedd-ab1947aa7ab0&sktid=398a6654-997b-47e9-b12b-9515b896b4de&skt=2026-11-23T13%3A37%3A24Z&ske=2026-11-23T14%3A38%3A05Z&sks=b&skv=2018-11-09&sig=ijwGh5mEEt%2FNuMAIqyLnThZp6w0VZk1lDUBvaM8ZLsA%3D&jwt=eyJ0eXAiOiJKV1QiLCJhbGciOiJIUzI1NiJ9.eyJpc3MiOiJnaXRodWIuY29tIiwiYXVkIjoicmVsZWFzZS1hc3NldHMuZ2l0aHVidXNlcmNvbnRlbnQuY29tIiwia2V5Ijoia2V5MSIsImV4cCI6MTc5NTQ0MTU1NiwibmJmIjoxNzk1NDQxMjU2LCJwYXRoIjoicmVsZWFzZWFzc2V0cHJvZHVjdGlvbi5ibG9iLmNvcmUud2luZG93cy5uZXQifQ.aIWVpGWfZjGUj3Ej556I499Fa8b91xdL5fa9-jwg82k&response-content-disposition=attachment%3B%20filename%3Dupdate.json&response-content-type=application%2Foctet-stream"
+  },
+  "previousReleaseAssetsAndTagUnchanged": true
+}

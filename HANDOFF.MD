@@ -1,5 +1,14 @@
 # HANDOFF
 
+## 1. 已发布：珠算 1.4.0 全部代码提交与发行（2026-11-23）
+
+- 用户明确要求提交全部代码并发布新版本。全部产品/主题/桌面/多选/审查代码与资源提交，PR39合并主分支应用源码 `cd788862244cfab6f2279329037a85d0ddb88945`；固定v1.4.0，不改旧版本。包装修复PR40合并 `f3f79dec4cbb0fb3a4e4414d40d5edcdc868f2bd`，发布查询PR41合并 `38c6188d1e0c819e9347b1bd18f9db09832f3bd5`，两者分别记录配方/流程来源，应用标签保持不变。
+- 北京时间21:30:36已公开v1.4.0/latest，发行ID455412186。10附件完整，公开匿名实际下载412,583,488字节，全部200/大小/SHA256与API、SHA256SUMS及update.json匹配；Latest/direct清单一致。Linux三包实际desktop Actions/Exec和Mac两架构ZIP/DMG元数据、架构、CRC、deep strict签名及只读挂载校验通过，挂载均退出；旧v1.3.1发行/附件身份/标签未变。
+- 主应用/包装/发布查询各自主分支CI45161653952/45170031227/45182434344全成功，最终Windows候选45160081901与Mac45160087707通过。前端134文件980测试、发行工具最终Python60测试、本地/CI Go race、完整/增量lint0、vet及实际平台构建通过；57→60为后续发布门禁回归，不混用测试轮次。相同依赖启动JS+CSS gzip比1.3.1增加23,740B（6.85%），字体不变；隐藏启动/运行探针2/2及相关55控制例通过，不扩大为硬件性能验收。
+- 发行中的真实失败保持审计：Windows旧夹具基线固定1.2/关闭策略不适配，修正后又复现实际quit关闭只结束窗口未结束常驻进程，现显式RequestQuit；通知同时间戳页需id DESC，查询预算3/4不放宽。一次候选引用误填已失败，后续直接读Git SHA调度，不计作通过。CI镜像超时只重跑失败任务，未改TLS或跳过检查。
+- 首次正式45163766010的Linux失败为desktop纯空白行；已在精确tag归档仅覆盖Taskfile验证配方，恢复45172313200三平台build/校验/上传成功。自动publish增加digest核对后因草稿tag GET404停止；应先ghreleaseview得到发行ID再API按ID查草稿，draft URL临时untagged与最终canonical URL分阶段校验。随后用完整本地字节/SUMS/manifest等价门禁授权公开，自动publish job仍记失败，不将它描述为全工作流成功。
+- 结果 `docs/release-readiness-1.4.0.md`、`docs/release-verification-1.4.0.json`，完整私有 `/tmp/zhusuan-release-1.4.0.4obvAc`。真实账本、全局凭据、已安装app与3456/9245服务保留；没有以发布为由清用户HOME、旧路径、全局缓存或系统设置。目标机完整能耗/读屏/云连接未验，Mac仍adhoc。
+
 ## 1. 已完成：全局代码审查、精简与安全/逻辑修复（2026-11-23，本地修改）
 
 - 覆盖前端业务/ODS/状态、后端权限/账款/同步/缓存、原生桌面、构建/发布、SQL参考和监控配置；报告 `docs/global-code-review-2026-11-23.md`，机器记录同名JSON。基线/最终源码、RED与通过日志、隔离API/Ego记录在 `/tmp/zhusuan-global-review.nTR8Fp`，最终自有源码哈希与验证副本匹配；保留已有其他聊天改动。
