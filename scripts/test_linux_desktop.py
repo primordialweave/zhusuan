@@ -1,3 +1,4 @@
+import configparser
 import importlib.util
 import tempfile
 import unittest
@@ -21,7 +22,12 @@ class LinuxDesktopTests(unittest.TestCase):
         for action in ['quick-receipt', 'new-project', 'calendar']:
             self.assertIn(f'[Desktop Action {action}]', output)
             self.assertIn(f'Exec=/usr/local/bin/zhusuan --action={action}', output)
-        self.assertEqual(output, self.source)
+        before = configparser.ConfigParser(interpolation=None)
+        after = configparser.ConfigParser(interpolation=None)
+        before.read_string(self.source)
+        after.read_string(output)
+        self.assertEqual({name: dict(before[name]) for name in before.sections()},
+                         {name: dict(after[name]) for name in after.sections()})
 
     def test_appimage_entry_uses_bundled_binary_name_for_main_and_actions(self):
         output = desktop.render_desktop(self.source, 'zhusuan')
@@ -31,6 +37,19 @@ class LinuxDesktopTests(unittest.TestCase):
             self.assertIn(f'Exec=zhusuan --action={action}', output)
         self.assertIn('StartupWMClass=zhusuan', output)
         self.assertIn('Icon=zhusuan', output)
+
+    def test_native_desktop_entry_has_no_whitespace_only_or_trailing_lines(self):
+        source = self.source.replace('Exec=/usr/local/bin/zhusuan %u',
+                                     'Exec=/usr/local/bin/zhusuan %u \t') + ' \t \n'
+        for executable in ['/usr/local/bin/zhusuan', 'zhusuan']:
+            with self.subTest(executable=executable):
+                output = desktop.render_desktop(source, executable)
+                self.assertTrue(output.endswith('\n'))
+                self.assertTrue(all(not line or not line.isspace() for line in output.splitlines()),
+                                'desktop-file-validate rejects a line containing only spaces')
+                self.assertTrue(all(not line.endswith((' ', '\t')) for line in output.splitlines()))
+                self.assertIn(f'Exec={executable} %u\n', output)
+                self.assertIn('Actions=quick-receipt;new-project;calendar;', output)
 
     def test_rejects_a_declared_action_without_an_executable(self):
         source = self.source.replace('Exec=/usr/local/bin/zhusuan --action=calendar', '')

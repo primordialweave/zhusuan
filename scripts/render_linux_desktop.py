@@ -28,12 +28,12 @@ def render_desktop(source, executable):
         command = document.get(section, 'Exec', fallback='').strip()
         if not command or '\n' in command:
             raise ValueError(f'Missing or invalid Exec in {section}')
-    # Keep translated labels, icons, arguments, field codes and comments exactly as owned.
+    # Keep labels, icons, arguments, field codes and comments; strip insignificant line whitespace.
     result, count = re.subn(r'(?m)^Exec=[^ \t\r\n]+([ \t][^\r\n]*)?$',
                            lambda match: f'Exec={executable}{match[1] or ""}', source)
     if count != len(sections):
         raise ValueError('Every desktop entry/action must have one Exec line')
-    return result
+    return '\n'.join(line.rstrip(' \t') for line in result.splitlines()) + '\n'
 
 
 def write_desktop(source, output, executable):

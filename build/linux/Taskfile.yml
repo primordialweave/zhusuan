@@ -115,6 +115,8 @@ tasks:
       - cp {{.APP_BINARY}} {{.APP_NAME}}
       - cp "{{.ROOT_DIR}}/build/linux/icons/512/zhusuan.png" {{.APP_NAME}}.png
       - python3 "{{.ROOT_DIR}}/scripts/render_linux_desktop.py" --source "{{.ROOT_DIR}}/build/linux/desktop" --output "{{.APP_NAME}}.desktop" --executable "{{.APP_NAME}}"
+      # Normalize artifact whitespace even when recovery uses the immutable tag's renderer.
+      - python3 -c 'from pathlib import Path; import sys; p=Path(sys.argv[1]); p.write_text("\n".join(line.rstrip(" \t") for line in p.read_text(encoding="utf-8").splitlines()) + "\n", encoding="utf-8")' "{{.APP_NAME}}.desktop"
       - wails3 generate appimage -binary {{.APP_NAME}} -icon {{.ICON}} -desktopfile {{.DESKTOP_FILE}} -outputdir {{.OUTPUT_DIR}} -builddir {{.ROOT_DIR}}/build/linux/appimage/build
     env:
       # Keep the desktop label in Chinese while matching Wails' expected output filename.
@@ -171,6 +173,7 @@ tasks:
     cmds:
       - mkdir -p {{.ROOT_DIR}}/build/linux/appimage
       - python3 "{{.ROOT_DIR}}/scripts/render_linux_desktop.py" --source "{{.ROOT_DIR}}/build/linux/desktop" --output "{{.ROOT_DIR}}/build/linux/{{.APP_NAME}}.desktop" --executable "/usr/local/bin/{{.APP_NAME}}"
+      - python3 -c 'from pathlib import Path; import sys; p=Path(sys.argv[1]); p.write_text("\n".join(line.rstrip(" \t") for line in p.read_text(encoding="utf-8").splitlines()) + "\n", encoding="utf-8")' "{{.ROOT_DIR}}/build/linux/{{.APP_NAME}}.desktop"
     vars:
       APP_NAME: '{{.APP_NAME}}'
 
