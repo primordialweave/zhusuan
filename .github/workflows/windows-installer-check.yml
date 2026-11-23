@@ -119,15 +119,37 @@ jobs:
         run: |
           $directory = Join-Path $env:RUNNER_TEMP 'zhusuan-published-installers'
           New-Item -ItemType Directory -Path $directory -Force | Out-Null
+          $verifiedInstallerHashes = @{}
           foreach ($tag in @($env:PREVIOUS_INSTALLER_TAG, $env:PUBLISHED_INSTALLER_TAG) | Select-Object -Unique) {
             if ($tag -notmatch '^v(0|[1-9]\d*)\.(0|[1-9]\d*)\.(0|[1-9]\d*)$') { throw 'Fixture tag must be a stable published version.' }
-            $release = gh release view $tag --repo $env:GITHUB_REPOSITORY --json isDraft,isPrerelease | ConvertFrom-Json
-            if ($LASTEXITCODE -ne 0 -or $release.isDraft -or $release.isPrerelease) { throw 'Fixture must be a published stable release.' }
-            gh release download $tag --repo $env:GITHUB_REPOSITORY --pattern "zhusuan-$tag-windows-amd64-installer.exe" --dir $directory
+            $release = gh api "repos/$env:GITHUB_REPOSITORY/releases/tags/$tag" | ConvertFrom-Json
+            if ($LASTEXITCODE -ne 0 -or $release.draft -or $release.prerelease -or $release.tag_name -cne $tag) { throw 'Fixture must be the requested published stable release.' }
+            $assetName = "zhusuan-$tag-windows-amd64-installer.exe"
+            $assets = @($release.assets | Where-Object { $_.name -ceq $assetName })
+            if ($assets.Count -ne 1) { throw 'Published fixture must contain exactly one matching installer asset.' }
+            $expectedSHA256 = $null
+            if ($assets[0].digest -match '^sha256:([0-9a-fA-F]{64})$') {
+              $expectedSHA256 = $Matches[1].ToLowerInvariant()
+            } else {
+              $checksumDirectory = Join-Path $directory ($tag + '-checksums')
+              New-Item -ItemType Directory -Path $checksumDirectory -Force | Out-Null
+              gh release download $tag --repo $env:GITHUB_REPOSITORY --pattern SHA256SUMS --dir $checksumDirectory
+              if ($LASTEXITCODE -ne 0) { throw 'Published checksum download failed.' }
+              $checksumPattern = '^([0-9a-fA-F]{64})  ' + [regex]::Escape($assetName) + '\r?$'
+              $checksumLines = @(Select-String -LiteralPath (Join-Path $checksumDirectory 'SHA256SUMS') -Pattern $checksumPattern)
+              if ($checksumLines.Count -ne 1) { throw 'Published checksum must contain exactly one matching installer entry.' }
+              $expectedSHA256 = $checksumLines[0].Matches[0].Groups[1].Value.ToLowerInvariant()
+            }
+            gh release download $tag --repo $env:GITHUB_REPOSITORY --pattern $assetName --dir $directory
             if ($LASTEXITCODE -ne 0) { throw 'Published installer download failed.' }
+            $actualSHA256 = (Get-FileHash -LiteralPath (Join-Path $directory $assetName) -Algorithm SHA256).Hash.ToLowerInvariant()
+            if ($actualSHA256 -cne $expectedSHA256) { throw 'Published installer does not match its immutable release digest.' }
+            $verifiedInstallerHashes[$tag] = $expectedSHA256
           }
           "PREVIOUS_INSTALLER=$directory\zhusuan-$env:PREVIOUS_INSTALLER_TAG-windows-amd64-installer.exe" | Out-File -FilePath $env:GITHUB_ENV -Encoding utf8 -Append
           "PUBLISHED_INSTALLER=$directory\zhusuan-$env:PUBLISHED_INSTALLER_TAG-windows-amd64-installer.exe" | Out-File -FilePath $env:GITHUB_ENV -Encoding utf8 -Append
+          "PREVIOUS_INSTALLER_SHA256=$($verifiedInstallerHashes[$env:PREVIOUS_INSTALLER_TAG])" | Out-File -FilePath $env:GITHUB_ENV -Encoding utf8 -Append
+          "PUBLISHED_INSTALLER_SHA256=$($verifiedInstallerHashes[$env:PUBLISHED_INSTALLER_TAG])" | Out-File -FilePath $env:GITHUB_ENV -Encoding utf8 -Append
       - name: Build tagged Windows installer
         if: inputs.reuse_installer_run == ''
         id: build

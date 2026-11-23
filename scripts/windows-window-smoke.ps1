@@ -245,6 +245,15 @@ function Save-AccessibilityDiagnostics {
     $items.ToArray() | ConvertTo-Json -Depth 4 | Set-Content -Encoding utf8 (Join-Path $script:artifacts 'accessibility-failure.json')
 }
 
+function Write-PrivateQuitClosePolicy([string]$configRoot) {
+    $directory = Join-Path $configRoot 'primordialweave/zhusuan'
+    New-Item -ItemType Directory -Path $directory -Force | Out-Null
+    $path = Join-Path $directory 'desktop-preferences.json'
+    $preferences = @{ closeAction = 'quit' } | ConvertTo-Json -Compress
+    [System.IO.File]::WriteAllText($path, $preferences, [System.Text.UTF8Encoding]::new($false))
+    return $path
+}
+
 $artifacts = [System.IO.Path]::GetFullPath($OutputDirectory)
 New-Item -ItemType Directory -Path $artifacts -Force | Out-Null
 $privateRoot = Join-Path $env:RUNNER_TEMP ('zhusuan-window-private-' + [Guid]::NewGuid().ToString('N'))
@@ -278,6 +287,9 @@ try {
         WEBVIEW2_ADDITIONAL_BROWSER_ARGUMENTS = '--force-renderer-accessibility'
     }
     foreach ($entry in $settings.GetEnumerator()) { $start.Environment[$entry.Key] = $entry.Value }
+    # This fixture verifies the explicit quit close policy, including process exit.
+    # Write it only under the disposable profile; the application's default remains ask.
+    $desktopPreferencesPath = Write-PrivateQuitClosePolicy $settings.ZHUSUAN_CONFIG_ROOT
     $process = [System.Diagnostics.Process]::Start($start)
     $stdout = $process.StandardOutput.ReadToEndAsync()
     $stderr = $process.StandardError.ReadToEndAsync()
@@ -406,6 +418,7 @@ try {
         sourceCommit = $env:APPLICATION_SOURCE_SHA
         executable = [System.IO.Path]::GetFileName($Executable)
         nativeDesktop = $true
+        closeActionUnderTest = 'quit'
         states = $states.ToArray()
     } | ConvertTo-Json -Depth 8 | Set-Content -Encoding utf8 (Join-Path $artifacts 'window-verification.json')
     # The private database, generated credentials and WebView profile are never artifacts.

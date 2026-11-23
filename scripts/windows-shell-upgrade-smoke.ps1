@@ -2,6 +2,10 @@
     [Parameter(Mandatory = $true)][string]$PreviousInstaller,
     [Parameter(Mandatory = $true)][string]$PublishedInstaller,
     [Parameter(Mandatory = $true)][string]$Installer,
+    [string]$PreviousInstallerTag = $env:PREVIOUS_INSTALLER_TAG,
+    [string]$PublishedInstallerTag = $env:PUBLISHED_INSTALLER_TAG,
+    [string]$PreviousInstallerSHA256 = $env:PREVIOUS_INSTALLER_SHA256,
+    [string]$PublishedInstallerSHA256 = $env:PUBLISHED_INSTALLER_SHA256,
     [string]$OutputDirectory = (Join-Path $env:RUNNER_TEMP 'zhusuan-shell-upgrade')
 )
 
@@ -27,9 +31,33 @@ if ((Test-Path -LiteralPath $registryPath) -or (Test-Path -LiteralPath $machineR
 
 $probePath = Join-Path $PSScriptRoot 'windows-taskbar-smoke.ps1'
 if (-not (Test-Path -LiteralPath $probePath -PathType Leaf)) { throw 'Taskbar probe script is missing.' }
+function Get-PublishedFixtureDefinition([string]$tag, [string]$expectedSHA256) {
+    if ($tag -notmatch '^v(0|[1-9]\d*)\.(0|[1-9]\d*)\.(0|[1-9]\d*)$') {
+        throw 'Published fixture tag must be a stable vMAJOR.MINOR.PATCH version.'
+    }
+    $version = $tag.Substring(1)
+    $knownPublishedHashes = @{
+        'v1.1.0' = '08a58fb008a0439e4d7ecd215cf1f202248167662e11284fe842a41bb35ddb78'
+        'v1.2.0' = '6278ec32af20db37a6b8bff87d829a9d9df2c7aa87cb6b496ed6d9d196aa154f'
+    }
+    if ([string]::IsNullOrWhiteSpace($expectedSHA256) -and $knownPublishedHashes.ContainsKey($tag)) {
+        $expectedSHA256 = $knownPublishedHashes[$tag]
+    }
+    if ($expectedSHA256 -notmatch '^[0-9a-fA-F]{64}$') {
+        throw "Published fixture $tag requires its trusted published installer SHA256."
+    }
+    if ($knownPublishedHashes.ContainsKey($tag) -and $expectedSHA256.ToLowerInvariant() -ne $knownPublishedHashes[$tag]) {
+        throw "Published fixture $tag does not match its pinned immutable installer SHA256."
+    }
+    return @{ Tag = $tag; ExpectedVersion = $version; PublishedSHA256 = $expectedSHA256.ToLowerInvariant() }
+}
+if ([string]::IsNullOrWhiteSpace($PreviousInstallerTag)) { $PreviousInstallerTag = 'v1.1.0' }
+if ([string]::IsNullOrWhiteSpace($PublishedInstallerTag)) { $PublishedInstallerTag = 'v1.2.0' }
+$previousFixture = Get-PublishedFixtureDefinition $PreviousInstallerTag $PreviousInstallerSHA256
+$publishedFixture = Get-PublishedFixtureDefinition $PublishedInstallerTag $PublishedInstallerSHA256
 $phaseInputs = @(
-    @{ Name = '01-previous-1.1.0'; Installer = (Resolve-Path -LiteralPath $PreviousInstaller).Path; ExpectedVersion = '1.1.0'; PublishedSHA256 = '08a58fb008a0439e4d7ecd215cf1f202248167662e11284fe842a41bb35ddb78'; RecordOnly = $true },
-    @{ Name = '02-published-1.2.0'; Installer = (Resolve-Path -LiteralPath $PublishedInstaller).Path; ExpectedVersion = '1.2.0'; PublishedSHA256 = '6278ec32af20db37a6b8bff87d829a9d9df2c7aa87cb6b496ed6d9d196aa154f'; RecordOnly = $true },
+    @{ Name = ('01-previous-' + $previousFixture.ExpectedVersion); Installer = (Resolve-Path -LiteralPath $PreviousInstaller).Path; Tag = $previousFixture.Tag; ExpectedVersion = $previousFixture.ExpectedVersion; PublishedSHA256 = $previousFixture.PublishedSHA256; RecordOnly = $true },
+    @{ Name = ('02-published-' + $publishedFixture.ExpectedVersion); Installer = (Resolve-Path -LiteralPath $PublishedInstaller).Path; Tag = $publishedFixture.Tag; ExpectedVersion = $publishedFixture.ExpectedVersion; PublishedSHA256 = $publishedFixture.PublishedSHA256; RecordOnly = $true },
     @{ Name = '03-fixed-candidate'; Installer = (Resolve-Path -LiteralPath $Installer).Path; ExpectedVersion = $null; RecordOnly = $false }
 )
 foreach ($phase in $phaseInputs) {
@@ -178,6 +206,7 @@ try {
         $displayVersion = (Get-ItemProperty -LiteralPath $registryPath).DisplayVersion
         $phaseRecord = [ordered]@{
             name = $phase.Name; recordOnly = $phase.RecordOnly; installerExitCode = $exitCode
+            publishedInstallerTag = $phase.Tag; expectedPublishedVersion = $phase.ExpectedVersion
             originalInstallerSHA256 = $phase.OriginalInstallerSHA256
             installerSHA256 = (Get-FileHash -LiteralPath $phase.Installer -Algorithm SHA256).Hash.ToLowerInvariant()
             expectedPublishedInstallerSHA256 = $phase.PublishedSHA256
@@ -238,7 +267,7 @@ try {
         if (@(Get-OwnedProcesses).Count -ne 0) { throw 'The taskbar probe left its owned application running.' }
     }
     if ($report.phases[1].installerSHA256 -eq $report.phases[2].installerSHA256) {
-        throw 'The fixed installer candidate is byte-identical to published v1.2.0.'
+        throw "The fixed installer candidate is byte-identical to published $PublishedInstallerTag."
     }
     $report.applicationPayloadChanged = $report.phases[1].executableSHA256 -ne $report.phases[2].executableSHA256
     if (-not $report.applicationPayloadChanged) {
