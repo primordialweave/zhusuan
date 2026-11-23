@@ -243,7 +243,9 @@ jobs:
             release/update.json
       - name: Verify uploaded assets before publishing
         run: |
-          gh api "repos/$GITHUB_REPOSITORY/releases/tags/$RELEASE_TAG" > uploaded-release.json
+          RELEASE_ID=$(gh release view "$RELEASE_TAG" --json databaseId --jq '.databaseId')
+          [[ "$RELEASE_ID" =~ ^[1-9][0-9]*$ ]] || { echo 'GitHub release database ID is invalid'; exit 1; }
+          gh api "repos/$GITHUB_REPOSITORY/releases/$RELEASE_ID" > uploaded-release.json
           python3 - <<'PY'
           import hashlib
           import json
