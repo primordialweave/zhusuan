@@ -1,0 +1,256 @@
+{
+  "tag": "v1.3.1",
+  "application_sha": "4013b83a68bcc8c458ab93c52e480ef7633229ed",
+  "tag_object": "88561d7d17f7a97d7456bd4c0d3f59886f16c5a4",
+  "release_url": "https://github.com/primordialweave/zhusuan/releases/tag/v1.3.1",
+  "published_at": "2026-11-22T14:00:30Z",
+  "draft": false,
+  "prerelease": false,
+  "pull_request": "https://github.com/primordialweave/zhusuan/pull/37",
+  "ci": {
+    "pr": 45024032041,
+    "main": 45024816883,
+    "release": 45028276272,
+    "required_jobs": "passed"
+  },
+  "checks": {
+    "frontend": {
+      "files": 126,
+      "passed": 818,
+      "failed": 0,
+      "skipped_or_pending": 0,
+      "todo": 0
+    },
+    "go_race": {
+      "scope": ". ./internal/... ./cmd/...",
+      "top_level_passed": 194,
+      "subtests_passed": 226,
+      "test_packages": 16,
+      "packages_without_tests": 10,
+      "failed": 0,
+      "skipped_tests": 0
+    },
+    "docs": {
+      "top_level_passed": 2,
+      "subtests_passed": 2,
+      "failed": 0
+    },
+    "python": {
+      "passed": 43,
+      "failed": 0
+    },
+    "eslint": "passed",
+    "typescript": "passed",
+    "production_build": "passed",
+    "vet": "passed",
+    "module_verify": "passed",
+    "incremental_go_lint": "zero new issues",
+    "complete_go_lint": "77 unchanged historical findings in 33 unchanged files"
+  },
+  "performance": {
+    ".js": {
+      "baseline": {
+        "files": 3,
+        "bytes": 957514,
+        "gzip_bytes": 290271
+      },
+      "candidate": {
+        "files": 3,
+        "bytes": 957236,
+        "gzip_bytes": 290243
+      },
+      "gzip_delta": -28
+    },
+    ".css": {
+      "baseline": {
+        "files": 3,
+        "bytes": 296177,
+        "gzip_bytes": 61194
+      },
+      "candidate": {
+        "files": 3,
+        "bytes": 295590,
+        "gzip_bytes": 61120
+      },
+      "gzip_delta": -74
+    },
+    "fonts_unchanged": true,
+    "same_dependencies": true,
+    "candidate_commit": "cc8732b5eadcbf06d237a817446f1b89e826e79b"
+  },
+  "assets": [
+    {
+      "name": "SHA256SUMS",
+      "size": 794,
+      "sha256": "ef0872ce5e55da788bfbfa8be27f98a62c76065a60ad8ed2a007ab71cdf976a6",
+      "anonymous_http_status": 200
+    },
+    {
+      "name": "update.json",
+      "size": 3719,
+      "sha256": "30b83b551fb0bc965b84413b12d64ef69e1fcf621d5a7f42fd30ae48baa5fcb6",
+      "anonymous_http_status": 200
+    },
+    {
+      "name": "zhusuan-v1.3.1-linux-amd64.deb",
+      "size": 36647990,
+      "sha256": "90d5cf1698553b3a8ee86679a3c747ba1e98af0832e9b09ad3bba43b3ddec86f",
+      "anonymous_http_status": 200
+    },
+    {
+      "name": "zhusuan-v1.3.1-linux-amd64.rpm",
+      "size": 37644256,
+      "sha256": "57ff85efaa08dc763dc52c98da81e0c5f7c9ef232e181a4700b1983c302d24d9",
+      "anonymous_http_status": 200
+    },
+    {
+      "name": "zhusuan-v1.3.1-linux-x86_64.AppImage",
+      "size": 108046840,
+      "sha256": "bd343463fd3e5a9ba606b3d333083871b63ba7cb2844a3c095e24cfb4f1ac229",
+      "anonymous_http_status": 200
+    },
+    {
+      "name": "zhusuan-v1.3.1-macOS-amd64.dmg",
+      "size": 48599206,
+      "sha256": "53c4ded3372e458997eaf0d028f1e7773bc4e131aafca1e479ccb159e36f65c6",
+      "anonymous_http_status": 200
+    },
+    {
+      "name": "zhusuan-v1.3.1-macOS-amd64.zip",
+      "size": 43747798,
+      "sha256": "b873d84034f3a787a9256dc9564b397277ea417ba871514407c104017db79b15",
+      "anonymous_http_status": 200
+    },
+    {
+      "name": "zhusuan-v1.3.1-macOS-arm64.dmg",
+      "size": 45727767,
+      "sha256": "58703e7342b4273cd06c4e038ca9b1a89469b43181b62715a52c32f13f0cb451",
+      "anonymous_http_status": 200
+    },
+    {
+      "name": "zhusuan-v1.3.1-macOS-arm64.zip",
+      "size": 41929394,
+      "sha256": "01cefaa2b2220b0425d89f41f9b9dcd0dc71af765f6bebe8e11b095f04e8d25e",
+      "anonymous_http_status": 200
+    },
+    {
+      "name": "zhusuan-v1.3.1-windows-amd64-installer.exe",
+      "size": 38092316,
+      "sha256": "4d5e6fe8f0213b859173688edfbd7bc4f536e8add191efab0d9e1cca5f83b2b4",
+      "anonymous_http_status": 200
+    }
+  ],
+  "public_downloads": {
+    "attachment_count": 10,
+    "attachment_bytes": 400440080,
+    "application_bytes": 400435567,
+    "sha256sums_entries": 8,
+    "update_manifest_mappings": 9,
+    "manifest_metadata_notes_urls_verified": true,
+    "latest_direct_byte_identical": true,
+    "normal_tls_verification": true
+  },
+  "mac_packages": {
+    "arm64": {
+      "zip_crc": "passed",
+      "zip_paths": "passed",
+      "metadata": {
+        "CFBundleIdentifier": "org.primordialweave.zhusuan",
+        "CFBundleExecutable": "zhusuan",
+        "CFBundleShortVersionString": "1.3.1",
+        "CFBundleVersion": "1.3.1",
+        "LSMinimumSystemVersion": "12.0.0",
+        "CFBundleName": "珠算",
+        "CFBundleDisplayName": "珠算"
+      },
+      "architectures": [
+        "arm64"
+      ],
+      "deep_strict_codesign": "passed",
+      "signature": "adhoc",
+      "dmg_integrity": "passed",
+      "dmg_readonly": true,
+      "applications_link": "/Applications",
+      "zip_dmg_resources_identical": true,
+      "resource_hashes": {
+        "Contents/MacOS/zhusuan": {
+          "sha256": "030e8da4852d6c0228101b54cb167e24ef02a88ba7a101136c9dfcd93f14af9a",
+          "size": 78103808
+        },
+        "Contents/Info.plist": {
+          "sha256": "2a60268d2d6d906765ed41928193ed3e3f971bad946817e70d2a5f378322d3d8",
+          "size": 1049
+        },
+        "Contents/Resources/Assets.car": {
+          "sha256": "8f0373c7a906c98cb2890191a00f6d343b47ec78535748964f6a417702df3216",
+          "size": 4299880
+        },
+        "Contents/Resources/icons.icns": {
+          "sha256": "3b4094f9a15029408f3f2938aeb95699e52db0c396c4f979b99e5d132df99969",
+          "size": 1753580
+        }
+      }
+    },
+    "amd64": {
+      "zip_crc": "passed",
+      "zip_paths": "passed",
+      "metadata": {
+        "CFBundleIdentifier": "org.primordialweave.zhusuan",
+        "CFBundleExecutable": "zhusuan",
+        "CFBundleShortVersionString": "1.3.1",
+        "CFBundleVersion": "1.3.1",
+        "LSMinimumSystemVersion": "12.0.0",
+        "CFBundleName": "珠算",
+        "CFBundleDisplayName": "珠算"
+      },
+      "architectures": [
+        "x86_64"
+      ],
+      "deep_strict_codesign": "passed",
+      "signature": "adhoc",
+      "dmg_integrity": "passed",
+      "dmg_readonly": true,
+      "applications_link": "/Applications",
+      "zip_dmg_resources_identical": true,
+      "resource_hashes": {
+        "Contents/MacOS/zhusuan": {
+          "sha256": "3864a16c75045aea29614962d371e3261df471a7c958174977eeb95679169e9d",
+          "size": 81683984
+        },
+        "Contents/Info.plist": {
+          "sha256": "2a60268d2d6d906765ed41928193ed3e3f971bad946817e70d2a5f378322d3d8",
+          "size": 1049
+        },
+        "Contents/Resources/Assets.car": {
+          "sha256": "8f0373c7a906c98cb2890191a00f6d343b47ec78535748964f6a417702df3216",
+          "size": 4299880
+        },
+        "Contents/Resources/icons.icns": {
+          "sha256": "3b4094f9a15029408f3f2938aeb95699e52db0c396c4f979b99e5d132df99969",
+          "size": 1753580
+        }
+      }
+    }
+  },
+  "owned_mounts_detached": true,
+  "previous_v1_3_0_unchanged": true,
+  "previous_tags_unchanged": true,
+  "validation_recovery": [
+    {
+      "step": "anonymous RPM download",
+      "initial_error": "TLS handshake ended before an HTTP response (curl 35)",
+      "resolution": "only RPM re-downloaded; HTTP 200 and exact size/SHA256 passed; nine existing files rehashed"
+    },
+    {
+      "step": "macOS mount evidence",
+      "initial_error": "literal /tmp path did not match canonical /private/tmp",
+      "resolution": "realpath comparison; complete package checks passed; all owned mounts detached"
+    }
+  ],
+  "limits": [
+    "macOS uses existing ad-hoc signing; Windows installer has no Authenticode",
+    "No installation or application launch on the user device; no full native product UI or hardware performance claim",
+    "Later parallel workspace changes remain in progress and are not part of immutable v1.3.1"
+  ],
+  "evidence_dir": "/tmp/zhusuan-release-1.3.1.bcwqkM"
+}
