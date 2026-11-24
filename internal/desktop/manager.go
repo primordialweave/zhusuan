@@ -27,6 +27,7 @@ const (
 	// animated WebGL/Canvas scenes can pause immediately with near-zero background CPU.
 	EventWindowVisibility = "desktop:window-visibility"
 
+	closePromptRevisionKey = "closePromptRevision"
 	summaryRefreshDebounce = 250 * time.Millisecond
 )
 
@@ -468,9 +469,9 @@ func (m *DesktopManager) HandleWindowClosing(event *application.WindowEvent) {
 		m.mu.Unlock()
 		if !alreadyOpen && emit != nil {
 			emit(EventCloseRequested, map[string]any{
-				"traySupported":       traySupported,
-				"platform":            platform,
-				"closePromptRevision": revision,
+				"traySupported":        traySupported,
+				"platform":             platform,
+				closePromptRevisionKey: revision,
 			})
 		}
 	}
@@ -562,8 +563,8 @@ func (m *DesktopManager) ShowWindow() {
 	}
 	if emit != nil {
 		emit(EventWindowVisibility, map[string]any{
-			visibilityHiddenKey:   false,
-			"closePromptRevision": closePromptRevision,
+			visibilityHiddenKey:    false,
+			closePromptRevisionKey: closePromptRevision,
 		})
 	}
 	m.rebuildTrayView()
@@ -589,8 +590,8 @@ func (m *DesktopManager) HideWindow() {
 	m.mu.Unlock()
 	if emit != nil {
 		emit(EventWindowVisibility, map[string]any{
-			visibilityHiddenKey:   true,
-			"closePromptRevision": closePromptRevision,
+			visibilityHiddenKey:    true,
+			closePromptRevisionKey: closePromptRevision,
 		})
 		if promptChanged {
 			emit(EventClosePromptChanged, prompt)
@@ -651,8 +652,8 @@ func (m *DesktopManager) applyNativeWindowHidden() {
 	m.mu.Unlock()
 	if emit != nil {
 		emit(EventWindowVisibility, map[string]any{
-			visibilityHiddenKey:   true,
-			"closePromptRevision": closePromptRevision,
+			visibilityHiddenKey:    true,
+			closePromptRevisionKey: closePromptRevision,
 		})
 		if promptChanged {
 			emit(EventClosePromptChanged, prompt)
@@ -680,8 +681,8 @@ func (m *DesktopManager) applyNativeWindowShown() {
 	}
 	if emit != nil {
 		emit(EventWindowVisibility, map[string]any{
-			visibilityHiddenKey:   false,
-			"closePromptRevision": closePromptRevision,
+			visibilityHiddenKey:    false,
+			closePromptRevisionKey: closePromptRevision,
 		})
 	}
 	m.rebuildTrayView()
