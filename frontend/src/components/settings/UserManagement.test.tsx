@@ -249,12 +249,23 @@ describe('UserManagement search', () => {
     await user.type(within(dialog).getByLabelText(/用户名/), 'new-user')
     await user.type(within(dialog).getByLabelText(/姓名/), '新用户')
     await user.type(within(dialog).getByLabelText(/初始密码/), 'secret123')
+    await user.type(within(dialog).getByLabelText(/部门/), '技术部')
+    await user.type(within(dialog).getByLabelText(/职位/), '架构师')
 
     const form = within(dialog).getByRole('button', { name: '保存' }).closest('form')!
     fireEvent.submit(form)
     fireEvent.submit(form)
 
     expect(authApi.createUser).toHaveBeenCalledTimes(1)
+    expect(authApi.createUser).toHaveBeenCalledWith(
+      expect.objectContaining({
+        department: '技术部',
+        name: '新用户',
+        position: '架构师',
+        status: 1,
+        username: 'new-user',
+      }),
+    )
     await act(async () => {
       createRequest.resolve(undefined)
       await createRequest.promise
@@ -428,5 +439,69 @@ describe('UserManagement search', () => {
     expect(useAuthStore.getState().user).toEqual(currentAccount)
     expect(JSON.parse(sessionStorage.getItem('user')!)).toEqual(currentAccount)
     expect(authApi.getUsers).toHaveBeenCalledOnce()
+  })
+
+  it('requires password confirmation and validates password strength before resetting a user password', async () => {
+    const user = userEvent.setup()
+    render(<UserManagement />)
+    await user.click(await screen.findByRole('button', { name: '重置用户密码' }))
+    const dialog = await screen.findByRole('dialog', { name: `重置密码 - ${managedUser.username}` })
+    const newPasswordInput = within(dialog).getByLabelText(/^新密码/)
+    const confirmPasswordInput = within(dialog).getByLabelText(/^确认新密码/)
+    const submitButton = within(dialog).getByRole('button', { name: '确认重置' })
+
+    // Too short
+    await user.type(newPasswordInput, '12345')
+    await user.type(confirmPasswordInput, '12345')
+    await user.click(submitButton)
+    expect(within(dialog).getByText('密码长度至少8位')).toBeInTheDocument()
+    expect(authApi.resetPassword).not.toHaveBeenCalled()
+
+    // Single character category (weak)
+    await user.clear(newPasswordInput)
+    await user.clear(confirmPasswordInput)
+    await user.type(newPasswordInput, '12345678')
+    await user.type(confirmPasswordInput, '12345678')
+    await user.click(submitButton)
+    expect(within(dialog).getByText('密码必须包含大小写字母和数字中的至少两种')).toBeInTheDocument()
+    expect(authApi.resetPassword).not.toHaveBeenCalled()
+
+    // Mismatched confirmation
+    await user.clear(newPasswordInput)
+    await user.clear(confirmPasswordInput)
+    await user.type(newPasswordInput, 'StrongPass1')
+    await user.type(confirmPasswordInput, 'StrongPass2')
+    await user.click(submitButton)
+    expect(within(dialog).getByText('两次输入的新密码不一致')).toBeInTheDocument()
+    expect(authApi.resetPassword).not.toHaveBeenCalled()
+
+    // Valid matching strong password
+    vi.mocked(authApi.resetPassword).mockResolvedValueOnce(undefined as never)
+    await user.clear(confirmPasswordInput)
+    await user.type(confirmPasswordInput, 'StrongPass1')
+    await user.click(submitButton)
+    await waitFor(() =>
+      expect(authApi.resetPassword).toHaveBeenCalledWith(managedUser.id, 'StrongPass1'),
+    )
+    await waitFor(() =>
+      expect(
+        screen.queryByRole('dialog', { name: `重置密码 - ${managedUser.username}` }),
+      ).not.toBeInTheDocument(),
+    )
+  })
+
+  it('surfaces backend error details when resetting a user password fails', async () => {
+    vi.mocked(authApi.resetPassword).mockRejectedValueOnce(new Error('用户不存在'))
+    const user = userEvent.setup()
+    render(<UserManagement />)
+    await user.click(await screen.findByRole('button', { name: '重置用户密码' }))
+    const dialog = await screen.findByRole('dialog', { name: `重置密码 - ${managedUser.username}` })
+
+    await user.type(within(dialog).getByLabelText(/^新密码/), 'StrongPass1')
+    await user.type(within(dialog).getByLabelText(/^确认新密码/), 'StrongPass1')
+    await user.click(within(dialog).getByRole('button', { name: '确认重置' }))
+
+    expect(await within(dialog).findByText('用户不存在')).toBeInTheDocument()
+    expect(authApi.resetPassword).toHaveBeenCalledWith(managedUser.id, 'StrongPass1')
   })
 })

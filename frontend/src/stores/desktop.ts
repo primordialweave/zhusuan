@@ -8,6 +8,7 @@ import {
   extractWailsEventPayload,
   type BackupInfo,
   type CloseRequestedPayload,
+  type ClosePromptChangedPayload,
   type DesktopState,
   type PreferencesPatch,
   type WindowVisibilityPayload,
@@ -24,6 +25,7 @@ interface DesktopStoreState {
   loading: boolean
   saving: boolean
   windowHidden: boolean
+  closePromptRevision: number
   closePrompt: ClosePromptState
   initialize: () => () => void
   refreshState: () => Promise<void>
@@ -65,7 +67,6 @@ let stateRequest = 0
 let preferenceRequest = 0
 let pendingPreferenceWrites = 0
 let visibilityRevision = 0
-
 const restoreWindowVisibility = (state: DesktopState, revision = visibilityRevision) => {
   if (typeof state.windowHidden !== 'boolean' || revision !== visibilityRevision) return {}
   visibilityRevision += 1
@@ -73,11 +74,31 @@ const restoreWindowVisibility = (state: DesktopState, revision = visibilityRevis
   return { windowHidden: state.windowHidden }
 }
 
+const restoreClosePrompt = (
+  open: boolean,
+  revision: number | undefined,
+  platform = useDesktopStore.getState().state?.capabilities.platform ?? '',
+  traySupported = useDesktopStore.getState().state?.capabilities.traySupported ?? true,
+) => {
+  const currentRevision = useDesktopStore.getState().closePromptRevision
+  const nextRevision = revision ?? currentRevision
+  if (nextRevision < currentRevision) return
+  useDesktopStore.setState({ closePromptRevision: nextRevision })
+  setClosePrompt(open, platform, traySupported)
+}
+
+const setClosePrompt = (open: boolean, platform = '', traySupported = true) => {
+  useDesktopStore.setState({
+    closePrompt: open ? { open: true, platform, traySupported } : initialClosePrompt,
+  })
+}
+
 export const useDesktopStore = create<DesktopStoreState>((set, get) => ({
   state: null,
   loading: false,
   saving: false,
   windowHidden: false,
+  closePromptRevision: 0,
   closePrompt: initialClosePrompt,
 
   initialize() {
@@ -92,18 +113,27 @@ export const useDesktopStore = create<DesktopStoreState>((set, get) => ({
       stateRequest += 1
       applyPrivacyDocumentAttr(next.preferences.privacyMode)
       set({ state: next, loading: false, ...restoreWindowVisibility(next) })
+      if (typeof next.closePromptOpen === 'boolean') {
+        restoreClosePrompt(next.closePromptOpen, next.closePromptRevision)
+      }
     })
 
     const offClose = Events.On(DESKTOP_EVENTS.closeRequested, (event) => {
       if (!active) return
       const payload = extractWailsEventPayload<CloseRequestedPayload>(event)
-      set({
-        closePrompt: {
-          open: true,
-          traySupported: payload?.traySupported ?? get().state?.capabilities.traySupported ?? true,
-          platform: payload?.platform ?? get().state?.capabilities.platform ?? '',
-        },
-      })
+      restoreClosePrompt(
+        true,
+        payload?.closePromptRevision,
+        payload?.platform ?? get().state?.capabilities.platform ?? '',
+        payload?.traySupported ?? get().state?.capabilities.traySupported ?? true,
+      )
+    })
+
+    const offClosePromptChanged = Events.On(DESKTOP_EVENTS.closePromptChanged, (event) => {
+      if (!active) return
+      const payload = extractWailsEventPayload<ClosePromptChangedPayload>(event)
+      if (!payload) return
+      restoreClosePrompt(payload.open, payload.closePromptRevision)
     })
 
     const offVisibility = Events.On(DESKTOP_EVENTS.windowVisibility, (event) => {
@@ -112,6 +142,10 @@ export const useDesktopStore = create<DesktopStoreState>((set, get) => ({
       const hidden = Boolean(payload?.hidden)
       visibilityRevision += 1
       set({ windowHidden: hidden })
+      if (hidden) {
+        const revision = payload?.closePromptRevision ?? get().closePromptRevision + 1
+        restoreClosePrompt(false, revision)
+      }
       dispatchWindowVisibilityDomEvent(hidden)
     })
 
@@ -130,6 +164,7 @@ export const useDesktopStore = create<DesktopStoreState>((set, get) => ({
       set({ loading: false })
       offState?.()
       offClose?.()
+      offClosePromptChanged?.()
       offVisibility?.()
       offDayChanged?.()
     }
@@ -147,6 +182,9 @@ export const useDesktopStore = create<DesktopStoreState>((set, get) => ({
       stateRevision += 1
       applyPrivacyDocumentAttr(next.preferences.privacyMode)
       set({ state: next, loading: false, ...restoreWindowVisibility(next, visibility) })
+      if (typeof next.closePromptOpen === 'boolean') {
+        restoreClosePrompt(next.closePromptOpen, next.closePromptRevision)
+      }
     } catch {
       if (request === stateRequest) set({ loading: false })
     }
@@ -166,6 +204,9 @@ export const useDesktopStore = create<DesktopStoreState>((set, get) => ({
         stateRevision += 1
         applyPrivacyDocumentAttr(next.preferences.privacyMode)
         set({ state: next, ...restoreWindowVisibility(next, visibility) })
+        if (typeof next.closePromptOpen === 'boolean') {
+          restoreClosePrompt(next.closePromptOpen, next.closePromptRevision)
+        }
       }
       return next
     } finally {
@@ -175,6 +216,7 @@ export const useDesktopStore = create<DesktopStoreState>((set, get) => ({
   },
 
   async resolveClosePrompt(action, remember) {
+    set({ closePromptRevision: get().closePromptRevision + 1 })
     set({ closePrompt: initialClosePrompt })
     if (!desktopManager.isAvailable()) return
     await desktopManager.resolveClosePrompt(action, remember)

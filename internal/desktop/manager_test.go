@@ -1,13 +1,17 @@
 package desktop
 
 import (
+	"errors"
+	"path/filepath"
 	"strconv"
 	"sync"
+	"sync/atomic"
 	"testing"
 	"time"
 
 	"github.com/stretchr/testify/require"
 	"github.com/wailsapp/wails/v3/pkg/application"
+	"github.com/wailsapp/wails/v3/pkg/services/notifications"
 )
 
 func newTestDesktopManager(t *testing.T, platform string, traySupported bool) (*DesktopManager, *PreferencesStore) {
@@ -118,6 +122,27 @@ func TestMacOSDockPolicyToggleOnHideAndShow(t *testing.T) {
 	require.Equal(t, []bool{false, true}, dockCalls)
 }
 
+func TestStaleNativeVisibilityEventsDoNotOverrideCurrentWindowState(t *testing.T) {
+	m, _ := newTestDesktopManager(t, "darwin", true)
+	m.mu.Lock()
+	m.windowHidden = false
+	m.mu.Unlock()
+
+	var events []string
+	m.emitEvent = func(name string, _ any) { events = append(events, name) }
+	windowVisible := atomic.Bool{}
+	windowVisible.Store(true)
+
+	m.transitionNativeWindowVisibility(false, windowVisible.Load)
+	require.False(t, m.windowHidden, "a delayed hide notification must not override the visible native window")
+	require.Empty(t, events)
+
+	windowVisible.Store(false)
+	m.transitionNativeWindowVisibility(true, windowVisible.Load)
+	require.False(t, m.windowHidden, "a delayed show notification must not override the hidden native window")
+	require.Empty(t, events)
+}
+
 func TestSessionAndDebouncedDataRefresh(t *testing.T) {
 	m, _ := newTestDesktopManager(t, "darwin", true)
 
@@ -168,4 +193,178 @@ func TestSessionAndDebouncedDataRefresh(t *testing.T) {
 	mu.Unlock()
 	require.False(t, last.LoggedIn)
 	require.Zero(t, last.MonthReceived)
+}
+
+func TestClosePromptSurvivesStateReadsAndResetsOnVisibilityChanges(t *testing.T) {
+	m, _ := newTestDesktopManager(t, "darwin", true)
+	var eventsEmitted []string
+	m.emitEvent = func(name string, _ any) {
+		if name == EventCloseRequested || name == EventClosePromptChanged {
+			eventsEmitted = append(eventsEmitted, name)
+		}
+	}
+	m.hideMainWindow = func() {}
+	m.showMainWindow = func() {}
+
+	m.HandleWindowClosing(nil)
+	require.Len(t, eventsEmitted, 1)
+	require.Equal(t, uint64(1), m.GetState().ClosePromptRevision)
+
+	// Reads, including a reloaded frontend, must not consume a pending prompt.
+	require.True(t, m.GetState().ClosePromptOpen)
+	m.HandleWindowClosing(nil)
+	require.Len(t, eventsEmitted, 1)
+
+	// Simulate hiding window via shortcut while prompt was open.
+	m.HideWindow()
+	require.Equal(t, EventClosePromptChanged, eventsEmitted[1])
+	m.ShowWindow()
+	require.False(t, m.GetState().ClosePromptOpen)
+	m.HandleWindowClosing(nil)
+	require.Equal(t, []string{EventCloseRequested, EventClosePromptChanged, EventCloseRequested}, eventsEmitted)
+}
+
+func TestMacAutostartPendingApprovalKeepsRequestedPreference(t *testing.T) {
+	dataDir := t.TempDir()
+	store, err := NewPreferencesStore(dataDir)
+	require.NoError(t, err)
+	m := NewDesktopManager(store, TrayIcons{}, nil)
+	m.platform = "darwin"
+	m.traySupported = true
+	m.autostartStatus = func(*application.App) AutostartState {
+		return AutostartState{Supported: true}
+	}
+	pending := AutostartState{Supported: true, RequiresApproval: true, Strategy: string(application.AutostartStrategySMAppService)}
+	m.setAutostart = func(_ *application.App, _, _ bool) (AutostartState, error) {
+		return pending, nil
+	}
+	// Registration can know the OS is pending approval before a status read catches up.
+	enabled := true
+	updated, err := m.UpdatePreferences(PreferencesPatch{Autostart: &enabled})
+	require.NoError(t, err)
+	require.True(t, updated.Autostart.RequiresApproval)
+	require.True(t, updated.Preferences.Autostart)
+
+	restartedStore, err := NewPreferencesStore(filepath.Clean(dataDir))
+	require.NoError(t, err)
+	restart := NewDesktopManager(restartedStore, TrayIcons{}, nil)
+	restart.autostartStatus = func(*application.App) AutostartState { return AutostartState{Supported: true} }
+	status := restart.GetState()
+	require.True(t, status.Autostart.RequiresApproval)
+	require.True(t, status.Preferences.Autostart)
+
+	restart.autostartStatus = func(*application.App) AutostartState {
+		return AutostartState{Supported: true, Enabled: true}
+	}
+	status = restart.GetState()
+	require.True(t, status.Autostart.Enabled)
+	require.False(t, status.Autostart.RequiresApproval)
+	require.True(t, status.Preferences.Autostart)
+	require.False(t, restartedStore.Get().AutostartApprovalPending)
+}
+
+func TestMacDockHideDoesNotOverrideConcurrentShow(t *testing.T) {
+	m, store := newTestDesktopManager(t, "darwin", true)
+	_, err := store.Update(func(p *DesktopPreferences) { p.HideDockWhenMinimized = true })
+	require.NoError(t, err)
+	hiding, releaseHide := make(chan struct{}), make(chan struct{})
+	showStarted, shown := make(chan struct{}), make(chan struct{})
+	var operations sync.WaitGroup
+	var dockVisible atomic.Bool
+	dockVisible.Store(true)
+	m.hideMainWindow = func() {
+		close(hiding)
+		<-releaseHide
+	}
+	m.showMainWindow = func() { close(shown) }
+	m.setDockVisible = dockVisible.Store
+	operations.Go(m.HideWindow)
+	<-hiding
+	operations.Go(func() {
+		close(showStarted)
+		m.ShowWindow()
+	})
+	<-showStarted
+	select {
+	case <-shown:
+		t.Fatal("ShowWindow bypassed the in-progress hide transition")
+	case <-time.After(25 * time.Millisecond):
+	}
+	close(releaseHide)
+	operations.Wait()
+	select {
+	case <-shown:
+	default:
+		t.Fatal("concurrent ShowWindow did not complete")
+	}
+	require.False(t, m.GetState().WindowHidden)
+	require.True(t, dockVisible.Load())
+}
+
+func TestMacOSDockRestoresWhenShownNativelyOrPreferenceDisabled(t *testing.T) {
+	m, _ := newTestDesktopManager(t, "darwin", true)
+	var dockCalls []bool
+	m.setDockVisible = func(visible bool) { dockCalls = append(dockCalls, visible) }
+	m.hideMainWindow = func() {}
+	m.showMainWindow = func() {}
+
+	hideDock := true
+	_, err := m.UpdatePreferences(PreferencesPatch{HideDockWhenMinimized: &hideDock})
+	require.NoError(t, err)
+
+	m.HideWindow()
+	require.Equal(t, []bool{false}, dockCalls)
+
+	// Native WindowShow event restores Dock visibility and clears dockHidden.
+	m.onWindowShown()
+	require.Equal(t, []bool{false, true}, dockCalls)
+
+	// Hide again, then disable preference after window Hidden state is cleared.
+	m.HideWindow()
+	require.Equal(t, []bool{false, true, false}, dockCalls)
+	m.mu.Lock()
+	m.windowHidden = false
+	m.mu.Unlock()
+	hideDock = false
+	_, err = m.UpdatePreferences(PreferencesPatch{HideDockWhenMinimized: &hideDock})
+	require.NoError(t, err)
+	require.Equal(t, []bool{false, true, false, true}, dockCalls)
+}
+
+func TestMacApplicationReopenCancelsDefaultAndShowsOnlyMainWindow(t *testing.T) {
+	m, _ := newTestDesktopManager(t, "darwin", true)
+	shown := 0
+	m.showMainWindow = func() { shown++ }
+
+	event := &application.ApplicationEvent{}
+	m.handleMacApplicationReopen(event)
+	require.True(t, event.IsCancelled())
+	require.Equal(t, 1, shown)
+}
+
+func TestSendTestReminderValidatesSessionAfterAuthorization(t *testing.T) {
+	m, _ := newTestDesktopManager(t, "darwin", true)
+	m.summaryProvider = func(_ int64) (TraySummary, error) {
+		return TraySummary{LoggedIn: true, OverdueCount: 2, TotalPending: 8800}, nil
+	}
+	require.NoError(t, m.SetSessionUser(7, "7"))
+
+	// If session becomes invalid while waiting for OS notification authorization,
+	// SendTestReminder must not leak financial figures from the stale summary.
+	m.requestNotifAuth = func() (bool, error) {
+		m.sessionVerifier = func(string) (int64, error) {
+			return 0, errors.New("session expired")
+		}
+		return true, nil
+	}
+	var sent notifications.NotificationOptions
+	m.sendNotification = func(opts notifications.NotificationOptions) error {
+		sent = opts
+		return nil
+	}
+
+	require.NoError(t, m.SendTestReminder())
+	require.Equal(t, "珠算 · 桌面提醒已就绪", sent.Title)
+	require.NotContains(t, sent.Body, "8,800")
+	require.NotContains(t, sent.Body, "逾期 2 笔")
 }

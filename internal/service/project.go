@@ -82,7 +82,7 @@ func (s *ProjectService) List(userID int64, status, keyword string, page, pageSi
 func (s *ProjectService) GetForUser(userID, id int64) (*models.Project, error) {
 	project, err := s.projectRepo.FindByIDWithPaymentsForUser(id, userID)
 	if err != nil {
-		if err == gorm.ErrRecordNotFound {
+		if errors.Is(err, gorm.ErrRecordNotFound) {
 			return nil, pkgerrors.ErrProjectNotFound
 		}
 		return nil, pkgerrors.Wrap(err, "查询项目失败")
@@ -180,7 +180,7 @@ func (s *ProjectService) UpdateForUser(userID, id int64, input dto.CreateProject
 	}
 	project, err := s.projectRepo.FindByIDForUser(id, userID)
 	if err != nil {
-		if err == gorm.ErrRecordNotFound {
+		if errors.Is(err, gorm.ErrRecordNotFound) {
 			return nil, pkgerrors.ErrProjectNotFound
 		}
 		return nil, pkgerrors.Wrap(err, "查询项目失败")
@@ -335,9 +335,16 @@ func (s *ProjectService) DeleteForUser(userID, id int64) error {
 // 将项目状态更新为 "archived"，归档后的项目通常只读或不显示在主列表中。
 func (s *ProjectService) ArchiveForUser(userID, id int64) error {
 	if _, err := s.projectRepo.FindByIDForUser(id, userID); err != nil {
-		return err
+		if errors.Is(err, gorm.ErrRecordNotFound) {
+			return pkgerrors.ErrProjectNotFound
+		}
+		return pkgerrors.Wrap(err, "查询项目失败")
 	}
-	return s.projectRepo.UpdateStatusForUser(id, userID, "archived")
+	if err := s.projectRepo.UpdateStatusForUser(id, userID, "archived"); err != nil {
+		return pkgerrors.Wrap(err, "归档项目失败")
+	}
+	invalidateDashboardCache(userID)
+	return nil
 }
 
 // CheckContractNumberExists 检查合同编号是否在库中已存在

@@ -1,8 +1,6 @@
 package handler
 
 import (
-	"strconv"
-
 	"github.com/gin-gonic/gin"
 
 	"github.com/primordialweave/zhusuan/internal/constants"
@@ -115,7 +113,7 @@ func (h *DictionaryHandler) UpdateItem(c *gin.Context) {
 	}
 
 	// 2. ID解析
-	id, err := strconv.ParseInt(c.Param("id"), 10, 64)
+	id, err := response.ParseIDParam(c, "id")
 	if err != nil {
 		response.ParamError(c, "无效的字典项ID")
 		return
@@ -153,7 +151,7 @@ func (h *DictionaryHandler) DeleteItem(c *gin.Context) {
 		response.Forbidden(c, "无权操作")
 		return
 	}
-	id, err := strconv.ParseInt(c.Param("id"), 10, 64)
+	id, err := response.ParseIDParam(c, "id")
 	if err != nil {
 		response.ParamError(c, "无效的字典项ID")
 		return

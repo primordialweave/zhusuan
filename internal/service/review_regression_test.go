@@ -9,6 +9,7 @@ import (
 	"github.com/primordialweave/zhusuan/internal/database"
 	"github.com/primordialweave/zhusuan/internal/dto"
 	"github.com/primordialweave/zhusuan/internal/models"
+	pkgerrors "github.com/primordialweave/zhusuan/internal/pkg/errors"
 	"github.com/primordialweave/zhusuan/internal/pkg/password"
 	"github.com/stretchr/testify/require"
 )
@@ -25,7 +26,14 @@ func setupServiceTestDB(t *testing.T) {
 		}
 
 		db := database.GetDB()
-		require.NoError(t, db.AutoMigrate(&models.User{}, &models.Project{}, &models.Payment{}))
+		require.NoError(t, db.AutoMigrate(
+			&models.User{},
+			&models.Project{},
+			&models.Payment{},
+			&models.PersonalAccessToken{},
+			&models.Notification{},
+			&models.UserNotification{},
+		))
 	})
 }
 
@@ -312,4 +320,60 @@ func TestDeleteExtrasRejectsFullDeleteWhenLocalIDsAreEmpty(t *testing.T) {
 	var count int64
 	require.NoError(t, db.Model(&models.User{}).Where("id = ?", user.ID).Count(&count).Error)
 	require.Equal(t, int64(1), count)
+}
+
+func TestCreateUserPersistsDepartmentPositionAndStatusAndDeleteCleansRelations(t *testing.T) {
+	setupServiceTestDB(t)
+	db := database.GetDB()
+	service := NewUserService()
+	disabled := 0
+	require.NoError(t, service.CreateUser(dto.CreateUserRequest{
+		Username:   "dept-pos-user",
+		Name:       "部门职位用户",
+		Password:   "Passw0rd",
+		Role:       "user",
+		Department: "财务部",
+		Position:   "审计师",
+		Status:     &disabled,
+	}))
+
+	var created models.User
+	require.NoError(t, db.Where("username = ?", "dept-pos-user").First(&created).Error)
+	require.Equal(t, "财务部", created.Department)
+	require.Equal(t, "审计师", created.Position)
+	require.Equal(t, 0, created.Status)
+
+	require.NoError(t, db.Create(&models.PersonalAccessToken{
+		UserID:    created.ID,
+		Name:      "cli-token",
+		TokenHash: "token-hash-dept-pos-user",
+		Status:    1,
+	}).Error)
+	require.NoError(t, db.Create(&models.UserNotification{
+		UserID:         created.ID,
+		NotificationID: 999,
+		IsRead:         0,
+	}).Error)
+
+	require.NoError(t, service.DeleteUser(created.ID))
+
+	var tokenCount, notifCount int64
+	require.NoError(t, db.Model(&models.PersonalAccessToken{}).Where("user_id = ?", created.ID).Count(&tokenCount).Error)
+	require.NoError(t, db.Model(&models.UserNotification{}).Where("user_id = ?", created.ID).Count(&notifCount).Error)
+	require.Zero(t, tokenCount)
+	require.Zero(t, notifCount)
+}
+
+func TestArchiveAndListByProjectReturnNotFoundBizError(t *testing.T) {
+	setupServiceTestDB(t)
+	projectSvc := NewProjectService()
+	paymentSvc := NewPaymentService()
+
+	err := projectSvc.ArchiveForUser(999, 999999)
+	require.Error(t, err)
+	require.Equal(t, 404, pkgerrors.GetHTTPCode(err))
+
+	_, err = paymentSvc.ListByProjectForUser(999, 999999)
+	require.Error(t, err)
+	require.Equal(t, 404, pkgerrors.GetHTTPCode(err))
 }

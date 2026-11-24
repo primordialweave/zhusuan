@@ -1,6 +1,8 @@
 package repository
 
 import (
+	"errors"
+
 	"gorm.io/gorm"
 	"gorm.io/gorm/clause"
 
@@ -14,7 +16,12 @@ type NotificationRepository struct {
 	db *gorm.DB
 }
 
-const notificationInboxFields = "notifications.*, COALESCE(un.is_read, 0) AS is_read"
+const (
+	notificationInboxFields = "notifications.*, COALESCE(un.is_read, 0) AS is_read"
+	// 管理员查看全量通知时：全员通知与发给自己的私信按真实已读状态展示；
+	// 发给其他用户的定向通知对管理员标记为已读，避免管理员出现无法消除的“未读”提示。
+	notificationAdminFields = "notifications.*, CASE WHEN notifications.is_global = 0 AND un.id IS NULL THEN 1 ELSE COALESCE(un.is_read, 0) END AS is_read"
+)
 
 // fillTargets derives recipients from inbox membership without adding a schema
 // column. Legacy notifications with several relations have no known single target.
@@ -143,14 +150,18 @@ func (r *NotificationRepository) FindByID(id int64) (*models.Notification, error
 	return &notification, nil
 }
 
-// FindByIDForUser finds a global notification or one addressed to the given user.
-func (r *NotificationRepository) FindByIDForUser(id, userID int64) (*models.Notification, error) {
+func (r *NotificationRepository) findByIDWithScope(id, userID int64, includeAll bool) (*models.Notification, error) {
+	fields := notificationInboxFields
+	query := r.db.Preload("Sender").
+		Joins("LEFT JOIN user_notifications un ON notifications.id = un.notification_id AND un.user_id = ?", userID)
+	if includeAll {
+		fields = notificationAdminFields
+		query = query.Where("notifications.id = ?", id)
+	} else {
+		query = query.Where("notifications.id = ? AND (notifications.is_global = 1 OR un.id IS NOT NULL)", id)
+	}
 	var notification models.Notification
-	err := r.db.Preload("Sender").Select(notificationInboxFields).
-		Joins("LEFT JOIN user_notifications un ON notifications.id = un.notification_id AND un.user_id = ?", userID).
-		Where("notifications.id = ? AND (notifications.is_global = 1 OR un.id IS NOT NULL)", id).
-		First(&notification).Error
-	if err != nil {
+	if err := query.Select(fields).First(&notification).Error; err != nil {
 		return nil, err
 	}
 	projected := []models.Notification{notification}
@@ -159,6 +170,16 @@ func (r *NotificationRepository) FindByIDForUser(id, userID int64) (*models.Noti
 	}
 	notification.TargetUserID = projected[0].TargetUserID
 	return &notification, nil
+}
+
+// FindByIDForUser finds a global notification or one addressed to the given user.
+func (r *NotificationRepository) FindByIDForUser(id, userID int64) (*models.Notification, error) {
+	return r.findByIDWithScope(id, userID, false)
+}
+
+// FindByIDForAdmin returns any notification with the admin's read projection and recipient target.
+func (r *NotificationRepository) FindByIDForAdmin(id, adminUserID int64) (*models.Notification, error) {
+	return r.findByIDWithScope(id, adminUserID, true)
 }
 
 // ListByUser 分页获取用户的通知列表
@@ -210,6 +231,36 @@ func (r *NotificationRepository) ListAll(offset, limit int) ([]models.Notificati
 	if err := r.db.Order("create_time DESC, id DESC").Offset(offset).Limit(limit).Find(&notifications).Error; err != nil {
 		return nil, 0, err
 	}
+	if err := r.fillTargets(notifications); err != nil {
+		return nil, 0, err
+	}
+	r.fillSenders(notifications)
+	return notifications, total, nil
+}
+
+// ListAllForAdmin 分页获取系统全部通知，并结合管理员自身的已读状态与发送对象投影。
+func (r *NotificationRepository) ListAllForAdmin(adminUserID int64, offset, limit int) ([]models.Notification, int64, error) {
+	var notifications []models.Notification
+	var total int64
+
+	if err := r.db.Model(&models.Notification{}).Count(&total).Error; err != nil {
+		return nil, 0, err
+	}
+
+	err := r.db.Table("notifications").
+		Joins("LEFT JOIN user_notifications un ON notifications.id = un.notification_id AND un.user_id = ?", adminUserID).
+		Select(notificationAdminFields).
+		Order("notifications.create_time DESC, notifications.id DESC").
+		Offset(offset).
+		Limit(limit).
+		Find(&notifications).Error
+	if err != nil {
+		return nil, 0, err
+	}
+
+	if err := r.fillTargets(notifications); err != nil {
+		return nil, 0, err
+	}
 	r.fillSenders(notifications)
 	return notifications, total, nil
 }
@@ -232,7 +283,7 @@ func (r *NotificationRepository) MarkAsRead(id int64, userID int64) error {
 			}
 			return nil
 		}
-		if err != gorm.ErrRecordNotFound {
+		if !errors.Is(err, gorm.ErrRecordNotFound) {
 			return err
 		}
 		if notification.IsGlobal != 1 {

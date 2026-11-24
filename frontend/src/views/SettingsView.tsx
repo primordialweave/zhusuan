@@ -263,10 +263,14 @@ export default function SettingsView() {
   const [updateStatus, setUpdateStatus] = useState<UpdateStatus | null>(null)
   const [updating, setUpdating] = useState(false)
   const [cancellingUpdate, setCancellingUpdate] = useState(false)
+  const [savingProfile, setSavingProfile] = useState(false)
+  const [changingPassword, setChangingPassword] = useState(false)
   const mountedRef = useRef(false)
   const updateRequestRef = useRef(false)
   const updateGenerationRef = useRef(0)
   const profileLoadGenerationRef = useRef(0)
+  const profileSaveInFlightRef = useRef(false)
+  const passwordChangeInFlightRef = useRef(false)
 
   const loadProfile = useCallback(async () => {
     const generation = ++profileLoadGenerationRef.current
@@ -426,9 +430,9 @@ export default function SettingsView() {
         ? [{ icon: 'layout-grid' as const, key: 'desktop', label: '桌面设置' }]
         : []),
       { icon: 'bell', key: 'notification', label: '通知设置' },
-      { icon: 'cloud', key: 'data-sync', label: '数据同步' },
       ...(isAdmin
         ? [
+            { icon: 'cloud' as const, key: 'data-sync', label: '数据同步' },
             { icon: 'users' as const, key: 'users', label: '用户管理' },
             { icon: 'book' as const, key: 'dictionary', label: '字典管理' },
           ]
@@ -461,6 +465,7 @@ export default function SettingsView() {
   }
 
   const saveProfile = async () => {
+    if (profileSaveInFlightRef.current) return
     const isModified = !profilesMatch(profile, originalProfile)
 
     if (!isModified) {
@@ -480,24 +485,37 @@ export default function SettingsView() {
       return
     }
 
+    profileSaveInFlightRef.current = true
+    setSavingProfile(true)
     const submittedProfile = profile
     const submittedIdentity = profileForm.identity
-    const ok = await updateProfile(submittedProfile)
-    if (ok) {
-      toastSuccess('保存成功')
-      setProfileForm((current) => {
-        if (current.identity !== submittedIdentity) return current
+    try {
+      const ok = await updateProfile(submittedProfile)
+      if (!mountedRef.current) return
+      if (ok) {
+        toastSuccess('保存成功')
+        setProfileForm((current) => {
+          if (current.identity !== submittedIdentity) return current
 
-        return {
-          ...current,
-          baseline: submittedProfile,
-          draft: profilesMatch(current.draft, submittedProfile) ? submittedProfile : current.draft,
-        }
-      })
+          return {
+            ...current,
+            baseline: submittedProfile,
+            draft: profilesMatch(current.draft, submittedProfile)
+              ? submittedProfile
+              : current.draft,
+          }
+        })
+      } else {
+        toastError(useAuthStore.getState().error || '保存失败')
+      }
+    } finally {
+      profileSaveInFlightRef.current = false
+      if (mountedRef.current) setSavingProfile(false)
     }
   }
 
   const handlePasswordChange = async () => {
+    if (passwordChangeInFlightRef.current) return
     if (!securityForm.oldPassword || !securityForm.newPassword || !securityForm.confirmPassword) {
       toastWarning('请填写所有密码字段')
       return
@@ -506,17 +524,25 @@ export default function SettingsView() {
       toastWarning('两次输入的新密码不一致')
       return
     }
-    if (securityForm.newPassword.length < 6) {
-      toastWarning('新密码长度不能少于6位')
+    if (securityForm.newPassword.length < 8) {
+      toastWarning('新密码长度不能少于8位')
       return
     }
 
-    const ok = await changePassword(securityForm.oldPassword, securityForm.newPassword)
-    if (ok) {
-      toastSuccess('密码修改成功')
-      setSecurityForm({ confirmPassword: '', newPassword: '', oldPassword: '' })
-    } else {
-      toastError(useAuthStore.getState().error || '密码修改失败')
+    passwordChangeInFlightRef.current = true
+    setChangingPassword(true)
+    try {
+      const ok = await changePassword(securityForm.oldPassword, securityForm.newPassword)
+      if (!mountedRef.current) return
+      if (ok) {
+        toastSuccess('密码修改成功')
+        setSecurityForm({ confirmPassword: '', newPassword: '', oldPassword: '' })
+      } else {
+        toastError(useAuthStore.getState().error || '密码修改失败')
+      }
+    } finally {
+      passwordChangeInFlightRef.current = false
+      if (mountedRef.current) setChangingPassword(false)
     }
   }
 
@@ -674,7 +700,7 @@ export default function SettingsView() {
       )
     }
 
-    if (activeTab === 'dictionary') {
+    if (activeTab === 'dictionary' && isAdmin) {
       return (
         <section className="settings-management-panel" aria-label="字典管理设置">
           <DictionaryManagement />
@@ -682,7 +708,7 @@ export default function SettingsView() {
       )
     }
 
-    if (activeTab === 'data-sync') {
+    if (activeTab === 'data-sync' && isAdmin) {
       return (
         <section className="settings-management-panel" aria-label="数据同步设置">
           <DataSyncPanel />
@@ -1097,8 +1123,8 @@ export default function SettingsView() {
                   有尚未保存的个人信息更改
                 </span>
               ) : null}
-              <Button onClick={saveProfile}>
-                <JadeIcon name="save" size="1em" />
+              <Button onClick={saveProfile} pending={savingProfile}>
+                {!savingProfile ? <JadeIcon name="save" size="1em" /> : null}
                 <span>保存更改</span>
               </Button>
             </>
@@ -1116,8 +1142,8 @@ export default function SettingsView() {
 
         <SettingsGroup
           footer={
-            <Button onClick={handlePasswordChange}>
-              <JadeIcon name="lock-password" size="1em" />
+            <Button onClick={handlePasswordChange} pending={changingPassword}>
+              {!changingPassword ? <JadeIcon name="lock-password" size="1em" /> : null}
               <span>修改密码</span>
             </Button>
           }
@@ -1125,7 +1151,7 @@ export default function SettingsView() {
         >
           <FormGrid columns={3}>
             {passwordField('oldPassword', '当前密码', '请输入当前密码')}
-            {passwordField('newPassword', '新密码', '至少 6 位')}
+            {passwordField('newPassword', '新密码', '至少 8 位')}
             {passwordField('confirmPassword', '确认新密码', '再次输入新密码')}
           </FormGrid>
         </SettingsGroup>

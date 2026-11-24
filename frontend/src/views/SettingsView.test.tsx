@@ -341,8 +341,29 @@ describe('SettingsView', () => {
     )
 
     expect(screen.queryByRole('tab', { name: '用户管理' })).not.toBeInTheDocument()
+    expect(screen.queryByRole('tab', { name: '数据同步' })).not.toBeInTheDocument()
+    expect(screen.queryByRole('tab', { name: '字典管理' })).not.toBeInTheDocument()
     expect(screen.getByRole('tab', { name: '个人信息' })).toHaveAttribute('aria-selected', 'true')
     expect(screen.getByTestId('settings-location')).toHaveTextContent('/settings?tab=users')
+  })
+
+  it('shows an error toast when saving profile fails', async () => {
+    const updateProfile = vi.fn().mockImplementation(async () => {
+      useAuthStore.setState({ error: '邮箱已被注册' })
+      return false
+    })
+    const toastError = vi.spyOn(useToastStore.getState(), 'error').mockImplementation(() => 0)
+    useAuthStore.setState({ updateProfile, user: adminUser })
+    const user = userEvent.setup()
+    render(<SettingsView />, { initialEntries: ['/settings?tab=profile'] })
+
+    const nameInput = screen.getByRole('textbox', { name: '姓名' })
+    fireEvent.change(nameInput, { target: { value: '修改后姓名' } })
+    await user.click(screen.getByRole('button', { name: '保存更改' }))
+
+    expect(updateProfile).toHaveBeenCalledOnce()
+    expect(toastError).toHaveBeenCalledWith('邮箱已被注册')
+    toastError.mockRestore()
   })
 
   it('preserves a dirty profile through a late refresh and resets it for a new identity', async () => {

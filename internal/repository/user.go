@@ -61,7 +61,17 @@ func (r *UserRepository) ExistsByEmailExceptID(email string, id int64) bool {
 
 // Create 创建用户
 func (r *UserRepository) Create(user *models.User) error {
-	return r.db.Create(user).Error
+	desiredStatus := user.Status
+	if err := r.db.Create(user).Error; err != nil {
+		return err
+	}
+	if desiredStatus == 0 && user.Status != 0 {
+		if err := r.db.Model(user).Update("status", 0).Error; err != nil {
+			return err
+		}
+		user.Status = 0
+	}
+	return nil
 }
 
 // UpdateFields 动态更新指定字段
@@ -107,7 +117,15 @@ func (r *UserRepository) List(page, pageSize int, keyword string) ([]models.User
 	return users, total, nil
 }
 
-// Delete 删除用户
+// Delete 删除用户及其关联令牌与通知状态
 func (r *UserRepository) Delete(id int64) error {
-	return r.db.Delete(&models.User{}, id).Error
+	return r.db.Transaction(func(tx *gorm.DB) error {
+		if err := tx.Where("user_id = ?", id).Delete(&models.PersonalAccessToken{}).Error; err != nil {
+			return err
+		}
+		if err := tx.Where("user_id = ?", id).Delete(&models.UserNotification{}).Error; err != nil {
+			return err
+		}
+		return tx.Delete(&models.User{}, id).Error
+	})
 }

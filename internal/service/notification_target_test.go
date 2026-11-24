@@ -353,3 +353,45 @@ func TestNotificationTargetReadQueryCountIsBoundedPerPage(t *testing.T) {
 	require.NoError(t, err)
 	require.Equal(t, int64(2), queries.Load(), "global detail retains its original query count")
 }
+
+func TestNotificationListAllForAdminIncludesOtherRecipientsWithAccurateReadState(t *testing.T) {
+	svc, users := notificationTargetFixture(t)
+	global := notificationTargetCreate(t, svc, users[0], 0)
+	forAdmin := notificationTargetCreate(t, svc, users[0], users[0])
+	forOther := notificationTargetCreate(t, svc, users[0], users[1])
+
+	list, total, err := svc.ListAllForAdmin(users[0], 1, 100)
+	require.NoError(t, err)
+	require.GreaterOrEqual(t, total, int64(3))
+
+	byID := make(map[int64]models.Notification, len(list))
+	for _, item := range list {
+		byID[item.ID] = item
+	}
+	require.Contains(t, byID, global.ID)
+	require.False(t, byID[global.ID].IsRead)
+	require.Equal(t, int64(0), byID[global.ID].TargetUserID)
+
+	require.Contains(t, byID, forAdmin.ID)
+	require.False(t, byID[forAdmin.ID].IsRead)
+	require.Equal(t, users[0], byID[forAdmin.ID].TargetUserID)
+
+	require.Contains(t, byID, forOther.ID)
+	require.True(t, byID[forOther.ID].IsRead)
+	require.Equal(t, users[1], byID[forOther.ID].TargetUserID)
+
+	unreadCount, err := svc.GetUnreadCount(users[0])
+	require.NoError(t, err)
+	require.Equal(t, int64(2), unreadCount)
+
+	require.NoError(t, svc.MarkAsRead(forAdmin.ID, users[0]))
+	detail, err := svc.GetForAdmin(users[0], forAdmin.ID)
+	require.NoError(t, err)
+	require.True(t, detail.IsRead)
+	require.Equal(t, users[0], detail.TargetUserID)
+
+	otherDetail, err := svc.GetForAdmin(users[0], forOther.ID)
+	require.NoError(t, err)
+	require.True(t, otherDetail.IsRead)
+	require.Equal(t, users[1], otherDetail.TargetUserID)
+}

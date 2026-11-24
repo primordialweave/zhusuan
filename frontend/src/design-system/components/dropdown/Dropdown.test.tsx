@@ -1,6 +1,7 @@
 import { render, screen } from '@testing-library/react'
 import userEvent from '@testing-library/user-event'
 import { describe, expect, it, vi } from 'vitest'
+import { Modal } from '../modal'
 import { Dropdown } from './Dropdown'
 
 describe('Dropdown', () => {
@@ -65,6 +66,53 @@ describe('Dropdown', () => {
 
     await userEvent.keyboard('{ArrowUp}')
     expect(screen.getByRole('menuitem', { name: '编辑' })).toHaveFocus()
+    await userEvent.keyboard('{Escape}')
+    expect(screen.queryByRole('menu')).not.toBeInTheDocument()
+    expect(trigger).toHaveFocus()
+  })
+
+  it.each([
+    { modal: false, shift: false, target: '之后' },
+    { modal: false, shift: true, target: '之前' },
+    { modal: true, shift: false, target: '之后' },
+    { modal: true, shift: true, target: '之前' },
+  ])('closes on Tab and moves focus (modal=$modal, shift=$shift)', async ({ modal, shift, target }) => {
+    const user = userEvent.setup()
+    const controls = (
+      <>
+        <button type="button">之前</button>
+        <button hidden type="button">隐藏</button>
+        <Dropdown>
+          <Dropdown.Trigger>
+            <button type="button">操作</button>
+          </Dropdown.Trigger>
+          <Dropdown.Menu label="操作菜单">
+            <Dropdown.Item>编辑</Dropdown.Item>
+          </Dropdown.Menu>
+        </Dropdown>
+        <fieldset disabled>
+          <button type="button">禁用</button>
+        </fieldset>
+        <button type="button">之后</button>
+      </>
+    )
+    render(
+      modal ? (
+        <Modal.Root onClose={() => undefined} open>
+          <Modal.Header>验证焦点</Modal.Header>
+          {controls}
+        </Modal.Root>
+      ) : (
+        controls
+      ),
+    )
+
+    screen.getByRole('button', { name: '操作' }).focus()
+    await user.keyboard('{ArrowDown}')
+    expect(screen.getByRole('menuitem', { name: '编辑' })).toHaveFocus()
+    await user.tab({ shift })
+    expect(screen.queryByRole('menu')).not.toBeInTheDocument()
+    expect(screen.getByRole('button', { name: target })).toHaveFocus()
   })
 
   it('composes public event handlers and lets them cancel internal menu behavior', async () => {

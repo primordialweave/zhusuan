@@ -61,7 +61,7 @@ services:
     environment:
       - POSTGRES_DB=${DB_NAME:-zhusuan}
       - POSTGRES_USER=${DB_USER:-zhusuan}
-      - POSTGRES_PASSWORD=${DB_PASSWORD:?DB_PASSWORD must be set when using the postgres profile}
+      - POSTGRES_PASSWORD=${DB_PASSWORD:-}
     volumes:
       - pgdata:/var/lib/postgresql/data
     ports:
@@ -82,8 +82,8 @@ services:
     environment:
       - MYSQL_DATABASE=${DB_NAME:-zhusuan}
       - MYSQL_USER=${DB_USER:-zhusuan}
-      - MYSQL_PASSWORD=${DB_PASSWORD:?DB_PASSWORD must be set when using the mysql profile}
-      - MYSQL_ROOT_PASSWORD=${MYSQL_ROOT_PASSWORD:?MYSQL_ROOT_PASSWORD must be set when using the mysql profile}
+      - MYSQL_PASSWORD=${DB_PASSWORD:-}
+      - MYSQL_ROOT_PASSWORD=${MYSQL_ROOT_PASSWORD:-}
     volumes:
       - mysqldata:/var/lib/mysql
     ports:

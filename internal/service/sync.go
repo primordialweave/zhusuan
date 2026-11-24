@@ -3,12 +3,15 @@ package service
 import (
 	"context"
 	"database/sql"
+	stderrors "errors"
 	"fmt"
 	"log"
 	"log/slog"
 	"strings"
 	"time"
 
+	"github.com/go-sql-driver/mysql"
+	"github.com/jackc/pgx/v5/pgconn"
 	_ "github.com/jackc/pgx/v5/stdlib" // Register the pgx driver for database/sql synchronization.
 	"gorm.io/gorm"
 
@@ -18,7 +21,7 @@ import (
 
 // 允许同步的固定表结构白名单
 var syncTableColumns = map[string][]string{
-	syncTableUsers:                {"id", "username", columnPassword, columnName, "email", "phone", "avatar", "role", "department", "position", columnStatus, columnCreateTime, columnUpdateTime},
+	syncTableUsers:                {"id", "username", columnPassword, columnName, "email", "phone", "avatar", "role", "department", "position", columnStatus, "last_login_time", columnCreateTime, columnUpdateTime},
 	syncTableProjects:             {"id", columnName, "company", "total_amount", "received_amount", columnStatus, "type", "contract_number", "contract_date", "payment_method", "start_date", "end_date", "description", columnUserID, columnCreateTime, columnUpdateTime},
 	syncTablePayments:             {"id", "project_id", "stage", "amount", "percentage", "plan_date", columnStatus, "actual_date", "method", columnRemark, columnUserID, columnCreateTime, columnUpdateTime},
 	syncTableDictionaries:         {"id", "code", columnName, columnStatus, columnRemark, columnCreateTime, columnUpdateTime},
@@ -99,7 +102,7 @@ func (s *SyncService) validateTableName(table string) error {
 func (s *SyncService) buildDSN(cfg SyncConfig) string {
 	switch cfg.DBType {
 	case mysqlDialect:
-		return database.MySQLDSN(cfg.Host, cfg.Port, cfg.User, cfg.Password, cfg.DBName)
+		return database.MySQLSyncDSN(cfg.Host, cfg.Port, cfg.User, cfg.Password, cfg.DBName)
 	case postgresDialect:
 		sslMode := cfg.SSLMode
 		if sslMode == "" {
@@ -198,7 +201,10 @@ func (s *SyncService) CompareData(cfg SyncConfig) ([]TableCompareResult, error) 
 		var remoteCount int64
 		row := remoteDB.QueryRowContext(ctx, fmt.Sprintf("SELECT COUNT(*) FROM %s", quotedTable))
 		if err := row.Scan(&remoteCount); err != nil {
-			result.RemoteCount = -1 // -1 表示表不存在或查询失败
+			if !isRemoteTableMissing(err) {
+				return nil, fmt.Errorf("读取云端表 %s 失败: %w", table, err)
+			}
+			result.RemoteCount = -1
 		} else {
 			result.RemoteCount = remoteCount
 		}
@@ -207,6 +213,15 @@ func (s *SyncService) CompareData(cfg SyncConfig) ([]TableCompareResult, error) 
 	}
 
 	return results, nil
+}
+
+func isRemoteTableMissing(err error) bool {
+	var mysqlErr *mysql.MySQLError
+	if stderrors.As(err, &mysqlErr) && mysqlErr.Number == 1146 {
+		return true
+	}
+	var postgresErr *pgconn.PgError
+	return stderrors.As(err, &postgresErr) && postgresErr.Code == "42P01"
 }
 
 // SyncTables 执行数据同步
@@ -229,11 +244,161 @@ func (s *SyncService) SyncTables(cfg SyncConfig, tables []string) ([]SyncResult,
 		return nil, fmt.Errorf("云端数据库连接失败: %w", err)
 	}
 
+	if err := s.ensureRemoteTables(ctx, remoteDB, cfg.DBType, tables); err != nil {
+		return nil, fmt.Errorf("创建云端数据表失败: %w", err)
+	}
+
 	tx, err := remoteDB.BeginTx(ctx, nil)
 	if err != nil {
 		return nil, fmt.Errorf("开启云端事务失败: %w", err)
 	}
 	return s.syncTablesInTransaction(ctx, database.GetDB(), tx, cfg.DBType, tables)
+}
+
+func (s *SyncService) ensureRemoteTables(ctx context.Context, remoteDB syncExecutor, dbType string, tables []string) error {
+	for _, table := range tables {
+		if err := s.validateTableName(table); err != nil {
+			continue
+		}
+		ddl, err := s.buildCreateTableQuery(table, dbType)
+		if err != nil {
+			return err
+		}
+		if _, err := remoteDB.ExecContext(ctx, ddl); err != nil {
+			return fmt.Errorf("初始化表 %s 失败: %w", table, err)
+		}
+	}
+	return nil
+}
+
+func (s *SyncService) buildCreateTableQuery(table string, dbType string) (string, error) {
+	if err := s.validateTableName(table); err != nil {
+		return "", err
+	}
+	isPostgres := dbType == postgresDialect
+	idDef := "`id` BIGINT NOT NULL AUTO_INCREMENT PRIMARY KEY"
+	floatDef := "DOUBLE"
+	timeDef := "DATETIME(3)"
+	if isPostgres {
+		idDef = `"id" BIGSERIAL PRIMARY KEY`
+		floatDef = "DOUBLE PRECISION"
+		timeDef = "TIMESTAMPTZ"
+	}
+	q := func(col string) string { return s.quoteColumn(col, dbType) }
+	quotedTable := q(table)
+
+	var columns []string
+	switch table {
+	case syncTableUsers:
+		columns = []string{
+			idDef,
+			fmt.Sprintf("%s VARCHAR(50) NOT NULL UNIQUE", q("username")),
+			fmt.Sprintf("%s VARCHAR(100) NOT NULL", q(columnPassword)),
+			fmt.Sprintf("%s VARCHAR(50) NOT NULL", q(columnName)),
+			fmt.Sprintf("%s VARCHAR(100)", q("email")),
+			fmt.Sprintf("%s VARCHAR(20)", q("phone")),
+			fmt.Sprintf("%s VARCHAR(255)", q("avatar")),
+			fmt.Sprintf("%s VARCHAR(20) NOT NULL DEFAULT 'user'", q("role")),
+			fmt.Sprintf("%s VARCHAR(50)", q("department")),
+			fmt.Sprintf("%s VARCHAR(50)", q("position")),
+			fmt.Sprintf("%s INTEGER NOT NULL DEFAULT 1", q(columnStatus)),
+			fmt.Sprintf("%s %s", q("last_login_time"), timeDef),
+			fmt.Sprintf("%s %s", q(columnCreateTime), timeDef),
+			fmt.Sprintf("%s %s", q(columnUpdateTime), timeDef),
+		}
+	case syncTableProjects:
+		columns = []string{
+			idDef,
+			fmt.Sprintf("%s VARCHAR(100) NOT NULL", q(columnName)),
+			fmt.Sprintf("%s VARCHAR(100) NOT NULL", q("company")),
+			fmt.Sprintf("%s %s NOT NULL", q("total_amount"), floatDef),
+			fmt.Sprintf("%s %s DEFAULT 0", q("received_amount"), floatDef),
+			fmt.Sprintf("%s VARCHAR(20) NOT NULL", q(columnStatus)),
+			fmt.Sprintf("%s VARCHAR(50) NOT NULL", q("type")),
+			fmt.Sprintf("%s VARCHAR(50)", q("contract_number")),
+			fmt.Sprintf("%s DATE", q("contract_date")),
+			fmt.Sprintf("%s VARCHAR(30)", q("payment_method")),
+			fmt.Sprintf("%s DATE NOT NULL", q("start_date")),
+			fmt.Sprintf("%s DATE NOT NULL", q("end_date")),
+			fmt.Sprintf("%s TEXT", q("description")),
+			fmt.Sprintf("%s BIGINT NOT NULL", q(columnUserID)),
+			fmt.Sprintf("%s %s", q(columnCreateTime), timeDef),
+			fmt.Sprintf("%s %s", q(columnUpdateTime), timeDef),
+		}
+	case syncTablePayments:
+		columns = []string{
+			idDef,
+			fmt.Sprintf("%s BIGINT NOT NULL", q("project_id")),
+			fmt.Sprintf("%s VARCHAR(50) NOT NULL", q("stage")),
+			fmt.Sprintf("%s %s NOT NULL", q("amount"), floatDef),
+			fmt.Sprintf("%s %s", q("percentage"), floatDef),
+			fmt.Sprintf("%s DATE NOT NULL", q("plan_date")),
+			fmt.Sprintf("%s VARCHAR(20) NOT NULL", q(columnStatus)),
+			fmt.Sprintf("%s DATE", q("actual_date")),
+			fmt.Sprintf("%s VARCHAR(30)", q("method")),
+			fmt.Sprintf("%s VARCHAR(255)", q(columnRemark)),
+			fmt.Sprintf("%s BIGINT NOT NULL", q(columnUserID)),
+			fmt.Sprintf("%s %s", q(columnCreateTime), timeDef),
+			fmt.Sprintf("%s %s", q(columnUpdateTime), timeDef),
+		}
+	case syncTableDictionaries:
+		columns = []string{
+			idDef,
+			fmt.Sprintf("%s VARCHAR(50) NOT NULL UNIQUE", q("code")),
+			fmt.Sprintf("%s VARCHAR(50) NOT NULL", q(columnName)),
+			fmt.Sprintf("%s INTEGER DEFAULT 1", q(columnStatus)),
+			fmt.Sprintf("%s VARCHAR(255)", q(columnRemark)),
+			fmt.Sprintf("%s %s", q(columnCreateTime), timeDef),
+			fmt.Sprintf("%s %s", q(columnUpdateTime), timeDef),
+		}
+	case syncTableDictionaryItems:
+		columns = []string{
+			idDef,
+			fmt.Sprintf("%s BIGINT NOT NULL", q("dictionary_id")),
+			fmt.Sprintf("%s VARCHAR(50) NOT NULL", q("label")),
+			fmt.Sprintf("%s VARCHAR(50) NOT NULL", q("value")),
+			fmt.Sprintf("%s INTEGER DEFAULT 0", q("sort")),
+			fmt.Sprintf("%s INTEGER DEFAULT 1", q(columnStatus)),
+			fmt.Sprintf("%s VARCHAR(255)", q(columnRemark)),
+			fmt.Sprintf("%s %s", q(columnCreateTime), timeDef),
+			fmt.Sprintf("%s %s", q(columnUpdateTime), timeDef),
+		}
+	case syncTableNotifications:
+		columns = []string{
+			idDef,
+			fmt.Sprintf("%s VARCHAR(100) NOT NULL", q("title")),
+			fmt.Sprintf("%s TEXT NOT NULL", q("content")),
+			fmt.Sprintf("%s INTEGER DEFAULT 1", q("type")),
+			fmt.Sprintf("%s BIGINT NOT NULL", q("sender_id")),
+			fmt.Sprintf("%s INTEGER DEFAULT 0", q("is_global")),
+			fmt.Sprintf("%s %s", q(columnCreateTime), timeDef),
+			fmt.Sprintf("%s %s", q(columnUpdateTime), timeDef),
+		}
+	case syncTableUserNotifications:
+		columns = []string{
+			idDef,
+			fmt.Sprintf("%s BIGINT NOT NULL", q(columnUserID)),
+			fmt.Sprintf("%s BIGINT NOT NULL", q("notification_id")),
+			fmt.Sprintf("%s INTEGER DEFAULT 0", q("is_read")),
+			fmt.Sprintf("%s %s", q("read_time"), timeDef),
+			fmt.Sprintf("UNIQUE (%s, %s)", q(columnUserID), q("notification_id")),
+		}
+	case syncTablePersonalAccessTokens:
+		columns = []string{
+			idDef,
+			fmt.Sprintf("%s BIGINT NOT NULL", q(columnUserID)),
+			fmt.Sprintf("%s VARCHAR(50) NOT NULL", q(columnName)),
+			fmt.Sprintf("%s VARCHAR(100) NOT NULL", q("token_hash")),
+			fmt.Sprintf("%s VARCHAR(255) DEFAULT ''", q("scopes")),
+			fmt.Sprintf("%s INTEGER DEFAULT 1", q(columnStatus)),
+			fmt.Sprintf("%s %s", q("last_used_at"), timeDef),
+			fmt.Sprintf("%s %s", q("expires_at"), timeDef),
+			fmt.Sprintf("%s %s", q(columnCreateTime), timeDef),
+			fmt.Sprintf("%s %s", q(columnUpdateTime), timeDef),
+		}
+	}
+
+	return fmt.Sprintf("CREATE TABLE IF NOT EXISTS %s (%s)", quotedTable, strings.Join(columns, ", ")), nil
 }
 
 func (s *SyncService) syncTablesInTransaction(ctx context.Context, localDB *gorm.DB, tx syncTransaction, dbType string, tables []string) ([]SyncResult, error) {
@@ -312,6 +477,15 @@ func closeSyncDatabase(db *sql.DB) {
 	}
 }
 
+func isRequiredNonEmptySyncTable(table string) bool {
+	switch table {
+	case syncTableUsers, syncTableDictionaries, syncTableDictionaryItems:
+		return true
+	default:
+		return false
+	}
+}
+
 // deleteExtras 删除云端多余的数据
 func (s *SyncService) deleteExtras(ctx context.Context, remoteDB syncExecutor, table string, keepIDs []interface{}, dbType string) error {
 	quotedTable, err := s.quoteSyncIdentifier(table, dbType)
@@ -320,7 +494,12 @@ func (s *SyncService) deleteExtras(ctx context.Context, remoteDB syncExecutor, t
 	}
 
 	if len(keepIDs) == 0 {
-		return fmt.Errorf("refuse to delete all rows from %s because local ID list is empty", table)
+		if isRequiredNonEmptySyncTable(table) {
+			return fmt.Errorf("refuse to delete all rows from %s because local ID list is empty", table)
+		}
+		query := fmt.Sprintf("DELETE FROM %s", quotedTable) // #nosec G201 -- table name is validated against syncTableColumns before quoting.
+		_, err = remoteDB.ExecContext(ctx, query)
+		return err
 	}
 
 	query := fmt.Sprintf("DELETE FROM %s WHERE %s NOT IN (", quotedTable, s.quoteColumn("id", dbType)) // #nosec G201 -- table name is validated against syncTableColumns before quoting.
@@ -349,7 +528,7 @@ func (s *SyncService) syncUsers(ctx context.Context, localDB *gorm.DB, remoteDB 
 }
 
 func userSyncValues(u models.User) (int64, []interface{}) {
-	return u.ID, []interface{}{u.ID, u.Username, u.Password, u.Name, u.Email, u.Phone, u.Avatar, u.Role, u.Department, u.Position, u.Status, u.CreateTime, u.UpdateTime}
+	return u.ID, []interface{}{u.ID, u.Username, u.Password, u.Name, u.Email, u.Phone, u.Avatar, u.Role, u.Department, u.Position, u.Status, u.LastLoginTime, u.CreateTime, u.UpdateTime}
 }
 
 // syncProjects 同步项目表
@@ -375,16 +554,29 @@ func syncRecords[T any](ctx context.Context, service *SyncService, localDB *gorm
 	if err := localDB.WithContext(ctx).Find(&records).Error; err != nil {
 		return 0, fmt.Sprintf("读取本地数据失败: %v", err)
 	}
-	query, err := service.buildUpsertQuery(table, dbType)
-	if err != nil {
-		return 0, err.Error()
+	if dbType != postgresDialect && dbType != mysqlDialect {
+		return 0, fmt.Sprintf("不支持的数据库类型: %s", dbType)
+	}
+	query := ""
+	if dbType == postgresDialect {
+		var err error
+		query, err = service.buildPostgresUpsertQuery(table)
+		if err != nil {
+			return 0, err.Error()
+		}
 	}
 	ids := make([]interface{}, 0, len(records))
 	for _, record := range records {
 		id, args := row(record)
 		ids = append(ids, id)
-		if _, err := remoteDB.ExecContext(ctx, query, args...); err != nil {
-			return 0, fmt.Sprintf("同步失败: %v", err)
+		var writeErr error
+		if dbType == mysqlDialect {
+			writeErr = service.executeMySQLMirrorRow(ctx, remoteDB, table, id, args)
+		} else {
+			_, writeErr = remoteDB.ExecContext(ctx, query, args...)
+		}
+		if writeErr != nil {
+			return 0, fmt.Sprintf("同步失败: %v", writeErr)
 		}
 	}
 	if err := service.deleteExtras(ctx, remoteDB, table, ids, dbType); err != nil {
@@ -438,50 +630,90 @@ func tokenSyncValues(t models.PersonalAccessToken) (int64, []interface{}) {
 	return t.ID, []interface{}{t.ID, t.UserID, t.Name, t.TokenHash, t.Scopes, t.Status, t.LastUsedAt, t.ExpiresAt, t.CreateTime, t.UpdateTime}
 }
 
-// buildUpsertQuery 构建 UPSERT 语句 (支持 PostgreSQL 和 MySQL)
-func (s *SyncService) buildUpsertQuery(table string, dbType string) (string, error) {
+// buildPostgresUpsertQuery builds an ID-keyed upsert for PostgreSQL.
+func (s *SyncService) buildPostgresUpsertQuery(table string) (string, error) {
 	columns, ok := syncTableColumns[table]
 	if !ok {
 		return "", fmt.Errorf("invalid table name: %s", table)
 	}
 
-	quotedTable := s.quoteColumn(table, dbType)
+	quotedTable := s.quoteColumn(table, postgresDialect)
 	quotedColumns := make([]string, 0, len(columns))
 	placeholders := make([]string, 0, len(columns))
 	updateSet := make([]string, 0, len(columns)-1)
 
 	for i, col := range columns {
-		quotedCol := s.quoteColumn(col, dbType)
+		quotedCol := s.quoteColumn(col, postgresDialect)
 		quotedColumns = append(quotedColumns, quotedCol)
-
-		if dbType == postgresDialect {
-			placeholders = append(placeholders, fmt.Sprintf("$%d", i+1))
-			if col != "id" {
-				updateSet = append(updateSet, fmt.Sprintf("%s = EXCLUDED.%s", quotedCol, quotedCol))
-			}
-			continue
-		}
-
-		placeholders = append(placeholders, "?")
+		placeholders = append(placeholders, fmt.Sprintf("$%d", i+1))
 		if col != "id" {
-			updateSet = append(updateSet, fmt.Sprintf("%s = VALUES(%s)", quotedCol, quotedCol))
+			updateSet = append(updateSet, fmt.Sprintf("%s = EXCLUDED.%s", quotedCol, quotedCol))
 		}
 	}
 
-	if dbType == postgresDialect {
-		return fmt.Sprintf("INSERT INTO %s (%s) VALUES (%s) ON CONFLICT (%s) DO UPDATE SET %s",
-			quotedTable,
-			strings.Join(quotedColumns, ", "),
-			strings.Join(placeholders, ", "),
-			s.quoteColumn("id", dbType),
-			strings.Join(updateSet, ", ")), nil
-	}
-
-	return fmt.Sprintf("INSERT INTO %s (%s) VALUES (%s) ON DUPLICATE KEY UPDATE %s",
+	return fmt.Sprintf("INSERT INTO %s (%s) VALUES (%s) ON CONFLICT (%s) DO UPDATE SET %s",
 		quotedTable,
 		strings.Join(quotedColumns, ", "),
 		strings.Join(placeholders, ", "),
+		s.quoteColumn("id", postgresDialect),
 		strings.Join(updateSet, ", ")), nil
+}
+
+func (s *SyncService) buildMySQLUpdateQuery(table string) (string, error) {
+	columns, ok := syncTableColumns[table]
+	if !ok {
+		return "", fmt.Errorf("invalid table name: %s", table)
+	}
+	quotedTable := s.quoteColumn(table, mysqlDialect)
+	updateSet := make([]string, 0, len(columns)-1)
+	for _, column := range columns[1:] {
+		quotedColumn := s.quoteColumn(column, mysqlDialect)
+		updateSet = append(updateSet, fmt.Sprintf("%s = ?", quotedColumn))
+	}
+	return fmt.Sprintf("UPDATE %s SET %s WHERE %s = ?", quotedTable, strings.Join(updateSet, ", "), s.quoteColumn("id", mysqlDialect)), nil
+}
+
+func (s *SyncService) buildInsertQuery(table string, dbType string) (string, error) {
+	columns, ok := syncTableColumns[table]
+	if !ok {
+		return "", fmt.Errorf("invalid table name: %s", table)
+	}
+	quotedColumns := make([]string, 0, len(columns))
+	placeholders := make([]string, 0, len(columns))
+	for index, column := range columns {
+		quotedColumns = append(quotedColumns, s.quoteColumn(column, dbType))
+		if dbType == postgresDialect {
+			placeholders = append(placeholders, fmt.Sprintf("$%d", index+1))
+		} else {
+			placeholders = append(placeholders, "?")
+		}
+	}
+	return fmt.Sprintf("INSERT INTO %s (%s) VALUES (%s)", s.quoteColumn(table, dbType), strings.Join(quotedColumns, ", "), strings.Join(placeholders, ", ")), nil
+}
+
+func (s *SyncService) executeMySQLMirrorRow(ctx context.Context, remoteDB syncExecutor, table string, id int64, values []interface{}) error {
+	update, err := s.buildMySQLUpdateQuery(table)
+	if err != nil {
+		return err
+	}
+	updateArgs := append(append([]interface{}(nil), values[1:]...), id)
+	result, err := remoteDB.ExecContext(ctx, update, updateArgs...)
+	if err != nil {
+		return err
+	}
+	matched, err := result.RowsAffected()
+	if err != nil {
+		return fmt.Errorf("读取 %s 更新行数失败: %w", table, err)
+	}
+	if matched > 0 {
+		return nil
+	}
+	insert, err := s.buildInsertQuery(table, mysqlDialect)
+	if err != nil {
+		return err
+	}
+	_, err = remoteDB.ExecContext(ctx, insert, values...)
+	return err
 }
 
 func (s *SyncService) quoteSyncIdentifier(identifier string, dbType string) (string, error) {

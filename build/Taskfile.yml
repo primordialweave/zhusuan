@@ -68,13 +68,15 @@ tasks:
       - wails3 generate bindings -f '{{.BUILD_FLAGS}}' -clean=true -ts
 
   generate:icons:
-    summary: Generates Windows `.ico` and Mac `.icns` files from an image
+    summary: Generates Windows light/dark `.ico` and Mac `.icns` files from artwork
     dir: build
     sources:
       - "appicon.png"
       - "appicon-dark.png"
       - "appicon-windows.png"
       - "appicon-windows.source.json"
+      - "appicon-windows-dark.png"
+      - "appicon-windows-dark.source.json"
       - "darwin/AppIcon.icon/icon.json"
       - "../scripts/build_macos_icon.py"
       - "../scripts/build_windows_icon.py"
@@ -83,10 +85,13 @@ tasks:
       - "darwin/Assets.car"
       - "darwin/Assets.car.source.sha256"
       - "windows/icon.ico"
+      - "windows/icon-dark.ico"
     cmds:
       - python3 ../scripts/build_windows_icon.py --input appicon.png --output appicon-windows.png --verify
+      - python3 ../scripts/build_windows_icon.py --input appicon-dark.png --output appicon-windows-dark.png --verify
       - wails3 generate icons -input appicon.png -macfilename darwin/icons.icns -windowsfilename=
       - wails3 generate icons -input appicon-windows.png -macfilename= -windowsfilename windows/icon.ico -sizes 16,20,24,32,40,48,60,64,72,80,96,128,256
+      - wails3 generate icons -input appicon-windows-dark.png -macfilename= -windowsfilename windows/icon-dark.ico -sizes 16,20,24,32,40,48,60,64,72,80,96,128,256
       - cmd: python3 ../scripts/build_macos_icon.py --input appicon.png --output darwin/icons.icns
         platforms: [darwin]
 

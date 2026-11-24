@@ -17,6 +17,8 @@ import (
 const (
 	// EventCloseRequested is emitted to the frontend when closeAction == "ask".
 	EventCloseRequested = "desktop:close-requested"
+	// EventClosePromptChanged keeps the frontend close prompt synchronized with native state.
+	EventClosePromptChanged = "desktop:close-prompt-changed"
 	// EventNavigate instructs the frontend router to navigate to a target path.
 	EventNavigate = "desktop:navigate"
 	// EventStateChanged broadcasts updated DesktopState whenever changed natively (e.g. tray menu).
@@ -43,10 +45,17 @@ type DesktopCapabilities struct {
 
 // DesktopState is the full snapshot returned to the frontend Settings view and state listeners.
 type DesktopState struct {
-	Preferences  DesktopPreferences  `json:"preferences"`
-	Autostart    AutostartState      `json:"autostart"`
-	Capabilities DesktopCapabilities `json:"capabilities"`
-	WindowHidden bool                `json:"windowHidden"`
+	Preferences         DesktopPreferences  `json:"preferences"`
+	Autostart           AutostartState      `json:"autostart"`
+	Capabilities        DesktopCapabilities `json:"capabilities"`
+	WindowHidden        bool                `json:"windowHidden"`
+	ClosePromptOpen     bool                `json:"closePromptOpen"`
+	ClosePromptRevision uint64              `json:"closePromptRevision"`
+}
+
+type closePromptPayload struct {
+	Open                bool   `json:"open"`
+	ClosePromptRevision uint64 `json:"closePromptRevision"`
 }
 
 // PreferencesPatch applies a partial update to DesktopPreferences.
@@ -95,6 +104,7 @@ type DesktopManager struct {
 	reminderMu          sync.Mutex
 
 	mu                  sync.Mutex
+	visibilityMu        sync.Mutex
 	app                 *application.App
 	window              *application.WebviewWindow
 	tray                *application.SystemTray
@@ -103,6 +113,7 @@ type DesktopManager struct {
 	notifService        *notifications.NotificationService
 	traySupported       bool
 	windowHidden        bool
+	dockHidden          bool
 	sessionUserID       int64
 	sessionToken        string
 	sessionGeneration   uint64
@@ -111,6 +122,7 @@ type DesktopManager struct {
 	summary             TraySummary
 	refreshTimer        *time.Timer
 	closePromptOpen     bool
+	closePromptRevision uint64
 	stopBgLoop          chan struct{}
 	bgCheckInterval     time.Duration
 	lastObservedDate    string
@@ -283,18 +295,24 @@ func (m *DesktopManager) setupWindowHooks(app *application.App, window *applicat
 			m.HandleWindowClosing(event)
 		})
 		window.OnWindowEvent(events.Common.WindowHide, func(_ *application.WindowEvent) {
-			m.onWindowHidden()
+			m.transitionNativeWindowVisibility(false, window.IsVisible)
 		})
 		window.OnWindowEvent(events.Common.WindowShow, func(_ *application.WindowEvent) {
-			m.onWindowShown()
+			m.transitionNativeWindowVisibility(true, window.IsVisible)
 		})
 	}
 
 	if app != nil && m.platform == platformDarwin {
-		app.Event.OnApplicationEvent(events.Mac.ApplicationShouldHandleReopen, func(_ *application.ApplicationEvent) {
-			m.ShowWindow()
-		})
+		app.Event.RegisterApplicationEventHook(events.Mac.ApplicationShouldHandleReopen, m.handleMacApplicationReopen)
 	}
+}
+
+func (m *DesktopManager) handleMacApplicationReopen(event *application.ApplicationEvent) {
+	if event != nil {
+		event.Cancel()
+	}
+	m.HideMenuBarPopover()
+	m.ShowWindow()
 }
 
 func (m *DesktopManager) applyInitialWindowState(app *application.App, window *application.WebviewWindow, startHidden bool) {
@@ -318,10 +336,14 @@ func (m *DesktopManager) applyInitialWindowState(app *application.App, window *a
 	}
 
 	if startHidden {
+		hideDock := m.platform == platformDarwin && prefs.HideDockWhenMinimized && m.setDockVisible != nil
 		m.mu.Lock()
 		m.windowHidden = true
+		if hideDock {
+			m.dockHidden = true
+		}
 		m.mu.Unlock()
-		if m.platform == platformDarwin && prefs.HideDockWhenMinimized && m.setDockVisible != nil {
+		if hideDock {
 			m.setDockVisible(false)
 		}
 	}
@@ -439,11 +461,16 @@ func (m *DesktopManager) HandleWindowClosing(event *application.WindowEvent) {
 		emit := m.emitEvent
 		traySupported := m.traySupported
 		platform := m.platform
+		if !alreadyOpen {
+			m.closePromptRevision++
+		}
+		revision := m.closePromptRevision
 		m.mu.Unlock()
 		if !alreadyOpen && emit != nil {
 			emit(EventCloseRequested, map[string]any{
-				"traySupported": traySupported,
-				"platform":      platform,
+				"traySupported":       traySupported,
+				"platform":            platform,
+				"closePromptRevision": revision,
 			})
 		}
 	}
@@ -461,8 +488,12 @@ func (m *DesktopManager) quitFromWindowClose(event *application.WindowEvent) {
 // ResolveClosePrompt executes the user's choice from the close confirmation modal.
 func (m *DesktopManager) ResolveClosePrompt(action string, remember bool) error {
 	m.mu.Lock()
-	m.closePromptOpen = false
+	prompt, promptChanged := m.resetClosePromptLocked()
+	emit := m.emitEvent
 	m.mu.Unlock()
+	if promptChanged && emit != nil {
+		emit(EventClosePromptChanged, prompt)
+	}
 
 	normalized := strings.TrimSpace(action)
 	if normalized == "cancel" || normalized == "" {
@@ -506,20 +537,34 @@ func (m *DesktopManager) RequestQuit() {
 
 // ShowWindow restores and focuses the main window (and restores Dock icon on macOS if hidden).
 func (m *DesktopManager) ShowWindow() {
+	m.visibilityMu.Lock()
+	defer m.visibilityMu.Unlock()
 	prefs := m.store.Get()
-	if m.platform == platformDarwin && prefs.HideDockWhenMinimized && m.setDockVisible != nil {
-		m.setDockVisible(true)
-	}
 	m.mu.Lock()
 	m.windowHidden = false
+	prompt, promptChanged := m.resetClosePromptLocked()
+	closePromptRevision := m.closePromptRevision
+	restoreDock := m.platform == platformDarwin && (prefs.HideDockWhenMinimized || m.dockHidden) && m.setDockVisible != nil
+	if restoreDock {
+		m.dockHidden = false
+	}
 	show := m.showMainWindow
 	emit := m.emitEvent
 	m.mu.Unlock()
+	if promptChanged && emit != nil {
+		emit(EventClosePromptChanged, prompt)
+	}
+	if restoreDock {
+		m.setDockVisible(true)
+	}
 	if show != nil {
 		show()
 	}
 	if emit != nil {
-		emit(EventWindowVisibility, map[string]any{visibilityHiddenKey: false})
+		emit(EventWindowVisibility, map[string]any{
+			visibilityHiddenKey:   false,
+			"closePromptRevision": closePromptRevision,
+		})
 	}
 	m.rebuildTrayView()
 }
@@ -527,20 +572,34 @@ func (m *DesktopManager) ShowWindow() {
 // HideWindow saves geometry, hides the main window to tray/menu bar, and notifies the frontend
 // to pause animations immediately.
 func (m *DesktopManager) HideWindow() {
+	m.visibilityMu.Lock()
+	defer m.visibilityMu.Unlock()
 	m.saveCurrentWindowBounds()
 	prefs := m.store.Get()
 	m.mu.Lock()
 	m.windowHidden = true
+	prompt, promptChanged := m.resetClosePromptLocked()
+	closePromptRevision := m.closePromptRevision
+	hideDock := m.platform == platformDarwin && prefs.HideDockWhenMinimized && m.setDockVisible != nil
+	if hideDock {
+		m.dockHidden = true
+	}
 	hide := m.hideMainWindow
 	emit := m.emitEvent
 	m.mu.Unlock()
 	if emit != nil {
-		emit(EventWindowVisibility, map[string]any{visibilityHiddenKey: true})
+		emit(EventWindowVisibility, map[string]any{
+			visibilityHiddenKey:   true,
+			"closePromptRevision": closePromptRevision,
+		})
+		if promptChanged {
+			emit(EventClosePromptChanged, prompt)
+		}
 	}
 	if hide != nil {
 		hide()
 	}
-	if m.platform == platformDarwin && prefs.HideDockWhenMinimized && m.setDockVisible != nil {
+	if hideDock {
 		m.setDockVisible(false)
 	}
 	m.rebuildTrayView()
@@ -562,23 +621,68 @@ func (m *DesktopManager) ToggleWindow() {
 }
 
 func (m *DesktopManager) onWindowHidden() {
+	m.transitionNativeWindowVisibility(false, nil)
+}
+
+func (m *DesktopManager) onWindowShown() {
+	m.transitionNativeWindowVisibility(true, nil)
+}
+
+func (m *DesktopManager) transitionNativeWindowVisibility(visible bool, currentVisibility func() bool) {
+	m.visibilityMu.Lock()
+	defer m.visibilityMu.Unlock()
+	if currentVisibility != nil && currentVisibility() != visible {
+		return
+	}
+
+	if visible {
+		m.applyNativeWindowShown()
+		return
+	}
+	m.applyNativeWindowHidden()
+}
+
+func (m *DesktopManager) applyNativeWindowHidden() {
 	m.mu.Lock()
 	m.windowHidden = true
+	prompt, promptChanged := m.resetClosePromptLocked()
+	closePromptRevision := m.closePromptRevision
 	emit := m.emitEvent
 	m.mu.Unlock()
 	if emit != nil {
-		emit(EventWindowVisibility, map[string]any{visibilityHiddenKey: true})
+		emit(EventWindowVisibility, map[string]any{
+			visibilityHiddenKey:   true,
+			"closePromptRevision": closePromptRevision,
+		})
+		if promptChanged {
+			emit(EventClosePromptChanged, prompt)
+		}
 	}
 	m.rebuildTrayView()
 }
 
-func (m *DesktopManager) onWindowShown() {
+func (m *DesktopManager) applyNativeWindowShown() {
 	m.mu.Lock()
 	m.windowHidden = false
+	prompt, promptChanged := m.resetClosePromptLocked()
+	closePromptRevision := m.closePromptRevision
+	restoreDock := m.platform == platformDarwin && m.dockHidden && m.setDockVisible != nil
+	if restoreDock {
+		m.dockHidden = false
+	}
 	emit := m.emitEvent
 	m.mu.Unlock()
+	if promptChanged && emit != nil {
+		emit(EventClosePromptChanged, prompt)
+	}
+	if restoreDock {
+		m.setDockVisible(true)
+	}
 	if emit != nil {
-		emit(EventWindowVisibility, map[string]any{visibilityHiddenKey: false})
+		emit(EventWindowVisibility, map[string]any{
+			visibilityHiddenKey:   false,
+			"closePromptRevision": closePromptRevision,
+		})
 	}
 	m.rebuildTrayView()
 }
@@ -636,6 +740,8 @@ func (m *DesktopManager) getState() DesktopState {
 	app := m.app
 	statusFn := m.autostartStatus
 	windowHidden := m.windowHidden
+	closePromptOpen := m.closePromptOpen
+	closePromptRevision := m.closePromptRevision
 	m.mu.Unlock()
 
 	prefs := m.store.Get()
@@ -643,10 +749,31 @@ func (m *DesktopManager) getState() DesktopState {
 	if statusFn != nil {
 		autoState = statusFn(app)
 	}
-	// Reflect OS reality in preferences if user toggled Login Items externally.
+	if prefs.AutostartApprovalPending && !autoState.Enabled {
+		autoState.RequiresApproval = true
+	}
+	if autoState.Supported && autoState.Error == "" && autoState.RequiresApproval &&
+		!prefs.AutostartApprovalPending {
+		if updated, err := m.store.Update(func(p *DesktopPreferences) {
+			p.Autostart = true
+			p.AutostartApprovalPending = true
+		}); err == nil {
+			prefs = updated
+		}
+	}
+	if autoState.Supported && autoState.Error == "" && autoState.Enabled && prefs.AutostartApprovalPending {
+		if updated, err := m.store.Update(func(p *DesktopPreferences) {
+			p.Autostart = true
+			p.AutostartApprovalPending = false
+		}); err == nil {
+			prefs = updated
+		}
+	}
+	// Reflect OS reality in preferences if the user disabled a previously authorized login item.
 	if autoState.Supported && autoState.Error == "" && !autoState.RequiresApproval && prefs.Autostart != autoState.Enabled {
 		if updated, err := m.store.Update(func(p *DesktopPreferences) {
 			p.Autostart = autoState.Enabled
+			p.AutostartApprovalPending = false
 			if !autoState.Enabled {
 				p.StartHidden = false
 			}
@@ -656,10 +783,12 @@ func (m *DesktopManager) getState() DesktopState {
 	}
 
 	return DesktopState{
-		Preferences:  prefs,
-		Autostart:    autoState,
-		Capabilities: m.GetCapabilities(),
-		WindowHidden: windowHidden,
+		Preferences:         prefs,
+		Autostart:           autoState,
+		Capabilities:        m.GetCapabilities(),
+		WindowHidden:        windowHidden,
+		ClosePromptOpen:     closePromptOpen,
+		ClosePromptRevision: closePromptRevision,
 	}
 }
 
@@ -722,6 +851,13 @@ func (m *DesktopManager) updatePreferences(patch PreferencesPatch) (DesktopState
 
 	saved, err := m.store.Update(func(p *DesktopPreferences) {
 		p.Autostart = next.Autostart
+		if !next.Autostart {
+			p.AutostartApprovalPending = false
+		} else if autoState.RequiresApproval {
+			p.AutostartApprovalPending = true
+		} else if patch.Autostart != nil {
+			p.AutostartApprovalPending = false
+		}
 		p.StartHidden = next.StartHidden
 		p.CloseAction = next.CloseAction
 		p.MenuBarDisplay = next.MenuBarDisplay
@@ -756,12 +892,36 @@ func (m *DesktopManager) applyDockPreference(patch PreferencesPatch, saved Deskt
 	if patch.HideDockWhenMinimized == nil || m.platform != platformDarwin || m.setDockVisible == nil {
 		return
 	}
+	m.visibilityMu.Lock()
+	defer m.visibilityMu.Unlock()
 	m.mu.Lock()
 	hidden := m.windowHidden
+	dockHidden := m.dockHidden
+	if hidden {
+		m.dockHidden = saved.HideDockWhenMinimized
+	} else if !saved.HideDockWhenMinimized && dockHidden {
+		m.dockHidden = false
+	}
 	m.mu.Unlock()
 	if hidden {
 		m.setDockVisible(!saved.HideDockWhenMinimized)
+	} else if !saved.HideDockWhenMinimized && dockHidden {
+		m.setDockVisible(true)
 	}
+}
+
+// resetClosePromptLocked advances the prompt revision only when it closes an open prompt.
+// The caller must hold m.mu.
+func (m *DesktopManager) resetClosePromptLocked() (closePromptPayload, bool) {
+	if !m.closePromptOpen {
+		return closePromptPayload{ClosePromptRevision: m.closePromptRevision}, false
+	}
+	m.closePromptOpen = false
+	m.closePromptRevision++
+	return closePromptPayload{
+		Open:                false,
+		ClosePromptRevision: m.closePromptRevision,
+	}, true
 }
 
 func (m *DesktopManager) restoreNativePreferences(current DesktopPreferences, shortcuts, autostart bool) {

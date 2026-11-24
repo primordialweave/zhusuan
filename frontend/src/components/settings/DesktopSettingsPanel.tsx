@@ -1,7 +1,7 @@
 import { useId, useState } from 'react'
 import SettingsGroup from '@/components/settings/SettingsGroup'
 import { useToast } from '@/composables/useToast'
-import { Button, Select, Skeleton, Switch, type SelectOption } from '@/design-system'
+import { Button, EmptyState, JadeIcon, Select, Skeleton, Switch, type SelectOption } from '@/design-system'
 import { useDesktopStore } from '@/stores/desktop'
 import type {
   CloseAction,
@@ -74,6 +74,7 @@ export default function DesktopSettingsPanel() {
   const state = useDesktopStore((store) => store.state)
   const loading = useDesktopStore((store) => store.loading)
   const saving = useDesktopStore((store) => store.saving)
+  const refreshState = useDesktopStore((store) => store.refreshState)
   const updatePreferences = useDesktopStore((store) => store.updatePreferences)
   const openAutostartSettings = useDesktopStore((store) => store.openAutostartSettings)
   const sendTestReminder = useDesktopStore((store) => store.sendTestReminder)
@@ -99,7 +100,27 @@ export default function DesktopSettingsPanel() {
     )
   }
 
-  if (!state) return null
+  if (!state) {
+    return (
+      <div className="settings-page">
+        <SettingsGroup title="启动与关闭">
+          <EmptyState
+            action={
+              <Button onClick={() => void refreshState()} variant="secondary">
+                重新加载桌面设置
+              </Button>
+            }
+            className="settings-empty"
+            description="暂时无法读取桌面常驻与系统集成状态，请重试。"
+            icon={<JadeIcon name="warning" size="1em" />}
+            role="alert"
+            size="md"
+            title="桌面设置加载失败"
+          />
+        </SettingsGroup>
+      </div>
+    )
+  }
 
   const { autostart, capabilities, preferences } = state
   const isMac = capabilities.platform === 'darwin'

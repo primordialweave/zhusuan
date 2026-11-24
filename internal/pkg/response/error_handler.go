@@ -2,6 +2,7 @@
 package response
 
 import (
+	stderrors "errors"
 	"log/slog"
 
 	"github.com/gin-gonic/gin"
@@ -46,7 +47,7 @@ func HandleServiceError(c *gin.Context, err error, defaultMsg string) {
 	}
 
 	// 2. 处理GORM特殊错误
-	if err == gorm.ErrRecordNotFound {
+	if stderrors.Is(err, gorm.ErrRecordNotFound) {
 		NotFound(c, "资源不存在")
 		return
 	}

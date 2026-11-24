@@ -13,7 +13,7 @@
   isolation: isolate;
   color: var(--ods-color-fg-default);
   background: var(--ods-color-bg-canvas);
-  font-family: var(--ods-font-sans);
+  font-family: var(--ods-font-family-body);
   user-select: none;
   box-sizing: border-box;
 }
@@ -472,4 +472,9 @@
   .menubar-chart__bar {
     transition: none;
   }
+}
+
+:root[data-motion='reduced'] .menubar-ring__progress,
+:root[data-motion='reduced'] .menubar-chart__bar {
+  transition: none;
 }

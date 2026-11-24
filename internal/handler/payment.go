@@ -33,7 +33,7 @@ func NewPaymentHandler() *PaymentHandler {
 // @Router /api/v1/projects/{id}/payments [get]
 func (h *PaymentHandler) GetByProject(c *gin.Context) {
 	userID := c.GetInt64("user_id")
-	projectID, err := strconv.ParseInt(c.Param("id"), 10, 64)
+	projectID, err := response.ParseIDParam(c, "id")
 	if err != nil {
 		response.ParamError(c, "无效的项目ID")
 		return
@@ -41,7 +41,7 @@ func (h *PaymentHandler) GetByProject(c *gin.Context) {
 
 	payments, err := h.paymentService.ListByProjectForUser(userID, projectID)
 	if err != nil {
-		response.InternalError(c, "获取收款列表失败")
+		response.HandleServiceError(c, err, "获取收款列表失败")
 		return
 	}
 
@@ -97,13 +97,13 @@ func (h *PaymentHandler) List(c *gin.Context) {
 	projectIDStr := c.Query("project_id")
 	if projectIDStr != "" {
 		projectID, err := strconv.ParseInt(projectIDStr, 10, 64)
-		if err != nil {
+		if err != nil || projectID <= 0 {
 			response.ParamError(c, "无效的项目ID")
 			return
 		}
 		payments, err := h.paymentService.ListByProjectForUser(userID, projectID)
 		if err != nil {
-			response.InternalError(c, "获取收款列表失败")
+			response.HandleServiceError(c, err, "获取收款列表失败")
 			return
 		}
 		response.Success(c, payments)
@@ -142,6 +142,15 @@ func (h *PaymentHandler) Create(c *gin.Context) {
 	response.Success(c, payment)
 }
 
+func parsePaymentID(c *gin.Context) (int64, bool) {
+	id, err := response.ParseIDParam(c, "id")
+	if err != nil {
+		response.ParamError(c, "无效的收款ID")
+		return 0, false
+	}
+	return id, true
+}
+
 // Update 更新款项信息
 // @Summary 更新款项
 // @Description 修改现有款项的金额、日期、阶段等信息
@@ -152,10 +161,8 @@ func (h *PaymentHandler) Create(c *gin.Context) {
 // @Success 200 {object} models.Payment
 // @Router /api/v1/payments/{id} [put]
 func (h *PaymentHandler) Update(c *gin.Context) {
-	userID := c.GetInt64("user_id")
-	id, err := strconv.ParseInt(c.Param("id"), 10, 64)
-	if err != nil {
-		response.ParamError(c, "无效的收款ID")
+	id, ok := parsePaymentID(c)
+	if !ok {
 		return
 	}
 
@@ -165,7 +172,7 @@ func (h *PaymentHandler) Update(c *gin.Context) {
 		return
 	}
 
-	payment, err := h.paymentService.UpdateForUser(userID, id, req)
+	payment, err := h.paymentService.UpdateForUser(c.GetInt64("user_id"), id, req)
 	if err != nil {
 		response.HandleServiceError(c, err, "更新收款失败")
 		return
@@ -183,14 +190,12 @@ func (h *PaymentHandler) Update(c *gin.Context) {
 // @Success 200 {string} string "删除成功"
 // @Router /api/v1/payments/{id} [delete]
 func (h *PaymentHandler) Delete(c *gin.Context) {
-	userID := c.GetInt64("user_id")
-	id, err := strconv.ParseInt(c.Param("id"), 10, 64)
-	if err != nil {
-		response.ParamError(c, "无效的收款ID")
+	id, ok := parsePaymentID(c)
+	if !ok {
 		return
 	}
 
-	if err := h.paymentService.DeleteForUser(userID, id); err != nil {
+	if err := h.paymentService.DeleteForUser(c.GetInt64("user_id"), id); err != nil {
 		response.HandleServiceError(c, err, "删除收款失败")
 		return
 	}
@@ -208,10 +213,8 @@ func (h *PaymentHandler) Delete(c *gin.Context) {
 // @Success 200 {string} string "确认成功"
 // @Router /api/v1/payments/{id}/confirm [post]
 func (h *PaymentHandler) Confirm(c *gin.Context) {
-	userID := c.GetInt64("user_id")
-	id, err := strconv.ParseInt(c.Param("id"), 10, 64)
-	if err != nil {
-		response.ParamError(c, "无效的收款ID")
+	id, ok := parsePaymentID(c)
+	if !ok {
 		return
 	}
 
@@ -221,7 +224,7 @@ func (h *PaymentHandler) Confirm(c *gin.Context) {
 		return
 	}
 
-	if err := h.paymentService.ConfirmForUser(userID, id, req.ActualDate, req.Method); err != nil {
+	if err := h.paymentService.ConfirmForUser(c.GetInt64("user_id"), id, req.ActualDate, req.Method); err != nil {
 		response.HandleServiceError(c, err, "确认收款失败")
 		return
 	}

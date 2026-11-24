@@ -94,3 +94,16 @@ func TestCorsAllowsConfiguredOriginPreflight(t *testing.T) {
 	require.Equal(t, "true", rec.Header().Get("Access-Control-Allow-Credentials"))
 	require.Equal(t, "Origin", rec.Header().Get("Vary"))
 }
+
+func TestAPIv1ResponsesDisableCaching(t *testing.T) {
+	gin.SetMode(gin.TestMode)
+	previous := config.AppConfig
+	config.AppConfig = &config.Config{JWTSecret: "nocache-test-secret-with-more-than-32-characters"}
+	t.Cleanup(func() { config.AppConfig = previous })
+
+	rec := httptest.NewRecorder()
+	NewRouter().ServeHTTP(rec, httptest.NewRequest(http.MethodGet, "/api/v1/users/me", nil))
+
+	require.Equal(t, "no-store, no-cache, must-revalidate", rec.Header().Get("Cache-Control"))
+	require.Equal(t, "no-cache", rec.Header().Get("Pragma"))
+}

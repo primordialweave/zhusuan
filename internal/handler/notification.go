@@ -3,6 +3,7 @@ package handler
 import (
 	"github.com/gin-gonic/gin"
 
+	"github.com/primordialweave/zhusuan/internal/constants"
 	"github.com/primordialweave/zhusuan/internal/models"
 	"github.com/primordialweave/zhusuan/internal/pkg/response"
 	"github.com/primordialweave/zhusuan/internal/service"
@@ -112,9 +113,12 @@ func (h *NotificationHandler) List(c *gin.Context) {
 	var total int64
 	var err error
 
-	// 统一使用 ListByUser，确保能获取到 is_read 状态
-	// 这里不再区分 Admin，让 Admin 也拥有正常的"收件箱"体验
-	notifications, total, err = h.notificationService.ListByUser(userID, page, pageSize)
+	// 管理员可查看系统全部通知（含发给其他用户的定向通知），普通用户仅查看本人收件箱
+	if c.GetString("role") == constants.RoleAdmin {
+		notifications, total, err = h.notificationService.ListAllForAdmin(userID, page, pageSize)
+	} else {
+		notifications, total, err = h.notificationService.ListByUser(userID, page, pageSize)
+	}
 
 	if err != nil {
 		response.HandleServiceError(c, err, "获取通知列表失败")
@@ -229,7 +233,12 @@ func (h *NotificationHandler) Get(c *gin.Context) {
 		return
 	}
 
-	notification, err := h.notificationService.GetForUser(userID, id)
+	var notification *models.Notification
+	if c.GetString("role") == constants.RoleAdmin {
+		notification, err = h.notificationService.GetForAdmin(userID, id)
+	} else {
+		notification, err = h.notificationService.GetForUser(userID, id)
+	}
 	if err != nil {
 		response.HandleServiceError(c, err, "获取通知详情失败")
 		return

@@ -66,6 +66,16 @@ const sessionMatches = (session: AuthSessionSnapshot) => {
   )
 }
 
+const getErrorMessage = (error: unknown, fallback: string) =>
+  error instanceof Error && error.message.trim() ? error.message.trim() : fallback
+
+const validatePasswordStrength = (password: string): string | null => {
+  if (password.length < 8) return '密码长度至少8位'
+  const categories = [/[A-Z]/, /[a-z]/, /[0-9]/].filter((pattern) => pattern.test(password)).length
+  if (categories < 2) return '密码必须包含大小写字母和数字中的至少两种'
+  return null
+}
+
 export default function UserManagement() {
   const { confirm } = useConfirm()
   const toastError = useToastStore((state) => state.error)
@@ -97,6 +107,11 @@ export default function UserManagement() {
   const [form, setForm] = useState<UserForm>(emptyForm)
   const [resetPasswordUser, setResetPasswordUser] = useState<User | null>(null)
   const [newPassword, setNewPassword] = useState('')
+  const [confirmPassword, setConfirmPassword] = useState('')
+  const [resetPasswordError, setResetPasswordError] = useState<string | null>(null)
+  const [resetPasswordErrorTarget, setResetPasswordErrorTarget] = useState<
+    'new' | 'confirm' | 'form' | null
+  >(null)
   const [submitting, setSubmitting] = useState(false)
   const [resettingPassword, setResettingPassword] = useState(false)
   const loadRequestRef = useRef(0)
@@ -200,6 +215,7 @@ export default function UserManagement() {
   }
 
   const handleClearSearch = () => {
+    setKeyword('')
     setCurrentPage(1)
     setSearchKeyword('')
   }
@@ -236,11 +252,14 @@ export default function UserManagement() {
         toastSuccess('用户已更新')
       } else {
         await authApi.createUser({
+          department: form.department,
           email: form.email,
           name: form.name,
           password: form.password,
           phone: form.phone,
+          position: form.position,
           role: form.role,
+          status: form.status,
           username: form.username,
         })
         if (!mountedRef.current || !sessionMatches(session)) return
@@ -259,49 +278,108 @@ export default function UserManagement() {
       ) {
         await loadUsersRef.current()
       }
-    } catch {
+    } catch (error) {
       if (mountedRef.current && sessionMatches(session))
-        toastError(editingUser ? '更新用户失败' : '创建用户失败')
+        toastError(getErrorMessage(error, editingUser ? '更新用户失败' : '创建用户失败'))
     } finally {
       submitInFlightRef.current = false
       if (mountedRef.current) setSubmitting(false)
     }
   }
 
+  const openResetPasswordModal = (user: User) => {
+    setResetPasswordUser(user)
+    setNewPassword('')
+    setConfirmPassword('')
+    setResetPasswordError(null)
+    setResetPasswordErrorTarget(null)
+  }
+
+  const closeResetPasswordModal = () => {
+    setResetPasswordUser(null)
+    setNewPassword('')
+    setConfirmPassword('')
+    setResetPasswordError(null)
+    setResetPasswordErrorTarget(null)
+  }
+
   const handleDelete = async (user: User) => {
+    const session = useAuthStore.getState().captureSession()
     const confirmed = await confirm({
       actionLabel: '删除用户',
       actionVariant: 'danger',
       message: `确定要删除用户「${user.name || user.username}」吗？此操作不可恢复。`,
       title: '删除用户？',
     })
-    if (!confirmed) return
+    if (!confirmed || !mountedRef.current || !sessionMatches(session)) return
 
     try {
       await authApi.deleteUser(user.id)
+      if (!mountedRef.current || !sessionMatches(session)) return
       toastSuccess('用户已删除')
-      await loadUsers()
-    } catch {
-      toastError('删除用户失败')
+      if (users.length === 1 && currentPage > 1) {
+        setCurrentPage((page) => page - 1)
+      } else {
+        await loadUsersRef.current()
+      }
+    } catch (error) {
+      if (mountedRef.current && sessionMatches(session)) {
+        toastError(getErrorMessage(error, '删除用户失败'))
+      }
     }
   }
 
   const handleResetPassword = async (event: FormEvent<HTMLFormElement>) => {
     event.preventDefault()
     if (!resetPasswordUser || resetInFlightRef.current) return
+
+    if (!newPassword) {
+      setResetPasswordError('请输入新密码')
+      setResetPasswordErrorTarget('new')
+      toastError('请输入新密码')
+      return
+    }
+    const strengthError = validatePasswordStrength(newPassword)
+    if (strengthError) {
+      setResetPasswordError(strengthError)
+      setResetPasswordErrorTarget('new')
+      toastError(strengthError)
+      return
+    }
+    if (!confirmPassword) {
+      setResetPasswordError('请再次输入新密码')
+      setResetPasswordErrorTarget('confirm')
+      toastError('请再次输入新密码')
+      return
+    }
+    if (newPassword !== confirmPassword) {
+      setResetPasswordError('两次输入的新密码不一致')
+      setResetPasswordErrorTarget('confirm')
+      toastError('两次输入的新密码不一致')
+      return
+    }
+
+    const session = useAuthStore.getState().captureSession()
     resetInFlightRef.current = true
     setResettingPassword(true)
+    setResetPasswordError(null)
+    setResetPasswordErrorTarget(null)
 
     try {
       await authApi.resetPassword(resetPasswordUser.id, newPassword)
+      if (!mountedRef.current || !sessionMatches(session)) return
       toastSuccess('密码已重置')
-      setResetPasswordUser(null)
-      setNewPassword('')
-    } catch {
-      toastError('重置密码失败')
+      closeResetPasswordModal()
+    } catch (error) {
+      if (mountedRef.current && sessionMatches(session)) {
+        const message = getErrorMessage(error, '重置密码失败')
+        setResetPasswordError(message)
+        setResetPasswordErrorTarget('form')
+        toastError(message)
+      }
     } finally {
       resetInFlightRef.current = false
-      setResettingPassword(false)
+      if (mountedRef.current) setResettingPassword(false)
     }
   }
 
@@ -418,10 +496,7 @@ export default function UserManagement() {
                     </IconButton>
                     <IconButton
                       label="重置用户密码"
-                      onClick={() => {
-                        setResetPasswordUser(user)
-                        setNewPassword('')
-                      }}
+                      onClick={() => openResetPasswordModal(user)}
                       size="sm"
                       title="重置密码"
                       variant="secondary"
@@ -586,29 +661,62 @@ export default function UserManagement() {
 
       <Modal.Root
         dismissable={!resettingPassword}
-        onClose={() => setResetPasswordUser(null)}
+        onClose={closeResetPasswordModal}
         open={Boolean(resetPasswordUser)}
         size="sm"
       >
         <Modal.Header>重置密码 - {resetPasswordUser?.username}</Modal.Header>
         {!resettingPassword ? <Modal.Close label="关闭重置密码弹窗" /> : null}
-        <form onSubmit={handleResetPassword}>
+        <form noValidate onSubmit={handleResetPassword}>
           <Modal.Body className="settings-modal-body">
-            <Field.Root required>
+            {resetPasswordErrorTarget === 'form' && resetPasswordError ? (
+              <Alert title={resetPasswordError} tone="danger" />
+            ) : null}
+            <Field.Root invalid={resetPasswordErrorTarget === 'new'} required>
               <Field.Label>新密码</Field.Label>
               <Input
                 autoComplete="new-password"
-                onChange={(event) => setNewPassword(event.target.value)}
+                onChange={(event) => {
+                  setNewPassword(event.target.value)
+                  if (resetPasswordError) {
+                    setResetPasswordError(null)
+                    setResetPasswordErrorTarget(null)
+                  }
+                }}
+                placeholder="请输入新密码"
                 type="password"
                 value={newPassword}
               />
+              <Field.Description>至少 8 位，需包含大小写字母和数字中的至少两种</Field.Description>
+              {resetPasswordErrorTarget === 'new' && resetPasswordError ? (
+                <Field.Error>{resetPasswordError}</Field.Error>
+              ) : null}
+            </Field.Root>
+            <Field.Root invalid={resetPasswordErrorTarget === 'confirm'} required>
+              <Field.Label>确认新密码</Field.Label>
+              <Input
+                autoComplete="new-password"
+                onChange={(event) => {
+                  setConfirmPassword(event.target.value)
+                  if (resetPasswordError) {
+                    setResetPasswordError(null)
+                    setResetPasswordErrorTarget(null)
+                  }
+                }}
+                placeholder="请再次输入新密码"
+                type="password"
+                value={confirmPassword}
+              />
+              {resetPasswordErrorTarget === 'confirm' && resetPasswordError ? (
+                <Field.Error>{resetPasswordError}</Field.Error>
+              ) : null}
             </Field.Root>
           </Modal.Body>
           <Modal.Footer>
             <FormActions>
               <Button
                 disabled={resettingPassword}
-                onClick={() => setResetPasswordUser(null)}
+                onClick={closeResetPasswordModal}
                 variant="ghost"
               >
                 取消

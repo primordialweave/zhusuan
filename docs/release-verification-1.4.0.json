@@ -290,7 +290,7 @@
     "tag": "v1.4.0",
     "sha256": "sha256:06e962c896f4867c8ad713981258f762f88d7e1d39843cc65313b2cc2d3fac95",
     "matchedDirect": true,
-    "finalURL": "https://release-assets.githubusercontent.com/github-production-release-asset/1107498836/421474e4-2f06-4cf6-810b-0244539e4cf3?sp=r&sv=2018-11-09&sr=b&spr=https&se=2026-11-23T14%3A38%3A05Z&rscd=attachment%3B+filename%3Dupdate.json&rsct=application%2Foctet-stream&skoid=96c2d410-5711-43a1-aedd-ab1947aa7ab0&sktid=398a6654-997b-47e9-b12b-9515b896b4de&skt=2026-11-23T13%3A37%3A24Z&ske=2026-11-23T14%3A38%3A05Z&sks=b&skv=2018-11-09&sig=ijwGh5mEEt%2FNuMAIqyLnThZp6w0VZk1lDUBvaM8ZLsA%3D&jwt=eyJ0eXAiOiJKV1QiLCJhbGciOiJIUzI1NiJ9.eyJpc3MiOiJnaXRodWIuY29tIiwiYXVkIjoicmVsZWFzZS1hc3NldHMuZ2l0aHVidXNlcmNvbnRlbnQuY29tIiwia2V5Ijoia2V5MSIsImV4cCI6MTc5NTQ0MTU1NiwibmJmIjoxNzk1NDQxMjU2LCJwYXRoIjoicmVsZWFzZWFzc2V0cHJvZHVjdGlvbi5ibG9iLmNvcmUud2luZG93cy5uZXQifQ.aIWVpGWfZjGUj3Ej556I499Fa8b91xdL5fa9-jwg82k&response-content-disposition=attachment%3B%20filename%3Dupdate.json&response-content-type=application%2Foctet-stream"
+    "finalURL": "https://release-assets.githubusercontent.com/github-production-release-asset/1107498836/421474e4-2f06-4cf6-810b-0244539e4cf3?[redacted temporary signed download parameters]"
   },
   "previousReleaseAssetsAndTagUnchanged": true
 }

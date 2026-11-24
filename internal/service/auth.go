@@ -82,7 +82,7 @@ func (s *AuthService) Login(username, pwd string) (*dto.LoginResult, error) {
 	// 1. 查找用户
 	user, err := s.userRepo.FindByCredential(username)
 	if err != nil {
-		if err == gorm.ErrRecordNotFound {
+		if errors.Is(err, gorm.ErrRecordNotFound) {
 			password.CheckPassword(pwd, dummyBcryptHash)
 			return nil, pkgerrors.WrapWithCode(err, 401, "用户名或密码错误")
 		}

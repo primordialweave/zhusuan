@@ -149,6 +149,7 @@ export class DesktopCapabilities {
  */
 export class DesktopPreferences {
     "autostart": boolean;
+    "autostartApprovalPending"?: boolean;
     "startHidden": boolean;
     "closeAction": string;
     "menuBarDisplay": string;
@@ -225,10 +226,10 @@ export class DesktopPreferences {
      * Creates a new DesktopPreferences instance from a string or object.
      */
     static createFrom($$source: any = {}): DesktopPreferences {
-        const $$createField17_0 = $$createType0;
+        const $$createField18_0 = $$createType0;
         let $$parsedSource = typeof $$source === 'string' ? JSON.parse($$source) : $$source;
         if ("windowBounds" in $$parsedSource) {
-            $$parsedSource["windowBounds"] = $$createField17_0($$parsedSource["windowBounds"]);
+            $$parsedSource["windowBounds"] = $$createField18_0($$parsedSource["windowBounds"]);
         }
         return new DesktopPreferences($$parsedSource as Partial<DesktopPreferences>);
     }
@@ -242,6 +243,8 @@ export class DesktopState {
     "autostart": AutostartState;
     "capabilities": DesktopCapabilities;
     "windowHidden": boolean;
+    "closePromptOpen": boolean;
+    "closePromptRevision": number;
 
     /** Creates a new DesktopState instance. */
     constructor($$source: Partial<DesktopState> = {}) {
@@ -256,6 +259,12 @@ export class DesktopState {
         }
         if (!("windowHidden" in $$source)) {
             this["windowHidden"] = false;
+        }
+        if (!("closePromptOpen" in $$source)) {
+            this["closePromptOpen"] = false;
+        }
+        if (!("closePromptRevision" in $$source)) {
+            this["closePromptRevision"] = 0;
         }
 
         Object.assign(this, $$source);

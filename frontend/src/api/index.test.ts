@@ -101,4 +101,29 @@ describe('API expired-session handling', () => {
     expect(logout).not.toHaveBeenCalled()
     expect(sessionStorage.getItem('token')).toBe('second-session')
   })
+
+  it('adds cache-busting timestamps to user profile and user list GET requests', async () => {
+    const { default: api } = await import('./index')
+    const { authApi } = await import('./auth')
+    const seenParams: Array<Record<string, unknown>> = []
+    api.defaults.adapter = async (config) => {
+      seenParams.push((config.params as Record<string, unknown>) ?? {})
+      return {
+        data: { code: 0, message: 'success', data: { list: [], total: 0 } },
+        status: 200,
+        statusText: 'OK',
+        headers: {},
+        config,
+      } as never
+    }
+
+    await authApi.getCurrentUser()
+    await authApi.getUsers({ page: 1, page_size: 5 })
+
+    expect(seenParams).toHaveLength(2)
+    expect(typeof seenParams[0]._t).toBe('number')
+    expect(seenParams[1]).toEqual(
+      expect.objectContaining({ page: 1, page_size: 5, _t: expect.any(Number) }),
+    )
+  })
 })

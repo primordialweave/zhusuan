@@ -90,9 +90,13 @@ func (r *PaymentRepository) FindByIDForUser(id, userID int64) (*models.Payment, 
 }
 
 // ListByProject 根据项目ID获取收款列表
-func (r *PaymentRepository) ListByProject(projectID int64) ([]models.Payment, error) {
+func (r *PaymentRepository) ListByProject(projectID int64, userID ...int64) ([]models.Payment, error) {
+	var ownerID int64
+	if len(userID) > 0 {
+		ownerID = userID[0]
+	}
 	var payments []models.Payment
-	if err := r.db.Scopes(paymentOwnerScope(0)).Where("project_id = ?", projectID).
+	if err := r.db.Scopes(paymentOwnerScope(ownerID)).Where("project_id = ?", projectID).
 		Order("plan_date DESC").
 		Find(&payments).Error; err != nil {
 		return nil, err

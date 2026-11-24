@@ -31,11 +31,46 @@ const assignRef = <T,>(ref: Ref<T> | undefined, node: T | null) => {
   else if (ref) (ref as MutableRefObject<T | null>).current = node
 }
 
+const TABBABLE_SELECTOR =
+  'a[href],button,input,select,textarea,[tabindex],[contenteditable="true"]'
+
+function tabTarget(trigger: HTMLElement, content: HTMLElement, shift: boolean) {
+  const root = trigger.closest('.ods-popover-root')
+  const dialog = trigger.closest('dialog, [role="dialog"], [role="alertdialog"]')
+  const scope = dialog ?? trigger.ownerDocument
+  const candidates = Array.from(scope.querySelectorAll<HTMLElement>(TABBABLE_SELECTOR)).filter(
+    (element) => {
+      const editable =
+        element.getAttribute('contenteditable') === 'true' && !element.hasAttribute('tabindex')
+      if (
+        (element.tabIndex < 0 && !editable) ||
+        element.matches(':disabled') ||
+        element.closest('[hidden], [inert], [aria-hidden="true"]') ||
+        content.contains(element) ||
+        (root?.contains(element) && element !== trigger)
+      ) {
+        return false
+      }
+      for (let ancestor: HTMLElement | null = element; ancestor; ancestor = ancestor.parentElement) {
+        const { display, visibility } = getComputedStyle(ancestor)
+        if (display === 'none' || visibility === 'hidden' || visibility === 'collapse') return false
+      }
+      return true
+    },
+  )
+  // Positive tabindex values precede controls with tabindex=0 or implicit tab order.
+  const ordered = candidates.sort((a, b) => (a.tabIndex || Infinity) - (b.tabIndex || Infinity))
+  const index = ordered.indexOf(trigger)
+  if (index === -1) return undefined
+  return ordered[index + (shift ? -1 : 1)] ?? (dialog ? ordered.at(shift ? -1 : 0) : undefined)
+}
+
 export type PopoverPlacement = 'bottom-start' | 'bottom-end' | 'top-start' | 'top-end'
 export type PopoverPadding = 'none' | 'sm' | 'md'
 
 interface PopoverContextValue {
   close: () => void
+  dismiss: () => void
   contentId: string
   getTrigger: () => HTMLElement | null
   layerToken: OverlayLayerToken
@@ -98,6 +133,7 @@ export function PopoverRoot({
       setOpen(false)
       queueMicrotask(() => triggerRef.current?.focus())
     },
+    dismiss: () => setOpen(false),
     contentId: `${baseId}-content`,
     getTrigger: () => triggerRef.current,
     layerToken,
@@ -178,6 +214,7 @@ export function PopoverTrigger({ children }: PopoverTriggerProps) {
 }
 
 export interface PopoverContentProps extends HTMLAttributes<HTMLDivElement> {
+  closeOnTab?: boolean
   initialFocus?: string | string[]
   padding?: PopoverPadding
   role?: string
@@ -185,11 +222,22 @@ export interface PopoverContentProps extends HTMLAttributes<HTMLDivElement> {
 
 export const PopoverContent = forwardRef<HTMLDivElement, PopoverContentProps>(
   function PopoverContent(
-    { children, className, initialFocus, padding = 'sm', role = 'dialog', style, ...props },
+    {
+      children,
+      className,
+      closeOnTab = false,
+      initialFocus,
+      onKeyDown,
+      padding = 'sm',
+      role = 'dialog',
+      style,
+      ...props
+    },
     ref,
   ) {
     const {
       contentId,
+      dismiss,
       getTrigger,
       layerToken,
       layerZIndex,
@@ -317,6 +365,28 @@ export const PopoverContent = forwardRef<HTMLDivElement, PopoverContentProps>(
         data-placement={placement}
         data-slot="popover"
         id={contentId}
+        onKeyDown={(event) => {
+          onKeyDown?.(event)
+          if (
+            !closeOnTab ||
+            event.defaultPrevented ||
+            event.key !== 'Tab' ||
+            !event.currentTarget.contains(event.target as Node)
+          ) {
+            return
+          }
+          const trigger = getTrigger()
+          const target = trigger ? tabTarget(trigger, event.currentTarget, event.shiftKey) : undefined
+          dismiss()
+          if (target) {
+            event.preventDefault()
+            event.stopPropagation()
+            target.focus()
+          } else {
+            // Let the browser continue from the trigger at an edge of the page tab order.
+            trigger?.focus()
+          }
+        }}
         ref={(node) => {
           contentRef.current = node
           setContent(node)

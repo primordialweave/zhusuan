@@ -50,9 +50,12 @@ func NewPaymentService() *PaymentService {
 // 用于在项目详情页展示款项列表。
 func (s *PaymentService) ListByProjectForUser(userID, projectID int64) ([]models.Payment, error) {
 	if _, err := s.projectRepo.FindByIDForUser(projectID, userID); err != nil {
-		return nil, err
+		if errors.Is(err, gorm.ErrRecordNotFound) {
+			return nil, pkgerrors.ErrProjectNotFound
+		}
+		return nil, pkgerrors.Wrap(err, "查询项目失败")
 	}
-	return s.paymentRepo.ListByProject(projectID)
+	return s.paymentRepo.ListByProject(projectID, userID)
 }
 
 // ListByDateRange 获取指定日期范围内的所有款项记录 (报表/日历用)
@@ -114,7 +117,7 @@ func (s *PaymentService) Create(input dto.PaymentRequest) (*models.Payment, erro
 	}
 	// 外层权限检查
 	if _, err := s.projectRepo.FindByIDForUser(input.ProjectID, input.UserID); err != nil {
-		if err == gorm.ErrRecordNotFound {
+		if errors.Is(err, gorm.ErrRecordNotFound) {
 			return nil, pkgerrors.ErrProjectNotFound
 		}
 		return nil, pkgerrors.Wrap(err, "查询项目失败")
@@ -197,13 +200,13 @@ func initializePaymentState(payment *models.Payment) {
 func (s *PaymentService) UpdateForUser(userID, id int64, input dto.PaymentRequest) (*models.Payment, error) {
 	payment, err := s.paymentRepo.FindByIDForUser(id, userID)
 	if err != nil {
-		if err == gorm.ErrRecordNotFound {
+		if errors.Is(err, gorm.ErrRecordNotFound) {
 			return nil, pkgerrors.ErrPaymentNotFound
 		}
 		return nil, pkgerrors.Wrap(err, "查询款项失败")
 	}
 	if _, err := s.projectRepo.FindByIDForUser(payment.ProjectID, userID); err != nil {
-		if err == gorm.ErrRecordNotFound {
+		if errors.Is(err, gorm.ErrRecordNotFound) {
 			return nil, pkgerrors.ErrProjectNotFound
 		}
 		return nil, pkgerrors.Wrap(err, "查询项目失败")
@@ -402,7 +405,7 @@ func (s *PaymentService) syncProjectReceivedAmountInTx(tx *gorm.DB, projectID in
 func (s *PaymentService) DeleteForUser(userID, id int64) error {
 	payment, err := s.paymentRepo.FindByIDForUser(id, userID)
 	if err != nil {
-		if err == gorm.ErrRecordNotFound {
+		if errors.Is(err, gorm.ErrRecordNotFound) {
 			return pkgerrors.ErrPaymentNotFound
 		}
 		return pkgerrors.Wrap(err, "查询款项失败")
@@ -451,7 +454,7 @@ func (s *PaymentService) ConfirmForUser(userID, id int64, actualDate, method str
 		}
 		var payment models.Payment
 		if err := tx.Clauses(clause.Locking{Strength: paymentLockStrength}).Where("id = ? AND user_id = ?", id, userID).First(&payment).Error; err != nil {
-			if err == gorm.ErrRecordNotFound {
+			if errors.Is(err, gorm.ErrRecordNotFound) {
 				return pkgerrors.ErrPaymentNotFound
 			}
 			return pkgerrors.Wrap(err, "查询款项失败")

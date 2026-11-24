@@ -23,10 +23,23 @@ func PostgresDSN(host string, port int, user, password, name, sslMode string) st
 
 // MySQLDSN preserves credentials and brackets IPv6 addresses using the driver's formatter.
 func MySQLDSN(host string, port int, user, password, name string) string {
+	return newMySQLConfig(host, port, user, password, name).FormatDSN()
+}
+
+// MySQLSyncDSN enables affected-row reporting for matched rows even when an UPDATE
+// leaves their values unchanged. This lets the mirror distinguish a matching primary
+// key from a missing one before attempting a plain INSERT.
+func MySQLSyncDSN(host string, port int, user, password, name string) string {
+	settings := newMySQLConfig(host, port, user, password, name)
+	settings.ClientFoundRows = true
+	return settings.FormatDSN()
+}
+
+func newMySQLConfig(host string, port int, user, password, name string) *mysql.Config {
 	settings := mysql.NewConfig()
 	settings.User, settings.Passwd, settings.DBName = user, password, name
 	settings.Net, settings.Addr = "tcp", net.JoinHostPort(host, fmt.Sprint(port))
 	settings.ParseTime, settings.Loc = true, time.Local
 	settings.Params = map[string]string{"charset": "utf8mb4"}
-	return settings.FormatDSN()
+	return settings
 }

@@ -3,6 +3,8 @@ package service
 import (
 	"errors"
 
+	"gorm.io/gorm"
+
 	"github.com/primordialweave/zhusuan/internal/models"
 	bizerrors "github.com/primordialweave/zhusuan/internal/pkg/errors"
 	"github.com/primordialweave/zhusuan/internal/repository"
@@ -40,10 +42,10 @@ func NewNotificationService() *NotificationService {
 func (s *NotificationService) Create(senderID int64, title, content, notificationType string, targetUserID int64) (*models.Notification, error) {
 	// 1. 基础校验
 	if title == "" {
-		return nil, errors.New("标题不能为空")
+		return nil, bizerrors.New(400, "标题不能为空")
 	}
 	if content == "" {
-		return nil, errors.New("内容不能为空")
+		return nil, bizerrors.New(400, "内容不能为空")
 	}
 
 	// 2. 类型映射转换 (string -> int)
@@ -101,14 +103,17 @@ func (s *NotificationService) Update(id int64, title, content, notificationType 
 	// 1. 检查是否存在
 	notification, err := s.notificationRepo.FindByID(id)
 	if err != nil {
-		return nil, errors.New("通知不存在")
+		if errors.Is(err, gorm.ErrRecordNotFound) {
+			return nil, bizerrors.ErrNotificationNotFound
+		}
+		return nil, bizerrors.Wrap(err, "查询通知失败")
 	}
 
 	if title == "" {
-		return nil, errors.New("标题不能为空")
+		return nil, bizerrors.New(400, "标题不能为空")
 	}
 	if content == "" {
-		return nil, errors.New("内容不能为空")
+		return nil, bizerrors.New(400, "内容不能为空")
 	}
 
 	// 2. 类型处理
@@ -173,6 +178,18 @@ func (s *NotificationService) ListAll(page, pageSize int) ([]models.Notification
 	return s.notificationRepo.ListAll(offset, pageSize)
 }
 
+// ListAllForAdmin 获取系统所有通知，并为管理员计算本人已读状态与发送对象。
+func (s *NotificationService) ListAllForAdmin(adminUserID int64, page, pageSize int) ([]models.Notification, int64, error) {
+	if page < 1 {
+		page = 1
+	}
+	if pageSize < 1 {
+		pageSize = 10
+	}
+	offset := (page - 1) * pageSize
+	return s.notificationRepo.ListAllForAdmin(adminUserID, offset, pageSize)
+}
+
 // MarkAsRead 将通知标记为已读
 // 在 user_notifications 表中插入或更新记录。
 func (s *NotificationService) MarkAsRead(id int64, userID int64) error {
@@ -202,4 +219,9 @@ func (s *NotificationService) Get(id int64) (*models.Notification, error) {
 // GetForUser returns a notification visible to the given user.
 func (s *NotificationService) GetForUser(userID, id int64) (*models.Notification, error) {
 	return s.notificationRepo.FindByIDForUser(id, userID)
+}
+
+// GetForAdmin returns any notification visible to an administrator, including notifications targeted at other users.
+func (s *NotificationService) GetForAdmin(adminUserID, id int64) (*models.Notification, error) {
+	return s.notificationRepo.FindByIDForAdmin(id, adminUserID)
 }

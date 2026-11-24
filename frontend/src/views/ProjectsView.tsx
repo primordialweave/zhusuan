@@ -32,6 +32,7 @@ import '@/styles/main-page-loading.css'
 const statusOptions = [
   { label: '进行中', value: 'active' },
   { label: '已完成', value: 'completed' },
+  { label: '即将交付', value: 'pending' },
   { label: '未开始', value: 'notstarted' },
   { label: '已逾期', value: 'overdue' },
   { label: '已归档', value: 'archived' },

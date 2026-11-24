@@ -187,4 +187,35 @@ describe('appearance store', () => {
     expect(() => useAppearanceStore.getState().setAppIcon('dark')).not.toThrow()
     expect(useAppearanceStore.getState().appIcon).toBe('dark')
   })
+
+  it('syncs appearance preferences across windows via storage events without redundant native icon IPC', async () => {
+    ;(window as Window & { _wails?: { environment?: { OS?: string } } })._wails = {
+      environment: { OS: 'darwin' },
+    }
+    const { APPEARANCE_STORAGE_KEY, useAppearanceStore } = await loadStore()
+    const cleanup = useAppearanceStore.getState().initializeAppearance()
+    vi.mocked(Call.ByName).mockClear()
+
+    window.localStorage.setItem(
+      APPEARANCE_STORAGE_KEY,
+      JSON.stringify({
+        appIcon: 'dark',
+        liquidGlass: false,
+        reduceMotion: true,
+        sceneMotion: false,
+      }),
+    )
+    window.dispatchEvent(new StorageEvent('storage', { key: APPEARANCE_STORAGE_KEY }))
+
+    expect(useAppearanceStore.getState()).toMatchObject({
+      appIcon: 'dark',
+      liquidGlass: false,
+      reduceMotion: true,
+      sceneMotion: false,
+    })
+    expect(document.documentElement).toHaveAttribute('data-glass', 'solid')
+    expect(document.documentElement).toHaveAttribute('data-motion', 'reduced')
+    expect(Call.ByName).not.toHaveBeenCalled()
+    cleanup()
+  })
 })

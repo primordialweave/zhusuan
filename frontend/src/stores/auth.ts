@@ -26,6 +26,7 @@ interface AuthState {
   syncCurrentUser: (user: User, session: AuthSessionSnapshot) => boolean
   updateProfile: (data: {
     name?: string
+    email?: string
     phone?: string
     department?: string
     position?: string
@@ -53,6 +54,7 @@ export const useAuthStore = create<AuthState>((set, get) => {
   let profileRevision = 0
   let refreshRequest = 0
   let profileRequest = 0
+  let passwordRequest = 0
   let loginRequest = 0
   const captureSession = (): AuthSessionSnapshot => ({
     token: get().token,
@@ -123,10 +125,12 @@ export const useAuthStore = create<AuthState>((set, get) => {
     async logout() {
       loginRequest += 1
       const session = captureSession()
-      try {
-        await authApi.logout()
-      } catch {
-        // Local cleanup must still happen when the server session has already expired.
+      if (session.token) {
+        try {
+          await authApi.logout()
+        } catch {
+          // Local cleanup must still happen when the server session has already expired.
+        }
       }
 
       if (!sessionMatches(session)) return
@@ -179,6 +183,7 @@ export const useAuthStore = create<AuthState>((set, get) => {
 
     async changePassword(oldPassword, newPassword) {
       const session = captureSession()
+      const request = ++passwordRequest
       set({ loading: true, error: null })
 
       try {
@@ -186,11 +191,11 @@ export const useAuthStore = create<AuthState>((set, get) => {
           old_password: oldPassword,
           new_password: newPassword,
         })
-        if (!sessionMatches(session)) return false
+        if (!sessionMatches(session) || request !== passwordRequest) return false
         set({ loading: false })
         return true
       } catch (err: unknown) {
-        if (!sessionMatches(session)) return false
+        if (!sessionMatches(session) || request !== passwordRequest) return false
         set({
           error: err instanceof Error ? err.message : '修改失败',
           loading: false,

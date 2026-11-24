@@ -34,6 +34,7 @@ const defaultStageOptions: SelectOption[] = [
   { label: '收款', value: 'receipt' },
   { label: '全款', value: 'all' },
   { label: '预付款', value: 'deposit' },
+  { label: '进度款', value: 'progress' },
   { label: '阶段款', value: 'milestone' },
   { label: '尾款', value: 'final' },
 ]

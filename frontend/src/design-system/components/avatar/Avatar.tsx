@@ -1,4 +1,5 @@
 import {
+  Children,
   forwardRef,
   useState,
   type HTMLAttributes,
@@ -45,7 +46,8 @@ export const Avatar = forwardRef<HTMLSpanElement, AvatarProps>(function Avatar(
   },
   ref,
 ) {
-  const [failed, setFailed] = useState(false)
+  const [failedSrc, setFailedSrc] = useState<string | null>(null)
+  const failed = Boolean(src && failedSrc === src)
   const showImage = src && !failed
 
   return (
@@ -65,7 +67,7 @@ export const Avatar = forwardRef<HTMLSpanElement, AvatarProps>(function Avatar(
           alt={alt ?? name ?? ''}
           className="ods-avatar__image"
           data-slot="image"
-          onError={() => setFailed(true)}
+          onError={() => setFailedSrc(src ?? null)}
           src={src}
         />
       ) : (
@@ -90,7 +92,7 @@ export const AvatarGroup = forwardRef<HTMLDivElement, AvatarGroupProps>(function
   { children, className, max, total, ...props },
   ref,
 ) {
-  const items = Array.isArray(children) ? children : [children]
+  const items = Children.toArray(children)
   const visible = max === undefined ? items : items.slice(0, max)
   const overflow = (total ?? items.length) - visible.length
 

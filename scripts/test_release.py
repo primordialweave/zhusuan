@@ -35,6 +35,13 @@ class ReleaseTests(unittest.TestCase):
             with self.subTest(tag=tag), self.assertRaises(ValueError):
                 release.version_for_tag(tag)
 
+    def test_published_verification_record_redacts_temporary_signed_urls(self):
+        record = json.loads((REPO/'docs/release-verification-1.4.0.json').read_text())
+        final_url = record['latestFeed']['finalURL']
+        for credential in ('sv=', 'sig=', 'jwt=', 'skt=', 'ske=', 'sks=', 'skv='):
+            self.assertNotIn(credential, final_url.lower())
+        self.assertIn('[redacted temporary signed download parameters]', final_url)
+
     def test_assets_use_new_brand_and_existing_installer_source(self):
         for platform in ['darwin', 'windows', 'linux']:
             for name in release.names_for_platform(self.tag, platform):

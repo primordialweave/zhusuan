@@ -14,8 +14,10 @@ import {
 import { useAppearanceStore } from '@/stores/appearance'
 import { useThemeStore } from '@/stores/theme'
 import {
+  DAY_CHANGED_DOM_EVENT,
   DESKTOP_EVENTS,
   desktopManager,
+  extractWailsEventPayload,
   type MenuBarScope,
   type MenuBarSnapshot,
   type MenuBarTrendPoint,
@@ -321,7 +323,7 @@ export default function MenuBarPopoverView() {
   const initializeTheme = useThemeStore((state) => state.initializeTheme)
   const effectiveThemePack = useThemeStore((state) => state.effectiveThemePack)
   const initializeAppearance = useAppearanceStore((state) => state.initializeAppearance)
-  const { assets: packAssets } = useThemePackAssets(effectiveThemePack)
+  const { assets: packAssets, ready: packReady } = useThemePackAssets(effectiveThemePack)
   const [scope, setScope] = useState<MenuBarScope>('month')
   const [snapshot, setSnapshot] = useState<MenuBarSnapshot | null>(null)
   const mountedRef = useRef(false)
@@ -378,9 +380,17 @@ export default function MenuBarPopoverView() {
     const offState = Events.On(DESKTOP_EVENTS.stateChanged, () => {
       void loadSnapshot(scope)
     })
+    const offDayChanged = Events.On(DESKTOP_EVENTS.dayChanged, (event) => {
+      if (typeof window !== 'undefined') {
+        const payload = extractWailsEventPayload<{ date?: string }>(event)
+        window.dispatchEvent(new CustomEvent(DAY_CHANGED_DOM_EVENT, { detail: payload }))
+      }
+      void loadSnapshot(scope)
+    })
     return () => {
       offUpdated?.()
       offState?.()
+      offDayChanged?.()
     }
   }, [loadSnapshot, scope])
 
@@ -418,7 +428,7 @@ export default function MenuBarPopoverView() {
   return (
     <main className="menubar-popover">
       <JadeIconDefs />
-      {packAssets?.frostUrl ? (
+      {packReady && packAssets?.frostUrl ? (
         <div
           aria-hidden="true"
           className="menubar-popover__backdrop"

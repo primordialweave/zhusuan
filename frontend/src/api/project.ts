@@ -87,7 +87,9 @@ export interface ConfirmPaymentRequest {
 export const projectApi = {
   // 获取项目列表
   list: (params?: ProjectListParams) =>
-    api.get<ApiResponse<PageData<Project>>>('/projects', { params }),
+    api.get<ApiResponse<PageData<Project>>>('/projects', {
+      params: { ...params, _t: Date.now() },
+    }),
 
   // 获取项目详情
   get: (id: number) =>

@@ -207,8 +207,6 @@ func (m *DesktopManager) SendTestReminder() error {
 	m.mu.Lock()
 	reqAuth := m.requestNotifAuth
 	sendNotif := m.sendNotification
-	userID := m.sessionUserID
-	summary := m.summary
 	m.mu.Unlock()
 
 	if sendNotif == nil {
@@ -224,10 +222,15 @@ func (m *DesktopManager) SendTestReminder() error {
 		}
 	}
 
+	userID, _, sessionErr := m.validatedSession()
+	m.mu.Lock()
+	summary := m.summary
+	m.mu.Unlock()
+
 	prefs := m.store.Get()
 	title := "珠算 · 桌面提醒已就绪"
 	body := "到期与逾期收款将在每日设定时间通过系统通知提醒你"
-	if userID > 0 {
+	if sessionErr == nil && userID > 0 {
 		if t, b, ok := FormatPaymentReminder(prefs, summary); ok {
 			title, body = t, b
 		}

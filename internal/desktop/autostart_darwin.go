@@ -7,6 +7,7 @@ import (
 	"encoding/xml"
 	"errors"
 	"fmt"
+	"log/slog"
 	"os"
 	"os/exec"
 	"path/filepath"
@@ -102,7 +103,16 @@ func platformSetAutostart(app *application.App, enabled bool, startHidden bool) 
 
 // OpenAutostartSettings opens macOS System Settings -> Login Items when available.
 func OpenAutostartSettings() error {
-	return exec.Command("open", "x-apple.systempreferences:com.apple.LoginItems-Settings.extension").Start()
+	cmd := exec.Command("open", "x-apple.systempreferences:com.apple.LoginItems-Settings.extension")
+	if err := cmd.Start(); err != nil {
+		return err
+	}
+	go func() {
+		if err := cmd.Wait(); err != nil {
+			slog.Debug("Login Items settings opener exited with error", "error", err)
+		}
+	}()
+	return nil
 }
 
 func darwinLaunchAgentPath() (string, error) {

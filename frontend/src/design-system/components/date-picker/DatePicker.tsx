@@ -82,9 +82,15 @@ export const DatePicker = forwardRef<HTMLButtonElement, DatePickerProps>(functio
     required,
   })
   const effectiveAriaLabel = ariaLabel ?? (controlProps.id ? undefined : '选择日期')
+  if (open && controlProps.disabled) setOpen(false)
 
   return (
-    <Popover.Root className={className} onOpenChange={setOpen} open={open} placement="bottom-start">
+    <Popover.Root
+      className={className}
+      onOpenChange={setOpen}
+      open={open && !controlProps.disabled}
+      placement="bottom-start"
+    >
       <Popover.Trigger>
         <button
           aria-label={effectiveAriaLabel}

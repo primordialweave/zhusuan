@@ -118,7 +118,7 @@ func (h *UserHandler) ResetPassword(c *gin.Context) {
 
 	var req dto.ResetPasswordRequest
 	if err := c.ShouldBindJSON(&req); err != nil {
-		response.ParamError(c, err.Error())
+		response.ParamError(c, "请输入新密码")
 		return
 	}
 

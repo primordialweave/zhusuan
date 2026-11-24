@@ -57,9 +57,12 @@ func TestNotificationTargetHandlersPreserveInboxAccessAndAdminWrites(t *testing.
 	users := []models.User{
 		{ID: 992201, Username: "notification-handler-admin", Name: "admin fixture", Password: "fixture", Role: "admin", Status: 1},
 		{ID: 992202, Username: "notification-handler-recipient", Name: "recipient fixture", Password: "fixture", Role: "user", Status: 1},
+		{ID: 992203, Username: "notification-handler-bystander", Name: "bystander fixture", Password: "fixture", Role: "user", Status: 1},
 	}
 	require.NoError(t, db.Create(&users).Error)
-	t.Cleanup(func() { require.NoError(t, db.Where("id IN ?", []int64{users[0].ID, users[1].ID}).Delete(&models.User{}).Error) })
+	t.Cleanup(func() {
+		require.NoError(t, db.Where("id IN ?", []int64{users[0].ID, users[1].ID, users[2].ID}).Delete(&models.User{}).Error)
+	})
 	svc := service.NewNotificationService()
 	global, err := svc.Create(users[0].ID, "handler broadcast", "fixture", "system", 0)
 	require.NoError(t, err)
@@ -98,10 +101,37 @@ func TestNotificationTargetHandlersPreserveInboxAccessAndAdminWrites(t *testing.
 		} `json:"data"`
 	}
 	require.NoError(t, json.Unmarshal(adminList.Body.Bytes(), &listResponse))
-	require.Equal(t, int64(1), listResponse.Data.Total, "admin list must remain the admin's inbox")
-	require.Len(t, listResponse.Data.List, 1)
-	require.Equal(t, global.ID, listResponse.Data.List[0].ID)
-	require.Equal(t, http.StatusNotFound, request(http.MethodGet, path, "", users[0]).Code)
+	require.Equal(t, int64(2), listResponse.Data.Total, "admin list must include all notifications including ones sent to other users")
+	require.Len(t, listResponse.Data.List, 2)
+	byID := make(map[int64]models.Notification, len(listResponse.Data.List))
+	for _, item := range listResponse.Data.List {
+		byID[item.ID] = item
+	}
+	require.Contains(t, byID, global.ID)
+	require.False(t, byID[global.ID].IsRead)
+	require.Contains(t, byID, private.ID)
+	require.Equal(t, users[1].ID, byID[private.ID].TargetUserID)
+	require.True(t, byID[private.ID].IsRead, "notifications sent to another user must not appear unread for the admin")
+
+	adminDetail := request(http.MethodGet, path, "", users[0])
+	require.Equal(t, http.StatusOK, adminDetail.Code)
+	require.Contains(t, adminDetail.Body.String(), fmt.Sprintf(`"target_user_id":%d`, users[1].ID))
+	require.Contains(t, adminDetail.Body.String(), `"is_read":true`)
+
+	// Non-admin users must still be restricted to their own inbox.
+	bystanderList := request(http.MethodGet, "/notifications", "", users[2])
+	require.Equal(t, http.StatusOK, bystanderList.Code)
+	var bystanderResponse struct {
+		Data struct {
+			List  []models.Notification `json:"list"`
+			Total int64                 `json:"total"`
+		} `json:"data"`
+	}
+	require.NoError(t, json.Unmarshal(bystanderList.Body.Bytes(), &bystanderResponse))
+	require.Equal(t, int64(1), bystanderResponse.Data.Total)
+	require.Equal(t, global.ID, bystanderResponse.Data.List[0].ID)
+	require.Equal(t, http.StatusNotFound, request(http.MethodGet, path, "", users[2]).Code)
+
 	detail := request(http.MethodGet, path, "", users[1])
 	require.Equal(t, http.StatusOK, detail.Code)
 	require.Contains(t, detail.Body.String(), fmt.Sprintf(`"target_user_id":%d`, users[1].ID))
@@ -118,4 +148,5 @@ func TestNotificationTargetHandlersPreserveInboxAccessAndAdminWrites(t *testing.
 	require.Equal(t, http.StatusOK, reopened.Code)
 	require.Contains(t, reopened.Body.String(), `"title":"handler updated"`)
 	require.Contains(t, reopened.Body.String(), fmt.Sprintf(`"target_user_id":%d`, users[0].ID))
+	require.Contains(t, reopened.Body.String(), `"is_read":false`)
 }

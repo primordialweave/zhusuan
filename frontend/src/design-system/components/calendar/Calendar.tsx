@@ -441,7 +441,9 @@ export const Calendar = forwardRef<HTMLDivElement, CalendarProps>(function Calen
                 data-selected={isCurrent || undefined}
                 key={label}
                 onClick={() => {
-                  updateVisibleMonth(visibleMonth.month(index))
+                  const nextMonth = visibleMonth.month(index).startOf('month')
+                  pendingFocusDateRef.current = nextMonth.format(ISO_FORMAT)
+                  updateVisibleMonth(nextMonth)
                   setView('days')
                 }}
                 type="button"

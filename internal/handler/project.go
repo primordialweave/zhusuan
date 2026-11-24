@@ -175,7 +175,7 @@ func (h *ProjectHandler) Archive(c *gin.Context) {
 	}
 
 	if err := h.projectService.ArchiveForUser(userID, id); err != nil {
-		response.InternalError(c, "归档项目失败")
+		response.HandleServiceError(c, err, "归档项目失败")
 		return
 	}
 

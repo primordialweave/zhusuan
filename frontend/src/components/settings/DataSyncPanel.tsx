@@ -218,7 +218,7 @@ export default function DataSyncPanel() {
         actionLabel: '开始同步',
         actionVariant: 'danger',
         message:
-          '此操作将把本地数据覆盖写入到云端数据库，云端已有的同ID数据将被更新。确定要继续吗？',
+          '此操作会将所选本地数据镜像到云端：云端独有记录会删除，可清空的业务表若本地为空，对应云端表会清空。用户和字典核心表为空时同步会中止。确定继续吗？',
         title: '确认同步',
       })
       if (!confirmed || !isCurrentSync()) return
@@ -538,8 +538,8 @@ export default function DataSyncPanel() {
                       <Table.Cell align="center">{result.local_count}</Table.Cell>
                       <Table.Cell align="center">
                         {result.remote_count === -1 ? (
-                          <Chip size="sm" tone="danger">
-                            连接失败
+                          <Chip size="sm" tone="warning">
+                            未建表
                           </Chip>
                         ) : (
                           result.remote_count

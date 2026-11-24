@@ -465,7 +465,7 @@ export default function AnalyticsView() {
             boxPadding: 6,
             callbacks: {
               label: (item) =>
-                `${item.dataset.label ?? '金额'}：${formatCurrency(Number(item.raw))}`,
+                `${item.dataset.label ?? '金额'}：${maskAmount(formatCurrency(Number(item.raw)), privacyMode)}`,
             },
             cornerRadius: 14,
             padding: { bottom: 10, left: 14, right: 14, top: 10 },
@@ -486,7 +486,7 @@ export default function AnalyticsView() {
             border: { color: colors.axis },
             grid: { color: colors.grid, drawTicks: false },
             ticks: {
-              callback: (value) => formatAxisAmount(Number(value) || 0),
+              callback: (value) => maskAmount(formatAxisAmount(Number(value) || 0), privacyMode),
               color: colors.text,
               maxTicksLimit: 6,
               padding: 12,
@@ -498,7 +498,7 @@ export default function AnalyticsView() {
       type: 'line',
     }
     trendChart.current = new Chart(context, config)
-  }, [colors, reducedMotion])
+  }, [colors, privacyMode, reducedMotion])
 
   const fetchAnalytics = useCallback(
     async (target: ReceiptScope, signal?: AbortSignal) => {
@@ -571,12 +571,12 @@ export default function AnalyticsView() {
 
   useEffect(() => {
     const chart = trendChart.current
-    if (!chart) return
+    if (!chart || isLoading || loadError) return
     chart.data.labels = trend.labels.map(formatTrendLabel)
     if (chart.data.datasets[0]) chart.data.datasets[0].data = trend.actual_values
     if (reducedMotion) chart.update('none')
     else chart.update()
-  }, [colors, reducedMotion, trend])
+  }, [initCharts, isLoading, loadError, reducedMotion, trend])
 
   const cashMetrics = [
     { label: '收款金额', value: showAmount(stats.period_received) },

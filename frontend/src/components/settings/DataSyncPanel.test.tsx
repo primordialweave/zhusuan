@@ -159,6 +159,9 @@ describe('DataSyncPanel design-system composition', () => {
     await screen.findByRole('table', { name: '数据对比明细' })
     await user.click(screen.getByRole('button', { name: '开始同步' }))
     const dialog = screen.getByRole('alertdialog', { name: '确认同步' })
+    expect(dialog).toHaveTextContent('云端独有记录会删除')
+    expect(dialog).toHaveTextContent('可清空的业务表若本地为空')
+    expect(dialog).toHaveTextContent('用户和字典核心表为空时同步会中止')
     rerender(<div>已离开同步设置</div>)
     await user.click(within(dialog).getByRole('button', { name: '开始同步' }))
     expect(syncApi.execute).not.toHaveBeenCalled()
@@ -183,5 +186,25 @@ describe('DataSyncPanel design-system composition', () => {
       resolveTest({ data: { data: null } })
     })
     expect(syncApi.compare).not.toHaveBeenCalled()
+  })
+
+  it('labels missing remote tables as 未建表 when remote_count is -1', async () => {
+    const user = userEvent.setup()
+    vi.mocked(syncApi.getConfig).mockResolvedValueOnce({
+      data: { data: { host: 'demo.example.com', user: 'demo', db_name: 'demo' } },
+    } as never)
+    vi.mocked(syncApi.compare).mockResolvedValueOnce({
+      data: {
+        data: [{ local_count: 2, remote_count: -1, table_name: 'personal_access_tokens' }],
+      },
+    } as never)
+
+    render(<DataSyncPanel />)
+    await screen.findByLabelText(/主机地址/)
+    await user.click(screen.getByRole('button', { name: /测试连接并下一步/ }))
+
+    const table = await screen.findByRole('table', { name: '数据对比明细' })
+    expect(within(table).getByText('访问令牌')).toBeInTheDocument()
+    expect(within(table).getByText('未建表')).toBeInTheDocument()
   })
 })

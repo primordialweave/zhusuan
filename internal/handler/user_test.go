@@ -28,7 +28,9 @@ func adminUserUpdateFixture(t *testing.T) (*gin.Engine, models.User) {
 	require.NoError(t, db.Create(&user).Error)
 	t.Cleanup(func() { require.NoError(t, db.Delete(&user).Error) })
 	engine := gin.New()
-	engine.PUT("/users/:id", NewUserHandler().Update)
+	userHandler := NewUserHandler()
+	engine.PUT("/users/:id", userHandler.Update)
+	engine.PUT("/users/:id/password", userHandler.ResetPassword)
 	return engine, user
 }
 
@@ -105,4 +107,31 @@ func TestAdminUserUpdateRejectsConflictingEmailWithoutPartialProfileChange(t *te
 	require.Equal(t, user.Name, persisted.Name)
 	require.Equal(t, user.Email, persisted.Email)
 	require.Equal(t, user.Password, persisted.Password)
+}
+
+func TestAdminResetPasswordReturnsSpecificValidationAndNotFoundErrors(t *testing.T) {
+	engine, _ := adminUserUpdateFixture(t)
+	for _, tc := range []struct {
+		name    string
+		path    string
+		body    string
+		status  int
+		message string
+	}{
+		{"empty password", "/users/55177/password", `{"new_password":""}`, http.StatusBadRequest, "请输入新密码"},
+		{"short password", "/users/55177/password", `{"new_password":"12345"}`, http.StatusBadRequest, "密码长度至少8位"},
+		{"weak password", "/users/55177/password", `{"new_password":"12345678"}`, http.StatusBadRequest, "密码必须包含大小写字母和数字中的至少两种"},
+		{"missing user", "/users/99955177/password", `{"new_password":"NewPass123"}`, http.StatusNotFound, "用户不存在"},
+		{"valid password", "/users/55177/password", `{"new_password":"NewPass123"}`, http.StatusOK, "密码重置成功"},
+	} {
+		t.Run(tc.name, func(t *testing.T) {
+			recorder := adminUserUpdateHTTP(t, engine, tc.path, tc.body)
+			require.Equal(t, tc.status, recorder.Code, recorder.Body.String())
+			var payload struct {
+				Message string `json:"message"`
+			}
+			require.NoError(t, json.Unmarshal(recorder.Body.Bytes(), &payload))
+			require.Equal(t, tc.message, payload.Message)
+		})
+	}
 }

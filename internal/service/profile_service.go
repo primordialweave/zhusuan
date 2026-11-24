@@ -34,7 +34,7 @@ func NewProfileService() *ProfileService {
 func (s *ProfileService) GetCurrentUser(userID int64) (*models.User, error) {
 	user, err := s.userRepo.FindByID(userID)
 	if err != nil {
-		if err == gorm.ErrRecordNotFound {
+		if errors.Is(err, gorm.ErrRecordNotFound) {
 			return nil, pkgerrors.ErrUserNotFound
 		}
 		return nil, pkgerrors.Wrap(err, "查询用户失败")
@@ -100,7 +100,7 @@ func (s *ProfileService) UpdateProfile(userID int64, name, email, phone, departm
 func (s *ProfileService) ChangePassword(userID int64, oldPassword, newPassword string) error {
 	user, err := s.userRepo.FindByID(userID)
 	if err != nil {
-		if err == gorm.ErrRecordNotFound {
+		if errors.Is(err, gorm.ErrRecordNotFound) {
 			return pkgerrors.ErrUserNotFound
 		}
 		return pkgerrors.Wrap(err, "查询用户失败")

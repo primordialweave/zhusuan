@@ -168,7 +168,13 @@ export function createSceneGLRenderer(
   if (!gl) throw new Error('WebGL2 is unavailable')
 
   const vertex = compile(gl, gl.VERTEX_SHADER, VERTEX_SHADER)
-  const fragment = compile(gl, gl.FRAGMENT_SHADER, FRAGMENT_SHADER)
+  let fragment: WebGLShader
+  try {
+    fragment = compile(gl, gl.FRAGMENT_SHADER, FRAGMENT_SHADER)
+  } catch (error) {
+    gl.deleteShader(vertex)
+    throw error
+  }
   const program = gl.createProgram()
   gl.attachShader(program, vertex)
   gl.attachShader(program, fragment)

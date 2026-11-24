@@ -98,6 +98,24 @@ export default function NotificationManagement({ isAdmin = false }: Notification
     () => notifications.filter((notification) => !notification.is_read).length,
     [notifications],
   )
+  const targetUserLabels = useMemo(
+    () =>
+      new Map(
+        targetUsers.map((targetUser) => [targetUser.id, targetUser.name || targetUser.username]),
+      ),
+    [targetUsers],
+  )
+  const getRecipientLabel = useCallback(
+    (notification: Notification | null) => {
+      if (!notification || notification.is_global === 1) return undefined
+      if (!isAdmin || !notification.target_user_id || notification.target_user_id <= 0)
+        return undefined
+      return (
+        targetUserLabels.get(notification.target_user_id) ?? `用户 #${notification.target_user_id}`
+      )
+    },
+    [isAdmin, targetUserLabels],
+  )
   const notificationTotalPages = Math.ceil(notificationTotal / notificationPageSize)
   const notificationPaginationInfo = useMemo(() => {
     if (notificationTotal === 0) return '暂无数据'
@@ -375,7 +393,11 @@ export default function NotificationManagement({ isAdmin = false }: Notification
                     }
                   >
                     {getNotificationTypeName(notification.type)}
-                    {notification.is_global === 1 ? ' · 全员' : ''}
+                    {notification.is_global === 1
+                      ? ' · 全员'
+                      : getRecipientLabel(notification)
+                        ? ` · ${getRecipientLabel(notification)}`
+                        : ''}
                   </Chip>
                 </span>
                 <span className="notification-row__meta">
@@ -563,6 +585,7 @@ export default function NotificationManagement({ isAdmin = false }: Notification
         notification={selectedNotification}
         onClose={() => setShowNotificationDetailModal(false)}
         open={showNotificationDetailModal}
+        recipientLabel={getRecipientLabel(selectedNotification)}
       />
     </div>
   )

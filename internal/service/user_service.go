@@ -79,14 +79,24 @@ func (s *UserService) CreateUser(input dto.CreateUserRequest) error {
 		return pkgerrors.WrapWithCode(err, 400, err.Error())
 	}
 
+	status := 1
+	if input.Status != nil {
+		if *input.Status != 0 && *input.Status != 1 {
+			return pkgerrors.New(400, "无效的用户状态")
+		}
+		status = *input.Status
+	}
+
 	user := &models.User{
-		Username: input.Username,
-		Name:     input.Name,
-		Email:    input.Email,
-		Phone:    input.Phone,
-		Password: hashedPassword,
-		Role:     role,
-		Status:   1,
+		Username:   input.Username,
+		Name:       input.Name,
+		Email:      input.Email,
+		Phone:      input.Phone,
+		Department: input.Department,
+		Position:   input.Position,
+		Password:   hashedPassword,
+		Role:       role,
+		Status:     status,
 	}
 
 	if err := s.userRepo.Create(user); err != nil {
@@ -166,6 +176,13 @@ func invalidateUserAuthCache(id int64) {
 func (s *UserService) ResetPassword(id int64, newPassword string) error {
 	if err := validatePasswordStrength(newPassword); err != nil {
 		return pkgerrors.WrapWithCode(err, 400, err.Error())
+	}
+
+	if _, err := s.userRepo.FindByID(id); err != nil {
+		if errors.Is(err, gorm.ErrRecordNotFound) {
+			return pkgerrors.ErrUserNotFound
+		}
+		return pkgerrors.Wrap(err, "查询用户失败")
 	}
 
 	hashedPassword, err := password.HashPassword(newPassword)

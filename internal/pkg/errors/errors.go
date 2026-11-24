@@ -44,10 +44,11 @@ var (
 	ErrAdminOnly = &BizError{Code: 403, Message: "此操作仅限管理员"}
 
 	// 404 Not Found - 资源不存在
-	ErrNotFound        = &BizError{Code: 404, Message: "资源不存在"}
-	ErrProjectNotFound = &BizError{Code: 404, Message: "项目不存在"}
-	ErrPaymentNotFound = &BizError{Code: 404, Message: "款项不存在"}
-	ErrUserNotFound    = &BizError{Code: 404, Message: "用户不存在"}
+	ErrNotFound             = &BizError{Code: 404, Message: "资源不存在"}
+	ErrProjectNotFound      = &BizError{Code: 404, Message: "项目不存在"}
+	ErrPaymentNotFound      = &BizError{Code: 404, Message: "款项不存在"}
+	ErrUserNotFound         = &BizError{Code: 404, Message: "用户不存在"}
+	ErrNotificationNotFound = &BizError{Code: 404, Message: "通知不存在"}
 
 	// 409 Conflict - 资源冲突
 	ErrConflict       = &BizError{Code: 409, Message: "资源冲突"}

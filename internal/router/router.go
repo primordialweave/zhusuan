@@ -53,6 +53,7 @@ func NewRouter() *gin.Engine {
 	// 3. API v1 路由组
 	// 所有业务接口统一挂载在 /api/v1 下
 	v1 := router.Group("/api/v1")
+	v1.Use(noCacheMiddleware())
 	{
 		// 3.1 公开路由 (无需鉴权)
 		// 认证模块: 登录、注销
@@ -201,6 +202,16 @@ func healthCheck(c *gin.Context) {
 			"version": constants.AppVersion,
 		},
 	})
+}
+
+// noCacheMiddleware 禁止浏览器与桌面 WebView (WKWebView/WebView2) 缓存动态 API 响应，
+// 避免写操作后的列表/资料刷新命中旧缓存导致页面未及时更新。
+func noCacheMiddleware() gin.HandlerFunc {
+	return func(c *gin.Context) {
+		c.Header("Cache-Control", "no-store, no-cache, must-revalidate")
+		c.Header("Pragma", "no-cache")
+		c.Next()
+	}
 }
 
 // corsMiddleware 处理跨域资源共享 (CORS) 问题

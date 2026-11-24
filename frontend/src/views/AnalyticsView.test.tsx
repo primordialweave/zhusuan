@@ -1,14 +1,34 @@
+import { act } from '@testing-library/react'
 import userEvent from '@testing-library/user-event'
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 import { dashboardApi } from '@/api/dashboard'
 import { render, screen, waitFor, within } from '@/test/render'
 import AnalyticsView from './AnalyticsView'
 import { useAppearanceStore } from '@/stores/appearance'
+import { useDesktopStore } from '@/stores/desktop'
 
 const { chartInstances, exportCsv } = vi.hoisted(() => ({
   chartInstances: [] as Array<{
     data: { labels: string[]; datasets: Array<{ data: number[]; label: string }> }
-    config: { options: { animation: { duration: number } } }
+    config: {
+      options: {
+        animation: { duration: number }
+        plugins: {
+          tooltip: {
+            callbacks: {
+              label: (item: { dataset: { label?: string }; raw: unknown }) => string
+            }
+          }
+        }
+        scales: {
+          y: {
+            ticks: {
+              callback: (value: number | string) => string
+            }
+          }
+        }
+      }
+    }
   }>,
   exportCsv: vi.fn(),
 }))
@@ -322,5 +342,85 @@ describe('AnalyticsView actual receipts', () => {
         expect.any(AbortSignal),
       ),
     )
+  })
+
+  it('toggles chart masking without dropping the loaded trend or refetching it', async () => {
+    const previousState = useDesktopStore.getState().state
+    useDesktopStore.setState({
+      state: {
+        preferences: {
+          autostart: false,
+          startHidden: false,
+          closeAction: 'ask',
+          menuBarDisplay: 'pending_count',
+          privacyMode: false,
+          hideDockWhenMinimized: false,
+          rememberWindowBounds: true,
+          trayClickAction: 'toggle_window',
+          reminderEnabled: false,
+          reminderTime: '09:30',
+          toggleWindowShortcut: '',
+          quickReceiptShortcut: '',
+          privacyModeShortcut: '',
+          autoBackupEnabled: false,
+          autoBackupRetention: 7,
+        },
+        autostart: {
+          enabled: false,
+          supported: true,
+          requiresApproval: false,
+          strategy: 'smappservice',
+        },
+        capabilities: {
+          platform: 'darwin',
+          autostartSupported: true,
+          traySupported: true,
+          menuBarLabelSupported: true,
+          hideDockSupported: true,
+          trayClickActionSupported: false,
+          notificationsSupported: true,
+          globalShortcutsSupported: true,
+          autoBackupSupported: true,
+        },
+      },
+    })
+    try {
+      render(<AnalyticsView />)
+      await waitFor(() => expect(chartInstances.at(-1)?.data.datasets[0].data).toEqual([1200]))
+      const trendLabels = [...chartInstances.at(-1)!.data.labels]
+      const setPrivacyMode = (privacyMode: boolean) => {
+        act(() => {
+          const current = useDesktopStore.getState().state!
+          useDesktopStore.setState({
+            state: { ...current, preferences: { ...current.preferences, privacyMode } },
+          })
+        })
+      }
+      const tooltipLabel = () =>
+        chartInstances.at(-1)!.config.options.plugins.tooltip.callbacks.label({
+          dataset: { label: '实际收款' },
+          raw: 1200,
+        })
+      const axisTick = () => chartInstances.at(-1)!.config.options.scales.y.ticks.callback(12000)
+
+      expect(tooltipLabel()).toBe('实际收款：¥1,200.00')
+      const unmaskedAxisTick = axisTick()
+
+      setPrivacyMode(true)
+      expect(tooltipLabel()).toBe('实际收款：¥****')
+      expect(axisTick()).toBe('¥****')
+      expect(chartInstances.at(-1)!.data.labels).toEqual(trendLabels)
+      expect(chartInstances.at(-1)!.data.datasets[0].data).toEqual([1200])
+
+      setPrivacyMode(false)
+      expect(tooltipLabel()).toBe('实际收款：¥1,200.00')
+      expect(axisTick()).toBe(unmaskedAxisTick)
+      expect(chartInstances.at(-1)!.data.labels).toEqual(trendLabels)
+      expect(chartInstances.at(-1)!.data.datasets[0].data).toEqual([1200])
+      expect(dashboardApi.getReceiptOverview).toHaveBeenCalledOnce()
+      expect(dashboardApi.getReceiptTrend).toHaveBeenCalledOnce()
+    } finally {
+      useDesktopStore.setState({ state: previousState })
+    }
   })
 })

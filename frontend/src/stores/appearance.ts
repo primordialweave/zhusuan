@@ -40,7 +40,7 @@ export const DEFAULT_APPEARANCE: AppearancePreferences = {
 interface AppearanceState extends AppearancePreferences {
   effectiveAppIcon: EffectiveAppIcon
   initializeAppearance: () => () => void
-  applyAppearance: () => void
+  applyAppearance: (options?: { syncNative?: boolean }) => void
   setAppIcon: (appIcon: AppIconMode) => void
   setPreference: (key: AppearanceToggleKey, value: boolean) => void
 }
@@ -84,7 +84,6 @@ export const useAppearanceStore = create<AppearanceState>((set, get) => ({
     if (typeof window === 'undefined') return () => {}
 
     const media = window.matchMedia?.('(prefers-color-scheme: dark)')
-    if (!media) return () => {}
 
     const handleChange = () => {
       if (get().appIcon === 'auto') {
@@ -92,13 +91,22 @@ export const useAppearanceStore = create<AppearanceState>((set, get) => ({
       }
     }
 
-    media.addEventListener('change', handleChange)
+    const handleStorage = (event: StorageEvent) => {
+      if (event.key !== APPEARANCE_STORAGE_KEY && event.key !== null) return
+      const next = readStoredAppearance()
+      set(next)
+      get().applyAppearance({ syncNative: false })
+    }
+
+    media?.addEventListener('change', handleChange)
+    window.addEventListener('storage', handleStorage)
     return () => {
-      media.removeEventListener('change', handleChange)
+      media?.removeEventListener('change', handleChange)
+      window.removeEventListener('storage', handleStorage)
     }
   },
 
-  applyAppearance() {
+  applyAppearance(options) {
     const effectiveAppIcon = resolveEffectiveAppIcon(get().appIcon)
     if (get().effectiveAppIcon !== effectiveAppIcon) {
       set({ effectiveAppIcon })
@@ -114,7 +122,11 @@ export const useAppearanceStore = create<AppearanceState>((set, get) => ({
     }
 
     syncFavicon(effectiveAppIcon)
-    syncNativeAppIcon(effectiveAppIcon)
+    const isSecondaryPopover =
+      typeof window !== 'undefined' && window.location?.pathname === '/menubar'
+    if (options?.syncNative !== false && !isSecondaryPopover) {
+      syncNativeAppIcon(effectiveAppIcon)
+    }
   },
 
   setAppIcon(appIcon) {

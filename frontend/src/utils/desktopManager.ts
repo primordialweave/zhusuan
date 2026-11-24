@@ -17,6 +17,7 @@ export interface WindowBounds {
 
 export interface DesktopPreferences {
   autostart: boolean
+  autostartApprovalPending?: boolean
   startHidden: boolean
   closeAction: CloseAction
   menuBarDisplay: MenuBarDisplay
@@ -103,6 +104,8 @@ export interface DesktopState {
   autostart: AutostartState
   capabilities: DesktopCapabilities
   windowHidden?: boolean
+  closePromptOpen?: boolean
+  closePromptRevision?: number
 }
 
 export interface PreferencesPatch {
@@ -126,6 +129,12 @@ export interface PreferencesPatch {
 export interface CloseRequestedPayload {
   traySupported: boolean
   platform: string
+  closePromptRevision?: number
+}
+
+export interface ClosePromptChangedPayload {
+  open: boolean
+  closePromptRevision?: number
 }
 
 export interface DesktopNavigatePayload {
@@ -134,10 +143,12 @@ export interface DesktopNavigatePayload {
 
 export interface WindowVisibilityPayload {
   hidden: boolean
+  closePromptRevision?: number
 }
 
 export const DESKTOP_EVENTS = {
   closeRequested: 'desktop:close-requested',
+  closePromptChanged: 'desktop:close-prompt-changed',
   dayChanged: 'desktop:day-changed',
   menuBarUpdated: 'desktop:menubar-updated',
   navigate: 'desktop:navigate',

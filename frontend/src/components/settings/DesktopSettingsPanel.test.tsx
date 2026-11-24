@@ -213,4 +213,19 @@ describe('DesktopSettingsPanel', () => {
       )
     })
   })
+
+  it('renders a retryable empty state when desktop state fails to load', async () => {
+    useDesktopStore.setState({ state: null, loading: false })
+    vi.mocked(Call.ByName).mockResolvedValueOnce(makeState() as never)
+
+    render(<DesktopSettingsPanel />)
+    expect(screen.getByText('桌面设置加载失败')).toBeInTheDocument()
+
+    fireEvent.click(screen.getByRole('button', { name: '重新加载桌面设置' }))
+    await waitFor(() => {
+      expect(Call.ByName).toHaveBeenCalledWith(
+        'github.com/primordialweave/zhusuan/internal/desktop.DesktopManager.GetState',
+      )
+    })
+  })
 })

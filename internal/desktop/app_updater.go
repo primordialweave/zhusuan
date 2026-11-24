@@ -10,8 +10,16 @@ import (
 type AppUpdater struct{ manager *updater.Manager }
 
 // NewAppUpdater uses the same embedded version metadata as the frontend.
-func NewAppUpdater(version, repo string) *AppUpdater {
-	return &AppUpdater{manager: updater.NewManager(version, repo, desktopUpdatesEnabled, func() { application.Get().Quit() })}
+func NewAppUpdater(version, repo string, quit ...func()) *AppUpdater {
+	quitFn := func() {
+		if app := application.Get(); app != nil {
+			app.Quit()
+		}
+	}
+	if len(quit) > 0 && quit[0] != nil {
+		quitFn = quit[0]
+	}
+	return &AppUpdater{manager: updater.NewManager(version, repo, desktopUpdatesEnabled, quitFn)}
 }
 
 // CheckForUpdates fetches a stable release and determines whether it can be installed.

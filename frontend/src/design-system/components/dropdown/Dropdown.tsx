@@ -90,6 +90,7 @@ export function DropdownMenu({
     <Popover.Content
       aria-label={label}
       className={['ods-dropdown', className].filter(Boolean).join(' ')}
+      closeOnTab
       initialFocus={MENU_ITEM_SELECTOR}
       role="menu"
     >

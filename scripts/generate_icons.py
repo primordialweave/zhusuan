@@ -57,6 +57,7 @@ def generate(source_path, native=True):
         if dark_source.width != dark_source.height:
             raise ValueError('The dark master icon must be square.')
         save(fit(dark_source, 256, 256), ROOT / 'frontend/public/zhusuan-dark.png')
+        build_windows_source(dark_master, ROOT / 'build/appicon-windows-dark.png')
 
     windows = {'AppIcon.png': (256, 256), 'Square44x44Logo.png': (44, 44),
                'Square150x150Logo.png': (150, 150), 'StoreLogo.png': (50, 50),
@@ -94,6 +95,10 @@ def generate(source_path, native=True):
         subprocess.run(['wails3', 'generate', 'icons', '-input', str(windows_master),
                         '-macfilename=', '-windowsfilename', str(ROOT / 'build/windows/icon.ico'),
                         '-sizes', ','.join(str(size) for size in WINDOWS_ICON_SIZES)], check=True)
+        if dark_master.is_file():
+            subprocess.run(['wails3', 'generate', 'icons', '-input', str(ROOT / 'build/appicon-windows-dark.png'),
+                            '-macfilename=', '-windowsfilename', str(ROOT / 'build/windows/icon-dark.ico'),
+                            '-sizes', ','.join(str(size) for size in WINDOWS_ICON_SIZES)], check=True)
         if sys.platform == 'darwin':
             subprocess.run([sys.executable, str(ROOT/'scripts/build_macos_icon.py'), '--input', str(master), '--output', str(ROOT/'build/darwin/icons.icns')], check=True)
     print('Generated macOS/Windows/Web/Linux/Android and opaque iOS icons from', source_path.name)

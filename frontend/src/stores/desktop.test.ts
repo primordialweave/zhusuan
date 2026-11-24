@@ -58,10 +58,16 @@ const deferred = <T>() => {
 describe('desktop state ordering', () => {
   beforeEach(() => {
     vi.resetAllMocks()
-    useDesktopStore.setState({ state: null, loading: false, saving: false })
+    useDesktopStore.setState({
+      state: null,
+      loading: false,
+      saving: false,
+      closePromptRevision: 0,
+      closePrompt: { open: false, platform: '', traySupported: true },
+    })
     document.documentElement.removeAttribute('data-privacy-mode')
     delete document.documentElement.dataset.nativeWindowVisibility
-    useDesktopStore.setState({ windowHidden: false })
+    useDesktopStore.setState({ windowHidden: false, closePromptRevision: 0 })
   })
 
   it('restores a cold hidden launch from the existing native state request', async () => {
@@ -72,6 +78,31 @@ describe('desktop state ordering', () => {
     await useDesktopStore.getState().refreshState()
     expect(useDesktopStore.getState().windowHidden).toBe(true)
     expect(document.documentElement.dataset.nativeWindowVisibility).toBe('hidden')
+  })
+
+  it('restores a pending close prompt on bootstrap and dismisses it when the window is hidden', async () => {
+    vi.mocked(desktopManager.getState).mockResolvedValueOnce({
+      ...state(false),
+      closePromptOpen: true,
+      closePromptRevision: 1,
+    } as DesktopState)
+    const dispose = useDesktopStore.getState().initialize()
+    await vi.waitFor(() => expect(useDesktopStore.getState().closePrompt.open).toBe(true))
+    expect(useDesktopStore.getState().closePrompt).toEqual({
+      open: true,
+      platform: 'darwin',
+      traySupported: true,
+    })
+    const visibility = vi
+      .mocked(Events.On)
+      .mock.calls.find(([name]) => name === DESKTOP_EVENTS.windowVisibility)![1]
+    const close = vi
+      .mocked(Events.On)
+      .mock.calls.find(([name]) => name === DESKTOP_EVENTS.closeRequested)![1]
+    visibility({ data: [{ hidden: true, closePromptRevision: 2 }] } as never)
+    close({ data: [{ platform: 'darwin', closePromptRevision: 1 }] } as never)
+    expect(useDesktopStore.getState().closePrompt.open).toBe(false)
+    dispose()
   })
 
   it('keeps a hide event newer than the initial state response while still initializing preferences', async () => {

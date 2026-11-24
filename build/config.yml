@@ -11,7 +11,7 @@ info:
   description: "PrimordialWeave 珠算 Desktop App" # The application description
   copyright: "(c) 2026, PrimordialWeave" # Copyright text
   comments: "PrimordialWeave zhusuan - Intelligent Desktop Application" # Comments
-  version: "1.4.0" # The application version
+  version: "1.4.1" # The application version
 
 # iOS build configuration (uncomment to customise iOS project generation)
 # Note: Keys under `ios` OVERRIDE values under `info` when set.

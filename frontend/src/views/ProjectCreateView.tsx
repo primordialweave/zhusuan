@@ -71,11 +71,12 @@ const defaultProjectTypeOptions: SelectOption[] = [
   { label: '其他', value: 'other' },
 ]
 
-const projectStatusOptions: SelectOption[] = [
+const defaultProjectStatusOptions: SelectOption[] = [
   { label: '进行中', value: 'active' },
   { label: '已完成', value: 'completed' },
   { label: '即将交付', value: 'pending' },
   { label: '未开始', value: 'notstarted' },
+  { label: '已逾期', value: 'overdue' },
   { label: '已归档', value: 'archived' },
 ]
 
@@ -133,6 +134,10 @@ export default function ProjectCreateView() {
     form.type && !projectTypes.some((option) => option.value === form.type)
       ? [...projectTypes, { label: form.type, value: form.type }]
       : projectTypes
+  const projectStatusOptions =
+    form.status && !defaultProjectStatusOptions.some((option) => option.value === form.status)
+      ? [...defaultProjectStatusOptions, { label: form.status, value: form.status }]
+      : defaultProjectStatusOptions
   const receivedAmount = paymentItems.reduce(
     (sum, item) => sum + (isReceivedPayment(item.status) ? Number(item.amount) || 0 : 0),
     0,

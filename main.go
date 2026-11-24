@@ -194,6 +194,8 @@ func main() {
 
 	lightAppIcon := embeddedAppIcon(nativeAppIcon, "frontend/dist/zhusuan.png")
 	darkAppIcon := embeddedAppIcon(nativeAppIconDark, "frontend/dist/zhusuan-dark.png")
+	trayLightIcon := embeddedAppIcon(nativeWindowsTrayIcon, "frontend/dist/zhusuan.png")
+	trayDarkIcon := embeddedAppIcon(nativeWindowsTrayDarkIcon, "frontend/dist/zhusuan-dark.png")
 
 	prefsStore, err := desktop.NewPreferencesStore(config.AppConfig.DataDir)
 	if err != nil {
@@ -205,8 +207,8 @@ func main() {
 		prefsStore,
 		desktop.TrayIcons{
 			TemplateIcon: nativeTrayTemplateIcon,
-			LightIcon:    lightAppIcon,
-			DarkIcon:     darkAppIcon,
+			LightIcon:    trayLightIcon,
+			DarkIcon:     trayDarkIcon,
 		},
 		newDesktopSummaryProvider(dashboardService),
 		middleware.ValidateSessionToken,
@@ -247,7 +249,7 @@ func main() {
 		Services: []application.Service{
 			application.NewService(desktop.NewCredentialStore()),
 			application.NewService(desktop.NewFileExporter()),
-			application.NewService(desktop.NewAppUpdater(metadata.Version, config.AppConfig.GitHubRepo)),
+			application.NewService(desktop.NewAppUpdater(metadata.Version, config.AppConfig.GitHubRepo, desktopManager.RequestQuit)),
 			application.NewService(desktop.NewAppIconManager(lightAppIcon, darkAppIcon)),
 			application.NewService(notifService),
 			application.NewService(desktopManager),

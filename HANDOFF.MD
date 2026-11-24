@@ -1,5 +1,34 @@
 # HANDOFF
 
+## 1. 已修复：全局代码审查 16 项问题闭环与回归验证（2026-11-24，本地修改）
+
+- **高优先级问题修复（1–7）**：
+  - **云端数据同步自动建表与空表兼容**（`internal/service/sync.go`、`frontend/src/components/settings/DataSyncPanel.tsx`）：在开启云端同步事务前执行 `ensureRemoteTables`（按 PostgreSQL / MySQL 方言对白名单内 8 张表执行 `CREATE TABLE IF NOT EXISTS`，避免 MySQL 事务内 DDL 隐式提交破坏回滚原子性），并将前端对比面板中云端缺失表的标记从「连接失败」修正为「未建表」；仅对核心种子表（`users`、`dictionaries`、`dictionary_item`）保留空表拒绝保护，可选业务表（`projects`、`payments`、`notifications`、`user_notifications`、`personal_access_tokens`）在本地为空时执行云端清空，避免未创建令牌或通知时整库同步事务必然失败回滚。
+  - **数据分析隐私模式脱敏**（`frontend/src/views/AnalyticsView.tsx`）：折线图 Tooltip 与 Y 轴刻度统一接入 `maskAmount(..., privacyMode)`，并将 `privacyMode` 纳入 `initCharts` 依赖。
+  - **应用内更新退出与关闭询问弹窗防卡死**（`internal/desktop/app_updater.go`、`main.go`、`internal/desktop/manager.go`）：`NewAppUpdater` 接入 `desktopManager.RequestQuit` 确保置位 `BeginQuit()`；`getState()`、`ShowWindow()`、`HideWindow()`、`onWindowHidden()`、`onWindowShown()` 自动重置 `closePromptOpen`，防止前端刷新或快捷键隐藏后关闭按钮失效。
+  - **项目状态与设置页权限/反馈对齐**（`ProjectCreateView.tsx`、`ProjectsView.tsx`、`SettingsView.tsx`）：创建/编辑页补齐 `overdue`（已逾期）与历史状态兜底，列表筛选补齐 `pending`（即将交付）；`SettingsView` 将 `data-sync` 纳入管理员权限守卫，补齐个人信息保存失败 Toast、保存按钮 `pending` 防重及 8 位新密码校验提示。
+  - **弹窗焦点陷阱与 ODS 下拉键盘无障碍**（`useDialogFocus.ts`、`Select.tsx`、`Dropdown.tsx`、`DatePicker.tsx`）：焦点陷阱改用 `:not(:disabled)` 并过滤隐藏祖先与 `<fieldset disabled>`；`Select`、`Dropdown` 与 `DatePicker` 同步 `disabled` 自动收起、上下方向键展开及 Portal 内 `Tab` 关闭聚焦机制。
+- **中/低优先级问题修复（8–16）**：
+  - **业务错误码与纵深防御**（`internal/service/{project,payment,notification,auth,profile_service}.go`、`internal/handler/{project,payment,dictionary}.go`、`internal/repository/{payment,notification}.go`、`internal/pkg/response/error_handler.go`）：`ArchiveForUser` 与 `ListByProjectForUser` 映射 `ErrProjectNotFound`（404）并在归档后刷新工作台缓存；`PaymentHandler`/`DictionaryHandler` 统一使用 `response.ParseIDParam` 与 `response.HandleServiceError`；`NotificationService` 返回 400/404 `BizError`；全仓 `gorm.ErrRecordNotFound` 统一改用 `errors.Is`；`PaymentRepository.ListByProject` 透传 `userID` 作用域。
+  - **菜单栏速览浮窗、减少动态与桌面原生细节**（`MenuBarPopoverView.tsx`、`stores/appearance.ts`、`menubar-popover.css`、`motion.css`、`scheduler.go`、`autostart_darwin.go`、`manager.go`）：`appearance.ts` 监听跨窗口 `storage` 事件并避免次窗口重复触发原生图标 IPC；`/menubar` 监听 `desktop:day-changed` 转发跨日事件并等待 `packReady` 防背景闪烁；`motion.css` 补齐 `animation-delay: 0ms !important`；`SendTestReminder` 在权限弹窗返回后校验 `validatedSession()`；`OpenAutostartSettings` 异步 `Wait()` 回收子进程；macOS 跟踪 `dockHidden` 确保原生恢复或关闭偏好时无条件恢复 Dock 图标。
+  - **用户管理、收款阶段与组件细节**（`UserManagement.tsx`、`api/auth.ts`、`dto/user.go`、`service/user_service.go`、`repository/user.go`、`PaymentPlanEditor.tsx`、`stores/auth.ts`、`Calendar.tsx`、`Avatar.tsx`、`renderSceneGL.ts`、`DesktopSettingsPanel.tsx`、`scripts/generate_icons.py`）：新增用户支持持久化部门、职位与禁用状态（处理 GORM `default:1` 零值覆盖），删除用户同事务清理 `personal_access_tokens` 与 `user_notifications`；前端补齐清空搜索 `setKeyword('')` 及删除/重置密码的会话代际保护；`PaymentPlanEditor` 默认阶段补齐 `progress`（进度款）；修复 `Avatar`、`Calendar`、`renderSceneGL`、`DesktopSettingsPanel` 及 `generate_icons.py` 细节。
+- **后续补充修复（2026-11-24）**：
+  - **用户信息修改立即刷新（WKWebView HTTP 缓存根治）**（`internal/router/router.go`、`frontend/src/api/auth.ts`、`frontend/src/api/project.ts`）：在 `/api/v1` 路由组统一添加 `noCacheMiddleware()`（输出 `Cache-Control: no-store, no-cache, must-revalidate` 与 `Pragma: no-cache`），并在 `authApi.getCurrentUser`、`authApi.getUsers` 及 `projectApi.list` 补齐 `_t: Date.now()` 防缓存参数，彻底解决桌面端 WKWebView（`NSURLCache`）在 `PUT /api/v1/users/:id` 后用旧缓存覆盖 `GET /api/v1/users` 列表与 `/users/me` 的问题。
+  - **管理员查看全部通知**（`internal/repository/notification.go`、`internal/service/notification.go`、`internal/handler/notification.go`、`frontend/src/components/settings/NotificationManagement.tsx`、`frontend/src/components/notification/NotificationDetailModal.tsx`）：管理员调用 `GET /api/v1/notifications` 与 `GET /api/v1/notifications/:id` 时分别走 `ListAllForAdmin` 与 `GetForAdmin` 返回系统全部通知（含发给其他用户的定向通知）及准确 `target_user_id`，发给其他人的通知对管理员标记为已读以避免无法消除的未读计数；普通用户仍严格隔离在本人收件箱内；前端管理员列表与详情弹窗同步展示接收对象名称。
+  - **重置用户密码确认与准确报错**（`frontend/src/components/settings/UserManagement.tsx`、`internal/dto/user.go`、`internal/dto/auth.go`、`internal/handler/user.go`、`internal/service/user_service.go`）：重置密码弹窗新增「确认新密码」字段、密码规则提示与前端前置校验（空值/长度/强度/一致性），并透传后端具体错误信息到弹窗与 Toast；后端移除 DTO 上会提前触发英文校验报错的 `min=8` tag，由 `validatePasswordStrength` 统一返回中文业务错误，同时在重置密码前校验目标用户存在（404 `用户不存在`）。
+- **验证**：Go 全量 `go test -race . ./internal/... ./cmd/... ./docs/...`（20 个测试包）、原生及 Windows/Linux 交叉 `go vet`、`golangci-lint`（0 issues）、Python 脚本测试（53 项通过/1 项按平台跳过）、前端 `eslint --max-warnings=0`（0 警告）、`tsc --build`（0 错误）、`vitest run`（**134/134 文件、992/992 用例全通过**）、隔离生产构建及 `git diff --check`（排除 Wails 生成绑定文件）全部通过。未触碰真实账本或既有开发服务，未提交或发版。
+
+## 1. 已完成：全局复审问题复现与修复（2026-11-24，本地修改）
+
+- 复审报告 `docs/global-code-review-2026-11-24.md` 原列 11 项，均已确认并修复。云同步 MySQL 自然键冲突、同步删除范围提示、macOS 登录项待批准状态、Dock hide/show 并发、关闭询问同步、分析隐私模式清图、MSIX 不存在配置路径、Compose SQLite profile 密码插值、Dropdown Tab 焦点、远端计数错误分类和 `last_login_time` 同步均有修复或回归覆盖。
+- MySQL 同步改为按 ID 更新并检测匹配行，缺失 ID 时普通插入；冲突使事务回滚，不再让其他唯一索引冲突改写不同 ID 记录。同步仍按既定 mirror 语义删除云端独有行和清空已允许镜像的空业务表，确认框现在明确说明。只将 MySQL 1146/PostgreSQL 42P01 分类为缺表，其他计数错误中止对比。用户自然键冲突、同 ID 更新、插入、无变化重同步、云端多余记录删除、空业务表清空和缺表行为在隔离 MySQL 8.4.3 上通过；测试后数据库进程关闭且临时库清理。未执行实时 PostgreSQL。
+- 全量测试发现的通知路径旧断言原本期待管理员仍只读本人收件箱，与本文件之前记录的“管理员查看全部通知”契约矛盾。已使管理员列表/详情按此既定契约读取全量通知，同时保留普通用户的个人收件箱隔离，并更新相应回归测试。
+- macOS 登录项待批准标记持久化至授权成功或用户关闭；窗口/ Dock 转换串行并丢弃过期原生可见性回调；关闭询问通过 revisioned 原生事件与状态快照恢复/同步，普通 `GetState` 不再悄悄消费状态。Mac Login Items 未在真实系统设置中授权切换。
+- 分析图重建后重新灌入已加载数据并保持 Tooltip/Y 轴脱敏，不额外请求。Popover 为 Dropdown Tab/Shift+Tab 设置正确前后焦点并在 Dialog 范围内循环。Vitest 全部前端 **134 文件、994 项**通过；Ego Lite 实际显示隔离账本的 ¥1,200 月度趋势，Dropdown 展厅内 Tab 和 Shift+Tab 分别把焦点移到相邻控件。隐私模式状态转换由回归测试覆盖，Web 预览本身不提供原生桌面隐私开关。
+- MSIX 使用已存在的 `build/config.yml`、`.exe`可执行名与 Windows 图标源；Task dry-run 参数确认正确。本机 macOS 无法执行 Windows MakeAppx/MSIX Packaging Tools。Compose 不启用数据库 profile 时不再要求其密码变量；在当前 Compose 5.2.0 验证 SQLite 配置可解析且只选中 app 服务，未启动 Docker 服务，因为 Docker daemon 不可用。启用数据库 profile 的实际容器启动未验。
+- **全量验证**：Go race 全包测试18个包通过，9个包无测试文件；macOS/Windows amd64/Linux amd64 `go vet` 通过，Windows amd64交叉构建通过。TypeScript `tsc --build`、ESLint（0警告）、生产 Vite 构建、Python **55项通过/1项平台跳过**，MSIX/Compose 配置回归测试2项全部通过。前端构建保留一个 >500KB bundle 警告。原有生成绑定文件中的行尾空白和末尾空行仍使全工作树 `git diff --check` 失败，未清理这些文件。
+- QA API 使用临时 HOME 配置、SQLite 文件和 3498 端口，Vite 使用 9380 端口；服务和 Ego Lite task space 已关闭，临时数据库及初始凭据已删除。未触碰真实账本或已安装应用。本次无提交或发布。
+
 ## 1. 已发布：珠算 1.4.0 全部代码提交与发行（2026-11-23）
 
 - 用户明确要求提交全部代码并发布新版本。全部产品/主题/桌面/多选/审查代码与资源提交，PR39合并主分支应用源码 `cd788862244cfab6f2279329037a85d0ddb88945`；固定v1.4.0，不改旧版本。包装修复PR40合并 `f3f79dec4cbb0fb3a4e4414d40d5edcdc868f2bd`，发布查询PR41合并 `38c6188d1e0c819e9347b1bd18f9db09832f3bd5`，两者分别记录配方/流程来源，应用标签保持不变。
@@ -8,6 +37,13 @@
 - 发行中的真实失败保持审计：Windows旧夹具基线固定1.2/关闭策略不适配，修正后又复现实际quit关闭只结束窗口未结束常驻进程，现显式RequestQuit；通知同时间戳页需id DESC，查询预算3/4不放宽。一次候选引用误填已失败，后续直接读Git SHA调度，不计作通过。CI镜像超时只重跑失败任务，未改TLS或跳过检查。
 - 首次正式45163766010的Linux失败为desktop纯空白行；已在精确tag归档仅覆盖Taskfile验证配方，恢复45172313200三平台build/校验/上传成功。自动publish增加digest核对后因草稿tag GET404停止；应先ghreleaseview得到发行ID再API按ID查草稿，draft URL临时untagged与最终canonical URL分阶段校验。随后用完整本地字节/SUMS/manifest等价门禁授权公开，自动publish job仍记失败，不将它描述为全工作流成功。
 - 结果 `docs/release-readiness-1.4.0.md`、`docs/release-verification-1.4.0.json`，完整私有 `/tmp/zhusuan-release-1.4.0.4obvAc`。真实账本、全局凭据、已安装app与3456/9245服务保留；没有以发布为由清用户HOME、旧路径、全局缓存或系统设置。目标机完整能耗/读屏/云连接未验，Mac仍adhoc。
+
+## 1. 已修复：Windows 托盘图标尺寸与 macOS Dock 重开窗口（2026-11-23，本地修改）
+
+- Windows 窗口/快捷方式使用的多尺寸 `build/windows/icon.ico` 已是 93% 主体占比；通知区域托盘走另一条 `frontend/dist/zhusuan.png` 回退路径，主体约 87.5%，因此截图中的托盘图标会偏小。现在 Windows 托盘复用同一组规范化多尺寸 ICO，并生成配套深色 `build/windows/icon-dark.ico`。浅/深规范化源均有校验戳并由图标生成任务重建；ICO 保持 16–256px 的13个系统/DPI帧。
+- Wails v3.1.0 默认 `ApplicationShouldHandleReopen` 监听器在 Dock 重开时会显示所有隐藏 WebviewWindow，包含菜单栏速览面板。现在由同步事件 Hook 取消默认监听器，再隐藏速览并只恢复主窗口。
+- 验证：Go race **540例/31包**通过，`go vet ./...` 通过，Windows amd64 交叉构建通过，Windows 图标脚本11例与浅/深源校验通过。macOS 隔离 bundle 使用临时 HOME/配置目录/空 SQLite；关闭选择“隐藏到菜单栏”后重新激活进程，AX 树与屏幕画面都只出现主窗口。
+- 验收边界：当前没有 Windows 目标机桌面进行真实 Explorer/DPI 对比；图标文件帧与资源生成已验证。未改已安装应用、真实账本或开发服务；此修改未提交、推送或发布。
 
 ## 1. 已完成：全局代码审查、精简与安全/逻辑修复（2026-11-23，本地修改）
 
@@ -898,3 +934,9 @@
 - 主题图片懒加载、交叉淡入及入场动画需分别等待；先确认实际data-theme-pack、场景URL、data-loading消失，再等有限动画结束。Ego视口在脚本间不保证保留，每次采集脚本重新设置并记录innerWidth/innerHeight。
 - accessibility快照里的group可能是原生fieldset，DOM没有role=group；CSS直接搜[role=group]会找不到。按实际DOM的fieldset/aria-label和label/input关系选择，不猜选择器。已登录访问/login会自动返回工作台；登录截图通过本任务私有会话的退出按钮取得，账号/密码保持空，不清全局浏览器存储。
 - 本轮用户明确要求不打码，覆盖旧截图说明的默认脱敏要求。隔离源数据与预览服务仍需保留；不能复用旧脱敏/夹具截图当作本次原样账本，也不能误把当前开发主题说成已公开v1.3.1功能。
+
+### 2.32 Windows 托盘图标与 macOS Dock 重开（2026-11-23）
+
+- Windows 窗口/快捷方式 ICO 与通知区域托盘图标不是同一条资源路径。ICO已有93%主体占比，但托盘之前回退到87.5%的网页PNG；对比尺寸时要检查 `DesktopManager` 的 `TrayIcons`，不要只看 `build/windows/icon.ico`。浅/深托盘资源现在复用相同光学占比的多尺寸 ICO，避免再嵌入两份高分辨率 PNG。
+- Wails v3.1.0 内置 Dock reopen listener 会显示所有隐藏 `WebviewWindow`；菜单栏面板也是隐藏窗口。直接增加普通 `OnApplicationEvent` 再隐藏面板会与 Wails listener 的 goroutine 竞争。应通过 `RegisterApplicationEventHook` 同步取消该事件，再显式恢复主窗口。
+- Windows 原生 Explorer/DPI 实际对照需要 Windows 目标机；ICO帧和交叉构建只能验证资源与编译，不能当成用户桌面验收。macOS隔离 bundle 测试使用临时配置与空库，关闭选择隐藏到菜单栏后重新激活，只见主窗口。

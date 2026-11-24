@@ -52,24 +52,25 @@ type WindowBounds struct {
 // DesktopPreferences stores OS-level desktop behavior persisted outside WebView storage so Go
 // can inspect it before creating or showing the main window.
 type DesktopPreferences struct {
-	Autostart             bool         `json:"autostart"`
-	StartHidden           bool         `json:"startHidden"`
-	CloseAction           string       `json:"closeAction"`
-	MenuBarDisplay        string       `json:"menuBarDisplay"`
-	PrivacyMode           bool         `json:"privacyMode"`
-	HideDockWhenMinimized bool         `json:"hideDockWhenMinimized"`
-	RememberWindowBounds  bool         `json:"rememberWindowBounds"`
-	TrayClickAction       string       `json:"trayClickAction"`
-	ReminderEnabled       bool         `json:"reminderEnabled"`
-	ReminderTime          string       `json:"reminderTime"`
-	LastReminderDate      string       `json:"lastReminderDate,omitempty"`
-	ToggleWindowShortcut  string       `json:"toggleWindowShortcut"`
-	QuickReceiptShortcut  string       `json:"quickReceiptShortcut"`
-	PrivacyModeShortcut   string       `json:"privacyModeShortcut"`
-	AutoBackupEnabled     bool         `json:"autoBackupEnabled"`
-	AutoBackupRetention   int          `json:"autoBackupRetention"`
-	LastBackupDate        string       `json:"lastBackupDate,omitempty"`
-	WindowBounds          WindowBounds `json:"windowBounds"`
+	Autostart                bool         `json:"autostart"`
+	AutostartApprovalPending bool         `json:"autostartApprovalPending,omitempty"`
+	StartHidden              bool         `json:"startHidden"`
+	CloseAction              string       `json:"closeAction"`
+	MenuBarDisplay           string       `json:"menuBarDisplay"`
+	PrivacyMode              bool         `json:"privacyMode"`
+	HideDockWhenMinimized    bool         `json:"hideDockWhenMinimized"`
+	RememberWindowBounds     bool         `json:"rememberWindowBounds"`
+	TrayClickAction          string       `json:"trayClickAction"`
+	ReminderEnabled          bool         `json:"reminderEnabled"`
+	ReminderTime             string       `json:"reminderTime"`
+	LastReminderDate         string       `json:"lastReminderDate,omitempty"`
+	ToggleWindowShortcut     string       `json:"toggleWindowShortcut"`
+	QuickReceiptShortcut     string       `json:"quickReceiptShortcut"`
+	PrivacyModeShortcut      string       `json:"privacyModeShortcut"`
+	AutoBackupEnabled        bool         `json:"autoBackupEnabled"`
+	AutoBackupRetention      int          `json:"autoBackupRetention"`
+	LastBackupDate           string       `json:"lastBackupDate,omitempty"`
+	WindowBounds             WindowBounds `json:"windowBounds"`
 }
 
 // DefaultDesktopPreferences returns the baseline cross-platform desktop preferences.
@@ -112,6 +113,7 @@ func (p DesktopPreferences) Normalize() DesktopPreferences {
 
 	if !p.Autostart {
 		p.StartHidden = false
+		p.AutostartApprovalPending = false
 	}
 
 	if p.WindowBounds.Width < 400 || p.WindowBounds.Height < 300 {

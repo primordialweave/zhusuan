@@ -2,8 +2,9 @@ import { beforeEach, describe, expect, it, vi } from 'vitest'
 import { act, fireEvent, render, screen, waitFor } from '@testing-library/react'
 import { Call, Events } from '@wailsio/runtime'
 import MenuBarPopoverView from './MenuBarPopoverView'
+import { APPEARANCE_STORAGE_KEY } from '@/stores/appearance'
 import { THEME_PACK_STORAGE_KEY } from '@/stores/theme'
-import { DESKTOP_EVENTS, type MenuBarSnapshot } from '@/utils/desktopManager'
+import { DAY_CHANGED_DOM_EVENT, DESKTOP_EVENTS, type MenuBarSnapshot } from '@/utils/desktopManager'
 
 const deferred = <T,>() => {
   let resolve!: (value: T) => void
@@ -209,5 +210,36 @@ describe('MenuBarPopoverView', () => {
       expect(document.documentElement.getAttribute('data-theme')).toBe('dark')
       expect(document.documentElement.getAttribute('data-theme-pack')).toBe('autumn-forbidden')
     })
+
+    act(() => {
+      localStorage.setItem(
+        APPEARANCE_STORAGE_KEY,
+        JSON.stringify({
+          appIcon: 'auto',
+          liquidGlass: false,
+          reduceMotion: true,
+          sceneMotion: false,
+        }),
+      )
+      window.dispatchEvent(new StorageEvent('storage', { key: APPEARANCE_STORAGE_KEY }))
+    })
+
+    await waitFor(() => {
+      expect(document.documentElement.getAttribute('data-glass')).toBe('solid')
+      expect(document.documentElement.getAttribute('data-motion')).toBe('reduced')
+    })
+
+    const dayChangedHandler = vi
+      .mocked(Events.On)
+      .mock.calls.find(([name]) => name === DESKTOP_EVENTS.dayChanged)?.[1]
+    expect(dayChangedHandler).toBeDefined()
+    const onDomDayChanged = vi.fn()
+    window.addEventListener(DAY_CHANGED_DOM_EVENT, onDomDayChanged)
+    vi.mocked(Call.ByName).mockResolvedValueOnce(makeSnapshot() as never)
+    act(() => {
+      dayChangedHandler?.({ data: [{ date: '2026-11-25' }] } as never)
+    })
+    expect(onDomDayChanged).toHaveBeenCalledOnce()
+    window.removeEventListener(DAY_CHANGED_DOM_EVENT, onDomDayChanged)
   })
 })

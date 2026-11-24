@@ -8,13 +8,34 @@ import {
 
 const focusableSelector = [
   'a[href]',
-  'button:not([disabled])',
-  'input:not([disabled])',
-  'select:not([disabled])',
-  'textarea:not([disabled])',
+  'button:not(:disabled)',
+  'input:not(:disabled)',
+  'select:not(:disabled)',
+  'textarea:not(:disabled)',
   '[tabindex]:not([tabindex="-1"])',
 ].join(',')
 const dialogStack: symbol[] = []
+
+const isElementFocusableInDialog = (element: HTMLElement): boolean => {
+  if (
+    element.tabIndex < 0 ||
+    element.matches(':disabled') ||
+    element.closest('[hidden], [inert], [aria-hidden="true"]')
+  ) {
+    return false
+  }
+  for (let ancestor: HTMLElement | null = element; ancestor; ancestor = ancestor.parentElement) {
+    const style = getComputedStyle(ancestor)
+    if (
+      style.display === 'none' ||
+      style.visibility === 'hidden' ||
+      style.visibility === 'collapse'
+    ) {
+      return false
+    }
+  }
+  return true
+}
 
 interface DialogFocusOptions {
   closeOnEscape?: boolean
@@ -63,7 +84,10 @@ export function useDialogFocus({
       )
       const focusable = containers.flatMap((container) => {
         const descendants = Array.from(container.querySelectorAll<HTMLElement>(focusableSelector))
-        return container.matches(focusableSelector) ? [container, ...descendants] : descendants
+        const candidates = container.matches(focusableSelector)
+          ? [container, ...descendants]
+          : descendants
+        return candidates.filter(isElementFocusableInDialog)
       })
       return Array.from(new Set(focusable))
     }

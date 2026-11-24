@@ -430,4 +430,18 @@ describe('NotificationManagement request integrity', () => {
       ),
     )
   })
+
+  it('shows the recipient name on targeted notifications for administrators in list and detail views', async () => {
+    const targeted = { ...recipientNotification(12), is_read: true }
+    vi.mocked(notificationApi.list).mockResolvedValue(response([targeted]) as never)
+    vi.mocked(notificationApi.getUsers).mockResolvedValue({ data: { data: targetUsers } } as never)
+    const user = userEvent.setup()
+    render(<NotificationManagement isAdmin />)
+
+    expect(await screen.findByText('活动 · 徐')).toBeInTheDocument()
+    await user.click(screen.getByRole('button', { name: '查看通知：对象通知' }))
+    const detail = await screen.findByRole('dialog', { name: '通知详情' })
+    expect(within(detail).getByText('定向通知 · 徐')).toBeInTheDocument()
+    expect(notificationApi.markAsRead).not.toHaveBeenCalled()
+  })
 })

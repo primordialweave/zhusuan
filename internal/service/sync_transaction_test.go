@@ -26,7 +26,7 @@ func TestSyncTransactionMarksEarlierTablesUnsuccessfulAfterLaterFailure(t *testi
 	require.NoError(t, db.Create(&models.Project{ID: 701, UserID: 701, Name: "fixture", ContractNumber: "TX-1", Status: "active"}).Error)
 	service := NewSyncService()
 	tx := &captureSyncTransaction{}
-	results, err := service.syncTablesInTransaction(context.Background(), db, tx, "postgres", []string{"users", "projects", "payments"})
+	results, err := service.syncTablesInTransaction(context.Background(), db, tx, "postgres", []string{"users", "projects", "dictionaries"})
 	require.NoError(t, err)
 	require.Len(t, results, 3)
 	require.Equal(t, 0, tx.commits)
@@ -36,6 +36,23 @@ func TestSyncTransactionMarksEarlierTablesUnsuccessfulAfterLaterFailure(t *testi
 		require.Zero(t, result.SyncedCount)
 		require.Equal(t, "同步失败，本次事务已回滚", result.ErrorMessage)
 		require.NotContains(t, result.ErrorMessage, "local ID")
+	}
+}
+
+func TestSyncTransactionSucceedsWhenOptionalTablesAreEmpty(t *testing.T) {
+	db := syncRecordFixture(t)
+	require.NoError(t, db.Create(&models.User{ID: 710, Username: "optional-empty-user", Password: "fixture-hash", Status: 1}).Error)
+	service := NewSyncService()
+	tx := &captureSyncTransaction{}
+	tables := []string{"users", "projects", "payments", "notifications", "user_notifications", "personal_access_tokens"}
+	results, err := service.syncTablesInTransaction(context.Background(), db, tx, "postgres", tables)
+	require.NoError(t, err)
+	require.Len(t, results, len(tables))
+	require.Equal(t, 1, tx.commits)
+	require.Zero(t, tx.rollbacks)
+	for _, result := range results {
+		require.True(t, result.Success, "table %s should succeed when empty", result.TableName)
+		require.Empty(t, result.ErrorMessage)
 	}
 }
 
@@ -63,7 +80,7 @@ func TestSyncTransactionReportsCommitAndRollbackOutcomes(t *testing.T) {
 	})
 	t.Run("rollback failure", func(t *testing.T) {
 		tx := &captureSyncTransaction{rollbackErr: errors.New("fixture rollback failure")}
-		results, err := service.syncTablesInTransaction(context.Background(), db, tx, "postgres", []string{"users", "payments"})
+		results, err := service.syncTablesInTransaction(context.Background(), db, tx, "postgres", []string{"users", "dictionaries"})
 		require.Error(t, err)
 		require.Equal(t, 1, tx.rollbacks)
 		for _, result := range results {
@@ -81,4 +98,5 @@ func TestSyncMySQLDSNPreservesCredentialsAndIPv6Address(t *testing.T) {
 	require.Equal(t, cfg.Password, parsed.Passwd)
 	require.Equal(t, cfg.DBName, parsed.DBName)
 	require.Equal(t, net.JoinHostPort(cfg.Host, "3306"), parsed.Addr)
+	require.True(t, parsed.ClientFoundRows, "unchanged updates must still count as matched IDs")
 }

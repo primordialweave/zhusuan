@@ -67,8 +67,11 @@ export interface CreateUserRequest {
   name: string
   email?: string
   phone?: string
+  department?: string
+  position?: string
   password: string
   role: 'admin' | 'user'
+  status?: number
 }
 
 // 更新用户请求 (Admin)
@@ -91,7 +94,10 @@ export const authApi = {
   logout: () => api.post<ApiResponse<null>>('/auth/logout'),
 
   // 获取当前用户
-  getCurrentUser: () => api.get<ApiResponse<User>>('/users/me'),
+  getCurrentUser: () =>
+    api.get<ApiResponse<User>>('/users/me', {
+      params: { _t: Date.now() },
+    }),
 
   // 更新个人信息
   updateProfile: (data: UpdateProfileRequest) => api.put<ApiResponse<User>>('/users/me', data),
@@ -101,7 +107,10 @@ export const authApi = {
     api.put<ApiResponse<null>>('/users/me/password', data),
 
   // === User Management (Admin) ===
-  getUsers: (params: UserListParams) => api.get<ApiResponse<UserListResult>>('/users', { params }),
+  getUsers: (params: UserListParams) =>
+    api.get<ApiResponse<UserListResult>>('/users', {
+      params: { ...params, _t: Date.now() },
+    }),
 
   createUser: (data: CreateUserRequest) => api.post<ApiResponse<null>>('/users', data),
 

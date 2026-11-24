@@ -4,6 +4,7 @@ import { Chip, Modal, type ChipTone } from '@/design-system'
 interface NotificationDetailModalProps {
   open: boolean
   notification: Notification | null
+  recipientLabel?: string
   onClose: () => void
 }
 
@@ -16,6 +17,7 @@ const typeConfig = (type?: number): { label: string; tone: ChipTone } => {
 export default function NotificationDetailModal({
   open,
   notification,
+  recipientLabel,
   onClose,
 }: NotificationDetailModalProps) {
   const notificationType = typeConfig(notification?.type)
@@ -42,7 +44,11 @@ export default function NotificationDetailModal({
               {notificationType.label}
             </Chip>
             <span className="text-sm text-secondary">
-              {notification.is_global === 1 ? '全员通知' : '私信通知'}
+              {notification.is_global === 1
+                ? '全员通知'
+                : recipientLabel
+                  ? `定向通知 · ${recipientLabel}`
+                  : '私信通知'}
             </span>
           </div>
           <h3 className="notification-detail-title">{notification.title}</h3>

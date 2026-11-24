@@ -14,8 +14,8 @@ android {
         applicationId "org.primordialweave.zhusuan"
         minSdk 21
         targetSdk 34
-        versionCode 1004000
-        versionName "1.4.0"
+        versionCode 1004001
+        versionName "1.4.1"
 
         // Configure supported ABIs
         ndk {
